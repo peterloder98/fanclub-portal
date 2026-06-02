@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
-import { formatEventStart } from "@/lib/events/format";
-import { formatEventAddress } from "@/lib/events/format";
+import { formatEventStart, formatEventAddress } from "@/lib/events/format";
+import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "./events-map.types";
 
 const GERMANY_BOUNDS: L.LatLngBoundsExpression = [
@@ -25,20 +25,25 @@ function MapLifecycle({ onMap }: { onMap: (map: L.Map) => void }) {
   return null;
 }
 
-function createFlagIcon() {
+function createFlagIcon(highlighted = false) {
+  const scale = highlighted ? 1.45 : 1;
+  const w = Math.round(30 * scale);
+  const h = Math.round(40 * scale);
+  const head = Math.round(20 * scale);
   return L.divIcon({
-    className: "",
-    iconSize: [30, 40],
-    iconAnchor: [15, 38],
-    popupAnchor: [0, -34],
+    className: highlighted ? "fc-event-pin-highlight" : "",
+    iconSize: [w, h],
+    iconAnchor: [Math.round(w / 2), h - 2],
+    popupAnchor: [0, -Math.round(34 * scale)],
     html: `
       <div style="
-        width:30px;height:40px;position:relative;
+        width:${w}px;height:${h}px;position:relative;
         filter: drop-shadow(0 10px 14px rgba(15,23,42,.22));
+        transition: transform 0.15s ease;
       ">
         <div style="
           position:absolute;left:50%;top:0;transform:translateX(-50%);
-          width:20px;height:20px;border-radius:12px;
+          width:${head}px;height:${head}px;border-radius:12px;
           background: linear-gradient(135deg,#2563eb,#f43f5e);
           border:2px solid rgba(255,255,255,.92);
           box-shadow: inset 0 2px 5px rgba(255,255,255,.35), inset 0 -3px 6px rgba(15,23,42,.22);
@@ -64,11 +69,18 @@ function createFlagIcon() {
   });
 }
 
-export function EventsMapClient({ events }: { events: MapEvent[] }) {
+export function EventsMapClient({
+  events,
+  highlightedEventId = null,
+}: {
+  events: MapEvent[];
+  highlightedEventId?: string | null;
+}) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const icon = useMemo(() => createFlagIcon(), []);
+  const icon = useMemo(() => createFlagIcon(false), []);
+  const iconHighlighted = useMemo(() => createFlagIcon(true), []);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
   const markers = useMemo(
@@ -171,11 +183,13 @@ export function EventsMapClient({ events }: { events: MapEvent[] }) {
             postal_code: e.postal_code,
             city: e.city,
           });
+          const ticket = ticketDisplay(e.ticket_url);
           return (
             <Marker
               key={e.id}
               position={[e.lat as number, e.lng as number]}
-              icon={icon}
+              icon={e.id === highlightedEventId ? iconHighlighted : icon}
+              zIndexOffset={e.id === highlightedEventId ? 1000 : 0}
             >
               {/* Hover: quick preview */}
               <Tooltip direction="top" offset={[0, -16]} opacity={0.98} sticky={false}>
@@ -198,15 +212,17 @@ export function EventsMapClient({ events }: { events: MapEvent[] }) {
                     {time ? ` · ${time} Uhr` : ""}
                   </div>
                   {addr ? <div className="mt-1 text-xs text-slate-600">{addr}</div> : null}
-                  {e.ticket_url ? (
+                  {ticket.href ? (
                     <a
                       className="mt-2 inline-flex text-xs font-medium text-blue-700 hover:underline"
-                      href={e.ticket_url}
+                      href={ticket.href}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
                       Tickets / Infos →
                     </a>
+                  ) : ticket.text ? (
+                    <div className="mt-2 text-xs text-slate-700">{ticket.text}</div>
                   ) : null}
                 </div>
               </Popup>

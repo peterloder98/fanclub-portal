@@ -18,6 +18,7 @@ import {
   type VoteRow as PollVoteRow,
   type Voter as PollVoter,
 } from "@/components/polls/poll-feed-card";
+import { UserListPopover, type UserListEntry } from "@/components/ui/user-list-popover";
 
 type FeedPost = {
   id: string;
@@ -83,6 +84,42 @@ export function PostFeed({
   );
   const [pollVotersByOption, setPollVotersByOption] = useState<Record<string, PollVoter[]>>({});
   const [pollBusyKey, setPollBusyKey] = useState<string | null>(null);
+  const [likersByPostId, setLikersByPostId] = useState<Record<string, UserListEntry[]>>({});
+  const [likersLoadingPostId, setLikersLoadingPostId] = useState<string | null>(null);
+
+  async function ensureLikers(postId: string) {
+    if (postId in likersByPostId) return;
+    setLikersLoadingPostId(postId);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data: likes } = await supabase
+        .from("post_likes")
+        .select("user_id")
+        .eq("post_id", postId);
+      const ids = Array.from(new Set((likes ?? []).map((l) => l.user_id)));
+      if (!ids.length) {
+        setLikersByPostId((m) => ({ ...m, [postId]: [] }));
+        return;
+      }
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id,first_name,last_name,email,avatar_path")
+        .in("id", ids);
+      const users: UserListEntry[] = (profiles ?? [])
+        .map((p) => ({
+          id: p.id,
+          name:
+            p.first_name && p.last_name
+              ? `${p.first_name} ${p.last_name}`
+              : (p.email ?? "Mitglied"),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name, "de"));
+      setLikersByPostId((m) => ({ ...m, [postId]: users }));
+    } finally {
+      setLikersLoadingPostId(null);
+    }
+  }
 
   const mergedFeed = useMemo((): FeedItem[] => {
     const items: FeedItem[] = [
@@ -1005,7 +1042,18 @@ export function PostFeed({
             ) : null}
 
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-              <span>{post.likeCount} Likes</span>
+              {post.likeCount > 0 ? (
+                <UserListPopover
+                  label="Wer hat gelikt?"
+                  users={likersByPostId[post.id] ?? []}
+                  loading={likersLoadingPostId === post.id}
+                  onMouseEnter={() => void ensureLikers(post.id)}
+                >
+                  {post.likeCount} {post.likeCount === 1 ? "Like" : "Likes"}
+                </UserListPopover>
+              ) : (
+                <span>0 Likes</span>
+              )}
               <span>·</span>
               <span>{post.comments.length} Kommentare</span>
             </div>

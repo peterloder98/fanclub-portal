@@ -1,9 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { EventsCountdown } from "@/components/events/events-countdown";
-import type { MapEvent } from "@/components/events/events-map";
-import { EventsMap } from "@/components/events/events-map";
-import { EventsRows } from "@/components/events/events-rows";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EventsInteractivePanel } from "@/components/events/events-interactive-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -25,19 +22,6 @@ export default async function EventsPage() {
     .select("id,title,start_at,venue,address,postal_code,city,ticket_url,lat,lng")
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false });
-
-  const mapEvents: MapEvent[] = (events ?? []).map((e) => ({
-    id: e.id,
-    title: e.title,
-    start_at: e.start_at,
-    ticket_url: e.ticket_url,
-    venue: e.venue ?? null,
-    address: e.address ?? null,
-    postal_code: (e as any).postal_code ?? null,
-    city: e.city ?? null,
-    lat: e.lat ?? null,
-    lng: e.lng ?? null,
-  }));
 
   const nextEventWithDate =
     (events ?? []).find((e) => Boolean(e.start_at)) ?? null;
@@ -64,30 +48,7 @@ export default async function EventsPage() {
             nextTitle={nextEventWithDate?.title ?? null}
           />
 
-          {/* Fixed 2-column layout (desktop-first): list left, map right */}
-          <div
-            className="grid min-h-0 flex-1 items-stretch gap-5"
-            style={{ gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)" }}
-          >
-            <Card className="min-w-0 min-h-0 h-full overflow-hidden flex flex-col">
-              <CardHeader className="pb-3">
-                <CardTitle>Alle Termine</CardTitle>
-              </CardHeader>
-              <CardContent className="min-h-0 flex-1 pb-3">
-                <div className="h-full overflow-y-auto pr-1">
-                  <EventsRows events={(events ?? []) as any} />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="min-h-0 h-full overflow-hidden flex flex-col">
-              <CardContent className="min-h-0 flex-1 p-3">
-                <div className="h-full">
-                  <EventsMap events={mapEvents} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <EventsInteractivePanel events={(events ?? []) as any} />
         </div>
       </main>
     </div>

@@ -329,7 +329,7 @@ export function PollBoard({
                 const c = counts.get(o.id) ?? 0;
                 const pct = totalVotes ? Math.round((c / totalVotes) * 100) : 0;
                 const picked = mine.has(o.id);
-                const showResults = ended || hasVoted;
+                const showResults = ended || hasVoted || totalVotes > 0;
                 const voters = votersByOptionId[o.id] ?? [];
                 return (
                   <button

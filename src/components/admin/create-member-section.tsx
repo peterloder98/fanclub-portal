@@ -32,6 +32,14 @@ export function CreateMemberSection() {
           <CardContent>
             <form action={createMember} className="grid gap-3 md:grid-cols-2">
               <label className="grid gap-1">
+                <span className="text-sm font-medium text-slate-700">Mitgliedsnummer</span>
+                <input
+                  name="membership_number"
+                  className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  placeholder="optional"
+                />
+              </label>
+              <label className="grid gap-1">
                 <span className="text-sm font-medium text-slate-700">Vorname</span>
                 <input
                   name="first_name"

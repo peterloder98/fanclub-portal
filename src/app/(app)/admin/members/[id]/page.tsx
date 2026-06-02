@@ -37,7 +37,7 @@ export default async function AdminMemberDetailPage({
   const admin = createSupabaseAdminClient();
   const { data: profile, error: pErr } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country")
+    .select("id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country")
     .eq("id", id)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -78,6 +78,15 @@ export default async function AdminMemberDetailPage({
               <form action={updateMember} className="grid gap-3 md:grid-cols-2">
                 <input type="hidden" name="user_id" value={profile.id} />
 
+                <label className="grid gap-1">
+                  <span className="text-sm font-medium text-slate-700">Mitgliedsnummer</span>
+                  <input
+                    name="membership_number"
+                    defaultValue={profile.membership_number ?? ""}
+                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
+                    placeholder="vom Vorstand vergeben"
+                  />
+                </label>
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Vorname</span>
                   <input

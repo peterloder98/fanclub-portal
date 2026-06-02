@@ -6,6 +6,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { flyPointsFromElement } from "@/lib/points/fly";
+import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 type PollRow = {
   id: string;
   question: string;
@@ -15,7 +17,7 @@ type PollRow = {
 
 type OptionRow = { id: string; poll_id: string; label: string; sort_order: number };
 type VoteRow = { poll_id: string; option_id: string; user_id: string };
-type Voter = { id: string; name: string };
+type Voter = { id: string; name: string; avatarUrl: string | null };
 
 export function DashboardPollsInline() {
   const [polls, setPolls] = useState<PollRow[]>([]);
@@ -70,7 +72,7 @@ export function DashboardPollsInline() {
     const voterIds = Array.from(new Set((voteRows ?? []).map((v) => v.user_id)));
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,first_name,last_name,email")
+      .select("id,first_name,last_name,email,avatar_path")
       .in("id", voterIds.length ? voterIds : ["00000000-0000-0000-0000-000000000000"]);
     const pMap = new Map(
       (profiles ?? []).map((p) => [
@@ -81,6 +83,7 @@ export function DashboardPollsInline() {
             p.first_name && p.last_name
               ? `${p.first_name} ${p.last_name}`
               : (p.email ?? "Mitglied"),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path),
         },
       ]),
     );
@@ -194,7 +197,7 @@ export function DashboardPollsInline() {
               {opts.map((o) => {
                 const c = counts.get(o.id) ?? 0;
                 const pct = total ? Math.round((c / total) * 100) : 0;
-                const showResults = ended || hasVoted;
+                const showResults = ended || hasVoted || total > 0;
                 const voters = votersByOptionId[o.id] ?? [];
                 return (
                   <button
@@ -216,19 +219,7 @@ export function DashboardPollsInline() {
                     <div className="relative flex justify-between gap-2 px-3 py-2">
                       <span className="font-medium text-slate-800">{o.label}</span>
                       {showResults ? (
-                        <span className="text-slate-600">
-                          {c} ({pct}%)
-                        </span>
-                      ) : null}
-                      {showResults ? (
-                        <div className="pointer-events-none absolute right-2 top-9 z-50 hidden w-56 rounded-xl border bg-white p-2 text-xs shadow-lg group-hover:block">
-                          <div className="font-semibold text-slate-900">Stimmen</div>
-                          <div className="mt-1 grid gap-1">
-                            {voters.length
-                              ? voters.slice(0, 8).map((u) => <div key={u.id}>{u.name}</div>)
-                              : "Noch keine"}
-                          </div>
-                        </div>
+                        <PollVoteStats count={c} percent={pct} voters={voters} />
                       ) : null}
                     </div>
                   </button>

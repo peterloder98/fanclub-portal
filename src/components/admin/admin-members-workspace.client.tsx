@@ -1,0 +1,574 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/cn";
+import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
+import { deleteMember } from "@/app/(app)/admin/members/actions";
+import {
+  approveMembershipApplicationWithNumber,
+  getPaymentReminderDraft,
+  sendPaymentReminderEmail,
+} from "@/app/(app)/admin/members/applications/actions";
+
+export type AdminMemberRow = {
+  id: string;
+  membership_number: string | null;
+  first_name: string;
+  last_name: string;
+  birthdate: string | null;
+  membership_status: string | null;
+  email: string | null;
+};
+
+export type AdminApplicationRow = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  status: string;
+  created_at: string;
+  user_id: string | null;
+  membership_number: string | null;
+};
+
+type MemberSortKey = "membership_number" | "first_name" | "last_name" | "birthdate" | "membership_status";
+type AppSortKey = "created_at" | "last_name" | "email" | "status";
+
+function formatDE(date: string | null) {
+  if (!date) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [y, m, d] = date.split("-");
+    return `${d}.${m}.${y}`;
+  }
+  const dt = new Date(date);
+  if (Number.isNaN(dt.getTime())) return "—";
+  return dt.toLocaleDateString("de-DE");
+}
+
+function compareStr(a: string, b: string) {
+  return a.localeCompare(b, "de", { numeric: true, sensitivity: "base" });
+}
+
+function SortBtn({
+  label,
+  active,
+  dir,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-slate-900",
+        active && "text-blue-700",
+      )}
+    >
+      {label}
+      {active ? <span className="text-[10px]">{dir === "asc" ? "▲" : "▼"}</span> : null}
+    </button>
+  );
+}
+
+export function AdminMembersWorkspace({
+  members,
+  applications,
+  membersError,
+  applicationsError,
+}: {
+  members: AdminMemberRow[];
+  applications: AdminApplicationRow[];
+  membersError: string | null;
+  applicationsError: string | null;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
+  const [memberSort, setMemberSort] = useState<{ key: MemberSortKey; dir: "asc" | "desc" }>({
+    key: "membership_number",
+    dir: "asc",
+  });
+  const [appSort, setAppSort] = useState<{ key: AppSortKey; dir: "asc" | "desc" }>({
+    key: "created_at",
+    dir: "desc",
+  });
+  const [approveNumber, setApproveNumber] = useState("");
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentSubject, setPaymentSubject] = useState("");
+  const [paymentBody, setPaymentBody] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  function toggleMemberSort(key: MemberSortKey) {
+    setMemberSort((s) =>
+      s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
+  }
+
+  function toggleAppSort(key: AppSortKey) {
+    setAppSort((s) =>
+      s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
+  }
+
+  const sortedMembers = useMemo(() => {
+    const rows = [...members];
+    const dir = memberSort.dir === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      const pick = (r: AdminMemberRow) => {
+        switch (memberSort.key) {
+          case "membership_number":
+            return r.membership_number ?? "";
+          case "first_name":
+            return r.first_name;
+          case "last_name":
+            return r.last_name;
+          case "birthdate":
+            return r.birthdate ?? "";
+          case "membership_status":
+            return r.membership_status ?? "";
+        }
+      };
+      return compareStr(pick(a), pick(b)) * dir;
+    });
+    return rows;
+  }, [members, memberSort]);
+
+  const sortedApps = useMemo(() => {
+    const rows = [...applications];
+    const dir = appSort.dir === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      const pick = (r: AdminApplicationRow) => {
+        switch (appSort.key) {
+          case "created_at":
+            return r.created_at;
+          case "last_name":
+            return `${r.last_name} ${r.first_name}`;
+          case "email":
+            return r.email;
+          case "status":
+            return r.status;
+        }
+      };
+      return compareStr(pick(a), pick(b)) * dir;
+    });
+    return rows;
+  }, [applications, appSort]);
+
+  const selectedApp = sortedApps.find((a) => a.id === selectedAppId) ?? null;
+
+  function handleDeleteMember() {
+    if (!selectedMemberId) return;
+    const row = members.find((m) => m.id === selectedMemberId);
+    const label = row ? `${row.first_name} ${row.last_name}` : "dieses Mitglied";
+    if (!window.confirm(`Mitglied „${label}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
+      return;
+    }
+    setActionError(null);
+    startTransition(async () => {
+      try {
+        await deleteMember(selectedMemberId);
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+      }
+    });
+  }
+
+  function openApproveDialog() {
+    if (!selectedApp) return;
+    setApproveNumber(selectedApp.membership_number ?? "");
+    setShowApproveDialog(true);
+    setActionError(null);
+  }
+
+  async function openPaymentDialog() {
+    if (!selectedAppId) return;
+    setActionError(null);
+    try {
+      const draft = await getPaymentReminderDraft(selectedAppId);
+      setPaymentSubject(draft.subject);
+      setPaymentBody(draft.body);
+      setShowPaymentDialog(true);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
+    }
+  }
+
+  return (
+    <div className="grid gap-4">
+      {actionError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {actionError}
+        </div>
+      ) : null}
+
+      <Card className="border-amber-200 bg-amber-50/30">
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center gap-2">
+            Mitgliedschaftsanträge
+            {applications.length ? <Badge variant="warning">{applications.length}</Badge> : null}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!selectedAppId || pending}
+              onClick={() => openApproveDialog()}
+              className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Mitgliedsantrag freigeben
+            </button>
+            <button
+              type="button"
+              disabled={!selectedAppId || pending}
+              onClick={() => void openPaymentDialog()}
+              className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              Zahlungserinnerung per E-Mail
+            </button>
+            <Link
+              href={selectedAppId ? `/admin/members/applications/${selectedAppId}` : "#"}
+              className={cn(
+                "inline-flex h-10 items-center rounded-xl border bg-white px-4 text-sm font-semibold text-blue-700",
+                !selectedAppId && "pointer-events-none opacity-50",
+              )}
+            >
+              Antrag & PDF
+            </Link>
+          </div>
+
+          {applicationsError ? (
+            <div className="text-rose-700">{applicationsError}</div>
+          ) : sortedApps.length === 0 ? (
+            <div className="text-slate-600">Keine offenen Anträge.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border bg-white">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2 w-10" />
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Mitgliedsnr."
+                        active={false}
+                        dir="asc"
+                        onClick={() => {}}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Name"
+                        active={appSort.key === "last_name"}
+                        dir={appSort.dir}
+                        onClick={() => toggleAppSort("last_name")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="E-Mail"
+                        active={appSort.key === "email"}
+                        dir={appSort.dir}
+                        onClick={() => toggleAppSort("email")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Eingang"
+                        active={appSort.key === "created_at"}
+                        dir={appSort.dir}
+                        onClick={() => toggleAppSort("created_at")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Status"
+                        active={appSort.key === "status"}
+                        dir={appSort.dir}
+                        onClick={() => toggleAppSort("status")}
+                      />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedApps.map((a) => (
+                    <tr
+                      key={a.id}
+                      onClick={() => setSelectedAppId(a.id)}
+                      className={cn(
+                        "cursor-pointer border-b transition hover:bg-slate-50",
+                        selectedAppId === a.id && "bg-blue-50/60",
+                      )}
+                    >
+                      <td className="px-3 py-2">
+                        <input
+                          type="radio"
+                          checked={selectedAppId === a.id}
+                          onChange={() => setSelectedAppId(a.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+                      <td className="px-3 py-2 tabular-nums">{a.membership_number ?? "—"}</td>
+                      <td className="px-3 py-2 font-medium text-slate-900">
+                        {a.first_name} {a.last_name}
+                      </td>
+                      <td className="px-3 py-2 text-slate-600">{a.email}</td>
+                      <td className="px-3 py-2">{formatDE(a.created_at)}</td>
+                      <td className="px-3 py-2">
+                        <Badge variant="warning">{a.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Mitgliederliste</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!selectedMemberId || pending}
+              onClick={() => selectedMemberId && router.push(`/admin/members/${selectedMemberId}`)}
+              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              Bearbeiten
+            </button>
+            <button
+              type="button"
+              disabled={!selectedMemberId || pending}
+              onClick={handleDeleteMember}
+              className="h-10 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 disabled:opacity-50"
+            >
+              Löschen
+            </button>
+          </div>
+
+          {membersError ? (
+            <div className="text-rose-700">{membersError}</div>
+          ) : sortedMembers.length === 0 ? (
+            <div className="text-slate-600">Keine Mitglieder gefunden.</div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border bg-white">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
+                  <tr>
+                    <th className="w-10 px-3 py-2" />
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Mitgliedsnr."
+                        active={memberSort.key === "membership_number"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("membership_number")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Vorname"
+                        active={memberSort.key === "first_name"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("first_name")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Nachname"
+                        active={memberSort.key === "last_name"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("last_name")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Geb. Datum"
+                        active={memberSort.key === "birthdate"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("birthdate")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Status"
+                        active={memberSort.key === "membership_status"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("membership_status")}
+                      />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedMembers.map((m) => (
+                    <tr
+                      key={m.id}
+                      onClick={() => setSelectedMemberId(m.id)}
+                      className={cn(
+                        "cursor-pointer border-b transition hover:bg-slate-50",
+                        selectedMemberId === m.id && "bg-blue-50/60",
+                      )}
+                    >
+                      <td className="px-3 py-2">
+                        <input
+                          type="radio"
+                          checked={selectedMemberId === m.id}
+                          onChange={() => setSelectedMemberId(m.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </td>
+                      <td className="px-3 py-2 tabular-nums font-medium text-slate-900">
+                        {m.membership_number ?? "—"}
+                      </td>
+                      <td className="px-3 py-2">{m.first_name}</td>
+                      <td className="px-3 py-2">{m.last_name}</td>
+                      <td className="px-3 py-2">{formatDE(m.birthdate)}</td>
+                      <td className="px-3 py-2">
+                        {m.membership_status ? (
+                          <Badge
+                            variant={
+                              m.membership_status === "active"
+                                ? "success"
+                                : m.membership_status === "applied"
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                          >
+                            {membershipStatusLabel(m.membership_status)}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {showApproveDialog && selectedApp ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-slate-900">Antrag freigeben</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              {selectedApp.first_name} {selectedApp.last_name} — Status wird auf „aktiv“ gesetzt.
+            </p>
+            <label className="mt-4 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Mitgliedsnummer *</span>
+              <input
+                value={approveNumber}
+                onChange={(e) => setApproveNumber(e.target.value)}
+                className="h-11 rounded-xl border px-3 text-sm"
+                placeholder="z. B. 1042"
+              />
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="h-10 rounded-xl border px-4 text-sm font-semibold"
+                onClick={() => setShowApproveDialog(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                disabled={pending || !approveNumber.trim()}
+                className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                onClick={() => {
+                  startTransition(async () => {
+                    try {
+                      await approveMembershipApplicationWithNumber(
+                        selectedApp.id,
+                        approveNumber.trim(),
+                      );
+                    } catch (e) {
+                      setActionError(e instanceof Error ? e.message : "Freigabe fehlgeschlagen");
+                      setShowApproveDialog(false);
+                    }
+                  });
+                }}
+              >
+                Freigeben
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showPaymentDialog && selectedAppId ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-lg rounded-2xl border bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-slate-900">Zahlungserinnerung</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              Vorlage unter Admin → E-Mail-Vorlagen („Zahlungserinnerung Mitgliedsbeitrag“).
+            </p>
+            <label className="mt-3 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Betreff</span>
+              <input
+                value={paymentSubject}
+                onChange={(e) => setPaymentSubject(e.target.value)}
+                className="h-11 rounded-xl border px-3 text-sm"
+              />
+            </label>
+            <label className="mt-3 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Nachricht</span>
+              <textarea
+                value={paymentBody}
+                onChange={(e) => setPaymentBody(e.target.value)}
+                rows={10}
+                className="rounded-xl border px-3 py-2 text-sm"
+              />
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="h-10 rounded-xl border px-4 text-sm font-semibold"
+                onClick={() => setShowPaymentDialog(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                onClick={() => {
+                  startTransition(async () => {
+                    try {
+                      await sendPaymentReminderEmail({
+                        applicationId: selectedAppId,
+                        subject: paymentSubject,
+                        body: paymentBody,
+                      });
+                      setShowPaymentDialog(false);
+                      router.refresh();
+                    } catch (e) {
+                      setActionError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
+                    }
+                  });
+                }}
+              >
+                Senden
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

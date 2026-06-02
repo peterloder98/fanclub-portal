@@ -23,7 +23,7 @@ export type PollFeedData = {
 
 type OptionRow = { id: string; poll_id: string; label: string; sort_order: number };
 type VoteRow = { poll_id: string; option_id: string; user_id: string; created_at?: string };
-type Voter = { id: string; name: string };
+type Voter = { id: string; name: string; avatarUrl?: string | null };
 
 export function PollFeedCard({
   poll,
@@ -95,7 +95,7 @@ export function PollFeedCard({
         {opts.map((o) => {
           const c = counts.get(o.id) ?? 0;
           const pct = total ? Math.round((c / total) * 100) : 0;
-          const showResults = ended || hasVoted;
+          const showResults = ended || hasVoted || total > 0;
           const voters = votersByOptionId[o.id] ?? [];
           return (
             <button

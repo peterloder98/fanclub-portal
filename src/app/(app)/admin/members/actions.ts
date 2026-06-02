@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
 
 const schema = z.object({
+  membership_number: z.string().optional().default(""),
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   street: z.string().optional().default(""),
@@ -25,6 +27,7 @@ const schema = z.object({
 
 const updateSchema = z.object({
   user_id: z.string().uuid(),
+  membership_number: z.string().optional().default(""),
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   street: z.string().optional().default(""),
@@ -116,11 +119,14 @@ export async function createMember(formData: FormData) {
   if (linkErr) throw new Error(linkErr.message);
 
   // Profile
+  const membershipNumber = input.membership_number?.trim() || null;
+
   const { error: profileErr } = await admin.from("profiles").upsert(
     {
       id: userId,
       role: input.role,
       username,
+      membership_number: membershipNumber,
       email: input.email,
       first_name: input.first_name,
       last_name: input.last_name,
@@ -175,6 +181,7 @@ export async function updateMember(formData: FormData) {
   const { error: profileErr } = await admin
     .from("profiles")
     .update({
+      membership_number: input.membership_number?.trim() || null,
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
@@ -232,5 +239,25 @@ export async function updateMember(formData: FormData) {
   }
 
   redirect(`/admin/members/${input.user_id}`);
+}
+
+export async function deleteMember(userId: string) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (me?.role !== "admin") redirect("/dashboard");
+
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(userId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/members");
+  redirect("/admin/members");
 }
 

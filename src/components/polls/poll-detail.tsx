@@ -312,7 +312,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
             const c = counts.get(o.id) ?? 0;
             const pct = totalVotes ? Math.round((c / totalVotes) * 100) : 0;
             const picked = myOptionIds.has(o.id);
-            const showResults = hasVoted || ended;
+            const showResults = hasVoted || ended || totalVotes > 0;
 
             return (
               <button
