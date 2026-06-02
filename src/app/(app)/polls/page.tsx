@@ -37,7 +37,7 @@ export default async function PollsPage() {
           </div>
         ) : null}
         <Suspense fallback={<div className="text-sm text-slate-600">Lade Umfragen…</div>}>
-          <PollBoard initialPolls={initialPolls ?? []} />
+          <PollBoard initialPolls={initialPolls ?? []} activeOnly />
         </Suspense>
       </main>
     </div>

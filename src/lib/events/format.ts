@@ -10,12 +10,28 @@ const timeFmt = new Intl.DateTimeFormat("de-DE", {
   minute: "2-digit",
 });
 
-/** True when the feed stored an explicit start time (not date-only / midnight placeholder). */
+/** Midnight in ISO/DB strings = date-only placeholder from Artistflow (no real start time). */
+function isMidnightPlaceholderTime(s: string): boolean {
+  const iso = s.match(/T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?/i);
+  if (iso) {
+    const ss = iso[3] ?? "00";
+    return iso[1] === "00" && iso[2] === "00" && (ss === "00" || ss === "0");
+  }
+  const spaced = s.match(/\s(\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (spaced) {
+    const ss = spaced[3] ?? "00";
+    return spaced[1] === "00" && spaced[2] === "00" && (ss === "00" || ss === "0");
+  }
+  return false;
+}
+
+/** True when start_at includes a real clock time (not date-only / midnight placeholder). */
 export function hasEventStartTime(startAt: string | null): boolean {
   if (!startAt) return false;
   const s = startAt.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  if (/^\d{4}-\d{2}-\d{2}T00:00:00(\.000)?Z?$/i.test(s)) return false;
+  if (isMidnightPlaceholderTime(s)) return false;
+  if (!/T|\d{2}:\d{2}/.test(s)) return false;
   const d = new Date(s);
   return !Number.isNaN(d.getTime());
 }

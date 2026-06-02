@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
+import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 
 type PollRow = {
   id: string;
@@ -24,8 +26,10 @@ type Voter = { id: string; name: string; avatarUrl: string | null };
 
 export function PollBoard({
   initialPolls = [],
+  activeOnly = false,
 }: {
   initialPolls?: PollRow[];
+  activeOnly?: boolean;
 }) {
   const searchParams = useSearchParams();
   const refreshToken = searchParams.get("refresh");
@@ -245,6 +249,12 @@ export function PollBoard({
     }
   }
 
+  const visiblePolls = useMemo(() => {
+    if (!activeOnly) return polls;
+    const now = Date.now();
+    return polls.filter((p) => new Date(p.ends_at).getTime() >= now);
+  }, [polls, activeOnly]);
+
   if (error) {
     return (
       <div className="rounded-2xl border bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -261,19 +271,21 @@ export function PollBoard({
     );
   }
 
-  if (!polls.length) {
+  if (!visiblePolls.length) {
     return (
       <div className="rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-700">
-        Noch keine Umfragen. Admins können oben eine anlegen. Falls gerade erstellt:
-        Migration <span className="font-mono">supabase/010_polls.sql</span> prüfen und
-        Seite neu laden.
+        {activeOnly && polls.length
+          ? "Aktuell laufen keine Umfragen."
+          : "Noch keine Umfragen. Admins können oben „Neue Umfrage erstellen“ wählen."}{" "}
+        Migration <span className="font-mono">supabase/010_polls.sql</span> prüfen und Seite
+        neu laden.
       </div>
     );
   }
 
   return (
     <div className="grid gap-4">
-      {polls.map((poll) => {
+      {visiblePolls.map((poll) => {
         const ended = new Date(poll.ends_at).getTime() < Date.now();
         const totalVotes = voteCountByPoll.get(poll.id) ?? 0;
         const opts = optionsByPoll.get(poll.id) ?? [];
@@ -303,13 +315,13 @@ export function PollBoard({
                   ) : null}
                 </div>
               </div>
-              <div className="text-xs text-slate-500">
-                Ende:{" "}
+              <PollEndCountdown endsAt={poll.ends_at} className="mt-2" />
+              <div className="mt-1 text-xs text-slate-500">
+                {totalVotes} Stimme(n) · Ende{" "}
                 {new Date(poll.ends_at).toLocaleString("de-DE", {
                   dateStyle: "medium",
                   timeStyle: "short",
-                })}{" "}
-                · {totalVotes} Stimme(n)
+                })}
               </div>
             </CardHeader>
             <CardContent className="grid gap-2">
@@ -340,25 +352,13 @@ export function PollBoard({
                     <div className="relative flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
                       <span className="min-w-0 flex-1 font-medium text-slate-800">{o.label}</span>
                       {showResults ? (
-                        <span
-                          className="group/stats relative shrink-0 rounded-lg px-2 py-1 tabular-nums text-slate-600 hover:bg-white/80"
+                        <PollVoteStats
+                          count={c}
+                          percent={pct}
+                          voters={voters}
                           onMouseEnter={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
-                        >
-                          {c} ({pct}%)
-                          <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[60] hidden w-56 -translate-y-1/2 rounded-xl border bg-white p-3 text-xs text-slate-700 shadow-lg shadow-slate-900/15 group-hover/stats:block">
-                            <span className="font-semibold text-slate-900">Wer hat gestimmt?</span>
-                            <span className="mt-2 block max-h-40 overflow-y-auto">
-                              {voters.length
-                                ? voters.slice(0, 12).map((u) => (
-                                    <span key={u.id} className="block truncate py-0.5">
-                                      {u.name}
-                                    </span>
-                                  ))
-                                : "Noch keine Stimmen"}
-                            </span>
-                          </span>
-                        </span>
+                        />
                       ) : null}
                     </div>
                   </button>

@@ -5,6 +5,7 @@ import { PieChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 
 export type PollFeedData = {
   id: string;
@@ -115,36 +116,16 @@ export function PollFeedCard({
               <div className="relative flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
                 <span className="min-w-0 flex-1 font-medium text-slate-800">{o.label}</span>
                 {showResults ? (
-                  <span
-                    className="group/stats relative shrink-0 rounded-lg px-2 py-1 text-slate-600 tabular-nums hover:bg-white/80"
+                  <PollVoteStats
+                    count={c}
+                    percent={pct}
+                    voters={voters}
                     onMouseEnter={(e) => {
                       e.stopPropagation();
                       onEnsureVoters(o.id);
                     }}
                     onClick={(e) => e.stopPropagation()}
-                  >
-                    {c} ({pct}%)
-                    <span
-                      role="tooltip"
-                      className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[60] hidden w-56 -translate-y-1/2 rounded-xl border bg-white p-3 text-xs text-slate-700 shadow-lg shadow-slate-900/15 group-hover/stats:block"
-                    >
-                      <span className="font-semibold text-slate-900">Wer hat gestimmt?</span>
-                      <span className="mt-2 block max-h-40 overflow-y-auto">
-                        {voters.length
-                          ? voters.slice(0, 12).map((u) => (
-                              <span key={u.id} className="block truncate py-0.5">
-                                {u.name}
-                              </span>
-                            ))
-                          : "Noch keine Stimmen"}
-                        {voters.length > 12 ? (
-                          <span className="mt-1 block text-slate-500">
-                            +{voters.length - 12} weitere…
-                          </span>
-                        ) : null}
-                      </span>
-                    </span>
-                  </span>
+                  />
                 ) : null}
               </div>
             </button>
