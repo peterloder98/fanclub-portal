@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
 
 export type PollFeedData = {
   id: string;
@@ -79,9 +80,10 @@ export function PollFeedCard({
               <span>{poll.createdAtLabel}</span>
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <PieChart className="h-4 w-4 text-blue-600" />
+              <PieChart className="h-4 w-4 shrink-0 text-blue-600" />
               <span className="text-base font-semibold text-slate-900">{poll.question}</span>
             </div>
+            <PollEndCountdown endsAt={poll.ends_at} className="mt-2" />
           </div>
           <div className="flex flex-wrap gap-1">
             {ended ? <Badge variant="neutral">Beendet</Badge> : <Badge variant="brand">Umfrage</Badge>}
