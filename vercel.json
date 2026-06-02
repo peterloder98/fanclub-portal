@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/artistflow-sync",
+      "schedule": "0 */6 * * *"
+    }
+  ]
+}
+

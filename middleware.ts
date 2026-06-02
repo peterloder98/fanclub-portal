@@ -1,0 +1,90 @@
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
+
+const PUBLIC_PATH_PREFIXES = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/callback",
+  "/supabase-check",
+  "/mitgliedschaft",
+  "/mitgliedschaft/ausstehend",
+  "/documents",
+  "/api/membership",
+];
+
+function isPublicPath(pathname: string) {
+  if (pathname === "/") return true; // root redirects anyway
+  return PUBLIC_PATH_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
+
+export async function middleware(request: NextRequest) {
+  const { response, supabase } = await updateSession(request);
+
+  const pathname = request.nextUrl.pathname;
+
+  if (isPublicPath(pathname)) {
+    return response;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.role !== "admin") {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (membership?.status === "applied") {
+      const pendingPath = "/mitgliedschaft/ausstehend";
+      if (pathname !== pendingPath && !pathname.startsWith("/api/")) {
+        const url = request.nextUrl.clone();
+        url.pathname = pendingPath;
+        return NextResponse.redirect(url);
+      }
+    }
+  }
+
+  // Admin-gate for /admin/*
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.role !== "admin") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+};
+

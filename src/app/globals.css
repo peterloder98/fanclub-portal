@@ -1,8 +1,13 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc; /* slate-50 */
+  --surface: #ffffff;
+  --foreground: #0f172a; /* slate-900 */
+  --muted: #475569; /* slate-600 */
+  --border: rgba(15, 23, 42, 0.10);
+  --ring: rgba(59, 130, 246, 0.35); /* blue-500 */
 }
 
 @theme inline {
@@ -12,15 +17,43 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: rgba(59, 130, 246, 0.18);
+}
+
+/* Leaflet: Tailwind base styles can break tile sizing (shows "quadrants"). */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes fc-points-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 4px) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -2px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -14px) scale(1.45);
+  }
 }

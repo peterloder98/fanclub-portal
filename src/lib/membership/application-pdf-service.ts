@@ -1,0 +1,100 @@
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { buildFullMembershipPdf, type MembershipApplicationPdfData } from "@/lib/membership/pdf";
+
+const BUCKET = "membership-signatures";
+
+function cachedPdfPath(applicationId: string) {
+  return `${applicationId}/application.pdf`;
+}
+
+async function buildPdfForApplication(applicationId: string) {
+  const admin = createSupabaseAdminClient();
+  const { data: row, error } = await admin
+    .from("membership_applications")
+    .select("*")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!row) throw new Error("Antrag nicht gefunden.");
+
+  let signaturePng: Uint8Array | null = null;
+  if (row.signature_applicant_path) {
+    const { data: file, error: dlErr } = await admin.storage
+      .from(BUCKET)
+      .download(row.signature_applicant_path);
+    if (!dlErr && file) {
+      signaturePng = new Uint8Array(await file.arrayBuffer());
+    }
+  }
+
+  const data: MembershipApplicationPdfData = {
+    id: row.id,
+    first_name: row.first_name,
+    last_name: row.last_name,
+    birthdate: row.birthdate,
+    gender: row.gender,
+    street: row.street,
+    postal_code: row.postal_code,
+    city: row.city,
+    country: row.country,
+    phone: row.phone,
+    mobile_dial_code: row.mobile_dial_code,
+    mobile_number: row.mobile_number,
+    email: row.email,
+    membership_start_date: row.membership_start_date,
+    account_holder: row.account_holder,
+    iban: row.iban,
+    bic: row.bic,
+    whatsapp_opt_in: row.whatsapp_opt_in,
+    whatsapp_dial_code: row.whatsapp_dial_code,
+    whatsapp_number: row.whatsapp_number,
+    fee_cents: row.fee_cents,
+    signed_at_place: row.signed_at_place,
+    signed_at_date: row.signed_at_date,
+    created_at: row.created_at,
+  };
+
+  return buildFullMembershipPdf(data, signaturePng);
+}
+
+/** Generate once and store in Supabase Storage for fast preview. */
+export async function cacheApplicationPdf(applicationId: string) {
+  const admin = createSupabaseAdminClient();
+  const path = cachedPdfPath(applicationId);
+  const bytes = await buildPdfForApplication(applicationId);
+
+  const { error: upErr } = await admin.storage.from(BUCKET).upload(path, bytes, {
+    contentType: "application/pdf",
+    upsert: true,
+  });
+  if (upErr) throw new Error(upErr.message);
+
+  await admin
+    .from("membership_applications")
+    .update({ application_pdf_path: path })
+    .eq("id", applicationId);
+
+  return path;
+}
+
+export async function loadApplicationPdfBytes(applicationId: string) {
+  const admin = createSupabaseAdminClient();
+  const { data: row } = await admin
+    .from("membership_applications")
+    .select("application_pdf_path")
+    .eq("id", applicationId)
+    .maybeSingle();
+
+  const path = row?.application_pdf_path ?? cachedPdfPath(applicationId);
+  const { data: cached, error: dlErr } = await admin.storage.from(BUCKET).download(path);
+
+  if (!dlErr && cached) {
+    return new Uint8Array(await cached.arrayBuffer());
+  }
+
+  const bytes = await buildPdfForApplication(applicationId);
+  void cacheApplicationPdf(applicationId).catch((e) => {
+    console.warn("[pdf] Hintergrund-Cache fehlgeschlagen:", e);
+  });
+  return bytes;
+}
