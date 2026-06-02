@@ -8,6 +8,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PointsBurst } from "@/components/app-shell/points-burst";
 import { usePointsTopbar } from "@/lib/points/use-points-topbar";
+import { POINTS_TARGET_ID, setPointsTargetElement } from "@/lib/points/target";
 
 export function Topbar({
   title,
@@ -76,7 +77,9 @@ export function Topbar({
             <PointsBurst />
             <div className="text-[11px] font-semibold text-slate-600">Punkte</div>
             <div
+              id={POINTS_TARGET_ID}
               data-points-target="true"
+              ref={(el) => setPointsTargetElement(el)}
               className="text-sm font-semibold text-slate-900 transition-all"
             >
               {points}

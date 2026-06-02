@@ -1,6 +1,7 @@
 "use client";
 
 import { emitPointsDelta } from "@/lib/points/events";
+import { getPointsTargetElement } from "@/lib/points/target";
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -43,19 +44,21 @@ export function flyPointsFromElement(params: {
   const { fromEl, delta } = params;
   if (!delta) return;
 
-  const target = document.querySelector<HTMLElement>("[data-points-target='true']");
-  if (!fromEl || !target) {
+  const target = getPointsTargetElement();
+  const from = fromEl?.getBoundingClientRect();
+  if (!from) {
     emitPointsDelta(delta);
     return;
   }
 
-  const from = fromEl.getBoundingClientRect();
-  const to = target.getBoundingClientRect();
+  const to = target?.getBoundingClientRect();
+  const endX = to
+    ? to.left + to.width / 2
+    : Math.min(window.innerWidth - 48, window.innerWidth * 0.85);
+  const endY = to ? to.top + to.height / 2 : 40;
 
   const startX = from.left + from.width / 2;
   const startY = from.top + from.height / 2;
-  const endX = to.left + to.width / 2;
-  const endY = to.top + to.height / 2;
 
   const el = document.createElement("div");
   el.style.position = "fixed";

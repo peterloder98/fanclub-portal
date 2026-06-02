@@ -15,6 +15,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --animate-fc-points-pop: fc-points-pop 0.5s ease-out forwards;
 }
 
 body {

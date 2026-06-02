@@ -31,7 +31,7 @@ export function PointsBurst({ className }: { className?: string }) {
         <span
           key={b.id}
           className={cn(
-            "absolute left-1/2 top-0 -translate-x-1/2 animate-[fc-points-pop_0.5s_ease-out_forwards] whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-extrabold shadow-md",
+            "absolute left-1/2 top-0 -translate-x-1/2 animate-fc-points-pop whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-extrabold shadow-md",
             b.delta >= 0
               ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
               : "bg-rose-50 text-rose-700 ring-1 ring-rose-200",
