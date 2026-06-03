@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { PollVoter } from "@/components/polls/poll-vote-stats";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { PollOptionsList } from "@/components/polls/poll-options-list";
-import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
 import { cn } from "@/lib/cn";
 import { useMemo } from "react";
 
@@ -67,18 +66,6 @@ export function PollFeedCard({
     [votes, poll.id],
   );
 
-  const participantBlock =
-    participantCount > 0 || participants.length > 0 ? (
-      <PollParticipantSummary
-        participantCount={participantCount}
-        participants={participants}
-        onEnsureParticipants={onEnsureParticipants}
-        align="start"
-      />
-    ) : (
-      <p className="text-xs text-slate-500">Noch keine Teilnehmer</p>
-    );
-
   const optionsList = (
     <PollOptionsList
       pollId={poll.id}
@@ -110,7 +97,7 @@ export function PollFeedCard({
 
   if (compact) {
     return (
-      <div className="rounded-xl border border-slate-200/90 bg-gradient-to-br from-blue-50/70 via-white to-rose-50/40 p-3 shadow-sm shadow-slate-900/5">
+      <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm shadow-slate-900/5">
         <PollHeaderMeta
           question={poll.question}
           endsAt={poll.ends_at}
@@ -118,11 +105,13 @@ export function PollFeedCard({
           hasVoted={hasVoted}
           ended={ended}
           compact
-          icon={<PieChart className="h-4 w-4 text-blue-600" />}
+          icon={<PieChart className="h-4 w-4" />}
+          participantCount={participantCount}
+          participants={participants}
+          onEnsureParticipants={onEnsureParticipants}
         />
-        <div className="mt-2 border-t border-slate-100/90 pt-2">{participantBlock}</div>
-        <div className="mt-2">{optionsList}</div>
-        <div className="mt-2.5">{footer}</div>
+        <div className="mt-3">{optionsList}</div>
+        <div className="mt-2.5 border-t border-slate-100 pt-2">{footer}</div>
       </div>
     );
   }
@@ -156,9 +145,11 @@ export function PollFeedCard({
           allowMultiple={poll.allow_multiple}
           hasVoted={hasVoted}
           ended={ended}
-          icon={<PieChart className="h-4 w-4 text-blue-600" />}
+          icon={<PieChart className="h-4 w-4" />}
+          participantCount={participantCount}
+          participants={participants}
+          onEnsureParticipants={onEnsureParticipants}
         />
-        <div className="mt-3 border-t border-slate-100 py-3">{participantBlock}</div>
       </CardHeader>
       <CardContent className="grid gap-3 pb-4 pt-0">
         {optionsList}

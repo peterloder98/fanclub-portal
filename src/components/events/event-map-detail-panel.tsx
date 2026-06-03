@@ -1,7 +1,7 @@
 "use client";
 
-import { X } from "lucide-react";
-import { formatEventStart, formatEventAddress } from "@/lib/events/format";
+import { CalendarDays, MapPin, X } from "lucide-react";
+import { formatEventStart, formatLocation } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "./events-map.types";
 
@@ -13,7 +13,8 @@ export function EventMapDetailPanel({
   onClose: () => void;
 }) {
   const { date, time } = formatEventStart(event.start_at);
-  const addr = formatEventAddress({
+  const location = formatLocation({
+    venue: event.venue,
     address: event.address,
     postal_code: event.postal_code,
     city: event.city,
@@ -22,21 +23,32 @@ export function EventMapDetailPanel({
 
   return (
     <div
-      className="border-t border-slate-200 bg-white/98 px-3 py-2.5 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur-sm"
+      className="border-t border-slate-200 bg-white px-3 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)]"
       role="dialog"
       aria-label="Eventdetails"
     >
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold leading-snug text-slate-900">{event.title}</div>
-          <div className="mt-0.5 text-xs text-slate-600">
-            <span className="font-medium text-slate-800">{date}</span>
-            {time ? <span> · {time} Uhr</span> : null}
+      <div className="flex items-start gap-2.5">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <h4 className="text-sm font-semibold leading-snug text-slate-900">{event.title}</h4>
+
+          <div className="flex items-start gap-1.5 text-xs text-slate-600">
+            <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+            <span>
+              <span className="font-medium text-slate-800">{date}</span>
+              {time ? <span> · {time} Uhr</span> : null}
+            </span>
           </div>
-          {addr ? <div className="mt-0.5 text-xs text-slate-600">{addr}</div> : null}
+
+          {location ? (
+            <div className="flex items-start gap-1.5 text-xs text-slate-600">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+              <span className="leading-snug">{location}</span>
+            </div>
+          ) : null}
+
           {ticket.href ? (
             <a
-              className="mt-1.5 inline-flex text-xs font-medium text-blue-700 hover:underline"
+              className="inline-flex pt-0.5 text-xs font-semibold text-blue-700 hover:underline"
               href={ticket.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -44,7 +56,7 @@ export function EventMapDetailPanel({
               Tickets / Infos →
             </a>
           ) : ticket.text ? (
-            <div className="mt-1 text-xs text-slate-700">{ticket.text}</div>
+            <p className="text-xs text-slate-700">{ticket.text}</p>
           ) : null}
         </div>
         <button

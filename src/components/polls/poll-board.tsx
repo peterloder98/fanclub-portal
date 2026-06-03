@@ -11,7 +11,6 @@ import { profileToUserListEntry } from "@/lib/profiles/display";
 import { PieChart } from "lucide-react";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { PollOptionsList } from "@/components/polls/poll-options-list";
-import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 
@@ -330,16 +329,11 @@ export function PollBoard({
                 allowMultiple={poll.allow_multiple}
                 hasVoted={hasVoted}
                 ended={ended}
-                icon={<PieChart className="h-4 w-4 text-blue-600" />}
+                icon={<PieChart className="h-4 w-4" />}
+                participantCount={participantCount}
+                participants={participantsByPollId[poll.id] ?? []}
+                onEnsureParticipants={() => void ensurePollParticipants(poll.id)}
               />
-              <div className="mt-3 border-t border-slate-100 py-3">
-                <PollParticipantSummary
-                  participantCount={participantCount}
-                  participants={participantsByPollId[poll.id] ?? []}
-                  onEnsureParticipants={() => void ensurePollParticipants(poll.id)}
-                  align="start"
-                />
-              </div>
             </CardHeader>
             <CardContent className="grid gap-3 pb-4 pt-0">
               <PollOptionsList

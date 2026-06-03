@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { PieChart } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +12,6 @@ import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
-import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
-
 type Poll = {
   id: string;
   question: string;
@@ -318,19 +317,17 @@ export function PollDetail({ pollId }: { pollId: string }) {
       </Link>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <PollHeaderMeta
             question={poll.question}
             endsAt={poll.ends_at}
             allowMultiple={poll.allow_multiple}
             hasVoted={hasVoted}
             ended={ended}
-          />
-          <PollParticipantSummary
+            icon={<PieChart className="h-4 w-4" />}
             participantCount={participantCount}
             participants={participants}
             onEnsureParticipants={() => void ensureParticipants()}
-            className="mt-2 block"
           />
         </CardHeader>
         <CardContent className="grid gap-1.5">

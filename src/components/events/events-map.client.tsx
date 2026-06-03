@@ -163,6 +163,13 @@ export function EventsMapClient({
     };
   }, [map]);
 
+  useEffect(() => {
+    if (!map) return;
+    requestAnimationFrame(() => map.invalidateSize());
+    const t = setTimeout(() => map.invalidateSize(), 200);
+    return () => clearTimeout(t);
+  }, [map, selectedEventId]);
+
   if (!mounted) {
     return <div className="text-sm text-slate-600">Lade Karte…</div>;
   }
@@ -183,38 +190,40 @@ export function EventsMapClient({
           : { minHeight, height: minHeight }
       }
     >
-      <div className="relative min-h-0 flex-1">
-        <MapContainer
-          className="h-full w-full"
-          style={heightStyle}
-          bounds={DACH_BOUNDS}
-          boundsOptions={{ padding: [12, 12] }}
-          scrollWheelZoom
-          doubleClickZoom
-          zoomControl
-          minZoom={4}
-          maxZoom={18}
-          attributionControl
-        >
-          <MapLifecycle onMap={setMap} />
-          <MapClickDismiss onDismiss={handleMapDismiss} />
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          />
-          {markers.map((e) => (
-            <EventMapMarker
-              key={e.id}
-              event={e}
-              highlighted={e.id === effectiveHighlight}
-              selected={e.id === selectedEventId}
-              onSelect={selectEvent}
-              onHover={setHoveredEventId}
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="relative min-h-0 flex-1">
+          <MapContainer
+            className="h-full w-full"
+            style={heightStyle}
+            bounds={DACH_BOUNDS}
+            boundsOptions={{ padding: [12, 12] }}
+            scrollWheelZoom
+            doubleClickZoom
+            zoomControl
+            minZoom={4}
+            maxZoom={18}
+            attributionControl
+          >
+            <MapLifecycle onMap={setMap} />
+            <MapClickDismiss onDismiss={handleMapDismiss} />
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
-          ))}
-        </MapContainer>
+            {markers.map((e) => (
+              <EventMapMarker
+                key={e.id}
+                event={e}
+                highlighted={e.id === effectiveHighlight}
+                selected={e.id === selectedEventId}
+                onSelect={selectEvent}
+                onHover={setHoveredEventId}
+              />
+            ))}
+          </MapContainer>
+        </div>
         {selectedEvent ? (
-          <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[1100]">
+          <div className="shrink-0">
             <EventMapDetailPanel event={selectedEvent} onClose={dismissDetails} />
           </div>
         ) : null}

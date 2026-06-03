@@ -59,17 +59,15 @@ export function PollVoteStats({
       onMouseEnter={onMouseEnter}
       onClick={onClick}
     >
-      {compact ? (
-        <span className="flex min-w-[5.5rem] flex-col items-end gap-0.5 text-right">
-          {myVoteBadge}
-          {stats}
-        </span>
-      ) : (
-        <span className="inline-flex min-w-[6.5rem] flex-col items-end gap-0.5 text-right">
-          {myVoteBadge}
-          {stats}
-        </span>
-      )}
+      <span
+        className={cn(
+          "inline-flex items-center justify-end gap-1.5 text-right",
+          compact ? "min-w-[5.5rem] text-[10px]" : "min-w-[6.5rem] text-xs",
+        )}
+      >
+        {myVoteBadge}
+        {stats}
+      </span>
     </UserListPopover>
   );
 }
