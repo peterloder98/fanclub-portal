@@ -6,6 +6,7 @@ import L from "leaflet";
 import { EventMapMarker } from "./event-map-marker";
 import { EventMapDetailPanel } from "./event-map-detail-panel";
 import { MapClickDismiss } from "./map-click-dismiss";
+import { spreadMapMarkerPlacements } from "@/lib/events/spread-map-markers";
 import type { MapEvent } from "./events-map.types";
 
 /** Deutschland (Dashboard: ganzes Land sichtbar), Events etwas enger */
@@ -63,6 +64,7 @@ export function EventsMapClient({
   const selectEvent = useCallback(
     (eventId: string) => {
       ignoreNextMapClickRef.current = true;
+      setHoveredEventId(null);
       setSelectedEventId((prev) => {
         const next = prev === eventId ? null : eventId;
         onEventSelect?.(next);
@@ -103,6 +105,10 @@ export function EventsMapClient({
       ),
     [events],
   );
+
+  const placements = useMemo(() => spreadMapMarkerPlacements(markers), [markers]);
+
+  const tooltipEventId = hoveredEventId && !selectedEventId ? hoveredEventId : null;
 
   useEffect(() => {
     if (!map) return;
@@ -164,6 +170,15 @@ export function EventsMapClient({
   }, [map]);
 
   useEffect(() => {
+    if (!map || !selectedEventId) return;
+    const placement = placements.find((p) => p.event.id === selectedEventId);
+    if (!placement) return;
+    const point = map.project(placement.position);
+    const shifted = point.subtract([0, 72]);
+    map.panTo(map.unproject(shifted), { animate: true, duration: 0.35 });
+  }, [map, selectedEventId, placements]);
+
+  useEffect(() => {
     if (!map) return;
     requestAnimationFrame(() => map.invalidateSize());
     const t = setTimeout(() => map.invalidateSize(), 200);
@@ -190,41 +205,44 @@ export function EventsMapClient({
           : { minHeight, height: minHeight }
       }
     >
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="relative min-h-0 flex-1">
-          <MapContainer
-            className="h-full w-full"
-            style={heightStyle}
-            bounds={DACH_BOUNDS}
-            boundsOptions={{ padding: [12, 12] }}
-            scrollWheelZoom
-            doubleClickZoom
-            zoomControl
-            minZoom={4}
-            maxZoom={18}
-            attributionControl
-          >
-            <MapLifecycle onMap={setMap} />
-            <MapClickDismiss onDismiss={handleMapDismiss} />
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      <div className="relative min-h-0 flex-1">
+        <MapContainer
+          className="h-full w-full"
+          style={heightStyle}
+          bounds={DACH_BOUNDS}
+          boundsOptions={{ padding: [12, 12] }}
+          scrollWheelZoom
+          doubleClickZoom
+          zoomControl
+          minZoom={4}
+          maxZoom={18}
+          attributionControl
+        >
+          <MapLifecycle onMap={setMap} />
+          <MapClickDismiss onDismiss={handleMapDismiss} />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          />
+          {placements.map(({ event, position }) => (
+            <EventMapMarker
+              key={event.id}
+              event={event}
+              position={position}
+              highlighted={event.id === effectiveHighlight}
+              selected={event.id === selectedEventId}
+              showTooltip={event.id === tooltipEventId && event.id !== selectedEventId}
+              onSelect={selectEvent}
+              onHover={setHoveredEventId}
             />
-            {markers.map((e) => (
-              <EventMapMarker
-                key={e.id}
-                event={e}
-                highlighted={e.id === effectiveHighlight}
-                selected={e.id === selectedEventId}
-                onSelect={selectEvent}
-                onHover={setHoveredEventId}
-              />
-            ))}
-          </MapContainer>
-        </div>
+          ))}
+        </MapContainer>
+
         {selectedEvent ? (
-          <div className="shrink-0">
-            <EventMapDetailPanel event={selectedEvent} onClose={dismissDetails} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] px-1 pb-1">
+            <div className="pointer-events-auto">
+              <EventMapDetailPanel event={selectedEvent} onClose={dismissDetails} />
+            </div>
           </div>
         ) : null}
       </div>

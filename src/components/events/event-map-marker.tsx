@@ -127,6 +127,7 @@ function TooltipTowardCenter({
       offset={offset}
       opacity={1}
       sticky={false}
+      permanent
       className="fc-event-hover-tip"
     >
       {children}
@@ -136,14 +137,18 @@ function TooltipTowardCenter({
 
 export function EventMapMarker({
   event,
+  position,
   highlighted,
   selected,
+  showTooltip,
   onSelect,
   onHover,
 }: {
   event: MapEvent;
+  position: [number, number];
   highlighted: boolean;
   selected: boolean;
+  showTooltip: boolean;
   onSelect: (eventId: string) => void;
   onHover?: (eventId: string | null) => void;
 }) {
@@ -151,7 +156,6 @@ export function EventMapMarker({
     () => createPinIcon(highlighted, selected),
     [highlighted, selected],
   );
-  const position: [number, number] = [event.lat as number, event.lng as number];
 
   return (
     <Marker
@@ -170,7 +174,7 @@ export function EventMapMarker({
         mouseout: () => onHover?.(null),
       }}
     >
-      {!selected ? (
+      {showTooltip ? (
         <TooltipTowardCenter position={position}>
           <EventMapHoverContent event={event} />
         </TooltipTowardCenter>

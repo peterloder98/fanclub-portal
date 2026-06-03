@@ -23,17 +23,17 @@ export function EventMapDetailPanel({
 
   return (
     <div
-      className="border-t border-slate-200 bg-white px-3 py-3 shadow-[0_-4px_16px_rgba(15,23,42,0.08)]"
+      className="rounded-t-xl border border-slate-200/90 bg-white/98 px-3 py-3 shadow-[0_-8px_28px_rgba(15,23,42,0.18)] backdrop-blur-sm"
       role="dialog"
       aria-label="Eventdetails"
     >
       <div className="flex items-start gap-2.5">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <h4 className="text-sm font-semibold leading-snug text-slate-900">{event.title}</h4>
+        <div className="min-w-0 flex-1 space-y-2">
+          <h4 className="text-[13px] font-semibold leading-snug text-slate-900">{event.title}</h4>
 
           <div className="flex items-start gap-1.5 text-xs text-slate-600">
             <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
-            <span>
+            <span className="leading-snug">
               <span className="font-medium text-slate-800">{date}</span>
               {time ? <span> · {time} Uhr</span> : null}
             </span>
@@ -44,11 +44,13 @@ export function EventMapDetailPanel({
               <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
               <span className="leading-snug">{location}</span>
             </div>
-          ) : null}
+          ) : (
+            <p className="text-xs text-slate-500">Ort wird noch ergänzt</p>
+          )}
 
           {ticket.href ? (
             <a
-              className="inline-flex pt-0.5 text-xs font-semibold text-blue-700 hover:underline"
+              className="inline-flex text-xs font-semibold text-blue-700 hover:underline"
               href={ticket.href}
               target="_blank"
               rel="noopener noreferrer"
@@ -56,7 +58,7 @@ export function EventMapDetailPanel({
               Tickets / Infos →
             </a>
           ) : ticket.text ? (
-            <p className="text-xs text-slate-700">{ticket.text}</p>
+            <p className="text-xs font-medium text-slate-700">{ticket.text}</p>
           ) : null}
         </div>
         <button
