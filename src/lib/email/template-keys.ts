@@ -3,6 +3,8 @@ export const EMAIL_TEMPLATE_KEYS = {
   membershipApplicationAdminNotify: "membership_application_admin_notify",
   membershipPaymentReminder: "membership_payment_reminder",
   membershipFormInvite: "membership_form_invite",
+  giveawayEndedAdminNotify: "giveaway_ended_admin_notify",
+  giveawayWinnerCongrats: "giveaway_winner_congrats",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -44,6 +46,17 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "greeting_name", label: "Anrede (z. B. Vorname nach „Hey“)" },
     { key: "application_link", label: "Link zum Antragsformular" },
     { key: "fee_eur", label: "Beitrag (z. B. 15,00 EUR)" },
+    { key: "admin_signature_text", label: "Admin-Signatur (Text)" },
+    { key: "admin_signature_block", label: "Admin-Signatur (HTML mit Bild)" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.giveawayEndedAdminNotify]: [
+    { key: "giveaway_title", label: "Titel Gewinnspiel" },
+    { key: "giveaway_admin_url", label: "Link zur Auslosung (Admin)" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.giveawayWinnerCongrats]: [
+    { key: "first_name", label: "Vorname Gewinner" },
+    { key: "giveaway_title", label: "Titel Gewinnspiel" },
+    { key: "prize_name", label: "Preisname" },
     { key: "admin_signature_text", label: "Admin-Signatur (Text)" },
     { key: "admin_signature_block", label: "Admin-Signatur (HTML mit Bild)" },
   ],

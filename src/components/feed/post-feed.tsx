@@ -21,6 +21,7 @@ import {
 } from "@/components/polls/poll-feed-card";
 import { UserListPopover, type UserListEntry } from "@/components/ui/user-list-popover";
 import { PostMediaGallery } from "@/components/feed/post-media-gallery";
+import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 
 type FeedPost = {
   id: string;
@@ -750,13 +751,17 @@ export function PostFeed({
       pendingScrollPollIdRef.current = pollId;
 
       setMyPollOptionsByPoll((m) => new Map(m).set(pollId, mineSet));
+
+      const optionIdsForPoll = pollOptions
+        .filter((o) => o.poll_id === pollId)
+        .map((o) => o.id);
+      invalidatePollVoterCache(setPollVotersByOption, optionIdsForPoll);
     } finally {
       setPollBusyKey(null);
     }
   }
 
   async function ensurePollVoters(optionId: string) {
-    if (pollVotersByOption[optionId]) return;
     const supabase = createSupabaseBrowserClient();
     const { data: vRows } = await supabase
       .from("poll_votes")

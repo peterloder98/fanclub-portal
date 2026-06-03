@@ -67,17 +67,22 @@ export default async function DashboardPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-2">
                   <Gift className="h-4 w-4 text-slate-600" />
-                  <CardTitle className="text-base">Verlosung</CardTitle>
+                  <CardTitle className="text-base">Gewinnspiel</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="px-3 pb-3">
                 <div className="rounded-2xl border bg-white p-4 text-sm shadow-sm shadow-slate-900/5">
-                  <div className="font-semibold text-slate-900">Verlosung läuft</div>
+                  <div className="font-semibold text-slate-900">Gewinnspiele</div>
                   <div className="mt-1 text-slate-600">
-                    Teilnahme nur für aktive Mitglieder.
+                    Aktive Gewinnspiele – Teilnahme für aktive Mitglieder.
                   </div>
                   <div className="mt-3">
-                    <Badge variant="warning">bis 30.06.</Badge>
+                    <a
+                      href="/giveaways"
+                      className="text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      Zu den Gewinnspielen →
+                    </a>
                   </div>
                 </div>
               </CardContent>

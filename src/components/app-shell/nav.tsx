@@ -27,7 +27,7 @@ export const appNav: AppNavItem[] = [
   { label: "Events", href: "/events", icon: CalendarDays },
   { label: "Votings", href: "/votings", icon: Vote },
   { label: "Umfragen", href: "/polls", icon: PieChart },
-  { label: "Verlosungen", href: "/giveaways", icon: Gift },
+  { label: "Gewinnspiele", href: "/giveaways", icon: Gift },
   { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },
 ];
 

@@ -95,6 +95,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
     );
     setMyOptionIds(mine);
     setSelected(mine);
+    setVotersByOption({});
 
     const { data: commentRows, error: cErr } = await supabase
       .from("poll_comments")
@@ -233,12 +234,10 @@ export function PollDetail({ pollId }: { pollId: string }) {
   }
 
   async function ensureVoters(optionId: string) {
-    if (votersByOption[optionId]) return;
     const supabase = createSupabaseBrowserClient();
     const { data: vRows, error: vErr } = await supabase
       .from("poll_votes")
       .select("user_id")
-      .eq("poll_id", pollId)
       .eq("option_id", optionId);
     if (vErr) return;
     const ids = Array.from(new Set((vRows ?? []).map((r) => r.user_id)));

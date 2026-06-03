@@ -19,9 +19,13 @@ function formatCountdown(totalSeconds: number) {
 export function PollEndCountdown({
   endsAt,
   className,
+  endedLabel = "Umfrage beendet",
+  runningLabel = "Endet in",
 }: {
   endsAt: string;
   className?: string;
+  endedLabel?: string;
+  runningLabel?: string;
 }) {
   const target = useMemo(() => new Date(endsAt).getTime(), [endsAt]);
   const [now, setNow] = useState(() => Date.now());
@@ -37,7 +41,7 @@ export function PollEndCountdown({
   return (
     <div className={cn("grid gap-0.5", className)}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-        {ended ? "Umfrage beendet" : "Endet in"}
+        {ended ? endedLabel : runningLabel}
       </div>
       <div
         className={cn(

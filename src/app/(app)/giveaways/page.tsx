@@ -1,25 +1,55 @@
+import { Suspense } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { GiveawayBoard } from "@/components/giveaways/giveaway-board";
+import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
+import { processEndedGiveaways } from "./actions";
 
-export default function GiveawaysPage() {
+export default async function GiveawaysPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = me?.role === "admin";
+
+  if (isAdmin) {
+    try {
+      await processEndedGiveaways();
+    } catch {
+      /* Tabelle evtl. noch nicht migriert */
+    }
+  }
+
+  let items: Awaited<ReturnType<typeof loadGiveawayListItems>> = [];
+  try {
+    items = await loadGiveawayListItems(user.id);
+  } catch {
+    items = [];
+  }
+
   return (
     <div className="min-h-screen">
       <Topbar
-        title="Verlosungen"
-        subtitle="Teilnahmen & Auslosungen – später protokolliert nachvollziehbar."
+        title="Gewinnspiele"
+        subtitle={
+          isAdmin
+            ? "Aktive & beendete Gewinnspiele verwalten, neue anlegen."
+            : "Teilnehmen und Gewinner entdecken."
+        }
       />
       <main className="px-4 py-6 lg:px-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Platzhalter</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-slate-600">
-            Später: Teilnahmefrist, Bedingungen, Gewinner-Auslosung im Admin,
-            Benachrichtigung per In-App & E-Mail.
-          </CardContent>
-        </Card>
+        <Suspense fallback={<div className="text-sm text-slate-600">Lade…</div>}>
+          <GiveawayBoard items={items} isAdmin={isAdmin} />
+        </Suspense>
       </main>
     </div>
   );
 }
-
