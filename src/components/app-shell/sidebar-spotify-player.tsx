@@ -33,7 +33,7 @@ export function SidebarSpotifyPlayer() {
         einloggen, dann hier volle Songs im Player.
       </p>
 
-      <SpotifyEmbedPlayer />
+      <SpotifyEmbedPlayer height={352} />
 
       <a
         href={SPOTIFY_ARTIST_URL}

@@ -21,7 +21,7 @@ function isPublicPath(pathname: string) {
   );
 }
 
-function createMiddlewareSupabase(request: NextRequest) {
+function createProxySupabase(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -50,8 +50,8 @@ function createMiddlewareSupabase(request: NextRequest) {
   return { supabase, getResponse: () => response };
 }
 
-export async function middleware(request: NextRequest) {
-  const { supabase, getResponse } = createMiddlewareSupabase(request);
+export async function proxy(request: NextRequest) {
+  const { supabase, getResponse } = createProxySupabase(request);
   const pathname = request.nextUrl.pathname;
 
   await supabase.auth.getUser();
