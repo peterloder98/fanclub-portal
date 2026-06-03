@@ -19,8 +19,9 @@ export function createTransportFromCredentials(input: {
       user: input.email,
       pass: input.password,
     },
-    connectionTimeout: 60_000,
-    greetingTimeout: 30_000,
+    connectionTimeout: 20_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 25_000,
   });
 }
 

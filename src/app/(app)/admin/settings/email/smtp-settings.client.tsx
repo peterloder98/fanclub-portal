@@ -29,10 +29,9 @@ export function SmtpSettingsClient() {
     setLoading(true);
     setError(null);
     try {
-      const rows = await loadSmtpAccountsAction();
-      setAccounts(rows);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Laden fehlgeschlagen");
+      const res = await loadSmtpAccountsAction();
+      setAccounts(res.accounts);
+      if (!res.ok) setError(res.error);
     } finally {
       setLoading(false);
     }
@@ -49,13 +48,13 @@ export function SmtpSettingsClient() {
     try {
       if (sendMail) {
         const r = await sendSmtpTestMailAction(id);
-        setMessage(`Test-Mail gesendet an ${r.to}`);
+        if (!r.ok) setError(r.error);
+        else setMessage(`Test-Mail gesendet an ${r.to}`);
       } else {
-        await testSmtpAccountAction(id);
-        setMessage("SMTP-Verbindung erfolgreich.");
+        const r = await testSmtpAccountAction(id);
+        if (!r.ok) setError(r.error);
+        else setMessage(`SMTP-Verbindung erfolgreich (${r.email}).`);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Test fehlgeschlagen");
     } finally {
       setBusy(false);
     }

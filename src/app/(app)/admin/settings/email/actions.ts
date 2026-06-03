@@ -4,19 +4,33 @@ import {
   createSmtpAccount,
   deleteSmtpAccount,
   listSmtpAccounts,
-  seedSmtpFromEnvIfEmpty,
   setDefaultSmtpAccount,
   testSmtpConnection,
   updateSmtpAccount,
 } from "@/lib/smtp/accounts";
+import { prepareSmtpForSend } from "@/lib/smtp/prepare-send";
 import type { SmtpEncryption } from "@/lib/smtp/types";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { formatSmtpError } from "@/lib/smtp/errors";
 import { requireAdmin } from "@/lib/admin/require-admin";
+import type { SmtpAccountPublic } from "@/lib/smtp/types";
 
-export async function loadSmtpAccountsAction() {
-  await requireAdmin();
-  await seedSmtpFromEnvIfEmpty().catch(() => {});
-  return listSmtpAccounts();
+async function prepareSmtpEnv() {
+  await prepareSmtpForSend().catch(() => {});
+}
+
+export async function loadSmtpAccountsAction(): Promise<
+  | { ok: true; accounts: SmtpAccountPublic[] }
+  | { ok: false; error: string; accounts: SmtpAccountPublic[] }
+> {
+  try {
+    await requireAdmin();
+    await prepareSmtpEnv();
+    const accounts = await listSmtpAccounts();
+    return { ok: true, accounts };
+  } catch (e) {
+    return { ok: false, error: formatSmtpError(e), accounts: [] };
+  }
 }
 
 export async function createSmtpAccountAction(formData: FormData) {
@@ -62,21 +76,53 @@ export async function setDefaultSmtpAccountAction(id: string) {
   await setDefaultSmtpAccount(id);
 }
 
-export async function testSmtpAccountAction(id?: string) {
-  await requireAdmin();
-  return testSmtpConnection(id);
+export async function testSmtpAccountAction(
+  id?: string,
+): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
+  try {
+    await requireAdmin();
+    await prepareSmtpEnv();
+    return await testSmtpConnection(id);
+  } catch (e) {
+    return { ok: false, error: formatSmtpError(e) };
+  }
 }
 
-export async function sendSmtpTestMailAction(id: string) {
-  const { profile } = await requireAdmin();
-  const to = profile.email;
-  if (!to) throw new Error("Dein Admin-Profil hat keine E-Mail.");
-  await testSmtpConnection(id);
-  await sendEmailViaAccount({
-    accountId: id,
-    to,
-    subject: "Fanclub SMTP Test",
-    text: "Die SMTP-Verbindung funktioniert.",
-  });
-  return { ok: true, to };
+export async function sendSmtpTestMailAction(
+  id: string,
+): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
+  try {
+    const { profile } = await requireAdmin();
+    const to = profile.email?.trim();
+    if (!to) {
+      return { ok: false, error: "Dein Admin-Profil hat keine E-Mail-Adresse." };
+    }
+
+    await prepareSmtpEnv();
+    const verified = await testSmtpConnection(id);
+    if (!verified.ok) return verified;
+
+    const sent = await sendEmailViaAccount({
+      accountId: id,
+      to,
+      subject: "Fanclub SMTP Test",
+      text: "Die SMTP-Verbindung funktioniert.",
+    });
+
+    if (!sent.ok) {
+      return {
+        ok: false,
+        error:
+          "error" in sent && sent.error
+            ? sent.error
+            : sent.skipped
+              ? "Kein SMTP-Konto konfiguriert."
+              : "Test-Mail konnte nicht gesendet werden.",
+      };
+    }
+
+    return { ok: true, to };
+  } catch (e) {
+    return { ok: false, error: formatSmtpError(e) };
+  }
 }

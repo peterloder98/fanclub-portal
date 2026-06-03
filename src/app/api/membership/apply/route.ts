@@ -11,9 +11,8 @@ import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activ
 import { provisionMembershipApplicant } from "@/lib/membership/provision-applicant";
 import { isValidPostalCode } from "@/lib/postal-code";
 import {
-  repairDefaultSmtpPasswordFromEnv,
-  seedSmtpFromEnvIfEmpty,
-} from "@/lib/smtp/accounts";
+  prepareSmtpForSend,
+} from "@/lib/smtp/prepare-send";
 import { formatMembershipEmailWarning } from "@/lib/smtp/email-warning";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
@@ -112,11 +111,8 @@ export async function POST(request: Request) {
   const appId = crypto.randomUUID();
 
   try {
-    await seedSmtpFromEnvIfEmpty().catch((e) => {
-      console.warn("[smtp] Seed übersprungen:", e);
-    });
-    await repairDefaultSmtpPasswordFromEnv().catch((e) => {
-      console.warn("[smtp] Passwort-Reparatur übersprungen:", e);
+    await prepareSmtpForSend().catch((e) => {
+      console.warn("[smtp] Vorbereitung übersprungen:", e);
     });
     const applicantBuf = dataUrlToBuffer(input.signature_applicant);
     const applicantPath = `${appId}/applicant.png`;

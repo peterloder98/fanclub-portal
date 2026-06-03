@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { decryptSmtpPassword, encryptSmtpPassword } from "@/lib/smtp/crypto";
+import { formatSmtpError } from "@/lib/smtp/errors";
 import { createTransportFromCredentials } from "@/lib/smtp/transport";
 import type { SmtpAccountInput, SmtpAccountPublic, SmtpEncryption } from "@/lib/smtp/types";
 
@@ -39,6 +40,33 @@ async function clearOtherDefaults(admin: ReturnType<typeof createSupabaseAdminCl
   if (error) throw new Error(error.message);
 }
 
+function decryptAccountPassword(ciphertext: string) {
+  try {
+    return decryptSmtpPassword(ciphertext);
+  } catch (e) {
+    throw new Error(formatSmtpError(e));
+  }
+}
+
+async function loadAccountPassword(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  row: Record<string, unknown>,
+) {
+  try {
+    return decryptAccountPassword(String(row.password_ciphertext));
+  } catch {
+    await repairDefaultSmtpPasswordFromEnv();
+    const { data: refreshed, error } = await admin
+      .from("smtp_accounts")
+      .select("password_ciphertext")
+      .eq("id", String(row.id))
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!refreshed) throw new Error("SMTP-Konto nicht gefunden.");
+    return decryptAccountPassword(String(refreshed.password_ciphertext));
+  }
+}
+
 export async function getDefaultSmtpAccountWithPassword() {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
@@ -49,9 +77,10 @@ export async function getDefaultSmtpAccountWithPassword() {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
+  const password = await loadAccountPassword(admin, data as Record<string, unknown>);
   return {
     public: rowToPublic(data as Record<string, unknown>),
-    password: decryptSmtpPassword(data.password_ciphertext),
+    password,
   };
 }
 
@@ -60,9 +89,10 @@ export async function getSmtpAccountWithPassword(id: string) {
   const { data, error } = await admin.from("smtp_accounts").select("*").eq("id", id).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
+  const password = await loadAccountPassword(admin, data as Record<string, unknown>);
   return {
     public: rowToPublic(data as Record<string, unknown>),
-    password: decryptSmtpPassword(data.password_ciphertext),
+    password,
   };
 }
 
@@ -165,21 +195,35 @@ export async function setDefaultSmtpAccount(id: string) {
   if (error) throw new Error(error.message);
 }
 
-export async function testSmtpConnection(id?: string) {
-  const creds = id
-    ? await getSmtpAccountWithPassword(id)
-    : await getDefaultSmtpAccountWithPassword();
-  if (!creds) throw new Error("Kein SMTP-Konto gefunden.");
+export async function testSmtpConnection(
+  id?: string,
+): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
+  try {
+    await repairDefaultSmtpPasswordFromEnv();
+    const creds = id
+      ? await getSmtpAccountWithPassword(id)
+      : await getDefaultSmtpAccountWithPassword();
+    if (!creds) {
+      return {
+        ok: false,
+        error:
+          "Kein SMTP-Konto gefunden. Lege ein Konto an oder setze SMTP_SEED_* in Vercel.",
+      };
+    }
 
-  const transport = createTransportFromCredentials({
-    server: creds.public.server,
-    port: creds.public.port,
-    encryption: creds.public.encryption,
-    email: creds.public.email,
-    password: creds.password,
-  });
-  await transport.verify();
-  return { ok: true as const, email: creds.public.email };
+    const transport = createTransportFromCredentials({
+      server: creds.public.server,
+      port: creds.public.port,
+      encryption: creds.public.encryption,
+      email: creds.public.email,
+      password: creds.password,
+    });
+    await transport.verify();
+    transport.close();
+    return { ok: true, email: creds.public.email };
+  } catch (e) {
+    return { ok: false, error: formatSmtpError(e) };
+  }
 }
 
 /** Passwort mit aktuellem SMTP_SECRET neu setzen, wenn Entschlüsselung fehlschlägt (z. B. Vercel-Deploy). */
