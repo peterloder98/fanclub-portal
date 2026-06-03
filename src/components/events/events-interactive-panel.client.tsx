@@ -35,16 +35,15 @@ export function EventsInteractivePanel({
 
   return (
     <div
-      className="grid min-h-0 flex-1 items-stretch gap-4"
-      style={{ gridTemplateColumns: "minmax(0, 1.35fr) minmax(0, 1fr)" }}
+      className="grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,1fr)]"
     >
-      <Card className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-        <CardHeader className="shrink-0 pb-2 pt-4">
+      <Card className="flex min-h-0 flex-col overflow-hidden rounded-2xl">
+        <CardHeader className="shrink-0 border-b border-slate-100 pb-2 pt-4">
           <CardTitle className="text-base">Alle Termine</CardTitle>
         </CardHeader>
-        <CardContent className="min-h-0 flex-1 pb-3 pt-0">
-          <div className="h-full overflow-y-auto pr-1">
-            <div className="grid gap-2">
+        <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
+            <div className="grid gap-2 pb-1">
               {events.map((e) => {
                 const { date, time } = formatEventStart(e.start_at);
                 const location = formatLocation(e);
@@ -104,19 +103,20 @@ export function EventsInteractivePanel({
         </CardContent>
       </Card>
 
-      <div className="flex h-full min-h-0 min-w-0 flex-col gap-2">
+      <div className="flex min-h-0 flex-col gap-3">
         <EventsCountdown
           compact
           nextStartAt={nextStartAt}
           nextTitle={nextTitle}
         />
-        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <CardContent className="min-h-0 flex-1 p-2">
-            <div className="h-full min-h-[280px]">
+        <Card className="shrink-0 overflow-hidden rounded-2xl">
+          <CardContent className="p-2">
+            <div className="h-[min(300px,32vh)] min-h-[220px] w-full">
               <EventsMapClient
                 events={events}
                 highlightedEventId={highlightedId}
-                minHeight={280}
+                minHeight={220}
+                mapVariant="events"
               />
             </div>
           </CardContent>

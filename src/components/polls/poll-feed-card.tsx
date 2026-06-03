@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { PieChart } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { PollVoteStats, type PollVoter } from "@/components/polls/poll-vote-stats";
+import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
@@ -84,18 +83,20 @@ export function PollFeedCard({
   if (compact) {
     return (
       <div className="rounded-xl border bg-gradient-to-br from-blue-50/80 via-white to-rose-50/50 p-2.5 shadow-sm shadow-slate-900/5">
-        <div className="flex flex-wrap items-start justify-between gap-1.5">
-          <div className="flex min-w-0 items-start gap-1.5">
-            <PieChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />
-            <span className="text-xs font-semibold leading-snug text-slate-900">{poll.question}</span>
-          </div>
-          <RunningCountdownBadge
+        <div className="flex min-w-0 items-start gap-1.5">
+          <PieChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />
+          <PollHeaderMeta
+            question={poll.question}
             endsAt={poll.ends_at}
-            className="!px-1.5 !py-0.5 !text-[10px]"
+            allowMultiple={poll.allow_multiple}
+            hasVoted={hasVoted}
+            ended={ended}
+            compact
+            className="min-w-0 flex-1"
           />
         </div>
         {participantLine}
-        <div className="grid gap-1">
+        <div className="mt-1.5 grid gap-1.5">
           {opts.map((o) => {
             const c = counts.get(o.id) ?? 0;
             const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
@@ -120,6 +121,7 @@ export function PollFeedCard({
                       percent={pct}
                       voters={votersByOptionId[o.id] ?? []}
                       isMyVote={myOptionIds.has(o.id)}
+                      reserveMyVoteSlot={hasVoted}
                       onMouseEnter={(e) => {
                         e.stopPropagation();
                         onEnsureVoters(o.id);
@@ -167,14 +169,17 @@ export function PollFeedCard({
               <span>·</span>
               <span>{poll.createdAtLabel}</span>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <div className="mt-1.5 flex items-start gap-2">
               <PieChart className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-              <span className="text-sm font-semibold text-slate-900">{poll.question}</span>
+              <PollHeaderMeta
+                question={poll.question}
+                endsAt={poll.ends_at}
+                allowMultiple={poll.allow_multiple}
+                hasVoted={hasVoted}
+                ended={ended}
+                className="min-w-0 flex-1"
+              />
             </div>
-          </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
-            <RunningCountdownBadge endsAt={poll.ends_at} />
-            {poll.allow_multiple ? <Badge variant="neutral">Mehrfach</Badge> : null}
           </div>
         </div>
       </CardHeader>
@@ -202,6 +207,7 @@ export function PollFeedCard({
                     percent={pct}
                     voters={voters}
                     isMyVote={myOptionIds.has(o.id)}
+                    reserveMyVoteSlot={hasVoted}
                     onMouseEnter={(e) => {
                       e.stopPropagation();
                       onEnsureVoters(o.id);

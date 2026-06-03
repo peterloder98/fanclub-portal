@@ -6,10 +6,15 @@ import L from "leaflet";
 import { EventMapMarker } from "./event-map-marker";
 import type { MapEvent } from "./events-map.types";
 
-/** Deutschland, Österreich, Südtirol – mehr Süden sichtbar */
-const DACH_SW: [number, number] = [45.3, 5.0];
-const DACH_NE: [number, number] = [55.5, 17.2];
+/** Deutschland, Österreich, Südtirol */
+const DACH_SW: [number, number] = [47.2, 5.8];
+const DACH_NE: [number, number] = [55.2, 15.2];
 const DACH_BOUNDS: L.LatLngBoundsExpression = [DACH_SW, DACH_NE];
+const GERMANY_CENTER: [number, number] = [51.1, 10.45];
+
+function isDachCoord(lat: number, lng: number) {
+  return lat >= DACH_SW[0] && lat <= DACH_NE[0] && lng >= DACH_SW[1] && lng <= DACH_NE[1];
+}
 
 function MapLifecycle({ onMap }: { onMap: (map: L.Map) => void }) {
   const map = useMap();
@@ -26,11 +31,14 @@ export function EventsMapClient({
   events,
   highlightedEventId = null,
   minHeight = 320,
+  mapVariant = "events",
 }: {
   events: MapEvent[];
   highlightedEventId?: string | null;
   /** Mindesthöhe der Karte in px */
   minHeight?: number;
+  /** dashboard = näher auf Deutschland; events = Termine-Seite */
+  mapVariant?: "dashboard" | "events";
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -51,17 +59,25 @@ export function EventsMapClient({
 
   useEffect(() => {
     if (!map) return;
-    if (markers.length) {
-      const bounds = L.latLngBounds(markers.map((m) => [m.lat as number, m.lng as number]));
-      bounds.extend(L.latLng(DACH_SW[0], DACH_SW[1]));
-      bounds.extend(L.latLng(DACH_NE[0], DACH_NE[1]));
-      map.fitBounds(bounds, { padding: [12, 12], maxZoom: 7 });
+    const dachMarkers = markers.filter((m) =>
+      isDachCoord(m.lat as number, m.lng as number),
+    );
+    const maxZoom = mapVariant === "dashboard" ? 8 : 7;
+    const minZoom = mapVariant === "dashboard" ? 6 : 5;
+
+    if (dachMarkers.length) {
+      const bounds = L.latLngBounds(
+        dachMarkers.map((m) => [m.lat as number, m.lng as number]),
+      );
+      map.fitBounds(bounds, { padding: [16, 16], maxZoom });
+      const z = map.getZoom();
+      if (z < minZoom) map.setZoom(minZoom);
     } else {
-      map.fitBounds(DACH_BOUNDS, { padding: [12, 12] });
+      map.setView(GERMANY_CENTER, mapVariant === "dashboard" ? 6 : 6);
     }
     requestAnimationFrame(() => map.invalidateSize());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, markers.length]);
+  }, [map, markers.length, mapVariant]);
 
   useEffect(() => {
     if (!map) return;

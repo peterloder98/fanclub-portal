@@ -21,12 +21,21 @@ const EventsMapClient = dynamic(
 export function EventsMap({
   events,
   minHeight,
+  mapVariant,
 }: {
   events: MapEvent[];
   minHeight?: number;
+  mapVariant?: "dashboard" | "events";
 }) {
   // Key by pathname to avoid Leaflet getting stuck across navigations.
   const pathname = usePathname();
-  return <EventsMapClient key={pathname} events={events} minHeight={minHeight} />;
+  return (
+    <EventsMapClient
+      key={pathname}
+      events={events}
+      minHeight={minHeight}
+      mapVariant={mapVariant}
+    />
+  );
 }
 

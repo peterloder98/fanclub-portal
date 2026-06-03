@@ -58,7 +58,7 @@ export default async function DashboardPage() {
           <aside className="flex max-h-[calc(100vh-5.5rem)] min-h-0 flex-col gap-2 lg:sticky lg:top-20">
             <Card className="flex min-h-[min(420px,52vh)] flex-1 flex-col overflow-hidden">
               <CardContent className="flex min-h-0 flex-1 p-1.5">
-                <EventsMap events={mapEvents} minHeight={400} />
+                <EventsMap events={mapEvents} minHeight={400} mapVariant="dashboard" />
               </CardContent>
             </Card>
 

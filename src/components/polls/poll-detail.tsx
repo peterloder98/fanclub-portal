@@ -5,10 +5,9 @@ import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
-import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
+import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
@@ -320,26 +319,21 @@ export function PollDetail({ pollId }: { pollId: string }) {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <CardTitle>{poll.question}</CardTitle>
-            <RunningCountdownBadge endsAt={poll.ends_at} />
-            {poll.allow_multiple ? <Badge variant="neutral">Mehrfach</Badge> : null}
-          </div>
+          <PollHeaderMeta
+            question={poll.question}
+            endsAt={poll.ends_at}
+            allowMultiple={poll.allow_multiple}
+            hasVoted={hasVoted}
+            ended={ended}
+          />
           <PollParticipantSummary
             participantCount={participantCount}
             participants={participants}
             onEnsureParticipants={() => void ensureParticipants()}
             className="mt-2 block"
           />
-          <div className="mt-1 text-xs text-slate-500">
-            Ende:{" "}
-            {new Date(poll.ends_at).toLocaleString("de-DE", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
-          </div>
         </CardHeader>
-        <CardContent className="grid gap-2">
+        <CardContent className="grid gap-1.5">
           {options.map((o) => {
             const c = counts.get(o.id) ?? 0;
             const { display: pct, bar: barPct } = pollPercent(c, totalVotes);
@@ -364,6 +358,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
                       percent={pct}
                       voters={votersByOption[o.id] ?? []}
                       isMyVote={myOptionIds.has(o.id)}
+                      reserveMyVoteSlot={hasVoted}
                       loading={!(o.id in votersByOption)}
                       onMouseEnter={(e) => {
                         e.stopPropagation();

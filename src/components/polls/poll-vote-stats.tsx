@@ -12,6 +12,7 @@ export function PollVoteStats({
   percent,
   voters,
   isMyVote = false,
+  reserveMyVoteSlot = false,
   loading,
   onMouseEnter,
   onClick,
@@ -20,6 +21,8 @@ export function PollVoteStats({
   percent: number;
   voters: PollVoter[];
   isMyVote?: boolean;
+  /** Feste Spalte für „Meine Stimme“, damit alle Zeilen bündig sind */
+  reserveMyVoteSlot?: boolean;
   loading?: boolean;
   onMouseEnter?: (e: MouseEvent<HTMLSpanElement>) => void;
   onClick?: (e: MouseEvent<HTMLSpanElement>) => void;
@@ -33,13 +36,19 @@ export function PollVoteStats({
       onMouseEnter={onMouseEnter}
       onClick={onClick}
     >
-      <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-        {isMyVote ? (
-          <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
-            Meine Stimme
+      <span className="inline-flex items-center justify-end gap-1.5 whitespace-nowrap">
+        <span className="inline-flex w-[4.75rem] shrink-0 justify-end">
+          {isMyVote ? (
+            <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
+              Meine Stimme
+            </span>
+          ) : null}
+        </span>
+        {reserveMyVoteSlot && isMyVote ? (
+          <span className="text-slate-300" aria-hidden>
+            ·
           </span>
         ) : null}
-        {isMyVote ? <span className="text-slate-300" aria-hidden>·</span> : null}
         <span className={cn(isMyVote && "font-medium text-slate-800")}>
           {stimmenLabel(count)} ({percent}%)
         </span>

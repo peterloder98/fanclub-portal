@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation";
 import { GiveawayDetailClient } from "@/components/giveaways/giveaway-detail-client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { listMailSignatureOptions } from "@/lib/email/signatures";
+import { loadQuizReviewForUser } from "@/lib/giveaways/load-quiz-review";
 
 export default async function GiveawayDetailPage({
   params,
@@ -66,6 +67,11 @@ export default async function GiveawayDetailPage({
     .eq("giveaway_id", id)
     .eq("user_id", user.id)
     .maybeSingle();
+
+  const initialQuizResult =
+    myEntry && g.entry_mode === "quiz"
+      ? await loadQuizReviewForUser(supabase, user.id, id, qIds)
+      : null;
 
   const { data: winnerRows } = await supabase
     .from("giveaway_winners")
@@ -164,6 +170,7 @@ export default async function GiveawayDetailPage({
           prizes={prizes ?? []}
           questions={questionPayload}
           myEntry={myEntry}
+          initialQuizResult={initialQuizResult}
           winners={winners}
           likeCount={likeCount ?? 0}
           likedByMe={Boolean(myLike)}

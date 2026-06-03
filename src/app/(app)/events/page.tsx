@@ -71,12 +71,12 @@ export default async function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <Topbar
         title="Events"
         subtitle="Konzerttermine aus Artistflow (automatisch synchronisiert)."
       />
-      <main className="h-[calc(100vh-64px)] overflow-hidden px-4 py-4 lg:px-6">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 lg:px-6">
         {error ? (
           <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("external_events")
@@ -87,12 +87,14 @@ export default async function EventsPage() {
           </div>
         ) : null}
 
-        <EventsInteractivePanel
-          events={(events ?? []) as never[]}
-          nextStartAt={nextEventWithDate?.start_at ?? null}
-          nextTitle={nextEventWithDate?.title ?? null}
-          participationByEventId={participationByEventId}
-        />
+        <div className="min-h-0 flex-1">
+          <EventsInteractivePanel
+            events={(events ?? []) as never[]}
+            nextStartAt={nextEventWithDate?.start_at ?? null}
+            nextTitle={nextEventWithDate?.title ?? null}
+            participationByEventId={participationByEventId}
+          />
+        </div>
       </main>
     </div>
   );

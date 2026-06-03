@@ -39,6 +39,7 @@ export function GiveawayDetailClient({
   prizes,
   questions,
   myEntry,
+  initialQuizResult = null,
   winners,
   likeCount,
   likedByMe,
@@ -59,6 +60,7 @@ export function GiveawayDetailClient({
   prizes: { id: string; name: string }[];
   questions: Question[];
   myEntry: { is_eligible: boolean } | null;
+  initialQuizResult?: QuizParticipationResult | null;
   winners: Winner[];
   likeCount: number;
   likedByMe: boolean;
@@ -80,7 +82,9 @@ export function GiveawayDetailClient({
   const [commentDraft, setCommentDraft] = useState("");
   const [commentList, setCommentList] = useState(comments);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
-  const [quizResult, setQuizResult] = useState<QuizParticipationResult | null>(null);
+  const [quizResult, setQuizResult] = useState<QuizParticipationResult | null>(
+    initialQuizResult,
+  );
   const [localEntered, setLocalEntered] = useState(myEntry);
   const [localWinners, setLocalWinners] = useState(winners);
   const [localStatus, setLocalStatus] = useState(giveaway.status);
@@ -257,10 +261,19 @@ export function GiveawayDetailClient({
           </div>
 
           {localEntered ? (
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-              {giveaway.entry_mode === "quiz" && !localEntered.is_eligible
-                ? "Du hast teilgenommen, warst aber nicht berechtigt (nicht alle Antworten richtig)."
-                : "Du bist dabei – viel Glück!"}
+            <div
+              className={cn(
+                "rounded-xl border px-3 py-2 text-sm",
+                giveaway.entry_mode === "quiz" && !localEntered.is_eligible
+                  ? "border-amber-200 bg-amber-50 text-amber-950"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-900",
+              )}
+            >
+              {giveaway.entry_mode === "simple"
+                ? "Glückwunsch, du nimmst nun am Gewinnspiel teil, wir drücken dir die Daumen!"
+                : localEntered.is_eligible
+                  ? "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"
+                  : "Danke für deine Teilnahme, leider war nicht alles richtig, vielleicht hast du beim Nächsten Mal mehr Glück!"}
             </div>
           ) : phase !== "active" ? null : (
             <p className="text-sm text-slate-600">Noch nicht teilgenommen.</p>
@@ -279,7 +292,7 @@ export function GiveawayDetailClient({
             </button>
           ) : null}
 
-          {canParticipate && giveaway.entry_mode === "quiz" && !quizResult ? (
+          {canParticipate && giveaway.entry_mode === "quiz" && !localEntered ? (
             <div className="grid gap-3">
               {questions.map((q) => (
                 <div key={q.id} className="rounded-xl border p-3">
@@ -315,7 +328,7 @@ export function GiveawayDetailClient({
             </div>
           ) : null}
 
-          {quizReview ? (
+          {quizReview && localEntered && giveaway.entry_mode === "quiz" ? (
             <div className="grid gap-2">
               <h4 className="text-sm font-semibold text-slate-900">Deine Antworten</h4>
               {quizReview.map(({ q, r }) =>

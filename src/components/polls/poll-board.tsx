@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { profileToUserListEntry } from "@/lib/profiles/display";
-import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
+import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
@@ -326,34 +325,24 @@ export function PollBoard({
         return (
           <Card key={poll.id}>
             <CardHeader className="pb-3">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <CardTitle className="text-base">{poll.question}</CardTitle>
-                <div className="flex flex-wrap items-center justify-end gap-2">
-                  <RunningCountdownBadge endsAt={poll.ends_at} />
-                  {poll.allow_multiple ? (
-                    <Badge variant="neutral">Mehrfach</Badge>
-                  ) : null}
-                  {hasVoted ? (
-                    <Badge variant="neutral">Abgestimmt</Badge>
-                  ) : null}
-                </div>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <PollHeaderMeta
+                question={poll.question}
+                endsAt={poll.ends_at}
+                allowMultiple={poll.allow_multiple}
+                hasVoted={hasVoted}
+                ended={ended}
+                showEndDate={false}
+              />
+              <div className="mt-2">
                 <PollParticipantSummary
                   participantCount={participantCount}
                   participants={participantsByPollId[poll.id] ?? []}
                   onEnsureParticipants={() => void ensurePollParticipants(poll.id)}
+                  className="block w-full text-left"
                 />
-                <span className="text-xs text-slate-500">
-                  Ende{" "}
-                  {new Date(poll.ends_at).toLocaleString("de-DE", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                </span>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-2">
+            <CardContent className="grid gap-1.5">
               {opts.map((o) => {
                 const c = counts.get(o.id) ?? 0;
                 const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
@@ -377,6 +366,7 @@ export function PollBoard({
                           percent={pct}
                           voters={voters}
                           isMyVote={mine.has(o.id)}
+                          reserveMyVoteSlot={hasVoted}
                           onMouseEnter={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                         />

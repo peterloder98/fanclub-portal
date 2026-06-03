@@ -7,7 +7,7 @@ export function PollOptionProgress({ percent }: { percent: number }) {
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl bg-white"
+      className="pointer-events-none absolute inset-0 overflow-hidden rounded-[10px] bg-white ring-1 ring-inset ring-slate-200/90"
       aria-hidden
     >
       <div className="absolute inset-0 bg-slate-100/80" />
