@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
-import { Marker } from "react-leaflet";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Marker, Tooltip, useMap } from "react-leaflet";
 import L from "leaflet";
+import { EventMapHoverContent } from "./event-map-hover-content";
 import type { MapEvent } from "./events-map.types";
 
 const PIN_W = 30;
@@ -78,25 +79,83 @@ function createPinIcon(highlighted: boolean, selected: boolean) {
   });
 }
 
+/** Tooltip zeigt zur Kartenmitte, damit er im sichtbaren Bereich bleibt */
+function TooltipTowardCenter({
+  position,
+  children,
+}: {
+  position: [number, number];
+  children: ReactNode;
+}) {
+  const map = useMap();
+  const [direction, setDirection] = useState<"top" | "bottom" | "left" | "right">("top");
+  const [offset, setOffset] = useState<L.PointExpression>([0, -SLOT_H]);
+
+  useEffect(() => {
+    const update = () => {
+      const c = map.getCenter();
+      const dLat = position[0] - c.lat;
+      const dLng = position[1] - c.lng;
+      const pad = SLOT_H + 6;
+
+      if (Math.abs(dLat) > Math.abs(dLng)) {
+        if (dLat > 0) {
+          setDirection("bottom");
+          setOffset([0, pad]);
+        } else {
+          setDirection("top");
+          setOffset([0, -pad]);
+        }
+      } else if (dLng > 0) {
+        setDirection("left");
+        setOffset([-pad, -SLOT_H / 2]);
+      } else {
+        setDirection("right");
+        setOffset([pad, -SLOT_H / 2]);
+      }
+    };
+    update();
+    map.on("move zoom", update);
+    return () => {
+      map.off("move zoom", update);
+    };
+  }, [map, position]);
+
+  return (
+    <Tooltip
+      direction={direction}
+      offset={offset}
+      opacity={1}
+      sticky={false}
+      className="fc-event-hover-tip"
+    >
+      {children}
+    </Tooltip>
+  );
+}
+
 export function EventMapMarker({
   event,
   highlighted,
   selected,
   onSelect,
+  onHover,
 }: {
   event: MapEvent;
   highlighted: boolean;
   selected: boolean;
   onSelect: (eventId: string) => void;
+  onHover?: (eventId: string | null) => void;
 }) {
   const icon = useMemo(
     () => createPinIcon(highlighted, selected),
     [highlighted, selected],
   );
+  const position: [number, number] = [event.lat as number, event.lng as number];
 
   return (
     <Marker
-      position={[event.lat as number, event.lng as number]}
+      position={position}
       icon={icon}
       zIndexOffset={selected ? 1200 : highlighted ? 1000 : 0}
       eventHandlers={{
@@ -104,7 +163,15 @@ export function EventMapMarker({
           L.DomEvent.stopPropagation(e);
           onSelect(event.id);
         },
+        mouseover: () => onHover?.(event.id),
+        mouseout: () => onHover?.(null),
       }}
-    />
+    >
+      {!selected ? (
+        <TooltipTowardCenter position={position}>
+          <EventMapHoverContent event={event} />
+        </TooltipTowardCenter>
+      ) : null}
+    </Marker>
   );
 }

@@ -71,6 +71,10 @@ export function EventsMapClient({
     [onEventSelect],
   );
 
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+
+  const effectiveHighlight = highlightedEventId ?? hoveredEventId;
+
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedEventId) ?? null,
     [events, selectedEventId],
@@ -157,11 +161,17 @@ export function EventsMapClient({
     ? { height: "100%", width: "100%", minHeight }
     : { height: "100%", width: "100%", minHeight };
 
+  const useFullHeight = fillHeight || mapVariant === "dashboard";
+
   return (
     <div
       ref={containerRef}
-      className="flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-slate-50"
-      style={fillHeight ? { height: "100%", minHeight } : { minHeight }}
+      className="flex h-full w-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-slate-50"
+      style={
+        useFullHeight
+          ? { height: "100%", minHeight }
+          : { minHeight, height: minHeight }
+      }
     >
       <div className="relative min-h-0 flex-1">
         <MapContainer
@@ -186,9 +196,10 @@ export function EventsMapClient({
             <EventMapMarker
               key={e.id}
               event={e}
-              highlighted={e.id === highlightedEventId}
+              highlighted={e.id === effectiveHighlight}
               selected={e.id === selectedEventId}
               onSelect={selectEvent}
+              onHover={setHoveredEventId}
             />
           ))}
         </MapContainer>
