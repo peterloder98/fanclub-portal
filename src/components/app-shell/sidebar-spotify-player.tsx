@@ -16,12 +16,21 @@ export function SidebarSpotifyPlayer() {
   const [disconnecting, setDisconnecting] = useState(false);
 
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/spotify/status");
-    if (!res.ok) {
+    try {
+      const res = await fetch("/api/spotify/status", { credentials: "same-origin" });
+      const data = (await res.json()) as Status & { migrationHint?: string };
+      if (!res.ok) {
+        setStatus({ configured: false, connected: false, displayName: null });
+        return;
+      }
+      setStatus({
+        configured: Boolean(data.configured),
+        connected: Boolean(data.connected),
+        displayName: data.displayName ?? null,
+      });
+    } catch {
       setStatus({ configured: false, connected: false, displayName: null });
-      return;
     }
-    setStatus((await res.json()) as Status);
   }, []);
 
   useEffect(() => {
@@ -62,7 +71,8 @@ export function SidebarSpotifyPlayer() {
 
       {!configured ? (
         <p className="px-1 text-[10px] leading-snug text-slate-600">
-          Spotify-Anbindung ist noch nicht konfiguriert (SPOTIFY_CLIENT_ID in Vercel).
+          Spotify nicht konfiguriert: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET und APP_BASE_URL
+          setzen, dann Dev-Server neu starten bzw. Vercel-Redeploy.
         </p>
       ) : connected ? (
         <SpotifyWebPlayer displayName={status?.displayName ?? null} />

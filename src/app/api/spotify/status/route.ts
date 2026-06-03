@@ -8,7 +8,7 @@ export async function GET() {
   }
   const user = await requireAppUser();
   if (!user) {
-    return NextResponse.json({ configured: true, connected: false }, { status: 401 });
+    return NextResponse.json({ configured: true, connected: false });
   }
   try {
     const row = await getSpotifyConnection(user.id);
