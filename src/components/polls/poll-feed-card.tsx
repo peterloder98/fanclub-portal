@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { PieChart } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { PollVoteStats, type PollVoter } from "@/components/polls/poll-vote-stats";
+import type { PollVoter } from "@/components/polls/poll-vote-stats";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
-import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
-import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
+import { PollOptionsList } from "@/components/polls/poll-options-list";
 import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
 import { cn } from "@/lib/cn";
 import { useMemo } from "react";
@@ -68,163 +67,102 @@ export function PollFeedCard({
     [votes, poll.id],
   );
 
-  const participantLine =
+  const participantBlock =
     participantCount > 0 || participants.length > 0 ? (
       <PollParticipantSummary
         participantCount={participantCount}
         participants={participants}
         onEnsureParticipants={onEnsureParticipants}
-        className="mb-1.5 block w-full text-right"
+        align="start"
       />
     ) : (
-      <p className="mb-1.5 text-right text-xs text-slate-500">Noch keine Teilnehmer</p>
+      <p className="text-xs text-slate-500">Noch keine Teilnehmer</p>
     );
+
+  const optionsList = (
+    <PollOptionsList
+      pollId={poll.id}
+      opts={opts}
+      counts={counts}
+      totalVoteSum={totalVoteSum}
+      ended={ended}
+      hasVoted={hasVoted}
+      myOptionIds={myOptionIds}
+      votersByOptionId={votersByOptionId}
+      busyKey={busyKey}
+      onToggleVote={onToggleVote}
+      onEnsureVoters={onEnsureVoters}
+      compact={compact}
+    />
+  );
+
+  const footer = (
+    <Link
+      href={`/polls/${poll.id}`}
+      className={cn(
+        "inline-flex font-medium text-blue-600 hover:underline",
+        compact ? "text-[11px]" : "text-xs",
+      )}
+    >
+      Details & Kommentare →
+    </Link>
+  );
 
   if (compact) {
     return (
-      <div className="rounded-xl border bg-gradient-to-br from-blue-50/80 via-white to-rose-50/50 p-2.5 shadow-sm shadow-slate-900/5">
-        <div className="flex min-w-0 items-start gap-1.5">
-          <PieChart className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" />
-          <PollHeaderMeta
-            question={poll.question}
-            endsAt={poll.ends_at}
-            allowMultiple={poll.allow_multiple}
-            hasVoted={hasVoted}
-            ended={ended}
-            compact
-            className="min-w-0 flex-1"
-          />
-        </div>
-        {participantLine}
-        <div className="mt-1.5 grid gap-1.5">
-          {opts.map((o) => {
-            const c = counts.get(o.id) ?? 0;
-            const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
-            const showResults = ended || hasVoted || totalVoteSum > 0;
-            return (
-              <button
-                key={o.id}
-                type="button"
-                disabled={ended || busyKey === `${poll.id}:${o.id}`}
-                onClick={(e) => onToggleVote(o.id, e.currentTarget)}
-                className={cn(
-                  "group text-left text-xs",
-                  pollOptionButtonClass(myOptionIds.has(o.id), ended),
-                )}
-              >
-                {showResults ? <PollOptionProgress percent={barPct} /> : null}
-                <div className="relative z-10 flex min-h-[32px] items-center justify-between gap-2 px-2 py-1.5">
-                  <span className="font-medium text-slate-800">{o.label}</span>
-                  {showResults ? (
-                    <PollVoteStats
-                      count={c}
-                      percent={pct}
-                      voters={votersByOptionId[o.id] ?? []}
-                      isMyVote={myOptionIds.has(o.id)}
-                      reserveMyVoteSlot={hasVoted}
-                      onMouseEnter={(e) => {
-                        e.stopPropagation();
-                        onEnsureVoters(o.id);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : null}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-        <Link
-          href={`/polls/${poll.id}`}
-          className="mt-1.5 inline-block text-[10px] font-medium text-blue-600 hover:underline"
-        >
-          Details & Kommentare →
-        </Link>
+      <div className="rounded-xl border border-slate-200/90 bg-gradient-to-br from-blue-50/70 via-white to-rose-50/40 p-3 shadow-sm shadow-slate-900/5">
+        <PollHeaderMeta
+          question={poll.question}
+          endsAt={poll.ends_at}
+          allowMultiple={poll.allow_multiple}
+          hasVoted={hasVoted}
+          ended={ended}
+          compact
+          icon={<PieChart className="h-4 w-4 text-blue-600" />}
+        />
+        <div className="mt-2 border-t border-slate-100/90 pt-2">{participantBlock}</div>
+        <div className="mt-2">{optionsList}</div>
+        <div className="mt-2.5">{footer}</div>
       </div>
     );
   }
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-xs text-slate-600">
-              <div className="h-6 w-6 overflow-hidden rounded-full border bg-slate-50">
-                {poll.authorAvatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={poll.authorAvatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center text-[9px] font-semibold text-slate-600">
-                    {poll.authorName
-                      .split(" ")
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((p) => p[0]?.toUpperCase())
-                      .join("")}
-                  </div>
-                )}
+      <CardHeader className="space-y-0 pb-0">
+        <div className="flex items-center gap-2 pb-3 text-xs text-slate-600">
+          <div className="h-6 w-6 overflow-hidden rounded-full border bg-slate-50">
+            {poll.authorAvatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={poll.authorAvatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <div className="grid h-full w-full place-items-center text-[9px] font-semibold text-slate-600">
+                {poll.authorName
+                  .split(" ")
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .map((p) => p[0]?.toUpperCase())
+                  .join("")}
               </div>
-              <span className="font-medium text-slate-800">{poll.authorName}</span>
-              <span>·</span>
-              <span>{poll.createdAtLabel}</span>
-            </div>
-            <div className="mt-1.5 flex items-start gap-2">
-              <PieChart className="h-3.5 w-3.5 shrink-0 text-blue-600" />
-              <PollHeaderMeta
-                question={poll.question}
-                endsAt={poll.ends_at}
-                allowMultiple={poll.allow_multiple}
-                hasVoted={hasVoted}
-                ended={ended}
-                className="min-w-0 flex-1"
-              />
-            </div>
+            )}
           </div>
+          <span className="font-medium text-slate-800">{poll.authorName}</span>
+          <span>·</span>
+          <span>{poll.createdAtLabel}</span>
         </div>
+        <PollHeaderMeta
+          question={poll.question}
+          endsAt={poll.ends_at}
+          allowMultiple={poll.allow_multiple}
+          hasVoted={hasVoted}
+          ended={ended}
+          icon={<PieChart className="h-4 w-4 text-blue-600" />}
+        />
+        <div className="mt-3 border-t border-slate-100 py-3">{participantBlock}</div>
       </CardHeader>
-      <CardContent className="grid gap-1.5 pb-3 pt-0">
-        {participantLine}
-        {opts.map((o) => {
-          const c = counts.get(o.id) ?? 0;
-          const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
-          const showResults = ended || hasVoted || totalVoteSum > 0;
-          const voters = votersByOptionId[o.id] ?? [];
-          return (
-            <button
-              key={o.id}
-              type="button"
-              disabled={ended || busyKey === `${poll.id}:${o.id}`}
-              onClick={(e) => onToggleVote(o.id, e.currentTarget)}
-              className={pollOptionButtonClass(myOptionIds.has(o.id), ended)}
-            >
-              {showResults ? <PollOptionProgress percent={barPct} /> : null}
-              <div className="relative z-10 flex min-h-[40px] items-center gap-2 px-2.5 py-2 text-sm">
-                <span className="min-w-0 flex-1 font-medium text-slate-800">{o.label}</span>
-                {showResults ? (
-                  <PollVoteStats
-                    count={c}
-                    percent={pct}
-                    voters={voters}
-                    isMyVote={myOptionIds.has(o.id)}
-                    reserveMyVoteSlot={hasVoted}
-                    onMouseEnter={(e) => {
-                      e.stopPropagation();
-                      onEnsureVoters(o.id);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : null}
-              </div>
-            </button>
-          );
-        })}
-        <Link
-          href={`/polls/${poll.id}`}
-          className="text-xs font-medium text-blue-600 hover:underline"
-        >
-          Kommentare →
-        </Link>
+      <CardContent className="grid gap-3 pb-4 pt-0">
+        {optionsList}
+        {footer}
       </CardContent>
     </Card>
   );

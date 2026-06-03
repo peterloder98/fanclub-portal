@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { cn } from "@/lib/cn";
@@ -12,6 +13,7 @@ export function PollHeaderMeta({
   ended,
   compact = false,
   showEndDate = true,
+  icon,
   className,
 }: {
   question: string;
@@ -21,6 +23,7 @@ export function PollHeaderMeta({
   ended?: boolean;
   compact?: boolean;
   showEndDate?: boolean;
+  icon?: ReactNode;
   className?: string;
 }) {
   const endLabel = new Date(endsAt).toLocaleString("de-DE", {
@@ -28,50 +31,51 @@ export function PollHeaderMeta({
     timeStyle: "short",
   });
 
+  const badgeSize = compact ? "!text-[10px] !px-1.5 !py-0" : undefined;
+  const countdownSize = compact ? "!px-1.5 !py-0.5 !text-[10px]" : undefined;
+  const endDateSize = compact ? "text-[10px]" : "text-xs";
+
   return (
-    <div className={cn("min-w-0", className)}>
-      <div className="flex items-start justify-between gap-2">
-        <h3
-          className={cn(
-            "min-w-0 flex-1 font-semibold text-slate-900",
-            compact ? "text-xs leading-snug" : "text-base",
-          )}
-        >
-          {question}
-        </h3>
-        <div className="flex shrink-0 flex-col items-end gap-0.5">
+    <header className={cn("min-w-0", className)}>
+      <div className="flex items-start gap-2">
+        {icon ? <div className="mt-0.5 shrink-0">{icon}</div> : null}
+        <div className="min-w-0 flex-1">
+          <h3
+            className={cn(
+              "font-semibold leading-snug text-slate-900",
+              compact ? "text-sm" : "text-base",
+            )}
+          >
+            {question}
+          </h3>
+          {allowMultiple || (hasVoted && !ended) ? (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {allowMultiple ? (
+                <Badge variant="neutral" className={badgeSize}>
+                  Mehrere Antworten möglich
+                </Badge>
+              ) : null}
+              {hasVoted && !ended ? (
+                <Badge variant="success" className={badgeSize}>
+                  Abgestimmt
+                </Badge>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-0.5 pl-1">
           <RunningCountdownBadge
             endsAt={endsAt}
             endedLabel="Umfrage beendet"
-            className={compact ? "!px-1.5 !py-0.5 !text-[10px]" : undefined}
+            className={countdownSize}
           />
           {showEndDate ? (
-            <p className={cn("text-right text-slate-500", compact ? "text-[10px]" : "text-xs")}>
+            <p className={cn("whitespace-nowrap text-slate-500", endDateSize)}>
               Ende: {endLabel}
             </p>
           ) : null}
         </div>
       </div>
-      {allowMultiple || (hasVoted && !ended) ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {allowMultiple ? (
-            <Badge
-              variant="neutral"
-              className={compact ? "!px-1.5 !py-0.5 !text-[10px]" : undefined}
-            >
-              Mehrere Antworten möglich
-            </Badge>
-          ) : null}
-          {hasVoted && !ended ? (
-            <Badge
-              variant="success"
-              className={compact ? "!px-1.5 !py-0.5 !text-[10px]" : undefined}
-            >
-              Abgestimmt
-            </Badge>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+    </header>
   );
 }

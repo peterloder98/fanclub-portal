@@ -22,7 +22,7 @@ export function EventMapDetailPanel({
 
   return (
     <div
-      className="shrink-0 border-t border-slate-200 bg-white px-3 py-2.5 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]"
+      className="border-t border-slate-200 bg-white/98 px-3 py-2.5 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur-sm"
       role="dialog"
       aria-label="Eventdetails"
     >

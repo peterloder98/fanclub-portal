@@ -10,19 +10,21 @@ export function PollParticipantSummary({
   loading,
   onEnsureParticipants,
   className,
+  align = "start",
 }: {
   participantCount: number;
   participants: PollVoter[];
   loading?: boolean;
   onEnsureParticipants?: () => void;
   className?: string;
+  align?: "start" | "end";
 }) {
   return (
     <UserListPopover
       label="Wer hat teilgenommen?"
       users={participants}
       loading={loading}
-      align="end"
+      align={align}
       onMouseEnter={onEnsureParticipants}
       className={className}
     >

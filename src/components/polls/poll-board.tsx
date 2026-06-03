@@ -8,10 +8,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { profileToUserListEntry } from "@/lib/profiles/display";
+import { PieChart } from "lucide-react";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
-import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
-import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
-import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { PollOptionsList } from "@/components/polls/poll-options-list";
 import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
@@ -323,62 +322,44 @@ export function PollBoard({
         const hasVoted = mine.size > 0;
 
         return (
-          <Card key={poll.id}>
-            <CardHeader className="pb-3">
+          <Card key={poll.id} className="overflow-hidden">
+            <CardHeader className="space-y-0 pb-0">
               <PollHeaderMeta
                 question={poll.question}
                 endsAt={poll.ends_at}
                 allowMultiple={poll.allow_multiple}
                 hasVoted={hasVoted}
                 ended={ended}
+                icon={<PieChart className="h-4 w-4 text-blue-600" />}
               />
-              <div className="mt-2">
+              <div className="mt-3 border-t border-slate-100 py-3">
                 <PollParticipantSummary
                   participantCount={participantCount}
                   participants={participantsByPollId[poll.id] ?? []}
                   onEnsureParticipants={() => void ensurePollParticipants(poll.id)}
-                  className="block w-full text-left"
+                  align="start"
                 />
               </div>
             </CardHeader>
-            <CardContent className="grid gap-1.5">
-              {opts.map((o) => {
-                const c = counts.get(o.id) ?? 0;
-                const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
-                const picked = mine.has(o.id);
-                const showResults = ended || hasVoted || participantCount > 0;
-                const voters = votersByOptionId[o.id] ?? [];
-                return (
-                  <button
-                    key={o.id}
-                    type="button"
-                    disabled={ended || busyKey === `${poll.id}:${o.id}`}
-                    onClick={(e) => void toggleVote(poll, o.id, e.currentTarget)}
-                    className={pollOptionButtonClass(picked, ended)}
-                  >
-                    {showResults ? <PollOptionProgress percent={barPct} /> : null}
-                    <div className="relative z-10 flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
-                      <span className="min-w-0 flex-1 font-medium text-slate-800">{o.label}</span>
-                      {showResults ? (
-                        <PollVoteStats
-                          count={c}
-                          percent={pct}
-                          voters={voters}
-                          isMyVote={mine.has(o.id)}
-                          reserveMyVoteSlot={hasVoted}
-                          onMouseEnter={(e) => e.stopPropagation()}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : null}
-                    </div>
-                  </button>
-                );
-              })}
+            <CardContent className="grid gap-3 pb-4 pt-0">
+              <PollOptionsList
+                pollId={poll.id}
+                opts={opts}
+                counts={counts}
+                totalVoteSum={totalVoteSum}
+                ended={ended}
+                hasVoted={hasVoted}
+                myOptionIds={mine}
+                votersByOptionId={votersByOptionId}
+                busyKey={busyKey}
+                onToggleVote={(optionId, fromEl) => void toggleVote(poll, optionId, fromEl)}
+                onEnsureVoters={() => {}}
+              />
               <Link
                 href={`/polls/${poll.id}`}
-                className="mt-1 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
+                className="inline-flex text-xs font-medium text-blue-600 hover:underline"
               >
-                Details & Kommentare
+                Details & Kommentare →
               </Link>
             </CardContent>
           </Card>

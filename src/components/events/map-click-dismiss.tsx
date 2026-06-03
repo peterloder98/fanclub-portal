@@ -8,7 +8,13 @@ export function MapClickDismiss({ onDismiss }: { onDismiss: () => void }) {
   const map = useMap();
 
   useEffect(() => {
-    const handler = () => onDismiss();
+    const handler = (e: { originalEvent?: Event }) => {
+      const target = e.originalEvent?.target;
+      if (target instanceof Element && target.closest(".leaflet-marker-pane")) {
+        return;
+      }
+      onDismiss();
+    };
     map.on("click", handler);
     return () => {
       map.off("click", handler);

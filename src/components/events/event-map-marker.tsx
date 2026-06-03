@@ -163,6 +163,9 @@ export function EventMapMarker({
           L.DomEvent.stopPropagation(e);
           onSelect(event.id);
         },
+        mousedown: (e) => {
+          L.DomEvent.stopPropagation(e);
+        },
         mouseover: () => onHover?.(event.id),
         mouseout: () => onHover?.(null),
       }}

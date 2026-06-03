@@ -62,6 +62,7 @@ export function EventsMapClient({
 
   const selectEvent = useCallback(
     (eventId: string) => {
+      ignoreNextMapClickRef.current = true;
       setSelectedEventId((prev) => {
         const next = prev === eventId ? null : eventId;
         onEventSelect?.(next);
@@ -71,7 +72,16 @@ export function EventsMapClient({
     [onEventSelect],
   );
 
+  const handleMapDismiss = useCallback(() => {
+    if (ignoreNextMapClickRef.current) {
+      ignoreNextMapClickRef.current = false;
+      return;
+    }
+    dismissDetails();
+  }, [dismissDetails]);
+
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const ignoreNextMapClickRef = useRef(false);
 
   const effectiveHighlight = highlightedEventId ?? hoveredEventId;
 
@@ -187,7 +197,7 @@ export function EventsMapClient({
           attributionControl
         >
           <MapLifecycle onMap={setMap} />
-          <MapClickDismiss onDismiss={dismissDetails} />
+          <MapClickDismiss onDismiss={handleMapDismiss} />
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -203,10 +213,12 @@ export function EventsMapClient({
             />
           ))}
         </MapContainer>
+        {selectedEvent ? (
+          <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[1100]">
+            <EventMapDetailPanel event={selectedEvent} onClose={dismissDetails} />
+          </div>
+        ) : null}
       </div>
-      {selectedEvent ? (
-        <EventMapDetailPanel event={selectedEvent} onClose={dismissDetails} />
-      ) : null}
     </div>
   );
 }
