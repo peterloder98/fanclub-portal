@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import type { EmailTemplateKey } from "@/lib/email/template-keys";
+import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import { loadAdminSignatureForMail } from "@/lib/email/admin-signature-mail";
+import { loadMailSignature } from "@/lib/email/signatures";
 
 export type EmailTemplateRow = {
   key: string;
@@ -47,14 +48,46 @@ function textToHtmlParagraphs(text: string) {
     .join("");
 }
 
+const PAYMENT_REMINDER_FALLBACK = {
+  subject: "Zahlungserinnerung Mitgliedsbeitrag Anni Perka Fanclub",
+  body_text: `Hallo {{first_name}},
+
+vielen Dank für deinen Mitgliedschaftsantrag beim Anni-Perka-Fanclub e. V.
+
+Der Mitgliedsbeitrag in Höhe von {{fee_eur}} ist bei uns noch nicht eingegangen. Bitte überweise den Betrag auf das im Antrag genannte Konto.
+
+Erst nach Zahlungseingang schalten wir deinen Zugang zur Fanclub-App frei und nehmen dich – sofern gewünscht – in die WhatsApp-Gruppe als aktives Mitglied auf.
+
+Bei Fragen melde dich gerne bei uns.
+
+{{admin_signature_text}}`,
+};
+
 export async function renderEmailFromTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string>,
+  opts?: { signatureId?: string },
 ) {
-  const row = await getEmailTemplate(key);
-  if (!row) throw new Error(`E-Mail-Vorlage „${key}“ fehlt. Bitte 020_email_templates.sql ausführen.`);
+  let row = await getEmailTemplate(key);
+  if (!row && key === EMAIL_TEMPLATE_KEYS.membershipPaymentReminder) {
+    row = {
+      key,
+      name: "Zahlungserinnerung",
+      subject: PAYMENT_REMINDER_FALLBACK.subject,
+      body_text: PAYMENT_REMINDER_FALLBACK.body_text,
+      body_html: null,
+      description: null,
+    };
+  }
+  if (!row) {
+    throw new Error(
+      `E-Mail-Vorlage „${key}“ fehlt. Bitte supabase/020_email_templates.sql und 023 ausführen.`,
+    );
+  }
 
-  const sig = await loadAdminSignatureForMail();
+  const sig = opts?.signatureId
+    ? await loadMailSignature(opts.signatureId)
+    : await loadAdminSignatureForMail();
   const allVars: Record<string, string> = {
     ...vars,
     admin_signature_text: sig.text,

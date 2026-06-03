@@ -13,6 +13,8 @@ import {
   getPaymentReminderDraft,
   sendPaymentReminderEmail,
 } from "@/app/(app)/admin/members/applications/actions";
+import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
+import type { MailSignatureOption } from "@/lib/email/signatures";
 
 export type AdminMemberRow = {
   id: string;
@@ -107,6 +109,9 @@ export function AdminMembersWorkspace({
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentSubject, setPaymentSubject] = useState("");
   const [paymentBody, setPaymentBody] = useState("");
+  const [paymentSignatures, setPaymentSignatures] = useState<MailSignatureOption[]>([]);
+  const [paymentSignatureId, setPaymentSignatureId] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   function toggleMemberSort(key: MemberSortKey) {
@@ -191,17 +196,34 @@ export function AdminMembersWorkspace({
     setActionError(null);
   }
 
+  async function loadPaymentDraft(appId: string, signatureId?: string) {
+    setPaymentLoading(true);
+    try {
+      const draft = await getPaymentReminderDraft(appId, signatureId);
+      setPaymentSubject(draft.subject);
+      setPaymentBody(draft.body);
+      setPaymentSignatures(draft.signatures);
+      setPaymentSignatureId(draft.defaultSignatureId);
+      return true;
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
+      return false;
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
+
   async function openPaymentDialog() {
     if (!selectedAppId) return;
     setActionError(null);
-    try {
-      const draft = await getPaymentReminderDraft(selectedAppId);
-      setPaymentSubject(draft.subject);
-      setPaymentBody(draft.body);
-      setShowPaymentDialog(true);
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
-    }
+    const ok = await loadPaymentDraft(selectedAppId);
+    if (ok) setShowPaymentDialog(true);
+  }
+
+  async function onPaymentSignatureChange(signatureId: string) {
+    if (!selectedAppId) return;
+    setPaymentSignatureId(signatureId);
+    await loadPaymentDraft(selectedAppId, signatureId);
   }
 
   return (
@@ -333,6 +355,15 @@ export function AdminMembersWorkspace({
               </table>
             </div>
           )}
+
+          {selectedApp ? (
+            <div className="mt-4">
+              <MemberActivityTimeline
+                userId={selectedApp.user_id}
+                applicationId={selectedApp.id}
+              />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -459,6 +490,12 @@ export function AdminMembersWorkspace({
               </table>
             </div>
           )}
+
+          {selectedMemberId ? (
+            <div className="mt-4">
+              <MemberActivityTimeline userId={selectedMemberId} applicationId={null} />
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -516,8 +553,23 @@ export function AdminMembersWorkspace({
           <div className="w-full max-w-lg rounded-2xl border bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-slate-900">Zahlungserinnerung</h3>
             <p className="mt-1 text-sm text-slate-600">
-              Vorlage unter Admin → E-Mail-Vorlagen („Zahlungserinnerung Mitgliedsbeitrag“).
+              Vorlage unter Admin → E-Mail-Vorlagen. Signatur unter Admin → Unterschriften pflegen.
             </p>
+            <label className="mt-3 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Signatur</span>
+              <select
+                value={paymentSignatureId}
+                disabled={paymentLoading}
+                onChange={(e) => void onPaymentSignatureChange(e.target.value)}
+                className="h-11 rounded-xl border px-3 text-sm"
+              >
+                {paymentSignatures.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="mt-3 grid gap-1">
               <span className="text-sm font-medium text-slate-700">Betreff</span>
               <input
@@ -545,7 +597,7 @@ export function AdminMembersWorkspace({
               </button>
               <button
                 type="button"
-                disabled={pending}
+                disabled={pending || paymentLoading || !paymentSignatureId}
                 className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
                 onClick={() => {
                   startTransition(async () => {
@@ -554,6 +606,7 @@ export function AdminMembersWorkspace({
                         applicationId: selectedAppId,
                         subject: paymentSubject,
                         body: paymentBody,
+                        signatureId: paymentSignatureId,
                       });
                       setShowPaymentDialog(false);
                       router.refresh();

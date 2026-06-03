@@ -2,17 +2,25 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { CLUB_SIGNATURE_ID, listMailSignatureOptions } from "@/lib/email/signatures";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import {
+  logMemberActivity,
+  listMemberActivity,
+  MEMBER_ACTIVITY_TYPES,
+} from "@/lib/membership/activity-log";
 
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   applicationId: string,
   membershipNumber?: string,
+  createdBy?: string,
 ) {
   const { data: app, error: appErr } = await admin
     .from("membership_applications")
@@ -67,6 +75,18 @@ async function activateApplication(
 
   await admin.auth.admin.updateUserById(app.user_id, { email_confirm: true });
 
+  const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+  await logMemberActivity({
+    userId: app.user_id,
+    applicationId,
+    eventType: MEMBER_ACTIVITY_TYPES.membershipApproved,
+    title: "Mitgliedschaft freigegeben",
+    details: `Mitgliedsnummer ${profile.membership_number}. Status: aktiv.`,
+    linkUrl: base ? `${base}/admin/members` : null,
+    linkLabel: "Mitgliederliste",
+    createdBy,
+  }).catch(console.error);
+
   if (app.email) {
     await sendMemberInviteAfterApproval({
       email: app.email,
@@ -92,57 +112,84 @@ export async function approveMembershipApplicationWithNumber(
   applicationId: string,
   membershipNumber: string,
 ) {
-  await requireAdmin();
+  const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  await activateApplication(admin, applicationId, membershipNumber);
+  await activateApplication(admin, applicationId, membershipNumber, user.id);
   revalidatePath("/admin/members");
   redirect("/admin/members");
 }
 
-export async function getPaymentReminderDraft(applicationId: string) {
-  await requireAdmin();
+export async function getPaymentReminderDraft(
+  applicationId: string,
+  signatureId?: string,
+) {
+  const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  const { data: app } = await admin
+  const { data: app, error: appErr } = await admin
     .from("membership_applications")
-    .select("first_name,last_name,email,fee_cents")
+    .select("id,user_id,first_name,last_name,email,fee_cents")
     .eq("id", applicationId)
     .maybeSingle();
+  if (appErr) throw new Error(appErr.message);
   if (!app?.email) throw new Error("Antrag oder E-Mail nicht gefunden.");
 
-  const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
-  const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.membershipPaymentReminder, {
-    first_name: app.first_name?.trim() || "Fan",
-    last_name: app.last_name?.trim() || "",
-    applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
-    email: app.email,
-    fee_eur: feeEur,
-  });
+  const signatures = await listMailSignatureOptions();
+  const defaultSignatureId =
+    signatures.find((s) => s.id === user.id)?.id ??
+    signatures.find((s) => s.kind === "board")?.id ??
+    CLUB_SIGNATURE_ID;
+  const useSignatureId = signatureId ?? defaultSignatureId;
 
-  return { subject: rendered.subject, body: rendered.text, to: app.email };
+  const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
+  const rendered = await renderEmailFromTemplate(
+    EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
+    {
+      first_name: app.first_name?.trim() || "Fan",
+      last_name: app.last_name?.trim() || "",
+      applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
+      email: app.email,
+      fee_eur: feeEur,
+    },
+    { signatureId: useSignatureId },
+  );
+
+  return {
+    subject: rendered.subject,
+    body: rendered.text,
+    to: app.email,
+    signatures,
+    defaultSignatureId: useSignatureId,
+  };
 }
 
 export async function sendPaymentReminderEmail(input: {
   applicationId: string;
   subject: string;
   body: string;
+  signatureId: string;
 }) {
-  await requireAdmin();
+  const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  const { data: app } = await admin
+  const { data: app, error: appErr } = await admin
     .from("membership_applications")
-    .select("email,first_name,last_name,fee_cents")
+    .select("id,user_id,email,first_name,last_name,fee_cents")
     .eq("id", input.applicationId)
     .maybeSingle();
+  if (appErr) throw new Error(appErr.message);
   if (!app?.email) throw new Error("E-Mail des Antragstellers fehlt.");
 
   const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
-  const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.membershipPaymentReminder, {
-    first_name: app.first_name?.trim() || "Fan",
-    last_name: app.last_name?.trim() || "",
-    applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
-    email: app.email,
-    fee_eur: feeEur,
-  });
+  const rendered = await renderEmailFromTemplate(
+    EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
+    {
+      first_name: app.first_name?.trim() || "Fan",
+      last_name: app.last_name?.trim() || "",
+      applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
+      email: app.email,
+      fee_eur: feeEur,
+    },
+    { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
+  );
 
   const attachments = rendered.signatureAttachment
     ? [
@@ -158,7 +205,7 @@ export async function sendPaymentReminderEmail(input: {
   const subject = input.subject.trim() || rendered.subject;
   const text = input.body.trim() || rendered.text;
   const html = input.body.trim()
-    ? `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px"><div style="max-width:560px">${text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</div></body></html>`
+    ? buildHtmlFromPlain(text, rendered.html)
     : rendered.html;
 
   const result = await sendEmailViaAccount({
@@ -170,9 +217,88 @@ export async function sendPaymentReminderEmail(input: {
   });
 
   if (!result.ok) {
+    if (result.skipped) {
+      throw new Error(
+        "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
+      );
+    }
     throw new Error("E-Mail konnte nicht gesendet werden (SMTP prüfen).");
   }
 
+  const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+  await logMemberActivity({
+    userId: app.user_id,
+    applicationId: app.id,
+    eventType: MEMBER_ACTIVITY_TYPES.paymentReminderSent,
+    title: "Zahlungserinnerung per E-Mail gesendet",
+    details: `Betreff: ${subject}`,
+    linkUrl: base ? `${base}/admin/members/applications/${app.id}` : null,
+    linkLabel: "Antrag & PDF",
+    createdBy: user.id,
+    metadata: { signature_id: input.signatureId },
+  }).catch((e) => {
+    console.error("[activity] Zahlungserinnerung nicht protokolliert:", e);
+  });
+
   revalidatePath("/admin/members");
   return { ok: true };
+}
+
+function buildHtmlFromPlain(text: string, templateHtml: string) {
+  const body = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  const sigMatch = templateHtml.match(/<p style="margin-top:1\.25rem[\s\S]*$/i);
+  const sigBlock = sigMatch ? sigMatch[0] : "";
+  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px"><div style="max-width:560px">${body}${sigBlock}</div></body></html>`;
+}
+
+export async function fetchMemberActivity(input: {
+  userId?: string | null;
+  applicationId?: string | null;
+}) {
+  await requireAdminAction();
+  try {
+    return await listMemberActivity({
+      userId: input.userId,
+      applicationId: input.applicationId,
+      limit: 80,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/member_activity_log|does not exist/i.test(msg)) {
+      throw new Error(
+        "Historie-Tabelle fehlt. Bitte supabase/027_member_activity_log.sql im SQL Editor ausführen.",
+      );
+    }
+    throw e;
+  }
+}
+
+export async function addMemberActivityNote(input: {
+  userId?: string | null;
+  applicationId?: string | null;
+  eventType: "payment_received" | "warning_issued" | "note";
+  title: string;
+  details?: string;
+  linkUrl?: string;
+  linkLabel?: string;
+}) {
+  const { user } = await requireAdminAction();
+  if (!input.userId && !input.applicationId) {
+    throw new Error("userId oder applicationId erforderlich.");
+  }
+  await logMemberActivity({
+    userId: input.userId,
+    applicationId: input.applicationId,
+    eventType: input.eventType,
+    title: input.title.trim(),
+    details: input.details?.trim() || null,
+    linkUrl: input.linkUrl?.trim() || null,
+    linkLabel: input.linkLabel?.trim() || null,
+    createdBy: user.id,
+  });
+  revalidatePath("/admin/members");
 }
