@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
-import { flyPointsFromElement } from "@/lib/points/fly";
+import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
@@ -132,7 +132,7 @@ export function DashboardPollsInline() {
     setBusyKey(`${poll.id}:${optionId}`);
     const supabase = createSupabaseBrowserClient();
     const mine = myOptionIdsByPoll.get(poll.id) ?? new Set<string>();
-    const hadVoted = mine.size > 0;
+    const votesBefore = mine.size;
     const isSelected = mine.has(optionId);
     try {
       if (poll.allow_multiple) {
@@ -149,7 +149,6 @@ export function DashboardPollsInline() {
             user_id: userId,
             option_id: optionId,
           });
-          if (!hadVoted) flyPointsFromElement({ fromEl, delta: +5 });
         }
       } else if (isSelected) {
         await supabase.from("poll_votes").delete().eq("poll_id", poll.id).eq("user_id", userId);
@@ -160,8 +159,14 @@ export function DashboardPollsInline() {
           user_id: userId,
           option_id: optionId,
         });
-        if (!hadVoted) flyPointsFromElement({ fromEl, delta: +5 });
       }
+      const { data: myRows } = await supabase
+        .from("poll_votes")
+        .select("option_id")
+        .eq("poll_id", poll.id)
+        .eq("user_id", userId);
+      const votesAfter = myRows?.length ?? 0;
+      applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
       await load();
     } finally {
       setBusyKey(null);

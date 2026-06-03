@@ -2,6 +2,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export const MEMBER_ACTIVITY_TYPES = {
   applicationSubmitted: "application_submitted",
+  applicationRejected: "application_rejected",
+  applicationDeleted: "application_deleted",
   paymentReminderSent: "payment_reminder_sent",
   membershipApproved: "membership_approved",
   paymentReceived: "payment_received",
@@ -100,6 +102,8 @@ export async function listMemberActivity(opts: {
 export function activityTypeLabel(type: string) {
   const map: Record<string, string> = {
     application_submitted: "Antrag eingegangen",
+    application_rejected: "Antrag abgelehnt",
+    application_deleted: "Antrag gelöscht",
     payment_reminder_sent: "Zahlungserinnerung",
     membership_approved: "Mitgliedschaft freigegeben",
     payment_received: "Beitrag eingegangen",

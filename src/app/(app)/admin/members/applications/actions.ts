@@ -15,6 +15,7 @@ import {
   listMemberActivity,
   MEMBER_ACTIVITY_TYPES,
 } from "@/lib/membership/activity-log";
+import { deleteMembershipApplicationCompletely } from "@/lib/membership/delete-application";
 
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -301,4 +302,75 @@ export async function addMemberActivityNote(input: {
     createdBy: user.id,
   });
   revalidatePath("/admin/members");
+}
+
+export async function rejectMembershipApplication(input: {
+  applicationId: string;
+  reason?: string;
+}) {
+  const { user } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const { data: app, error: appErr } = await admin
+    .from("membership_applications")
+    .select("id,user_id,first_name,last_name,email,status")
+    .eq("id", input.applicationId)
+    .maybeSingle();
+  if (appErr) throw new Error(appErr.message);
+  if (!app) throw new Error("Antrag nicht gefunden.");
+  if (app.status === "approved") {
+    throw new Error("Freigegebene Anträge können nicht abgelehnt werden.");
+  }
+
+  const note = input.reason?.trim() || null;
+  const { error: updErr } = await admin
+    .from("membership_applications")
+    .update({ status: "rejected", admin_notes: note })
+    .eq("id", input.applicationId);
+  if (updErr) throw new Error(updErr.message);
+
+  if (app.user_id) {
+    await admin
+      .from("memberships")
+      .update({ status: "inactive" })
+      .eq("user_id", app.user_id);
+  }
+
+  await logMemberActivity({
+    userId: app.user_id,
+    applicationId: app.id,
+    eventType: MEMBER_ACTIVITY_TYPES.applicationRejected,
+    title: "Mitgliedsantrag abgelehnt",
+    details: note ?? "Antrag wurde nicht angenommen.",
+    createdBy: user.id,
+  });
+
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+export async function deleteMembershipApplication(applicationId: string) {
+  const { user } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+
+  const { data: app } = await admin
+    .from("membership_applications")
+    .select("id,user_id,first_name,last_name")
+    .eq("id", applicationId)
+    .maybeSingle();
+  if (!app) throw new Error("Antrag nicht gefunden.");
+
+  if (app.user_id) {
+    await logMemberActivity({
+      userId: app.user_id,
+      applicationId: app.id,
+      eventType: MEMBER_ACTIVITY_TYPES.applicationDeleted,
+      title: "Mitgliedsantrag vollständig gelöscht",
+      details: `${app.first_name} ${app.last_name} — inkl. Dateien und Testdaten.`,
+      createdBy: user.id,
+    }).catch(() => {});
+  }
+
+  await deleteMembershipApplicationCompletely(admin, applicationId);
+  revalidatePath("/admin/members");
+  return { ok: true };
 }

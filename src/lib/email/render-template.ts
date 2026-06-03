@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template-keys";
-import { loadAdminSignatureForMail } from "@/lib/email/admin-signature-mail";
+import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { loadMailSignature } from "@/lib/email/signatures";
 
 export type EmailTemplateRow = {
@@ -87,7 +87,7 @@ export async function renderEmailFromTemplate(
 
   const sig = opts?.signatureId
     ? await loadMailSignature(opts.signatureId)
-    : await loadAdminSignatureForMail();
+    : await loadDefaultMailSignature();
   const allVars: Record<string, string> = {
     ...vars,
     admin_signature_text: sig.text,

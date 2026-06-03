@@ -10,7 +10,9 @@ import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { deleteMember } from "@/app/(app)/admin/members/actions";
 import {
   approveMembershipApplicationWithNumber,
+  deleteMembershipApplication,
   getPaymentReminderDraft,
+  rejectMembershipApplication,
   sendPaymentReminderEmail,
 } from "@/app/(app)/admin/members/applications/actions";
 import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
@@ -112,7 +114,31 @@ export function AdminMembersWorkspace({
   const [paymentSignatures, setPaymentSignatures] = useState<MailSignatureOption[]>([]);
   const [paymentSignatureId, setPaymentSignatureId] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const [actionError, setActionError] = useState<string | null>(null);
+
+  function applicationStatusLabel(status: string) {
+    switch (status) {
+      case "submitted":
+        return "Eingegangen";
+      case "reviewed":
+        return "In Prüfung";
+      case "approved":
+        return "Freigegeben";
+      case "rejected":
+        return "Abgelehnt";
+      default:
+        return status;
+    }
+  }
+
+  function applicationStatusVariant(status: string): "warning" | "success" | "neutral" | "danger" {
+    if (status === "approved") return "success";
+    if (status === "rejected") return "danger";
+    if (status === "reviewed") return "neutral";
+    return "warning";
+  }
 
   function toggleMemberSort(key: MemberSortKey) {
     setMemberSort((s) =>
@@ -191,10 +217,17 @@ export function AdminMembersWorkspace({
 
   function openApproveDialog() {
     if (!selectedApp) return;
+    if (selectedApp.status === "rejected") {
+      setActionError("Abgelehnte Anträge können nicht freigegeben werden.");
+      return;
+    }
     setApproveNumber(selectedApp.membership_number ?? "");
     setShowApproveDialog(true);
     setActionError(null);
   }
+
+  const selectedAppActionable =
+    selectedApp && selectedApp.status !== "approved" && selectedApp.status !== "rejected";
 
   async function loadPaymentDraft(appId: string, signatureId?: string) {
     setPaymentLoading(true);
@@ -245,7 +278,7 @@ export function AdminMembersWorkspace({
           <div className="mb-3 flex flex-wrap gap-2">
             <button
               type="button"
-              disabled={!selectedAppId || pending}
+              disabled={!selectedAppActionable || pending}
               onClick={() => openApproveDialog()}
               className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
             >
@@ -253,11 +286,52 @@ export function AdminMembersWorkspace({
             </button>
             <button
               type="button"
-              disabled={!selectedAppId || pending}
+              disabled={!selectedAppActionable || pending}
               onClick={() => void openPaymentDialog()}
               className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
             >
               Zahlungserinnerung per E-Mail
+            </button>
+            <button
+              type="button"
+              disabled={!selectedAppActionable || pending}
+              onClick={() => {
+                setRejectReason("");
+                setShowRejectDialog(true);
+                setActionError(null);
+              }}
+              className="h-10 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-900 disabled:opacity-50"
+            >
+              Antrag ablehnen
+            </button>
+            <button
+              type="button"
+              disabled={!selectedAppId || pending}
+              onClick={() => {
+                if (!selectedApp) return;
+                const label = `${selectedApp.first_name} ${selectedApp.last_name}`;
+                if (
+                  !window.confirm(
+                    `Antrag von „${label}“ vollständig löschen?\n\nDatensatz, PDF, Unterschriften und ggf. Test-Benutzerkonto werden unwiderruflich entfernt.`,
+                  )
+                ) {
+                  return;
+                }
+                setActionError(null);
+                const appId = selectedApp.id;
+                startTransition(async () => {
+                  try {
+                    await deleteMembershipApplication(appId);
+                    setSelectedAppId(null);
+                    router.refresh();
+                  } catch (e) {
+                    setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+                  }
+                });
+              }}
+              className="h-10 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 disabled:opacity-50"
+            >
+              Antrag komplett löschen
             </button>
             <Link
               href={selectedAppId ? `/admin/members/applications/${selectedAppId}` : "#"}
@@ -347,7 +421,9 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2 text-slate-600">{a.email}</td>
                       <td className="px-3 py-2">{formatDE(a.created_at)}</td>
                       <td className="px-3 py-2">
-                        <Badge variant="warning">{a.status}</Badge>
+                        <Badge variant={applicationStatusVariant(a.status)}>
+                          {applicationStatusLabel(a.status)}
+                        </Badge>
                       </td>
                     </tr>
                   ))}
@@ -542,6 +618,60 @@ export function AdminMembersWorkspace({
                 }}
               >
                 Freigeben
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showRejectDialog && selectedApp ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
+          <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
+            <h3 className="text-base font-semibold text-slate-900">Antrag ablehnen</h3>
+            <p className="mt-1 text-sm text-slate-600">
+              {selectedApp.first_name} {selectedApp.last_name} — Status wird auf „abgelehnt“ gesetzt
+              (z. B. keine Zahlung oder Aufnahme nicht gewünscht).
+            </p>
+            <label className="mt-4 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Grund (optional, intern)</span>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                className="rounded-xl border px-3 py-2 text-sm"
+                placeholder="z. B. Mitgliedsbeitrag nicht eingegangen"
+              />
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                className="h-10 rounded-xl border px-4 text-sm font-semibold"
+                onClick={() => setShowRejectDialog(false)}
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                className="h-10 rounded-xl bg-amber-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                onClick={() => {
+                  startTransition(async () => {
+                    try {
+                      await rejectMembershipApplication({
+                        applicationId: selectedApp.id,
+                        reason: rejectReason,
+                      });
+                      setShowRejectDialog(false);
+                      setSelectedAppId(null);
+                      router.refresh();
+                    } catch (e) {
+                      setActionError(e instanceof Error ? e.message : "Ablehnen fehlgeschlagen");
+                      setShowRejectDialog(false);
+                    }
+                  });
+                }}
+              >
+                Ablehnen
               </button>
             </div>
           </div>

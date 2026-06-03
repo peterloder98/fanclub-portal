@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { EmailTemplateKey } from "@/lib/email/template-keys";
+import {
+  getDefaultMailSignatureId,
+  setDefaultMailSignatureId,
+} from "@/lib/email/default-mail-signature";
+import { listMailSignatureOptions } from "@/lib/email/signatures";
 
 export async function loadEmailTemplatesAction() {
   await requireAdmin();
@@ -40,4 +45,23 @@ export async function saveEmailTemplateAction(formData: FormData) {
 
   revalidatePath("/admin/settings/email-templates");
   revalidatePath("/admin/settings/email");
+}
+
+export async function loadDefaultMailSignatureSettingsAction() {
+  await requireAdmin();
+  const signatures = await listMailSignatureOptions();
+  const defaultSignatureId = await getDefaultMailSignatureId();
+  return { signatures, defaultSignatureId };
+}
+
+export async function saveDefaultMailSignatureIdAction(signatureId: string) {
+  await requireAdmin();
+  const trimmed = signatureId.trim();
+  if (!trimmed) throw new Error("Bitte eine Signatur auswählen.");
+  const options = await listMailSignatureOptions();
+  if (!options.some((s) => s.id === trimmed)) {
+    throw new Error("Unbekannte Signatur.");
+  }
+  await setDefaultMailSignatureId(trimmed);
+  revalidatePath("/admin/settings/email-templates");
 }
