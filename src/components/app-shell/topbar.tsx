@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
+import { MobileNavDrawer } from "@/components/app-shell/mobile-nav-drawer";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -65,6 +66,7 @@ export function Topbar({
         className,
       )}
     >
+      <MobileNavDrawer isAdmin={role === "admin"} />
       <BrandLogo className="lg:hidden" showText={false} imageClassName="h-10 w-10" />
       <div className="min-w-0 flex-1">
         <div className="truncate text-base font-semibold text-slate-900">
@@ -77,17 +79,15 @@ export function Topbar({
 
       <div className="ml-auto flex items-center gap-2">
         <div className="grid w-[13.5rem] grid-cols-2 gap-2 sm:w-[15rem]">
-          <div className="relative flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
+          <Link
+            href="/punkte"
+            className="relative flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5 transition hover:border-blue-200 hover:bg-blue-50/40"
+          >
             <PointsBurst />
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Statuspunkte
             </div>
-            <Link
-              href="/profile#punkte"
-              className="text-[9px] font-medium text-blue-600 hover:underline"
-            >
-              Übersicht
-            </Link>
+            <div className="text-[9px] font-medium text-blue-600">Regeln →</div>
             <div
               id={POINTS_TARGET_ID}
               data-points-target="true"
@@ -96,7 +96,7 @@ export function Topbar({
             >
               {points}
             </div>
-          </div>
+          </Link>
           <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Aktueller Rang
@@ -145,7 +145,13 @@ export function Topbar({
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid gap-2">
+              <Link
+                href="/punkte"
+                className="flex h-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-800 shadow-sm transition hover:bg-blue-50"
+              >
+                Statuspunkte
+              </Link>
               <Link
                 href="/profile"
                 className="flex h-9 items-center justify-center rounded-xl border bg-white text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"

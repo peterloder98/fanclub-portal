@@ -17,6 +17,7 @@ import {
 } from "@/app/(app)/admin/members/applications/actions";
 import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
+import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 
 export type AdminMemberRow = {
@@ -692,78 +693,69 @@ export function AdminMembersWorkspace({
       ) : null}
 
       {showPaymentDialog && selectedAppId ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl border bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Zahlungserinnerung</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Vorlage unter Admin → E-Mail-Vorlagen. Signatur unter Admin → Unterschriften pflegen.
-            </p>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Signatur</span>
-              <select
-                value={paymentSignatureId}
-                disabled={paymentLoading}
-                onChange={(e) => onPaymentSignatureChange(e.target.value)}
-                className="h-11 rounded-xl border px-3 text-sm"
-              >
-                {paymentSignatures.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Betreff</span>
-              <input
-                value={paymentSubject}
-                onChange={(e) => setPaymentSubject(e.target.value)}
-                className="h-11 rounded-xl border px-3 text-sm"
-              />
-            </label>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Nachricht</span>
-              <textarea
-                value={paymentBody}
-                onChange={(e) => setPaymentBody(e.target.value)}
-                rows={10}
-                className="rounded-xl border px-3 py-2 text-sm"
-              />
-            </label>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="h-10 rounded-xl border px-4 text-sm font-semibold"
-                onClick={() => setShowPaymentDialog(false)}
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                disabled={pending || paymentLoading || !paymentSignatureId}
-                className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
-                onClick={() => {
-                  startTransition(async () => {
-                    try {
-                      await sendPaymentReminderEmail({
-                        applicationId: selectedAppId,
-                        subject: paymentSubject,
-                        body: paymentBody,
-                        signatureId: paymentSignatureId,
-                      });
-                      setShowPaymentDialog(false);
-                      router.refresh();
-                    } catch (e) {
-                      setActionError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
-                    }
-                  });
-                }}
-              >
-                Senden
-              </button>
-            </div>
-          </div>
-        </div>
+        <EmailDialogShell
+          title="Zahlungserinnerung"
+          description="Vorlage unter Admin → E-Mail-Vorlagen. Signatur unter Admin → Unterschriften."
+          onClose={() => setShowPaymentDialog(false)}
+          footer={
+            <button
+              type="button"
+              disabled={pending || paymentLoading || !paymentSignatureId}
+              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+              onClick={() => {
+                startTransition(async () => {
+                  try {
+                    await sendPaymentReminderEmail({
+                      applicationId: selectedAppId,
+                      subject: paymentSubject,
+                      body: paymentBody,
+                      signatureId: paymentSignatureId,
+                    });
+                    setShowPaymentDialog(false);
+                    router.refresh();
+                  } catch (e) {
+                    setActionError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
+                  }
+                });
+              }}
+            >
+              Senden
+            </button>
+          }
+        >
+          <label className="grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Signatur</span>
+            <select
+              value={paymentSignatureId}
+              disabled={paymentLoading}
+              onChange={(e) => onPaymentSignatureChange(e.target.value)}
+              className="h-11 rounded-xl border px-3 text-sm"
+            >
+              {paymentSignatures.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="mt-3 grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Betreff</span>
+            <input
+              value={paymentSubject}
+              onChange={(e) => setPaymentSubject(e.target.value)}
+              className="h-11 rounded-xl border px-3 text-sm"
+            />
+          </label>
+          <label className="mt-3 grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Nachricht</span>
+            <textarea
+              value={paymentBody}
+              onChange={(e) => setPaymentBody(e.target.value)}
+              rows={10}
+              className="rounded-xl border px-3 py-2 text-sm"
+            />
+          </label>
+        </EmailDialogShell>
       ) : null}
     </div>
   );

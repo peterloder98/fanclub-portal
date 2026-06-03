@@ -116,6 +116,12 @@ export default function ProfilePage() {
       <main className="px-4 py-6 lg:px-8">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge variant="neutral">{email ?? "—"}</Badge>
+          <a
+            href="/punkte"
+            className="text-sm font-medium text-blue-700 hover:underline"
+          >
+            Statuspunkte & Regeln →
+          </a>
         </div>
 
         <Card className="max-w-xl">

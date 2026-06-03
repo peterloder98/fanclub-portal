@@ -15,7 +15,7 @@ export function ReferMembershipNavCta() {
     <Link
       href="/mitgliedschaft/einladen"
       className={cn(
-        "group mt-2 block overflow-hidden rounded-2xl border transition",
+        "group block overflow-hidden rounded-2xl border transition",
         active
           ? "border-slate-800 bg-slate-900 text-white shadow-lg shadow-slate-900/25 ring-2 ring-slate-700/80"
           : "border-amber-200/90 bg-gradient-to-br from-amber-50/95 via-white to-blue-50/90 shadow-md shadow-amber-900/10 ring-1 ring-amber-100 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-900/15",

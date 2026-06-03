@@ -30,7 +30,7 @@ export function ReferMembershipClient() {
             <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span>.
           </p>
           <p className="text-xs text-slate-500">
-            <Link href="/profile#punkte" className="font-medium text-blue-700 hover:underline">
+            <Link href="/punkte" className="font-medium text-blue-700 hover:underline">
               Alle Punkte-Regeln ansehen
             </Link>
           </p>

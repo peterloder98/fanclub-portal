@@ -57,13 +57,12 @@ export function PointsGuideCard({ id = "punkte" }: { id?: string }) {
         </div>
 
         <p className="text-sm text-slate-600">
-          Tipp: Unter{" "}
+          Tipp: In der linken Leiste unter „Empfehlen“ findest du{" "}
           <Link href="/mitgliedschaft/einladen" className="font-medium text-blue-700 hover:underline">
             Neues Mitglied werben
           </Link>{" "}
-          kannst du jemanden zum digitalen Antrag einladen und erhältst{" "}
-          <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span>{" "}
-          pro neuer Empfänger-Adresse.
+          — pro neuer Empfänger-Adresse{" "}
+          <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span>.
         </p>
       </CardContent>
     </Card>

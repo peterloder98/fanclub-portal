@@ -23,9 +23,14 @@ export function Sidebar({ user }: { user: SidebarUser }) {
         <BrandLogo />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-2">
         <div className="rounded-2xl border bg-white/70 p-2 shadow-sm shadow-slate-900/5 backdrop-blur">
           <NavList items={appNav} isAdmin={isAdmin} />
+        </div>
+        <div>
+          <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-amber-800/70">
+            Empfehlen
+          </p>
           <ReferMembershipNavCta />
         </div>
       </div>

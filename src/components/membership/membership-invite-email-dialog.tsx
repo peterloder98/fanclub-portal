@@ -14,6 +14,7 @@ import { replaceHeyRecipient } from "@/lib/email/replace-hey-greeting";
 import { composeMemberReferralBody } from "@/lib/email/member-referral-template";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import type { MailSignatureOption } from "@/lib/email/signatures";
+import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
 
 type Variant = "admin" | "member";
 
@@ -135,25 +136,74 @@ export function MembershipInviteEmailDialog({
 
   if (!open) return null;
 
+  const sendFooter = (
+    <button
+      ref={sendBtnRef}
+      type="button"
+      disabled={pending || loading || !canSend}
+      className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+      onClick={() => {
+        startTransition(async () => {
+          try {
+            if (isAdmin) {
+              await sendMembershipFormInviteEmail({
+                to: mailTo,
+                subject: mailSubject,
+                body: mailBody,
+                signatureId,
+                greetingName,
+              });
+              onSent?.(`E-Mail an ${mailTo} gesendet.`, 0);
+            } else {
+              const result = await sendMemberReferralEmailAction({
+                to: mailTo,
+                recipientName,
+                senderName,
+                subject: mailSubject,
+                body: mailBody,
+              });
+              if (result.pointsAwarded > 0) {
+                flyPointsFromElement({
+                  fromEl: sendBtnRef.current,
+                  delta: result.pointsAwarded,
+                });
+              }
+              const ptsHint =
+                result.pointsAwarded > 0
+                  ? ` +${result.pointsAwarded} Punkte!`
+                  : " (Punkte für diese Adresse bereits vergeben.)";
+              onSent?.(`Einladung an ${mailTo} gesendet.${ptsHint}`, result.pointsAwarded);
+            }
+            onClose();
+            setError(null);
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
+          }
+        });
+      }}
+    >
+      Senden
+    </button>
+  );
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border bg-white p-5 shadow-xl">
-        <h3 className="text-base font-semibold text-slate-900">
-          {isAdmin ? "Antragslink per E-Mail" : "Neues Mitglied werben"}
-        </h3>
-        <p className="mt-1 text-sm text-slate-600">
-          {isAdmin
-            ? "Versand über die Fanclub-Standard-E-Mail mit Admin-Vorlage und Signatur."
-            : "Versand über die Fanclub-Standard-E-Mail. Name und Text werden live in der Nachricht übernommen."}
-        </p>
+    <EmailDialogShell
+      title={isAdmin ? "Antragslink per E-Mail" : "Neues Mitglied werben"}
+      description={
+        isAdmin
+          ? "Versand über die Fanclub-Standard-E-Mail mit Admin-Vorlage und Signatur."
+          : "Versand über die Fanclub-Standard-E-Mail. Name und Text werden live in der Nachricht übernommen."
+      }
+      onClose={onClose}
+      footer={sendFooter}
+    >
+      {error ? (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
 
-        {error ? (
-          <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-            {error}
-          </div>
-        ) : null}
-
-        <label className="mt-3 grid gap-1">
+        <label className="grid gap-1">
           <span className="text-sm font-medium text-slate-700">E-Mail Empfänger/in *</span>
           <input
             type="email"
@@ -236,64 +286,6 @@ export function MembershipInviteEmailDialog({
             className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
           />
         </label>
-
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            className="h-10 rounded-xl border px-4 text-sm font-semibold"
-            onClick={onClose}
-          >
-            Abbrechen
-          </button>
-          <button
-            ref={sendBtnRef}
-            type="button"
-            disabled={pending || loading || !canSend}
-            className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
-            onClick={() => {
-              startTransition(async () => {
-                try {
-                  if (isAdmin) {
-                    await sendMembershipFormInviteEmail({
-                      to: mailTo,
-                      subject: mailSubject,
-                      body: mailBody,
-                      signatureId,
-                      greetingName,
-                    });
-                    onSent?.(`E-Mail an ${mailTo} gesendet.`, 0);
-                  } else {
-                    const result = await sendMemberReferralEmailAction({
-                      to: mailTo,
-                      recipientName,
-                      senderName,
-                      subject: mailSubject,
-                      body: mailBody,
-                    });
-                    if (result.pointsAwarded > 0) {
-                      flyPointsFromElement({
-                        fromEl: sendBtnRef.current,
-                        delta: result.pointsAwarded,
-                      });
-                    }
-                    const ptsHint =
-                      result.pointsAwarded > 0
-                        ? ` +${result.pointsAwarded} Punkte!`
-                        : " (Punkte für diese Adresse bereits vergeben.)";
-                    onSent?.(`Einladung an ${mailTo} gesendet.${ptsHint}`, result.pointsAwarded);
-                  }
-                  onClose();
-                  setError(null);
-                } catch (e) {
-                  setError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
-                }
-              });
-            }}
-          >
-            Senden
-          </button>
-        </div>
-      </div>
-    </div>
+    </EmailDialogShell>
   );
 }
