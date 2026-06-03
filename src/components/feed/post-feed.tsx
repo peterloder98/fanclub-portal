@@ -20,6 +20,7 @@ import {
   type Voter as PollVoter,
 } from "@/components/polls/poll-feed-card";
 import { UserListPopover, type UserListEntry } from "@/components/ui/user-list-popover";
+import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 
 type FeedPost = {
   id: string;
@@ -70,6 +71,8 @@ export function PostFeed({
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const commentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const pollCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const pendingScrollPollIdRef = useRef<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
@@ -164,6 +167,18 @@ export function PostFeed({
       return score(b.activityAt) - score(a.activityAt);
     });
   }, [posts, feedPolls, embedPollsInFeed]);
+
+  useEffect(() => {
+    const pollId = pendingScrollPollIdRef.current;
+    if (!pollId) return;
+    pendingScrollPollIdRef.current = null;
+    requestAnimationFrame(() => {
+      pollCardRefs.current[pollId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+  }, [mergedFeed]);
 
   const canManagePost = (post: FeedPost) =>
     me &&
@@ -728,12 +743,11 @@ export function PostFeed({
 
       applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
 
-      if (votesAfter > votesBefore) {
-        const nowIso = new Date().toISOString();
-        setFeedPolls((prev) =>
-          prev.map((p) => (p.id === pollId ? { ...p, lastActivityAt: nowIso } : p)),
-        );
-      }
+      const nowIso = new Date().toISOString();
+      setFeedPolls((prev) =>
+        prev.map((p) => (p.id === pollId ? { ...p, lastActivityAt: nowIso } : p)),
+      );
+      pendingScrollPollIdRef.current = pollId;
 
       setMyPollOptionsByPoll((m) => new Map(m).set(pollId, mineSet));
     } finally {
@@ -920,19 +934,25 @@ export function PostFeed({
       ) : null}
       {mergedFeed.map((item) =>
         item.kind === "poll" ? (
-          <PollFeedCard
+          <div
             key={`poll-${item.id}`}
-            poll={item.poll}
-            options={pollOptions}
-            votes={pollVotes}
-            myOptionIds={myPollOptionsByPoll.get(item.poll.id) ?? new Set()}
-            votersByOptionId={pollVotersByOption}
-            busyKey={pollBusyKey}
-            onToggleVote={(optionId, fromEl) =>
-              void togglePollVote(item.poll.id, optionId, fromEl)
-            }
-            onEnsureVoters={(optionId) => void ensurePollVoters(optionId)}
-          />
+            ref={(el) => {
+              pollCardRefs.current[item.poll.id] = el;
+            }}
+          >
+            <PollFeedCard
+              poll={item.poll}
+              options={pollOptions}
+              votes={pollVotes}
+              myOptionIds={myPollOptionsByPoll.get(item.poll.id) ?? new Set()}
+              votersByOptionId={pollVotersByOption}
+              busyKey={pollBusyKey}
+              onToggleVote={(optionId, fromEl) =>
+                void togglePollVote(item.poll.id, optionId, fromEl)
+              }
+              onEnsureVoters={(optionId) => void ensurePollVoters(optionId)}
+            />
+          </div>
         ) : (
         (() => {
           const post = item.post;
@@ -1019,20 +1039,7 @@ export function PostFeed({
               <p className="mt-1.5 text-sm leading-snug text-slate-800">{post.body}</p>
             )}
 
-            {post.media.length ? (
-              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
-                {post.media.slice(0, 4).map((m) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={m.id}
-                    src={m.url}
-                    alt=""
-                    className="w-full rounded-lg border object-cover"
-                    style={{ maxHeight: 280 }}
-                  />
-                ))}
-              </div>
-            ) : null}
+            {post.media.length ? <PostMediaGallery media={post.media} /> : null}
 
             <div className="mt-2 flex items-center gap-1.5 border-t border-slate-100 pt-2">
               <button
