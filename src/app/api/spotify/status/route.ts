@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { spotifyConfigured } from "@/lib/spotify/config";
-import { getSpotifyConnection, requireAppUser } from "@/lib/spotify/server";
+import {
+  getSpotifyConnection,
+  getSpotifyDiagnostics,
+  requireAppUser,
+} from "@/lib/spotify/server";
 
 export async function GET() {
   if (!spotifyConfigured()) {
@@ -12,10 +16,25 @@ export async function GET() {
   }
   try {
     const row = await getSpotifyConnection(user.id);
+    const diagnostics = row ? await getSpotifyDiagnostics(user.id) : null;
     return NextResponse.json({
       configured: true,
       connected: Boolean(row),
-      displayName: row?.display_name ?? null,
+      displayName:
+        diagnostics && "displayName" in diagnostics && diagnostics.displayName
+          ? diagnostics.displayName
+          : row?.display_name ?? null,
+      diagnostics:
+        diagnostics && diagnostics.connected
+          ? {
+              tokenOk: diagnostics.tokenOk,
+              tokenError: diagnostics.tokenError,
+              scopeOk: diagnostics.scopeOk,
+              scopes: diagnostics.scopes,
+              premium: diagnostics.premium,
+              product: diagnostics.product,
+            }
+          : null,
     });
   } catch {
     return NextResponse.json({

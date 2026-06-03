@@ -2,136 +2,61 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANNI_SPOTIFY_ARTIST_ID } from "@/lib/spotify/constants";
+import { connectSpotifyWebPlaybackPlayer } from "@/lib/spotify/web-playback-player";
+import type { SpotifyDiagnostics } from "@/components/app-shell/spotify-web-player-types";
 
-type SpotifyPlayerState = { device_id?: string; message?: string };
-
-type SpotifyPlayerInstance = {
-  connect: () => Promise<boolean>;
-  addListener: (event: string, cb: (state: SpotifyPlayerState) => void) => void;
-  disconnect: () => void;
-};
-
-declare global {
-  interface Window {
-    Spotify?: {
-      Player: new (opts: {
-        name: string;
-        getOAuthToken: (cb: (token: string) => void) => void;
-        volume?: number;
-      }) => SpotifyPlayerInstance;
-    };
-    onSpotifyWebPlaybackSDKReady?: () => void;
-  }
-}
-
-function loadSpotifySdk() {
-  return new Promise<void>((resolve, reject) => {
-    if (window.Spotify) {
-      resolve();
-      return;
-    }
-    const existing = document.querySelector('script[data-spotify-sdk="true"]');
-    if (existing) {
-      const done = () => resolve();
-      window.onSpotifyWebPlaybackSDKReady = done;
-      const poll = window.setInterval(() => {
-        if (window.Spotify) {
-          window.clearInterval(poll);
-          done();
-        }
-      }, 150);
-      window.setTimeout(() => window.clearInterval(poll), 12_000);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://sdk.scdn.co/spotify-player.js";
-    script.async = true;
-    script.dataset.spotifySdk = "true";
-    window.onSpotifyWebPlaybackSDKReady = () => resolve();
-    script.onerror = () => reject(new Error("Spotify SDK konnte nicht geladen werden."));
-    document.body.appendChild(script);
-  });
-}
-
-const CONNECT_TIMEOUT_MS = 18_000;
-
-export function SpotifyWebPlayer({ displayName }: { displayName: string | null }) {
+export function SpotifyWebPlayer({
+  displayName,
+  diagnostics,
+}: {
+  displayName: string | null;
+  diagnostics?: SpotifyDiagnostics | null;
+}) {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const deviceIdRef = useRef<string | null>(null);
-  const playerRef = useRef<SpotifyPlayerInstance | null>(null);
 
   const getToken = useCallback(async () => {
-    const res = await fetch("/api/spotify/access-token");
-    if (!res.ok) throw new Error("Spotify-Sitzung abgelaufen. Bitte erneut verbinden.");
-    const json = (await res.json()) as { access_token?: string };
+    const res = await fetch("/api/spotify/access-token", { credentials: "same-origin" });
+    const json = (await res.json()) as { access_token?: string; error?: string };
+    if (!res.ok) {
+      throw new Error(json.error ?? "Spotify-Sitzung abgelaufen. Bitte erneut verbinden.");
+    }
     if (!json.access_token) throw new Error("Kein Access-Token.");
     return json.access_token;
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const timeout = window.setTimeout(() => {
-      if (cancelled) return;
-      setError(
-        "Player-Verbindung dauert zu lange. Spotify Premium ist für Wiedergabe im Browser nötig — sonst unten die Spotify-Vorschau nutzen.",
-      );
-    }, CONNECT_TIMEOUT_MS);
+    if (diagnostics) {
+      if (!diagnostics.tokenOk && diagnostics.tokenError) {
+        setError(diagnostics.tokenError);
+        return;
+      }
+      if (diagnostics.premium === false) {
+        setError(
+          `Spotify-Konto: „${diagnostics.product ?? "unbekannt"}“ — Web-Player braucht Premium. Unten die eingebettete Vorschau nutzen.`,
+        );
+        return;
+      }
+      if (!diagnostics.scopeOk) {
+        setError(
+          'Berechtigung „streaming“ fehlt. Bitte „Trennen“ und erneut „Mit Spotify verbinden“ (Häkchen bei Spotify setzen).',
+        );
+        return;
+      }
+    }
 
+    let cancelled = false;
     async function init() {
       try {
-        await loadSpotifySdk();
-        if (cancelled || !window.Spotify) return;
-        await getToken();
-
-        const player = new window.Spotify.Player({
-          name: "Anni Perka Fanclub",
-          getOAuthToken: (cb) => {
-            void getToken()
-              .then(cb)
-              .catch(() => {
-                setError("Spotify-Sitzung abgelaufen. Bitte erneut verbinden (Trennen → Verbinden).");
-                cb("");
-              });
-          },
-          volume: 0.8,
-        });
-
-        player.addListener("ready", ({ device_id }) => {
-          if (cancelled) return;
-          window.clearTimeout(timeout);
-          if (device_id) deviceIdRef.current = device_id;
-          setReady(true);
-          setError(null);
-        });
-        player.addListener("not_ready", () => setReady(false));
-        player.addListener("initialization_error", ({ message }) => {
-          if (!cancelled) setError(message || "Player konnte nicht starten.");
-        });
-        player.addListener("authentication_error", ({ message }) => {
-          if (!cancelled) {
-            setError(message || "Spotify-Anmeldung fehlgeschlagen. Bitte erneut verbinden.");
-          }
-        });
-        player.addListener("account_error", () => {
-          if (!cancelled) {
-            setError(
-              "Spotify Premium wird für Wiedergabe im Browser benötigt. Die eingebettete Vorschau funktioniert auch ohne Premium.",
-            );
-          }
-        });
-
-        const connected = await player.connect();
-        if (!connected && !cancelled) {
-          setError(
-            "Spotify-Player konnte nicht verbunden werden. Premium-Konto nötig oder in der Spotify-App einmal aktiv sein.",
-          );
-        }
-        playerRef.current = player;
+        const deviceId = await connectSpotifyWebPlaybackPlayer(getToken);
+        if (cancelled) return;
+        deviceIdRef.current = deviceId;
+        setReady(Boolean(deviceId));
+        setError(null);
       } catch (e) {
         if (!cancelled) {
-          window.clearTimeout(timeout);
           setError(e instanceof Error ? e.message : "Player-Start fehlgeschlagen");
         }
       }
@@ -139,17 +64,15 @@ export function SpotifyWebPlayer({ displayName }: { displayName: string | null }
     void init();
     return () => {
       cancelled = true;
-      window.clearTimeout(timeout);
-      playerRef.current?.disconnect();
     };
-  }, [getToken]);
+  }, [getToken, diagnostics]);
 
   async function playAnni() {
     setBusy(true);
     setError(null);
     try {
       const token = await getToken();
-      const deviceId = deviceIdRef.current;
+      const deviceId = deviceIdRef.current ?? window.__fanclubSpotifyDeviceId ?? null;
       if (!deviceId) throw new Error("Spotify-Player noch nicht bereit.");
 
       const topRes = await fetch(
@@ -173,10 +96,11 @@ export function SpotifyWebPlayer({ displayName }: { displayName: string | null }
         },
       );
       if (!playRes.ok && playRes.status !== 204) {
+        const body = await playRes.text().catch(() => "");
         throw new Error(
           playRes.status === 403
-            ? "Spotify Premium wird für Wiedergabe im Browser benötigt."
-            : "Wiedergabe fehlgeschlagen.",
+            ? "Wiedergabe verweigert (Premium/Device). Spotify-App einmal öffnen und erneut versuchen."
+            : `Wiedergabe fehlgeschlagen (${playRes.status})${body ? `: ${body.slice(0, 120)}` : ""}`,
         );
       }
     } catch (e) {
@@ -201,8 +125,11 @@ export function SpotifyWebPlayer({ displayName }: { displayName: string | null }
         {busy ? "Starte…" : ready ? "▶ Anni Perka abspielen" : error ? "Player nicht verfügbar" : "Player verbindet…"}
       </button>
       {error ? <p className="text-[10px] text-rose-700">{error}</p> : null}
+      {diagnostics?.product ? (
+        <p className="text-[10px] text-slate-500">Spotify-Produkt: {diagnostics.product}</p>
+      ) : null}
       <p className="text-[10px] text-slate-500">
-        Premium-Konto nötig. Wiedergabe läuft über dein Spotify, nicht über einen gemeinsamen Fanclub-Account.
+        Premium nötig für den grünen Button. Hilft oft: Trennen → neu verbinden, Spotify-App kurz öffnen.
       </p>
     </div>
   );

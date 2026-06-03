@@ -6,9 +6,14 @@ export async function GET() {
   if (!user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const accessToken = await getSpotifyAccessTokenForUser(user.id);
-  if (!accessToken) {
-    return NextResponse.json({ error: "not_connected" }, { status: 404 });
+  try {
+    const accessToken = await getSpotifyAccessTokenForUser(user.id);
+    if (!accessToken) {
+      return NextResponse.json({ error: "not_connected" }, { status: 404 });
+    }
+    return NextResponse.json({ access_token: accessToken });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "token_error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-  return NextResponse.json({ access_token: accessToken });
 }

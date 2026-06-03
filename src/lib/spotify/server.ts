@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { decryptSpotifyToken, encryptSpotifyToken } from "@/lib/spotify/crypto";
 import {
+  SPOTIFY_SCOPES,
   spotifyClientId,
   spotifyClientSecret,
   spotifyRedirectUri,
@@ -108,17 +109,85 @@ export async function fetchSpotifyProfile(accessToken: string) {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) return null;
-  return (await res.json()) as { id: string; display_name?: string };
+  return (await res.json()) as {
+    id: string;
+    display_name?: string;
+    product?: string;
+    email?: string;
+  };
 }
 
-export function buildSpotifyAuthorizeUrl(state: string) {
+export function isSpotifyPremiumProduct(product: string | undefined) {
+  if (!product) return false;
+  return product === "premium" || product.includes("premium");
+}
+
+export function hasStreamingScope(scopes: string | null | undefined) {
+  return (scopes ?? "").split(/\s+/).includes("streaming");
+}
+
+export async function getSpotifyDiagnostics(userId: string) {
+  const row = await getSpotifyConnection(userId);
+  if (!row) {
+    return { connected: false as const };
+  }
+
+  const scopes = row.scopes ?? "";
+  const scopeOk = hasStreamingScope(scopes);
+
+  try {
+    const accessToken = await getSpotifyAccessTokenForUser(userId);
+    if (!accessToken) {
+      return {
+        connected: true as const,
+        scopeOk,
+        scopes,
+        tokenOk: false,
+        tokenError: "Kein Access-Token (Refresh fehlgeschlagen).",
+        product: null,
+        premium: null,
+      };
+    }
+    const profile = await fetchSpotifyProfile(accessToken);
+    const product = profile?.product ?? null;
+    return {
+      connected: true as const,
+      scopeOk,
+      scopes,
+      tokenOk: true,
+      tokenError: null,
+      product,
+      premium: isSpotifyPremiumProduct(product ?? undefined),
+      displayName: profile?.display_name ?? row.display_name,
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Token-Fehler";
+    const hint = /decrypt|auth tag|SPOTIFY_TOKEN_SECRET|SMTP_SECRET/i.test(msg)
+      ? "Server-Geheimnis (SMTP_SECRET) auf Vercel muss exakt wie beim Verbinden sein — bitte Trennen und neu verbinden."
+      : null;
+    return {
+      connected: true as const,
+      scopeOk,
+      scopes,
+      tokenOk: false,
+      tokenError: hint ? `${msg} ${hint}` : msg,
+      product: null,
+      premium: null,
+    };
+  }
+}
+
+export function buildSpotifyAuthorizeUrl(state: string, opts?: { forceConsent?: boolean }) {
   const params = new URLSearchParams({
     client_id: spotifyClientId(),
     response_type: "code",
     redirect_uri: spotifyRedirectUri(),
-    scope: "user-read-email user-read-private streaming user-read-playback-state user-modify-playback-state",
+    scope: SPOTIFY_SCOPES,
     state,
   });
+  if (opts?.forceConsent) {
+    params.set("show_dialog", "true");
+  }
   return `https://accounts.spotify.com/authorize?${params}`;
 }
 

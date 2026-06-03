@@ -15,6 +15,7 @@ export async function GET(request: Request) {
 
   const reqUrl = new URL(request.url);
   const isPopup = reqUrl.searchParams.get("popup") === "1";
+  const forceConsent = reqUrl.searchParams.get("consent") !== "0";
 
   const state = randomBytes(16).toString("hex");
   const jar = await cookies();
@@ -35,5 +36,5 @@ export async function GET(request: Request) {
     path: "/",
   });
 
-  return NextResponse.redirect(buildSpotifyAuthorizeUrl(state));
+  return NextResponse.redirect(buildSpotifyAuthorizeUrl(state, { forceConsent }));
 }

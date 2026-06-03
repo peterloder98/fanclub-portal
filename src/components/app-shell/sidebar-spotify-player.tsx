@@ -9,10 +9,14 @@ import {
   openSpotifyConnectPopup,
 } from "@/lib/spotify/open-connect-popup";
 
+import type { SpotifyDiagnostics } from "@/components/app-shell/spotify-web-player-types";
+import { resetSpotifyWebPlaybackPlayer } from "@/lib/spotify/web-playback-player";
+
 type Status = {
   configured: boolean;
   connected: boolean;
   displayName: string | null;
+  diagnostics?: SpotifyDiagnostics | null;
 };
 
 export function SidebarSpotifyPlayer() {
@@ -33,6 +37,7 @@ export function SidebarSpotifyPlayer() {
         configured: Boolean(data.configured),
         connected: Boolean(data.connected),
         displayName: data.displayName ?? null,
+        diagnostics: (data as Status).diagnostics ?? null,
       });
     } catch {
       setStatus({ configured: false, connected: false, displayName: null });
@@ -80,6 +85,7 @@ export function SidebarSpotifyPlayer() {
     setDisconnecting(true);
     try {
       await fetch("/api/spotify/disconnect", { method: "POST" });
+      resetSpotifyWebPlaybackPlayer();
       await refresh();
     } finally {
       setDisconnecting(false);
@@ -115,7 +121,10 @@ export function SidebarSpotifyPlayer() {
         </p>
       ) : connected ? (
         <>
-          <SpotifyWebPlayer displayName={status?.displayName ?? null} />
+          <SpotifyWebPlayer
+            displayName={status?.displayName ?? null}
+            diagnostics={status?.diagnostics ?? null}
+          />
           <div className="mt-2 overflow-hidden rounded-xl border border-blue-200/60 shadow-sm shadow-blue-900/5 ring-1 ring-rose-500/10">
             <iframe
               title="Spotify — Anni Perka (Vorschau)"
