@@ -9,7 +9,7 @@ export default async function AdminEmailTemplatesPage() {
     <div className="min-h-screen">
       <Topbar
         title="E-Mail-Vorlagen"
-        subtitle="Antragsbestätigung, Admin-Benachrichtigung, Zahlungserinnerung — inkl. Standard-Signatur"
+        subtitle="Antragsbestätigung, Einladung Antragslink, Zahlungserinnerung — inkl. Standard-Signatur"
       />
       <main className="px-4 py-6 lg:px-8">
         <EmailTemplatesClient />

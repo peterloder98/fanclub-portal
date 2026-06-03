@@ -20,6 +20,12 @@ export default function AdminPage() {
                 Mitglieder & Anträge
               </Link>
               <Link
+                href="/admin/membership-form"
+                className="rounded-xl border bg-white px-4 py-3 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+              >
+                Antragsformular (Link & E-Mail)
+              </Link>
+              <Link
                 href="/admin/settings/email"
                 className="rounded-xl border bg-white px-4 py-3 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
               >
