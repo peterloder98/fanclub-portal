@@ -18,9 +18,15 @@ const EventsMapClient = dynamic(
   },
 );
 
-export function EventsMap({ events }: { events: MapEvent[] }) {
+export function EventsMap({
+  events,
+  minHeight,
+}: {
+  events: MapEvent[];
+  minHeight?: number;
+}) {
   // Key by pathname to avoid Leaflet getting stuck across navigations.
   const pathname = usePathname();
-  return <EventsMapClient key={pathname} events={events} />;
+  return <EventsMapClient key={pathname} events={events} minHeight={minHeight} />;
 }
 

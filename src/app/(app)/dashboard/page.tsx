@@ -1,7 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { PostFeed } from "@/components/feed/post-feed";
-import { EventsCountdown } from "@/components/events/events-countdown";
 import type { MapEvent } from "@/components/events/events-map";
 import { EventsMap } from "@/components/events/events-map";
 import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-giveaways-inline";
@@ -22,8 +21,6 @@ export default async function DashboardPage() {
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(50);
-
-  const nextEventWithDate = (events ?? []).find((e) => Boolean(e.start_at)) ?? null;
 
   const mapEvents: MapEvent[] = (events ?? []).map((e) => ({
     id: e.id,
@@ -53,28 +50,20 @@ export default async function DashboardPage() {
       />
 
       <main className="px-4 py-6 lg:px-6">
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,300px)] lg:gap-5">
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4">
           <section className="min-w-0">
             <PostFeed embedPollsInFeed />
           </section>
 
           <aside className="flex max-h-[calc(100vh-5.5rem)] min-h-0 flex-col gap-2 lg:sticky lg:top-20">
-            <EventsCountdown
-              compact
-              nextStartAt={nextEventWithDate?.start_at ?? null}
-              nextTitle={nextEventWithDate?.title ?? null}
-            />
-
-            <Card className="shrink-0 overflow-hidden">
-              <CardContent className="p-2">
-                <div className="h-[180px] min-h-[180px]">
-                  <EventsMap events={mapEvents} />
-                </div>
+            <Card className="flex min-h-[min(420px,52vh)] flex-1 flex-col overflow-hidden">
+              <CardContent className="flex min-h-0 flex-1 p-1.5">
+                <EventsMap events={mapEvents} minHeight={400} />
               </CardContent>
             </Card>
 
-            <Card className="flex min-h-[140px] flex-1 flex-col overflow-hidden">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2.5">
+            <Card className="flex max-h-[min(220px,28vh)] min-h-[100px] shrink-0 flex-col overflow-hidden">
+              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
                 <DashboardGiveawaysInline items={giveawayItems} />
               </CardContent>
             </Card>

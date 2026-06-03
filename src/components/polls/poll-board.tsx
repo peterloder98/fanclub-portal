@@ -13,6 +13,9 @@ import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
+import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 
 type PollRow = {
   id: string;
@@ -43,6 +46,7 @@ export function PollBoard({
     new Map(),
   );
   const [votersByOptionId, setVotersByOptionId] = useState<Record<string, Voter[]>>({});
+  const [participantsByPollId, setParticipantsByPollId] = useState<Record<string, Voter[]>>({});
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -176,6 +180,28 @@ export function PollBoard({
     };
   }, [userId]);
 
+  async function ensurePollParticipants(pollId: string) {
+    if (participantsByPollId[pollId]) return;
+    const supabase = createSupabaseBrowserClient();
+    const { data: vRows } = await supabase
+      .from("poll_votes")
+      .select("user_id")
+      .eq("poll_id", pollId);
+    const ids = Array.from(new Set((vRows ?? []).map((r) => r.user_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
+      .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    const mapped =
+      (profiles ?? []).map((p) => ({
+        id: p.id,
+        name:
+          p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : (p.email ?? "Mitglied"),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+      })) ?? [];
+    setParticipantsByPollId((m) => ({ ...m, [pollId]: mapped }));
+  }
+
   async function toggleVote(poll: PollRow, optionId: string, fromEl: HTMLElement) {
     if (!userId) return;
     const ended = new Date(poll.ends_at).getTime() < Date.now();
@@ -233,6 +259,13 @@ export function PollBoard({
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
       applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
+      const optionIdsForPoll = options.filter((o) => o.poll_id === poll.id).map((o) => o.id);
+      invalidatePollVoterCache(setVotersByOptionId, optionIdsForPoll);
+      setParticipantsByPollId((m) => {
+        const next = { ...m };
+        delete next[poll.id];
+        return next;
+      });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Abstimmung fehlgeschlagen");
@@ -279,8 +312,10 @@ export function PollBoard({
     <div className="grid gap-4">
       {visiblePolls.map((poll) => {
         const ended = new Date(poll.ends_at).getTime() < Date.now();
-        const totalVotes = voteCountByPoll.get(poll.id) ?? 0;
         const opts = optionsByPoll.get(poll.id) ?? [];
+        const pollVotesList = votes.filter((v) => v.poll_id === poll.id);
+        const participantCount = new Set(pollVotesList.map((v) => v.user_id)).size;
+        const totalVoteSum = pollVotesList.length;
         const counts = new Map<string, number>();
         votes
           .filter((v) => v.poll_id === poll.id)
@@ -303,20 +338,27 @@ export function PollBoard({
                   ) : null}
                 </div>
               </div>
-              <div className="mt-1 text-xs text-slate-500">
-                {totalVotes} Stimme(n) · Ende{" "}
-                {new Date(poll.ends_at).toLocaleString("de-DE", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+                <PollParticipantSummary
+                  participantCount={participantCount}
+                  participants={participantsByPollId[poll.id] ?? []}
+                  onEnsureParticipants={() => void ensurePollParticipants(poll.id)}
+                />
+                <span className="text-xs text-slate-500">
+                  Ende{" "}
+                  {new Date(poll.ends_at).toLocaleString("de-DE", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </span>
               </div>
             </CardHeader>
             <CardContent className="grid gap-2">
               {opts.map((o) => {
                 const c = counts.get(o.id) ?? 0;
-                const { display: pct, bar: barPct } = pollPercent(c, totalVotes);
+                const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
                 const picked = mine.has(o.id);
-                const showResults = ended || hasVoted || totalVotes > 0;
+                const showResults = ended || hasVoted || participantCount > 0;
                 const voters = votersByOptionId[o.id] ?? [];
                 return (
                   <button
@@ -334,6 +376,7 @@ export function PollBoard({
                           count={c}
                           percent={pct}
                           voters={voters}
+                          isMyVote={mine.has(o.id)}
                           onMouseEnter={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                         />

@@ -11,12 +11,15 @@ export type UserListEntry = {
   avatarUrl?: string | null;
 };
 
+const PANEL_WIDTH = 224;
+
 export function UserListPopover({
   label,
   users,
   loading,
   children,
   className,
+  align = "start",
   onMouseEnter,
   onClick,
 }: {
@@ -25,6 +28,7 @@ export function UserListPopover({
   loading?: boolean;
   children: ReactNode;
   className?: string;
+  align?: "start" | "end";
   onMouseEnter?: (e: MouseEvent<HTMLSpanElement>) => void;
   onClick?: (e: MouseEvent<HTMLSpanElement>) => void;
 }) {
@@ -36,8 +40,11 @@ export function UserListPopover({
     const el = anchorRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setCoords({ top: rect.bottom + 6, left: rect.left });
-  }, []);
+    let left =
+      align === "end" ? rect.right - PANEL_WIDTH : rect.left;
+    left = Math.max(8, Math.min(left, window.innerWidth - PANEL_WIDTH - 8));
+    setCoords({ top: rect.bottom + 6, left });
+  }, [align]);
 
   const handleEnter = (e: MouseEvent<HTMLSpanElement>) => {
     updatePosition();
@@ -48,8 +55,8 @@ export function UserListPopover({
   const panel = open ? (
     <span
       role="tooltip"
-      style={{ top: coords.top, left: coords.left }}
-      className="pointer-events-none fixed z-[200] w-56 rounded-xl border bg-white p-3 text-left text-xs text-slate-700 shadow-lg shadow-slate-900/15"
+      style={{ top: coords.top, left: coords.left, width: PANEL_WIDTH }}
+      className="pointer-events-none fixed z-[200] rounded-xl border bg-white p-3 text-left text-xs text-slate-700 shadow-lg shadow-slate-900/15"
     >
       <span className="font-semibold text-slate-900">{label}</span>
       <span className="mt-2 block max-h-44 overflow-y-auto">

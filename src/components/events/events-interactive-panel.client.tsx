@@ -2,35 +2,59 @@
 
 import { useState } from "react";
 import { EventsMapClient } from "@/components/events/events-map.client";
+import { EventsCountdown } from "@/components/events/events-countdown";
+import { EventParticipationRow } from "@/components/events/event-participation-row";
 import { formatEventStart, formatLocation } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "@/components/events/events-map.types";
+import type { UserListEntry } from "@/components/ui/user-list-popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export type EventListRow = MapEvent & {
   venue?: string | null;
 };
 
-export function EventsInteractivePanel({ events }: { events: EventListRow[] }) {
+export type EventParticipationMeta = {
+  count: number;
+  joined: boolean;
+  attendees: UserListEntry[];
+};
+
+export function EventsInteractivePanel({
+  events,
+  nextStartAt,
+  nextTitle,
+  participationByEventId,
+}: {
+  events: EventListRow[];
+  nextStartAt: string | null;
+  nextTitle?: string | null;
+  participationByEventId: Record<string, EventParticipationMeta>;
+}) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   return (
     <div
-      className="grid min-h-0 flex-1 items-stretch gap-5"
-      style={{ gridTemplateColumns: "minmax(0, 1.4fr) minmax(0, 1fr)" }}
+      className="grid min-h-0 flex-1 items-stretch gap-4"
+      style={{ gridTemplateColumns: "minmax(0, 1.35fr) minmax(0, 1fr)" }}
     >
       <Card className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-        <CardHeader className="pb-3">
-          <CardTitle>Alle Termine</CardTitle>
+        <CardHeader className="shrink-0 pb-2 pt-4">
+          <CardTitle className="text-base">Alle Termine</CardTitle>
         </CardHeader>
-        <CardContent className="min-h-0 flex-1 pb-3">
+        <CardContent className="min-h-0 flex-1 pb-3 pt-0">
           <div className="h-full overflow-y-auto pr-1">
-            <div className="grid gap-3">
+            <div className="grid gap-2">
               {events.map((e) => {
                 const { date, time } = formatEventStart(e.start_at);
                 const location = formatLocation(e);
                 const ticket = ticketDisplay(e.ticket_url);
                 const active = highlightedId === e.id;
+                const part = participationByEventId[e.id] ?? {
+                  count: 0,
+                  joined: false,
+                  attendees: [],
+                };
                 return (
                   <div
                     key={e.id}
@@ -38,20 +62,20 @@ export function EventsInteractivePanel({ events }: { events: EventListRow[] }) {
                     onMouseLeave={() => setHighlightedId(null)}
                     className={
                       active
-                        ? "rounded-2xl border-2 border-blue-400 bg-blue-50/50 px-4 py-3 shadow-sm shadow-slate-900/5 transition"
-                        : "rounded-2xl border bg-white px-4 py-3 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
+                        ? "rounded-xl border-2 border-blue-400 bg-blue-50/50 px-3 py-2.5 shadow-sm transition"
+                        : "rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
                     }
                   >
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold text-slate-900">
                         {e.title}
                       </div>
-                      <div className="mt-1 text-sm text-slate-600">
+                      <div className="mt-0.5 text-xs text-slate-600">
                         <span className="font-medium text-slate-800">{date}</span>
                         {time ? <span> · {time} Uhr</span> : null}
                       </div>
                       {location ? (
-                        <div className="mt-1 text-sm text-slate-600">{location}</div>
+                        <div className="mt-0.5 text-xs text-slate-600">{location}</div>
                       ) : null}
                     </div>
                     {ticket.href ? (
@@ -59,13 +83,19 @@ export function EventsInteractivePanel({ events }: { events: EventListRow[] }) {
                         href={ticket.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 inline-flex text-sm font-medium text-blue-700 hover:underline"
+                        className="mt-1.5 inline-flex text-xs font-medium text-blue-700 hover:underline"
                       >
                         Tickets / Infos →
                       </a>
                     ) : ticket.text ? (
-                      <div className="mt-2 text-sm text-slate-700">{ticket.text}</div>
+                      <div className="mt-1.5 text-xs text-slate-700">{ticket.text}</div>
                     ) : null}
+                    <EventParticipationRow
+                      eventId={e.id}
+                      initialCount={part.count}
+                      initialJoined={part.joined}
+                      initialAttendees={part.attendees}
+                    />
                   </div>
                 );
               })}
@@ -74,13 +104,24 @@ export function EventsInteractivePanel({ events }: { events: EventListRow[] }) {
         </CardContent>
       </Card>
 
-      <Card className="flex h-full min-h-0 flex-col overflow-hidden">
-        <CardContent className="min-h-0 flex-1 p-3">
-          <div className="h-full">
-            <EventsMapClient events={events} highlightedEventId={highlightedId} />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex h-full min-h-0 min-w-0 flex-col gap-2">
+        <EventsCountdown
+          compact
+          nextStartAt={nextStartAt}
+          nextTitle={nextTitle}
+        />
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <CardContent className="min-h-0 flex-1 p-2">
+            <div className="h-full min-h-[280px]">
+              <EventsMapClient
+                events={events}
+                highlightedEventId={highlightedId}
+                minHeight={280}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

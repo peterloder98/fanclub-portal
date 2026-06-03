@@ -6,10 +6,10 @@ import L from "leaflet";
 import { EventMapMarker } from "./event-map-marker";
 import type { MapEvent } from "./events-map.types";
 
-const GERMANY_BOUNDS: L.LatLngBoundsExpression = [
-  [46.9, 5.5],
-  [55.9, 15.7],
-];
+/** Deutschland, Österreich, Südtirol – mehr Süden sichtbar */
+const DACH_SW: [number, number] = [45.3, 5.0];
+const DACH_NE: [number, number] = [55.5, 17.2];
+const DACH_BOUNDS: L.LatLngBoundsExpression = [DACH_SW, DACH_NE];
 
 function MapLifecycle({ onMap }: { onMap: (map: L.Map) => void }) {
   const map = useMap();
@@ -25,9 +25,12 @@ function MapLifecycle({ onMap }: { onMap: (map: L.Map) => void }) {
 export function EventsMapClient({
   events,
   highlightedEventId = null,
+  minHeight = 320,
 }: {
   events: MapEvent[];
   highlightedEventId?: string | null;
+  /** Mindesthöhe der Karte in px */
+  minHeight?: number;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -50,9 +53,11 @@ export function EventsMapClient({
     if (!map) return;
     if (markers.length) {
       const bounds = L.latLngBounds(markers.map((m) => [m.lat as number, m.lng as number]));
-      map.fitBounds(bounds, { padding: [18, 18] });
+      bounds.extend(L.latLng(DACH_SW[0], DACH_SW[1]));
+      bounds.extend(L.latLng(DACH_NE[0], DACH_NE[1]));
+      map.fitBounds(bounds, { padding: [12, 12], maxZoom: 7 });
     } else {
-      map.fitBounds(GERMANY_BOUNDS, { padding: [18, 18] });
+      map.fitBounds(DACH_BOUNDS, { padding: [12, 12] });
     }
     requestAnimationFrame(() => map.invalidateSize());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,17 +108,18 @@ export function EventsMapClient({
   return (
     <div
       ref={containerRef}
-      className="h-full min-h-[320px] w-full overflow-hidden rounded-2xl border bg-slate-50"
+      className="h-full w-full overflow-hidden rounded-2xl border bg-slate-50"
+      style={{ minHeight }}
     >
       <MapContainer
-        className="h-full min-h-[320px] w-full"
-        style={{ height: "100%", width: "100%", minHeight: 320 }}
-        bounds={GERMANY_BOUNDS}
-        boundsOptions={{ padding: [18, 18] }}
+        className="h-full w-full"
+        style={{ height: "100%", width: "100%", minHeight }}
+        bounds={DACH_BOUNDS}
+        boundsOptions={{ padding: [12, 12] }}
         scrollWheelZoom
         doubleClickZoom
         zoomControl
-        minZoom={5}
+        minZoom={4}
         maxZoom={18}
         attributionControl
       >

@@ -89,6 +89,9 @@ export function PostFeed({
     new Map(),
   );
   const [pollVotersByOption, setPollVotersByOption] = useState<Record<string, PollVoter[]>>({});
+  const [pollParticipantsByPollId, setPollParticipantsByPollId] = useState<
+    Record<string, PollVoter[]>
+  >({});
   const [pollBusyKey, setPollBusyKey] = useState<string | null>(null);
   const [likersByPostId, setLikersByPostId] = useState<Record<string, UserListEntry[]>>({});
   const [likersLoadingPostId, setLikersLoadingPostId] = useState<string | null>(null);
@@ -756,9 +759,36 @@ export function PostFeed({
         .filter((o) => o.poll_id === pollId)
         .map((o) => o.id);
       invalidatePollVoterCache(setPollVotersByOption, optionIdsForPoll);
+      setPollParticipantsByPollId((m) => {
+        const next = { ...m };
+        delete next[pollId];
+        return next;
+      });
     } finally {
       setPollBusyKey(null);
     }
+  }
+
+  async function ensurePollParticipants(pollId: string) {
+    if (pollParticipantsByPollId[pollId]) return;
+    const supabase = createSupabaseBrowserClient();
+    const { data: vRows } = await supabase
+      .from("poll_votes")
+      .select("user_id")
+      .eq("poll_id", pollId);
+    const ids = Array.from(new Set((vRows ?? []).map((r) => r.user_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
+      .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    const mapped =
+      (profiles ?? []).map((p) => ({
+        id: p.id,
+        name:
+          p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : (p.email ?? "Mitglied"),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+      })) ?? [];
+    setPollParticipantsByPollId((m) => ({ ...m, [pollId]: mapped }));
   }
 
   async function ensurePollVoters(optionId: string) {
@@ -957,6 +987,8 @@ export function PostFeed({
                 void togglePollVote(item.poll.id, optionId, fromEl)
               }
               onEnsureVoters={(optionId) => void ensurePollVoters(optionId)}
+              participants={pollParticipantsByPollId[item.poll.id] ?? []}
+              onEnsureParticipants={() => void ensurePollParticipants(item.poll.id)}
             />
           </div>
         ) : (

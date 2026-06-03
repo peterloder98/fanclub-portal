@@ -1,7 +1,10 @@
 import { Topbar } from "@/components/app-shell/topbar";
-import { EventsCountdown } from "@/components/events/events-countdown";
-import { EventsInteractivePanel } from "@/components/events/events-interactive-panel.client";
+import {
+  EventsInteractivePanel,
+  type EventParticipationMeta,
+} from "@/components/events/events-interactive-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { redirect } from "next/navigation";
 
 export default async function EventsPage() {
@@ -10,12 +13,6 @@ export default async function EventsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
 
   const { data: events, error } = await supabase
     .from("external_events")
@@ -26,30 +23,76 @@ export default async function EventsPage() {
   const nextEventWithDate =
     (events ?? []).find((e) => Boolean(e.start_at)) ?? null;
 
+  const eventIds = (events ?? []).map((e) => e.id);
+  const participationByEventId: Record<string, EventParticipationMeta> = {};
+
+  if (eventIds.length) {
+    const { data: parts } = await supabase
+      .from("event_participations")
+      .select("event_id,user_id")
+      .in("event_id", eventIds);
+
+    const byEvent = new Map<string, string[]>();
+    (parts ?? []).forEach((p) => {
+      if (!byEvent.has(p.event_id)) byEvent.set(p.event_id, []);
+      byEvent.get(p.event_id)!.push(p.user_id);
+    });
+
+    const allUserIds = Array.from(new Set((parts ?? []).map((p) => p.user_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
+      .in("id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"]);
+
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [
+        p.id,
+        {
+          id: p.id,
+          name:
+            p.first_name && p.last_name
+              ? `${p.first_name} ${p.last_name}`
+              : (p.email ?? "Mitglied"),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+        },
+      ]),
+    );
+
+    for (const eid of eventIds) {
+      const userIds = byEvent.get(eid) ?? [];
+      participationByEventId[eid] = {
+        count: userIds.length,
+        joined: userIds.includes(user.id),
+        attendees: userIds
+          .map((uid) => profileMap.get(uid))
+          .filter((x): x is NonNullable<typeof x> => Boolean(x)),
+      };
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <Topbar
         title="Events"
         subtitle="Konzerttermine aus Artistflow (automatisch synchronisiert)."
       />
-      {/* Fixed viewport content area under the sticky topbar */}
-      <main className="h-[calc(100vh-64px)] overflow-hidden px-4 py-5 lg:px-6">
+      <main className="h-[calc(100vh-64px)] overflow-hidden px-4 py-4 lg:px-6">
         {error ? (
           <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("external_events")
-              ? "Tabelle fehlt noch. Bitte `supabase/006_artistflow_events.sql` in Supabase ausführen."
-              : error.message}
+              ? "Tabelle fehlt noch. Bitte `supabase/006_artistflow_events.sql` ausführen."
+              : error.message.includes("event_participations")
+                ? "Bitte `supabase/035_event_participations.sql` ausführen."
+                : error.message}
           </div>
         ) : null}
 
-        <div className="flex h-full min-h-0 flex-col gap-4">
-          <EventsCountdown
-            nextStartAt={nextEventWithDate?.start_at ?? null}
-            nextTitle={nextEventWithDate?.title ?? null}
-          />
-
-          <EventsInteractivePanel events={(events ?? []) as any} />
-        </div>
+        <EventsInteractivePanel
+          events={(events ?? []) as never[]}
+          nextStartAt={nextEventWithDate?.start_at ?? null}
+          nextTitle={nextEventWithDate?.title ?? null}
+          participationByEventId={participationByEventId}
+        />
       </main>
     </div>
   );

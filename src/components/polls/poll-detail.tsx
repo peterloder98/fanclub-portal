@@ -12,6 +12,7 @@ import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
 
 type Poll = {
   id: string;
@@ -45,6 +46,9 @@ export function PollDetail({ pollId }: { pollId: string }) {
   const [votersByOption, setVotersByOption] = useState<
     Record<string, Array<{ id: string; name: string; avatarUrl: string | null }>>
   >({});
+  const [participants, setParticipants] = useState<
+    Array<{ id: string; name: string; avatarUrl: string | null }>
+  >([]);
 
   const ended = poll ? new Date(poll.ends_at).getTime() < Date.now() : false;
 
@@ -55,6 +59,10 @@ export function PollDetail({ pollId }: { pollId: string }) {
   }, [votes]);
 
   const totalVotes = votes.length;
+  const participantCount = useMemo(
+    () => new Set(votes.map((v) => v.user_id)).size,
+    [votes],
+  );
 
   async function load() {
     const supabase = createSupabaseBrowserClient();
@@ -233,6 +241,24 @@ export function PollDetail({ pollId }: { pollId: string }) {
     }
   }
 
+  async function ensureParticipants() {
+    if (participants.length) return;
+    const supabase = createSupabaseBrowserClient();
+    const ids = Array.from(new Set(votes.map((v) => v.user_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
+      .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
+    setParticipants(
+      (profiles ?? []).map((p) => ({
+        id: p.id,
+        name:
+          p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : (p.email ?? "Mitglied"),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+      })),
+    );
+  }
+
   async function ensureVoters(optionId: string) {
     const supabase = createSupabaseBrowserClient();
     const { data: vRows, error: vErr } = await supabase
@@ -299,13 +325,18 @@ export function PollDetail({ pollId }: { pollId: string }) {
             <RunningCountdownBadge endsAt={poll.ends_at} />
             {poll.allow_multiple ? <Badge variant="neutral">Mehrfach</Badge> : null}
           </div>
-          <div className="mt-2 text-xs text-slate-500">
+          <PollParticipantSummary
+            participantCount={participantCount}
+            participants={participants}
+            onEnsureParticipants={() => void ensureParticipants()}
+            className="mt-2 block"
+          />
+          <div className="mt-1 text-xs text-slate-500">
             Ende:{" "}
             {new Date(poll.ends_at).toLocaleString("de-DE", {
               dateStyle: "medium",
               timeStyle: "short",
             })}
-            {poll.allow_multiple ? " · Mehrfachauswahl" : " · Eine Antwort"}
           </div>
         </CardHeader>
         <CardContent className="grid gap-2">
@@ -332,6 +363,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
                       count={c}
                       percent={pct}
                       voters={votersByOption[o.id] ?? []}
+                      isMyVote={myOptionIds.has(o.id)}
                       loading={!(o.id in votersByOption)}
                       onMouseEnter={(e) => {
                         e.stopPropagation();

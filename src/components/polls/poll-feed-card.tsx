@@ -5,10 +5,12 @@ import { PieChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
-import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { PollVoteStats, type PollVoter } from "@/components/polls/poll-vote-stats";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
+import { PollParticipantSummary } from "@/components/polls/poll-participant-summary";
 import { cn } from "@/lib/cn";
+import { useMemo } from "react";
 
 export type PollFeedData = {
   id: string;
@@ -36,6 +38,8 @@ export function PollFeedCard({
   busyKey,
   onToggleVote,
   onEnsureVoters,
+  participants = [],
+  onEnsureParticipants,
   compact = false,
 }: {
   poll: PollFeedData;
@@ -46,17 +50,36 @@ export function PollFeedCard({
   busyKey: string | null;
   onToggleVote: (optionId: string, fromEl: HTMLElement) => void;
   onEnsureVoters: (optionId: string) => void;
+  participants?: PollVoter[];
+  onEnsureParticipants?: () => void;
   compact?: boolean;
 }) {
   const ended = new Date(poll.ends_at).getTime() < Date.now();
   const hasVoted = myOptionIds.size > 0;
-  const total = votes.filter((v) => v.poll_id === poll.id).length;
+  const totalVoteSum = votes.filter((v) => v.poll_id === poll.id).length;
   const counts = new Map<string, number>();
   votes
     .filter((v) => v.poll_id === poll.id)
     .forEach((v) => counts.set(v.option_id, (counts.get(v.option_id) ?? 0) + 1));
 
   const opts = options.filter((o) => o.poll_id === poll.id).sort((a, b) => a.sort_order - b.sort_order);
+
+  const participantCount = useMemo(
+    () => new Set(votes.filter((v) => v.poll_id === poll.id).map((v) => v.user_id)).size,
+    [votes, poll.id],
+  );
+
+  const participantLine =
+    participantCount > 0 || participants.length > 0 ? (
+      <PollParticipantSummary
+        participantCount={participantCount}
+        participants={participants}
+        onEnsureParticipants={onEnsureParticipants}
+        className="mb-1.5 block w-full text-right"
+      />
+    ) : (
+      <p className="mb-1.5 text-right text-xs text-slate-500">Noch keine Teilnehmer</p>
+    );
 
   if (compact) {
     return (
@@ -71,11 +94,12 @@ export function PollFeedCard({
             className="!px-1.5 !py-0.5 !text-[10px]"
           />
         </div>
-        <div className="mt-1.5 grid gap-1">
+        {participantLine}
+        <div className="grid gap-1">
           {opts.map((o) => {
             const c = counts.get(o.id) ?? 0;
-            const { display: pct, bar: barPct } = pollPercent(c, total);
-            const showResults = ended || hasVoted || total > 0;
+            const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
+            const showResults = ended || hasVoted || totalVoteSum > 0;
             return (
               <button
                 key={o.id}
@@ -95,6 +119,7 @@ export function PollFeedCard({
                       count={c}
                       percent={pct}
                       voters={votersByOptionId[o.id] ?? []}
+                      isMyVote={myOptionIds.has(o.id)}
                       onMouseEnter={(e) => {
                         e.stopPropagation();
                         onEnsureVoters(o.id);
@@ -154,10 +179,11 @@ export function PollFeedCard({
         </div>
       </CardHeader>
       <CardContent className="grid gap-1.5 pb-3 pt-0">
+        {participantLine}
         {opts.map((o) => {
           const c = counts.get(o.id) ?? 0;
-          const { display: pct, bar: barPct } = pollPercent(c, total);
-          const showResults = ended || hasVoted || total > 0;
+          const { display: pct, bar: barPct } = pollPercent(c, totalVoteSum);
+          const showResults = ended || hasVoted || totalVoteSum > 0;
           const voters = votersByOptionId[o.id] ?? [];
           return (
             <button
@@ -175,6 +201,7 @@ export function PollFeedCard({
                     count={c}
                     percent={pct}
                     voters={voters}
+                    isMyVote={myOptionIds.has(o.id)}
                     onMouseEnter={(e) => {
                       e.stopPropagation();
                       onEnsureVoters(o.id);
