@@ -8,33 +8,37 @@ function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
 }
 
+function formatSubmittedAt(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
+
 export async function notifyAdminsNewMembershipApplication(input: {
   applicationId: string;
   applicantName: string;
   email: string;
+  submittedAt: string;
 }) {
   const admin = createSupabaseAdminClient();
   const { data: admins } = await admin
     .from("profiles")
-    .select("email")
+    .select("id,email,first_name,last_name")
     .eq("role", "admin")
     .not("email", "is", null);
 
-  const recipients = Array.from(
-    new Set(
-      (admins ?? [])
-        .map((a) => a.email?.trim().toLowerCase())
-        .filter((e): e is string => Boolean(e)),
-    ),
-  );
-
+  const recipients = (admins ?? []).filter((a) => a.email?.trim());
   if (!recipients.length) {
     console.warn("[email] Keine Admin-E-Mail-Adressen gefunden.");
     return { sent: false, reason: "no_admin_emails" as const };
   }
 
   const base = appBaseUrl();
+  const applicationAdminUrl = base
+    ? `${base}/admin/members/applications/${input.applicationId}`
+    : `/admin/members/applications/${input.applicationId}`;
   const adminApplicationsUrl = base ? `${base}/admin/members` : "/admin/members";
+  const submittedAtLabel = formatSubmittedAt(input.submittedAt);
 
   let pdfBytes: Uint8Array | null = null;
   try {
@@ -43,42 +47,53 @@ export async function notifyAdminsNewMembershipApplication(input: {
     console.error("[email] PDF für Admin-Mail konnte nicht erzeugt werden:", e);
   }
 
-  const rendered = await renderEmailFromTemplate(
-    EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
-    {
-      applicant_name: input.applicantName,
-      email: input.email,
-      application_id: input.applicationId,
-      admin_applications_url: adminApplicationsUrl,
-    },
-  );
+  const pdfAttachment = pdfBytes
+    ? {
+        filename: `Mitgliedsantrag_${input.applicantName.replace(/\s+/g, "_")}.pdf`,
+        content: Buffer.from(pdfBytes),
+        contentType: "application/pdf",
+      }
+    : null;
 
-  const attachments = [
-    ...(pdfBytes
-      ? [
-          {
-            filename: `Mitgliedsantrag_${input.applicantName.replace(/\s+/g, "_")}.pdf`,
-            content: Buffer.from(pdfBytes),
-            contentType: "application/pdf",
-          },
-        ]
-      : []),
-    ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
-  ];
+  let sentCount = 0;
+  for (const adm of recipients) {
+    const adminFirst =
+      adm.first_name?.trim() || adm.last_name?.trim() || "Vorstand";
 
-  const result = await sendEmailViaAccount({
-    to: recipients,
-    subject: rendered.subject,
-    text: rendered.text,
-    html: rendered.html,
-    attachments: attachments.length ? attachments : undefined,
-  });
+    const rendered = await renderEmailFromTemplate(
+      EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
+      {
+        admin_first_name: adminFirst,
+        applicant_name: input.applicantName,
+        email: input.email,
+        application_id: input.applicationId,
+        submitted_at: submittedAtLabel,
+        application_admin_url: applicationAdminUrl,
+        admin_applications_url: adminApplicationsUrl,
+      },
+    );
 
-  if (result.skipped) {
+    const attachments = [
+      ...(pdfAttachment ? [pdfAttachment] : []),
+      ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
+    ];
+
+    const result = await sendEmailViaAccount({
+      to: adm.email!.trim(),
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+      attachments: attachments.length ? attachments : undefined,
+    });
+
+    if (result.ok) sentCount += 1;
+  }
+
+  if (sentCount === 0) {
     return { sent: false, reason: "no_smtp_account" as const };
   }
 
-  return { sent: true as const };
+  return { sent: true as const, count: sentCount };
 }
 
 export async function sendApplicantConfirmationEmail(input: {

@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
-import { pollOptionBarClass, pollOptionButtonClass } from "@/components/polls/poll-option-styles";
+import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
+import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 
 type Poll = {
@@ -311,7 +312,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
         <CardContent className="grid gap-2">
           {options.map((o) => {
             const c = counts.get(o.id) ?? 0;
-            const pct = totalVotes ? Math.round((c / totalVotes) * 100) : 0;
+            const { display: pct, bar: barPct } = pollPercent(c, totalVotes);
             const picked = myOptionIds.has(o.id);
             const showResults = hasVoted || ended || totalVotes > 0;
 
@@ -324,14 +325,8 @@ export function PollDetail({ pollId }: { pollId: string }) {
                 onMouseEnter={() => void ensureVoters(o.id)}
                 className={pollOptionButtonClass(picked, ended)}
               >
-                {showResults && pct > 0 ? (
-                  <div
-                    className={pollOptionBarClass()}
-                    style={{ width: `${pct}%` }}
-                    aria-hidden
-                  />
-                ) : null}
-                <div className="relative flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
+                {showResults ? <PollOptionProgress percent={barPct} /> : null}
+                <div className="relative z-10 flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
                   <span className="min-w-0 flex-1 font-medium text-slate-800">{o.label}</span>
                   {showResults ? (
                     <PollVoteStats

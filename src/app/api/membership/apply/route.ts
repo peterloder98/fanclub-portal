@@ -7,6 +7,7 @@ import {
 } from "@/lib/email/membership-notify";
 import { createMembershipDownloadToken } from "@/lib/membership/download-token";
 import { cacheApplicationPdf } from "@/lib/membership/application-pdf-service";
+import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
 import { provisionMembershipApplicant } from "@/lib/membership/provision-applicant";
 import { isValidPostalCode } from "@/lib/postal-code";
 import { seedSmtpFromEnvIfEmpty } from "@/lib/smtp/accounts";
@@ -72,6 +73,12 @@ function dataUrlToBuffer(dataUrl: string) {
 function formatApiError(error: unknown) {
   if (error instanceof Error) return error.message;
   return "Antrag fehlgeschlagen";
+}
+
+function formatSubmittedAtDe(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
 }
 
 export async function POST(request: Request) {
@@ -177,40 +184,67 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: insErr.message }, { status: 500 });
     }
 
-    void cacheApplicationPdf(appId).catch((e) => {
-      console.warn("[membership] PDF-Cache fehlgeschlagen:", e);
-    });
-
     const applicantName = `${input.first_name.trim()} ${input.last_name.trim()}`;
     const email = input.email.trim().toLowerCase();
+    const submittedAt = new Date().toISOString();
 
-    void (async () => {
-      try {
-        await notifyAdminsNewMembershipApplication({
-          applicationId: appId,
-          applicantName,
-          email,
-        });
-      } catch (e) {
-        console.error("[membership] Admin-Benachrichtigung fehlgeschlagen:", e);
+    let emailWarning: string | null = null;
+
+    try {
+      await cacheApplicationPdf(appId);
+    } catch (e) {
+      console.warn("[membership] PDF-Cache fehlgeschlagen:", e);
+    }
+
+    try {
+      const applicantMail = await sendApplicantConfirmationEmail({
+        applicationId: appId,
+        email,
+        firstName: input.first_name.trim(),
+        lastName: input.last_name.trim(),
+        feeCents: 1500,
+      });
+      if (!applicantMail.ok && applicantMail.skipped) {
+        emailWarning = "Bestätigungs-E-Mail: SMTP nicht konfiguriert.";
       }
-      try {
-        await sendApplicantConfirmationEmail({
-          applicationId: appId,
-          email,
-          firstName: input.first_name.trim(),
-          lastName: input.last_name.trim(),
-          feeCents: 1500,
-        });
-      } catch (e) {
-        console.error("[membership] Bestätigungs-Mail fehlgeschlagen:", e);
+    } catch (e) {
+      console.error("[membership] Bestätigungs-Mail fehlgeschlagen:", e);
+      emailWarning = "Bestätigungs-E-Mail konnte nicht gesendet werden.";
+    }
+
+    try {
+      const adminMail = await notifyAdminsNewMembershipApplication({
+        applicationId: appId,
+        applicantName,
+        email,
+        submittedAt,
+      });
+      if (!adminMail.sent && adminMail.reason === "no_smtp_account") {
+        emailWarning = emailWarning
+          ? `${emailWarning} Admin-Benachrichtigung: SMTP fehlt.`
+          : "Admin-Benachrichtigung: SMTP nicht konfiguriert.";
       }
-    })();
+    } catch (e) {
+      console.error("[membership] Admin-Benachrichtigung fehlgeschlagen:", e);
+      emailWarning = emailWarning
+        ? `${emailWarning} Admin-Mail fehlgeschlagen.`
+        : "Admin-Benachrichtigung fehlgeschlagen.";
+    }
+
+    const appBase = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+    await logMemberActivity({
+      userId,
+      applicationId: appId,
+      eventType: MEMBER_ACTIVITY_TYPES.applicationSubmitted,
+      title: "Mitgliedschaftsantrag eingereicht",
+      details: `Digital eingereicht am ${formatSubmittedAtDe(submittedAt)}.`,
+      linkUrl: appBase ? `${appBase}/admin/members/applications/${appId}` : null,
+      linkLabel: "Antrag ansehen",
+    }).catch((e) => console.warn("[activity] Antrag nicht protokolliert:", e));
 
     const downloadToken = createMembershipDownloadToken(appId);
-    const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
     const pdfPath = `/api/membership/applications/${appId}/pdf?token=${encodeURIComponent(downloadToken)}`;
-    const pdfDownloadUrl = base ? `${base}${pdfPath}` : pdfPath;
+    const pdfDownloadUrl = appBase ? `${appBase}${pdfPath}` : pdfPath;
 
     return NextResponse.json({
       ok: true,
@@ -218,6 +252,7 @@ export async function POST(request: Request) {
       userId,
       pdfDownloadUrl,
       applicantName,
+      emailWarning,
     });
   } catch (e) {
     return NextResponse.json({ error: formatApiError(e) }, { status: 500 });

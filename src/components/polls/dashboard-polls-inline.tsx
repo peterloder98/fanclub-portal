@@ -8,7 +8,8 @@ import { cn } from "@/lib/cn";
 import { flyPointsFromElement } from "@/lib/points/fly";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
-import { pollOptionBarClass, pollOptionButtonClass } from "@/components/polls/poll-option-styles";
+import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
+import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 type PollRow = {
   id: string;
   question: string;
@@ -197,7 +198,7 @@ export function DashboardPollsInline() {
             <div className="mt-2 grid gap-2">
               {opts.map((o) => {
                 const c = counts.get(o.id) ?? 0;
-                const pct = total ? Math.round((c / total) * 100) : 0;
+                const { display: pct, bar: barPct } = pollPercent(c, total);
                 const showResults = ended || hasVoted || total > 0;
                 const voters = votersByOptionId[o.id] ?? [];
                 return (
@@ -211,14 +212,8 @@ export function DashboardPollsInline() {
                       pollOptionButtonClass(mine.has(o.id), ended),
                     )}
                   >
-                    {showResults && pct > 0 ? (
-                      <div
-                        className={pollOptionBarClass()}
-                        style={{ width: `${pct}%` }}
-                        aria-hidden
-                      />
-                    ) : null}
-                    <div className="relative flex justify-between gap-2 px-3 py-2">
+                    {showResults ? <PollOptionProgress percent={barPct} /> : null}
+                    <div className="relative z-10 flex justify-between gap-2 px-3 py-2">
                       <span className="font-medium text-slate-800">{o.label}</span>
                       {showResults ? (
                         <PollVoteStats count={c} percent={pct} voters={voters} />

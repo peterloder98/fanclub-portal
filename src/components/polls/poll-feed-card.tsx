@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
-import { pollOptionBarClass, pollOptionButtonClass } from "@/components/polls/poll-option-styles";
+import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
+import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 
 export type PollFeedData = {
   id: string;
@@ -94,7 +95,7 @@ export function PollFeedCard({
       <CardContent className="grid gap-2.5 pb-4">
         {opts.map((o) => {
           const c = counts.get(o.id) ?? 0;
-          const pct = total ? Math.round((c / total) * 100) : 0;
+          const { display: pct, bar: barPct } = pollPercent(c, total);
           const showResults = ended || hasVoted || total > 0;
           const voters = votersByOptionId[o.id] ?? [];
           return (
@@ -105,14 +106,8 @@ export function PollFeedCard({
               onClick={(e) => onToggleVote(o.id, e.currentTarget)}
               className={pollOptionButtonClass(myOptionIds.has(o.id), ended)}
             >
-              {showResults && pct > 0 ? (
-                <div
-                  className={pollOptionBarClass()}
-                  style={{ width: `${pct}%` }}
-                  aria-hidden
-                />
-              ) : null}
-              <div className="relative flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
+              {showResults ? <PollOptionProgress percent={barPct} /> : null}
+              <div className="relative z-10 flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
                 <span className="min-w-0 flex-1 font-medium text-slate-800">{o.label}</span>
                 {showResults ? (
                   <PollVoteStats

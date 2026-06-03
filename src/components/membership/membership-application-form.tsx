@@ -59,6 +59,7 @@ export function MembershipApplicationForm() {
   const [done, setDone] = useState(false);
   const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
+  const [emailWarning, setEmailWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (!form.whatsapp_opt_in || whatsappTouched) return;
@@ -157,12 +158,14 @@ export function MembershipApplicationForm() {
         error?: string;
         pdfDownloadUrl?: string;
         applicantName?: string;
+        emailWarning?: string | null;
       };
       if (!res.ok || !json.ok) {
         throw new Error(typeof json.error === "string" ? json.error : "Antrag fehlgeschlagen");
       }
       setPdfDownloadUrl(json.pdfDownloadUrl ?? null);
       setDoneName(json.applicantName ?? null);
+      setEmailWarning(json.emailWarning ?? null);
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Antrag fehlgeschlagen");
@@ -180,9 +183,14 @@ export function MembershipApplicationForm() {
         <CardContent className="grid gap-3 text-sm text-slate-700">
           <p>
             Vielen Dank{doneName ? `, ${doneName.split(" ")[0]}` : ""}! Dein Antrag ist bei uns
-            eingegangen. Wir prüfen ihn und melden uns per E-Mail, sobald die Mitgliedschaft
-            freigeschaltet ist.
+            eingegangen. Du erhältst in Kürze eine Bestätigungs-E-Mail mit deinem Antrag und der
+            Satzung als PDF-Anhang. Der Vorstand wurde ebenfalls benachrichtigt.
           </p>
+          {emailWarning ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+              Hinweis: {emailWarning}
+            </p>
+          ) : null}
           {pdfDownloadUrl ? (
             <a
               href={pdfDownloadUrl}
@@ -193,8 +201,7 @@ export function MembershipApplicationForm() {
             </a>
           ) : null}
           <p className="text-xs text-slate-500">
-            Eine Kopie wird zusätzlich an deine E-Mail-Adresse gesendet, sobald der Mailversand
-            konfiguriert ist.
+            Falls keine E-Mail ankommt, prüfe den Spam-Ordner oder lade das PDF hier herunter.
           </p>
         </CardContent>
       </Card>
