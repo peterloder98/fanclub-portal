@@ -65,7 +65,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen lg:flex">
       <Sidebar user={await loadUser()} />
-      <div className="min-w-0 flex-1">{children}</div>
+      <div className="min-h-0 min-w-0 flex-1 lg:flex lg:flex-col">{children}</div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "@/components/events/events-map.types";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/cn";
 
 export type EventListRow = MapEvent & {
   venue?: string | null;
@@ -25,25 +26,35 @@ export function EventsInteractivePanel({
   nextStartAt,
   nextTitle,
   participationByEventId,
+  className,
 }: {
   events: EventListRow[];
   nextStartAt: string | null;
   nextTitle?: string | null;
   participationByEventId: Record<string, EventParticipationMeta>;
+  className?: string;
 }) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   return (
     <div
-      className="grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,1fr)]"
+      className={cn(
+        "grid h-full min-h-0 gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,360px)]",
+        className,
+      )}
     >
-      <Card className="flex min-h-0 flex-col overflow-hidden rounded-2xl">
+      {/* Liste: volle Höhe bis unterer Bildschirmrand, Scroll nur innen */}
+      <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl">
         <CardHeader className="shrink-0 border-b border-slate-100 pb-2 pt-4">
           <CardTitle className="text-base">Alle Termine</CardTitle>
         </CardHeader>
-        <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-0">
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
-            <div className="grid gap-2 pb-1">
+        <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
+          <div
+            className="h-full overflow-y-auto overscroll-contain px-3 py-3"
+            role="region"
+            aria-label="Eventliste"
+          >
+            <div className="grid gap-2">
               {events.map((e) => {
                 const { date, time } = formatEventStart(e.start_at);
                 const location = formatLocation(e);
@@ -103,25 +114,29 @@ export function EventsInteractivePanel({
         </CardContent>
       </Card>
 
-      <div className="flex min-h-0 flex-col gap-3">
-        <EventsCountdown
-          compact
-          nextStartAt={nextStartAt}
-          nextTitle={nextTitle}
-        />
-        <Card className="shrink-0 overflow-hidden rounded-2xl">
-          <CardContent className="p-2">
-            <div className="h-[min(300px,32vh)] min-h-[220px] w-full">
+      {/* Countdown + Karte: feste Spalte, füllt die Höhe ohne mitzuscrollen */}
+      <aside className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+        <div className="shrink-0">
+          <EventsCountdown
+            compact
+            nextStartAt={nextStartAt}
+            nextTitle={nextTitle}
+          />
+        </div>
+        <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+          <CardContent className="min-h-0 flex-1 p-2">
+            <div className="h-full min-h-[180px] w-full">
               <EventsMapClient
                 events={events}
                 highlightedEventId={highlightedId}
-                minHeight={220}
+                minHeight={180}
                 mapVariant="events"
+                fillHeight
               />
             </div>
           </CardContent>
         </Card>
-      </div>
+      </aside>
     </div>
   );
 }

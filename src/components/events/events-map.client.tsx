@@ -32,6 +32,7 @@ export function EventsMapClient({
   highlightedEventId = null,
   minHeight = 320,
   mapVariant = "events",
+  fillHeight = false,
 }: {
   events: MapEvent[];
   highlightedEventId?: string | null;
@@ -39,6 +40,8 @@ export function EventsMapClient({
   minHeight?: number;
   /** dashboard = näher auf Deutschland; events = Termine-Seite */
   mapVariant?: "dashboard" | "events";
+  /** Karte füllt den Eltern-Container (Events-Seite) */
+  fillHeight?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -121,15 +124,19 @@ export function EventsMapClient({
     return <div className="text-sm text-slate-600">Lade Karte…</div>;
   }
 
+  const heightStyle = fillHeight
+    ? { height: "100%", width: "100%", minHeight }
+    : { height: "100%", width: "100%", minHeight };
+
   return (
     <div
       ref={containerRef}
       className="h-full w-full overflow-hidden rounded-2xl border bg-slate-50"
-      style={{ minHeight }}
+      style={fillHeight ? { height: "100%", minHeight } : { minHeight }}
     >
       <MapContainer
         className="h-full w-full"
-        style={{ height: "100%", width: "100%", minHeight }}
+        style={heightStyle}
         bounds={DACH_BOUNDS}
         boundsOptions={{ padding: [12, 12] }}
         scrollWheelZoom

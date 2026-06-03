@@ -71,14 +71,14 @@ export default async function EventsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
       <Topbar
         title="Events"
         subtitle="Konzerttermine aus Artistflow (automatisch synchronisiert)."
       />
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 lg:px-6">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 lg:px-6">
         {error ? (
-          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          <div className="mb-3 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("external_events")
               ? "Tabelle fehlt noch. Bitte `supabase/006_artistflow_events.sql` ausführen."
               : error.message.includes("event_participations")
@@ -87,7 +87,7 @@ export default async function EventsPage() {
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <EventsInteractivePanel
             events={(events ?? []) as never[]}
             nextStartAt={nextEventWithDate?.start_at ?? null}
