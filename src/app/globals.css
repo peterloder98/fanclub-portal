@@ -44,6 +44,24 @@ body {
   height: 100%;
 }
 
+/* Popups nicht mehr genutzt – falls Leaflet-Tooltip/Popup doch erscheint: lesbar & schließbar */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
+}
+
+.leaflet-popup-close-button {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 22px !important;
+  line-height: 26px !important;
+  color: #0f172a !important;
+  background: #f1f5f9 !important;
+  border-radius: 8px;
+  top: 8px !important;
+  right: 8px !important;
+}
+
 @keyframes fc-points-pop {
   0% {
     opacity: 0;

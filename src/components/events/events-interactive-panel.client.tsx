@@ -132,6 +132,7 @@ export function EventsInteractivePanel({
                 minHeight={180}
                 mapVariant="events"
                 fillHeight
+                onEventSelect={(id) => setHighlightedId(id)}
               />
             </div>
           </CardContent>

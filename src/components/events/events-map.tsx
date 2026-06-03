@@ -23,11 +23,13 @@ export function EventsMap({
   minHeight,
   mapVariant,
   fillHeight,
+  onEventSelect,
 }: {
   events: MapEvent[];
   minHeight?: number;
   mapVariant?: "dashboard" | "events";
   fillHeight?: boolean;
+  onEventSelect?: (eventId: string | null) => void;
 }) {
   // Key by pathname to avoid Leaflet getting stuck across navigations.
   const pathname = usePathname();
@@ -38,6 +40,7 @@ export function EventsMap({
       minHeight={minHeight}
       mapVariant={mapVariant}
       fillHeight={fillHeight}
+      onEventSelect={onEventSelect}
     />
   );
 }

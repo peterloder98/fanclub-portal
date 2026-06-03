@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { EventMapMarker } from "./event-map-marker";
+import { EventMapDetailPanel } from "./event-map-detail-panel";
+import { MapClickDismiss } from "./map-click-dismiss";
 import type { MapEvent } from "./events-map.types";
 
 /** Deutschland (Dashboard: ganzes Land sichtbar), Events etwas enger */
@@ -37,6 +39,7 @@ export function EventsMapClient({
   minHeight = 320,
   mapVariant = "events",
   fillHeight = false,
+  onEventSelect,
 }: {
   events: MapEvent[];
   highlightedEventId?: string | null;
@@ -46,9 +49,32 @@ export function EventsMapClient({
   mapVariant?: "dashboard" | "events";
   /** Karte füllt den Eltern-Container (Events-Seite) */
   fillHeight?: boolean;
+  onEventSelect?: (eventId: string | null) => void;
 }) {
   const [mounted, setMounted] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   useEffect(() => setMounted(true), []);
+
+  const dismissDetails = useCallback(() => {
+    setSelectedEventId(null);
+    onEventSelect?.(null);
+  }, [onEventSelect]);
+
+  const selectEvent = useCallback(
+    (eventId: string) => {
+      setSelectedEventId((prev) => {
+        const next = prev === eventId ? null : eventId;
+        onEventSelect?.(next);
+        return next;
+      });
+    },
+    [onEventSelect],
+  );
+
+  const selectedEvent = useMemo(
+    () => events.find((e) => e.id === selectedEventId) ?? null,
+    [events, selectedEventId],
+  );
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<L.Map | null>(null);
@@ -134,34 +160,42 @@ export function EventsMapClient({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden rounded-2xl border bg-slate-50"
+      className="flex h-full w-full flex-col overflow-hidden rounded-2xl border bg-slate-50"
       style={fillHeight ? { height: "100%", minHeight } : { minHeight }}
     >
-      <MapContainer
-        className="h-full w-full"
-        style={heightStyle}
-        bounds={DACH_BOUNDS}
-        boundsOptions={{ padding: [12, 12] }}
-        scrollWheelZoom
-        doubleClickZoom
-        zoomControl
-        minZoom={4}
-        maxZoom={18}
-        attributionControl
-      >
-        <MapLifecycle onMap={setMap} />
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        />
-        {markers.map((e) => (
-          <EventMapMarker
-            key={e.id}
-            event={e}
-            highlighted={e.id === highlightedEventId}
+      <div className="relative min-h-0 flex-1">
+        <MapContainer
+          className="h-full w-full"
+          style={heightStyle}
+          bounds={DACH_BOUNDS}
+          boundsOptions={{ padding: [12, 12] }}
+          scrollWheelZoom
+          doubleClickZoom
+          zoomControl
+          minZoom={4}
+          maxZoom={18}
+          attributionControl
+        >
+          <MapLifecycle onMap={setMap} />
+          <MapClickDismiss onDismiss={dismissDetails} />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           />
-        ))}
-      </MapContainer>
+          {markers.map((e) => (
+            <EventMapMarker
+              key={e.id}
+              event={e}
+              highlighted={e.id === highlightedEventId}
+              selected={e.id === selectedEventId}
+              onSelect={selectEvent}
+            />
+          ))}
+        </MapContainer>
+      </div>
+      {selectedEvent ? (
+        <EventMapDetailPanel event={selectedEvent} onClose={dismissDetails} />
+      ) : null}
     </div>
   );
 }
