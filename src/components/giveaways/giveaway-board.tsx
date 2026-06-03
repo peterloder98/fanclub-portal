@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { giveawayPhase, giveawayPhaseLabel } from "@/lib/giveaways/status-label";
-import { GiveawayCountdown } from "@/components/giveaways/giveaway-countdown";
+import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminCreate } from "@/components/giveaways/giveaway-admin-create";
 
 export type GiveawayListItem = {
@@ -18,6 +18,7 @@ export type GiveawayListItem = {
   entry_mode: "simple" | "quiz";
   ends_at: string;
   status: string;
+  isPaused: boolean;
   prizeNames: string[];
   entryCount: number;
   myEntered: boolean;
@@ -40,8 +41,8 @@ export function GiveawayBoard({
 
   const filtered = useMemo(() => {
     return items.filter((g) => {
-      const phase = giveawayPhase(g.ends_at, g.status);
-      if (tab === "active") return phase === "active";
+      const phase = giveawayPhase(g.ends_at, g.status, g.isPaused);
+      if (tab === "active") return phase === "active" || phase === "paused";
       if (tab === "ended") return phase === "ended" || phase === "drawn";
       return true;
     });
@@ -81,7 +82,7 @@ export function GiveawayBoard({
         filtered.length ? (
           <div className="grid gap-3">
             {filtered.map((g) => {
-              const phase = giveawayPhase(g.ends_at, g.status);
+              const phase = giveawayPhase(g.ends_at, g.status, g.isPaused);
               return (
                 <Link key={g.id} href={`/giveaways/${g.id}`} className="block">
                   <Card className="transition hover:shadow-md">
@@ -103,12 +104,11 @@ export function GiveawayBoard({
                         ) : null}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
-                        <Badge variant={phase === "active" ? "brand" : "neutral"}>
-                          {giveawayPhaseLabel(phase)}
-                        </Badge>
-                        {phase === "active" ? (
-                          <GiveawayCountdown endsAt={g.ends_at} className="text-right" />
-                        ) : null}
+                        <RunningCountdownBadge
+                          endsAt={g.ends_at}
+                          paused={g.isPaused}
+                          className="max-w-[11rem] justify-end"
+                        />
                       </div>
                     </CardContent>
                   </Card>

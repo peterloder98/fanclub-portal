@@ -267,12 +267,11 @@ export async function participateSimple(giveawayId: string) {
 
   const { data: g } = await supabase
     .from("giveaways")
-    .select("id,ends_at,status,entry_mode")
+    .select("id,ends_at,status,entry_mode,is_paused")
     .eq("id", giveawayId)
     .maybeSingle();
   if (!g || g.entry_mode !== "simple") throw new Error("Ungültiges Gewinnspiel.");
-  if (new Date(g.ends_at).getTime() < Date.now()) throw new Error("Gewinnspiel ist beendet.");
-  if (g.status !== "active") throw new Error("Teilnahme nicht mehr möglich.");
+  assertGiveawayOpen(g);
 
   const { error } = await supabase.from("giveaway_entries").insert({
     giveaway_id: giveawayId,
@@ -316,12 +315,11 @@ export async function participateQuiz(
 
   const { data: g } = await supabase
     .from("giveaways")
-    .select("id,ends_at,status,entry_mode")
+    .select("id,ends_at,status,entry_mode,is_paused")
     .eq("id", giveawayId)
     .maybeSingle();
   if (!g || g.entry_mode !== "quiz") throw new Error("Ungültiges Quiz-Gewinnspiel.");
-  if (new Date(g.ends_at).getTime() < Date.now()) throw new Error("Gewinnspiel ist beendet.");
-  if (g.status !== "active") throw new Error("Teilnahme nicht mehr möglich.");
+  assertGiveawayOpen(g);
 
   const { data: questions } = await admin
     .from("giveaway_questions")
@@ -386,4 +384,80 @@ export async function participateQuiz(
   revalidatePath("/giveaways");
 
   return { eligible: allCorrect, results };
+}
+
+function assertGiveawayOpen(g: {
+  ends_at: string;
+  status: string;
+  is_paused?: boolean;
+}) {
+  if (g.is_paused) throw new Error("Gewinnspiel ist pausiert.");
+  if (new Date(g.ends_at).getTime() < Date.now()) throw new Error("Gewinnspiel ist beendet.");
+  if (g.status !== "active") throw new Error("Teilnahme nicht mehr möglich.");
+}
+
+export async function pauseGiveaway(giveawayId: string) {
+  const { admin } = await requireAdmin();
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("status")
+    .eq("id", giveawayId)
+    .maybeSingle();
+  if (!g) throw new Error("Gewinnspiel nicht gefunden.");
+  if (g.status === "drawn") throw new Error("Ausgelost – Pause nicht möglich.");
+
+  await admin.from("giveaways").update({ is_paused: true }).eq("id", giveawayId);
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${giveawayId}`);
+}
+
+export async function resumeGiveaway(giveawayId: string) {
+  const { admin } = await requireAdmin();
+  await admin.from("giveaways").update({ is_paused: false }).eq("id", giveawayId);
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${giveawayId}`);
+}
+
+export async function updateGiveawayBasics(formData: FormData) {
+  const { admin } = await requireAdmin();
+  const id = String(formData.get("giveaway_id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const endsAtRaw = String(formData.get("ends_at") ?? "");
+  if (!id || title.length < 3) throw new Error("Titel zu kurz.");
+
+  const endsAt = new Date(endsAtRaw);
+  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum.");
+
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("status")
+    .eq("id", id)
+    .maybeSingle();
+  if (!g) throw new Error("Gewinnspiel nicht gefunden.");
+  if (g.status === "drawn") throw new Error("Nach Auslosung nur Titel/Beschreibung – Enddatum nicht änderbar.");
+
+  if (g.status === "drawn") {
+    await admin
+      .from("giveaways")
+      .update({ title, description: description || null })
+      .eq("id", id);
+  } else {
+    const patch: {
+      title: string;
+      description: string | null;
+      ends_at: string;
+      status?: string;
+    } = {
+      title,
+      description: description || null,
+      ends_at: endsAt.toISOString(),
+    };
+    if (endsAt.getTime() > Date.now() && g.status === "ended") {
+      patch.status = "active";
+    }
+    await admin.from("giveaways").update(patch).eq("id", id);
+  }
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${id}`);
 }

@@ -76,22 +76,26 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative rounded-xl border bg-white px-3 py-2 shadow-sm shadow-slate-900/5">
+        <div className="grid w-[13.5rem] grid-cols-2 gap-2 sm:w-[15rem]">
+          <div className="relative flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
             <PointsBurst />
-            <div className="text-[11px] font-semibold text-slate-600">Punkte</div>
+            <div className="text-[10px] font-semibold leading-tight text-slate-600">
+              Statuspunkte
+            </div>
             <div
               id={POINTS_TARGET_ID}
               data-points-target="true"
               ref={(el) => setPointsTargetElement(el)}
-              className="text-sm font-semibold text-slate-900 transition-all"
+              className="text-sm font-semibold tabular-nums text-slate-900 transition-all"
             >
               {points}
             </div>
           </div>
-          <div className="rounded-xl border bg-white px-3 py-2 shadow-sm shadow-slate-900/5">
-            <div className="text-[11px] font-semibold text-slate-600">Rang</div>
-            <div className="text-sm font-semibold text-slate-900">{rank}</div>
+          <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
+            <div className="text-[10px] font-semibold leading-tight text-slate-600">
+              Aktueller Rang
+            </div>
+            <div className="text-sm font-semibold tabular-nums text-slate-900">{rank}</div>
           </div>
         </div>
 

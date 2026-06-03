@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { profileToUserListEntry } from "@/lib/profiles/display";
-import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
+import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
@@ -293,12 +293,8 @@ export function PollBoard({
             <CardHeader className="pb-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <CardTitle className="text-base">{poll.question}</CardTitle>
-                <div className="flex flex-wrap gap-2">
-                  {ended ? (
-                    <Badge variant="neutral">Beendet</Badge>
-                  ) : (
-                    <Badge variant="brand">Läuft</Badge>
-                  )}
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <RunningCountdownBadge endsAt={poll.ends_at} />
                   {poll.allow_multiple ? (
                     <Badge variant="neutral">Mehrfach</Badge>
                   ) : null}
@@ -307,7 +303,6 @@ export function PollBoard({
                   ) : null}
                 </div>
               </div>
-              <PollEndCountdown endsAt={poll.ends_at} className="mt-2" />
               <div className="mt-1 text-xs text-slate-500">
                 {totalVotes} Stimme(n) · Ende{" "}
                 {new Date(poll.ends_at).toLocaleString("de-DE", {

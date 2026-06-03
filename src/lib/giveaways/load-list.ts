@@ -4,7 +4,7 @@ export async function loadGiveawayListItems(userId: string | null) {
   const supabase = await createSupabaseServerClient();
   const { data: rows } = await supabase
     .from("giveaways")
-    .select("id,title,description,entry_mode,ends_at,status")
+    .select("id,title,description,entry_mode,ends_at,status,is_paused")
     .eq("is_active", true)
     .order("ends_at", { ascending: false });
 
@@ -45,6 +45,7 @@ export async function loadGiveawayListItems(userId: string | null) {
     entry_mode: g.entry_mode as "simple" | "quiz",
     ends_at: g.ends_at,
     status: g.status,
+    isPaused: Boolean((g as { is_paused?: boolean }).is_paused),
     prizeNames: prizeNamesByG.get(g.id) ?? [],
     entryCount: countByG.get(g.id) ?? 0,
     myEntered: mySet.has(g.id),

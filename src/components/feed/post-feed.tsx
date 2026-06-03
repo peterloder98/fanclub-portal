@@ -952,6 +952,7 @@ export function PostFeed({
               myOptionIds={myPollOptionsByPoll.get(item.poll.id) ?? new Set()}
               votersByOptionId={pollVotersByOption}
               busyKey={pollBusyKey}
+              compact={embedPollsInFeed}
               onToggleVote={(optionId, fromEl) =>
                 void togglePollVote(item.poll.id, optionId, fromEl)
               }

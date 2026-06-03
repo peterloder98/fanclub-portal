@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { flyPointsFromElement } from "@/lib/points/fly";
-import { giveawayPhase, giveawayPhaseLabel } from "@/lib/giveaways/status-label";
-import { GiveawayCountdown } from "@/components/giveaways/giveaway-countdown";
+import { giveawayPhase } from "@/lib/giveaways/status-label";
+import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
+import { GiveawayAdminControls } from "@/components/giveaways/giveaway-admin-controls";
 import {
   drawGiveawayWinners,
   participateQuiz,
@@ -53,6 +54,7 @@ export function GiveawayDetailClient({
     entry_mode: "simple" | "quiz";
     ends_at: string;
     status: string;
+    is_paused: boolean;
   };
   prizes: { id: string; name: string }[];
   questions: Question[];
@@ -71,7 +73,7 @@ export function GiveawayDetailClient({
   userId: string | null;
   signatures: MailSignatureOption[];
 }) {
-  const phase = giveawayPhase(giveaway.ends_at, giveaway.status);
+  const phase = giveawayPhase(giveaway.ends_at, giveaway.status, giveaway.is_paused);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [likes, setLikes] = useState({ count: likeCount, mine: likedByMe });
@@ -84,7 +86,8 @@ export function GiveawayDetailClient({
   const [localStatus, setLocalStatus] = useState(giveaway.status);
   const [signatureId, setSignatureId] = useState(signatures[0]?.id ?? "");
 
-  const canParticipate = phase === "active" && !localEntered && userId;
+  const canParticipate =
+    phase === "active" && !giveaway.is_paused && !localEntered && userId;
   const showWinners = localStatus === "drawn" && localWinners.length > 0;
 
   const quizReview = useMemo(() => {
@@ -231,17 +234,18 @@ export function GiveawayDetailClient({
         <CardHeader className="pb-2">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <CardTitle className="text-lg">{giveaway.title}</CardTitle>
-            <Badge variant={phase === "active" ? "brand" : "neutral"}>
-              {giveawayPhaseLabel(phase)}
-            </Badge>
+            <RunningCountdownBadge
+              endsAt={giveaway.ends_at}
+              paused={giveaway.is_paused}
+            />
           </div>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {isAdmin ? <GiveawayAdminControls giveaway={giveaway} /> : null}
+
           {giveaway.description ? (
             <p className="text-sm leading-relaxed text-slate-700">{giveaway.description}</p>
           ) : null}
-
-          {phase === "active" ? <GiveawayCountdown endsAt={giveaway.ends_at} /> : null}
 
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preise</h4>
