@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ANNI_SPOTIFY_ARTIST_ID } from "@/lib/spotify/constants";
 
+type SpotifyPlayerState = { device_id?: string; message?: string };
+
 type SpotifyPlayerInstance = {
   connect: () => Promise<boolean>;
-  addListener: (event: string, cb: (state: { device_id?: string }) => void) => void;
+  addListener: (event: string, cb: (state: SpotifyPlayerState) => void) => void;
   disconnect: () => void;
 };
 
@@ -30,7 +32,15 @@ function loadSpotifySdk() {
     }
     const existing = document.querySelector('script[data-spotify-sdk="true"]');
     if (existing) {
-      window.onSpotifyWebPlaybackSDKReady = () => resolve();
+      const done = () => resolve();
+      window.onSpotifyWebPlaybackSDKReady = done;
+      const poll = window.setInterval(() => {
+        if (window.Spotify) {
+          window.clearInterval(poll);
+          done();
+        }
+      }, 150);
+      window.setTimeout(() => window.clearInterval(poll), 12_000);
       return;
     }
     const script = document.createElement("script");
@@ -42,6 +52,8 @@ function loadSpotifySdk() {
     document.body.appendChild(script);
   });
 }
+
+const CONNECT_TIMEOUT_MS = 18_000;
 
 export function SpotifyWebPlayer({ displayName }: { displayName: string | null }) {
   const [ready, setReady] = useState(false);
@@ -60,27 +72,66 @@ export function SpotifyWebPlayer({ displayName }: { displayName: string | null }
 
   useEffect(() => {
     let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      if (cancelled) return;
+      setError(
+        "Player-Verbindung dauert zu lange. Spotify Premium ist für Wiedergabe im Browser nötig — sonst unten die Spotify-Vorschau nutzen.",
+      );
+    }, CONNECT_TIMEOUT_MS);
+
     async function init() {
       try {
         await loadSpotifySdk();
         if (cancelled || !window.Spotify) return;
-        const token = await getToken();
+        await getToken();
+
         const player = new window.Spotify.Player({
           name: "Anni Perka Fanclub",
           getOAuthToken: (cb) => {
-            void getToken().then(cb).catch(() => cb(""));
+            void getToken()
+              .then(cb)
+              .catch(() => {
+                setError("Spotify-Sitzung abgelaufen. Bitte erneut verbinden (Trennen → Verbinden).");
+                cb("");
+              });
           },
           volume: 0.8,
         });
+
         player.addListener("ready", ({ device_id }) => {
+          if (cancelled) return;
+          window.clearTimeout(timeout);
           if (device_id) deviceIdRef.current = device_id;
           setReady(true);
+          setError(null);
         });
         player.addListener("not_ready", () => setReady(false));
-        await player.connect();
+        player.addListener("initialization_error", ({ message }) => {
+          if (!cancelled) setError(message || "Player konnte nicht starten.");
+        });
+        player.addListener("authentication_error", ({ message }) => {
+          if (!cancelled) {
+            setError(message || "Spotify-Anmeldung fehlgeschlagen. Bitte erneut verbinden.");
+          }
+        });
+        player.addListener("account_error", () => {
+          if (!cancelled) {
+            setError(
+              "Spotify Premium wird für Wiedergabe im Browser benötigt. Die eingebettete Vorschau funktioniert auch ohne Premium.",
+            );
+          }
+        });
+
+        const connected = await player.connect();
+        if (!connected && !cancelled) {
+          setError(
+            "Spotify-Player konnte nicht verbunden werden. Premium-Konto nötig oder in der Spotify-App einmal aktiv sein.",
+          );
+        }
         playerRef.current = player;
       } catch (e) {
         if (!cancelled) {
+          window.clearTimeout(timeout);
           setError(e instanceof Error ? e.message : "Player-Start fehlgeschlagen");
         }
       }
@@ -88,6 +139,7 @@ export function SpotifyWebPlayer({ displayName }: { displayName: string | null }
     void init();
     return () => {
       cancelled = true;
+      window.clearTimeout(timeout);
       playerRef.current?.disconnect();
     };
   }, [getToken]);
@@ -146,7 +198,7 @@ export function SpotifyWebPlayer({ displayName }: { displayName: string | null }
         onClick={() => void playAnni()}
         className="flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white transition hover:bg-[#1ed760] disabled:opacity-50"
       >
-        {busy ? "Starte…" : ready ? "▶ Anni Perka abspielen" : "Player verbindet…"}
+        {busy ? "Starte…" : ready ? "▶ Anni Perka abspielen" : error ? "Player nicht verfügbar" : "Player verbindet…"}
       </button>
       {error ? <p className="text-[10px] text-rose-700">{error}</p> : null}
       <p className="text-[10px] text-slate-500">

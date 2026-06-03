@@ -114,7 +114,20 @@ export function SidebarSpotifyPlayer() {
           setzen, dann Dev-Server neu starten bzw. Vercel-Redeploy.
         </p>
       ) : connected ? (
-        <SpotifyWebPlayer displayName={status?.displayName ?? null} />
+        <>
+          <SpotifyWebPlayer displayName={status?.displayName ?? null} />
+          <div className="mt-2 overflow-hidden rounded-xl border border-blue-200/60 shadow-sm shadow-blue-900/5 ring-1 ring-rose-500/10">
+            <iframe
+              title="Spotify — Anni Perka (Vorschau)"
+              src={`https://open.spotify.com/embed/artist/${ANNI_SPOTIFY_ARTIST_ID}?utm_source=generator&theme=0`}
+              width="100%"
+              height="152"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              className="block border-0"
+            />
+          </div>
+        </>
       ) : (
         <>
           <p className="mb-2 px-1 text-[10px] leading-snug text-slate-600">
