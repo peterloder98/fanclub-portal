@@ -1,11 +1,11 @@
 "use server";
 
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
-import { getDefaultMailSignatureId } from "@/lib/email/default-mail-signature";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
+import { loadSignaturePickerData } from "@/lib/email/draft-with-signatures";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
-import { CLUB_SIGNATURE_ID, listMailSignatureOptions } from "@/lib/email/signatures";
+import { CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { getMembershipApplicationFormUrl } from "@/lib/membership/application-form-url";
 
@@ -26,8 +26,7 @@ export async function getMembershipFormInviteDraft(input?: {
   signatureId?: string;
 }) {
   await requireAdminAction();
-  const signatures = await listMailSignatureOptions();
-  const defaultSignatureId = await getDefaultMailSignatureId();
+  const { signatures, defaultSignatureId, signatureTexts } = await loadSignaturePickerData();
   const useSignatureId = input?.signatureId ?? defaultSignatureId;
 
   const rendered = await renderEmailFromTemplate(
@@ -45,6 +44,7 @@ export async function getMembershipFormInviteDraft(input?: {
     body: rendered.text,
     signatures,
     defaultSignatureId: useSignatureId,
+    signatureTexts,
     applicationUrl: getMembershipApplicationFormUrl(),
   };
 }

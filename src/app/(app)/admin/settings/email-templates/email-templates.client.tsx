@@ -246,14 +246,10 @@ export function EmailTemplatesClient() {
                       ))}
                     </ul>
                     <p className="mt-2">
-                      Die gewählte{" "}
-                      <Link href="/admin/signatures" className="text-blue-600 hover:underline">
-                        Admin-Signatur
-                      </Link>{" "}
-                      wird beim Versand automatisch angehängt. Am Ende der Vorlage keine Grußformeln,
-                      Namenszeilen oder{" "}
-                      <code className="text-[11px]">{`{{admin_signature_text}}`}</code> — nur den
-                      eigentlichen Inhalt.
+                      Beim Versand aus dem Dialog (Antragslink, Zahlungserinnerung) wird die unter
+                      „Standard-Signatur“ gewählte Signatur im Text angezeigt und kann per Dropdown
+                      getauscht werden. In der Vorlage selbst nur den Inhalt ohne Grußformeln /
+                      Namenszeilen am Ende.
                     </p>
                   </div>
 

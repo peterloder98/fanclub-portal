@@ -8,6 +8,7 @@ import {
   getMembershipFormLinkAction,
   sendMembershipFormInviteEmail,
 } from "@/app/(app)/admin/membership-form/actions";
+import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 
 export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string }) {
@@ -21,6 +22,8 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
   const [mailBody, setMailBody] = useState("");
   const [signatures, setSignatures] = useState<MailSignatureOption[]>([]);
   const [signatureId, setSignatureId] = useState("");
+  const [signatureTexts, setSignatureTexts] = useState<Record<string, string>>({});
+  const [activeSignatureText, setActiveSignatureText] = useState("");
   const [mailLoading, setMailLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +54,8 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
       setMailBody(draft.body);
       setSignatures(draft.signatures);
       setSignatureId(draft.defaultSignatureId);
+      setSignatureTexts(draft.signatureTexts);
+      setActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
       setUrl(draft.applicationUrl);
       return true;
     } catch (e) {
@@ -68,9 +73,18 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
     if (ok) setShowMailDialog(true);
   }
 
-  async function onSignatureChange(id: string) {
+  function onSignatureChange(id: string) {
+    const nextText = signatureTexts[id] ?? "";
+    setMailBody((body) =>
+      replaceTrailingSignature(
+        body,
+        activeSignatureText,
+        nextText,
+        Object.values(signatureTexts),
+      ),
+    );
+    setActiveSignatureText(nextText);
     setSignatureId(id);
-    await loadDraft(id, greetingName);
   }
 
   return (
@@ -158,7 +172,7 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
               <select
                 value={signatureId}
                 disabled={mailLoading}
-                onChange={(e) => void onSignatureChange(e.target.value)}
+                onChange={(e) => onSignatureChange(e.target.value)}
                 className="h-11 rounded-xl border px-3 text-sm"
               >
                 {signatures.map((s) => (

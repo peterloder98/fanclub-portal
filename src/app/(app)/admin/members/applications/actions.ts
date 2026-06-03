@@ -8,7 +8,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
-import { CLUB_SIGNATURE_ID, listMailSignatureOptions } from "@/lib/email/signatures";
+import { loadSignaturePickerData } from "@/lib/email/draft-with-signatures";
+import { CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import {
   logMemberActivity,
@@ -125,7 +126,7 @@ export async function getPaymentReminderDraft(
   applicationId: string,
   signatureId?: string,
 ) {
-  const { user } = await requireAdminAction();
+  await requireAdminAction();
   const admin = createSupabaseAdminClient();
   const { data: app, error: appErr } = await admin
     .from("membership_applications")
@@ -135,11 +136,7 @@ export async function getPaymentReminderDraft(
   if (appErr) throw new Error(appErr.message);
   if (!app?.email) throw new Error("Antrag oder E-Mail nicht gefunden.");
 
-  const signatures = await listMailSignatureOptions();
-  const defaultSignatureId =
-    signatures.find((s) => s.id === user.id)?.id ??
-    signatures.find((s) => s.kind === "board")?.id ??
-    CLUB_SIGNATURE_ID;
+  const { signatures, defaultSignatureId, signatureTexts } = await loadSignaturePickerData();
   const useSignatureId = signatureId ?? defaultSignatureId;
 
   const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
@@ -161,6 +158,7 @@ export async function getPaymentReminderDraft(
     to: app.email,
     signatures,
     defaultSignatureId: useSignatureId,
+    signatureTexts,
   };
 }
 

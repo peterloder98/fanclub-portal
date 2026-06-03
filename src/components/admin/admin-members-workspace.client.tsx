@@ -16,6 +16,7 @@ import {
   sendPaymentReminderEmail,
 } from "@/app/(app)/admin/members/applications/actions";
 import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
+import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 
 export type AdminMemberRow = {
@@ -113,6 +114,8 @@ export function AdminMembersWorkspace({
   const [paymentBody, setPaymentBody] = useState("");
   const [paymentSignatures, setPaymentSignatures] = useState<MailSignatureOption[]>([]);
   const [paymentSignatureId, setPaymentSignatureId] = useState("");
+  const [paymentSignatureTexts, setPaymentSignatureTexts] = useState<Record<string, string>>({});
+  const [paymentActiveSignatureText, setPaymentActiveSignatureText] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -237,6 +240,8 @@ export function AdminMembersWorkspace({
       setPaymentBody(draft.body);
       setPaymentSignatures(draft.signatures);
       setPaymentSignatureId(draft.defaultSignatureId);
+      setPaymentSignatureTexts(draft.signatureTexts);
+      setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
       return true;
     } catch (e) {
       setActionError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
@@ -253,10 +258,18 @@ export function AdminMembersWorkspace({
     if (ok) setShowPaymentDialog(true);
   }
 
-  async function onPaymentSignatureChange(signatureId: string) {
-    if (!selectedAppId) return;
+  function onPaymentSignatureChange(signatureId: string) {
+    const nextText = paymentSignatureTexts[signatureId] ?? "";
+    setPaymentBody((body) =>
+      replaceTrailingSignature(
+        body,
+        paymentActiveSignatureText,
+        nextText,
+        Object.values(paymentSignatureTexts),
+      ),
+    );
+    setPaymentActiveSignatureText(nextText);
     setPaymentSignatureId(signatureId);
-    await loadPaymentDraft(selectedAppId, signatureId);
   }
 
   return (
@@ -690,7 +703,7 @@ export function AdminMembersWorkspace({
               <select
                 value={paymentSignatureId}
                 disabled={paymentLoading}
-                onChange={(e) => void onPaymentSignatureChange(e.target.value)}
+                onChange={(e) => onPaymentSignatureChange(e.target.value)}
                 className="h-11 rounded-xl border px-3 text-sm"
               >
                 {paymentSignatures.map((s) => (
