@@ -937,7 +937,7 @@ export function PostFeed({
           const post = item.post;
           return (
         <Card key={post.id} className="overflow-hidden">
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-2 pt-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
@@ -1028,7 +1028,7 @@ export function PostFeed({
             )}
 
             {post.media.length ? (
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {post.media.slice(0, 4).map((m) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -1042,24 +1042,7 @@ export function PostFeed({
               </div>
             ) : null}
 
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-              {post.likeCount > 0 ? (
-                <UserListPopover
-                  label="Wer hat geliked?"
-                  users={likersByPostId[post.id] ?? []}
-                  loading={likersLoadingPostId === post.id}
-                  onMouseEnter={() => void ensureLikers(post.id)}
-                >
-                  {post.likeCount} {post.likeCount === 1 ? "Like" : "Likes"}
-                </UserListPopover>
-              ) : (
-                <span>0 Likes</span>
-              )}
-              <span>·</span>
-              <span>{post.comments.length} Kommentare</span>
-            </div>
-
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 disabled={Boolean(likeBusy[post.id])}
@@ -1097,7 +1080,7 @@ export function PostFeed({
                   })();
                 }}
                 className={cn(
-                  "inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm font-medium shadow-sm shadow-slate-900/5 transition hover:bg-slate-50",
+                  "inline-flex h-8 items-center gap-1.5 rounded-lg border bg-white px-2.5 text-xs font-medium shadow-sm shadow-slate-900/5 transition hover:bg-slate-50",
                   post.likedByMe
                     ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-50"
                     : "text-slate-700",
@@ -1106,20 +1089,40 @@ export function PostFeed({
               >
                 <Heart
                   className={cn(
-                    "h-4 w-4",
+                    "h-3.5 w-3.5",
                     post.likedByMe ? "fill-rose-600 text-rose-600" : "",
                   )}
                 />
                 Like
               </button>
 
-              <div className="inline-flex items-center gap-2 rounded-xl border bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5">
-                <MessageCircle className="h-4 w-4 text-slate-500" />
+              <div className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm shadow-slate-900/5">
+                <MessageCircle className="h-3.5 w-3.5 text-slate-500" />
                 Kommentar
+              </div>
+
+              <div className="ml-auto flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                {post.likeCount > 0 ? (
+                  <UserListPopover
+                    label="Wer hat geliked?"
+                    users={likersByPostId[post.id] ?? []}
+                    loading={likersLoadingPostId === post.id}
+                    onMouseEnter={() => void ensureLikers(post.id)}
+                  >
+                    {post.likeCount} {post.likeCount === 1 ? "Like" : "Likes"}
+                  </UserListPopover>
+                ) : (
+                  <span>0 Likes</span>
+                )}
+                <span aria-hidden>·</span>
+                <span>
+                  {post.comments.length}{" "}
+                  {post.comments.length === 1 ? "Kommentar" : "Kommentare"}
+                </span>
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl border bg-slate-50 p-3">
+            <div className="mt-2 rounded-xl border bg-slate-50 p-2">
               <div className="flex items-center gap-2">
                 <input
                   value={draftByPostId[post.id] ?? ""}
@@ -1127,12 +1130,12 @@ export function PostFeed({
                     setDraftByPostId((d) => ({ ...d, [post.id]: e.target.value }))
                   }
                   placeholder="Kommentieren…"
-                  className="h-10 w-full rounded-xl border bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  className="h-8 w-full rounded-lg border bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
                 />
                 <button
                   type="button"
                   onClick={() => addComment(post.id)}
-                  className="grid h-10 w-10 place-items-center rounded-xl bg-slate-900 text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-900 text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
                   aria-label="Kommentar senden"
                 >
                   <SendHorizontal className="h-4 w-4" />
@@ -1142,9 +1145,9 @@ export function PostFeed({
               {post.comments.length ? (
                 <div
                   className={cn(
-                    "mt-3 grid gap-2",
+                    "mt-2 grid gap-1.5",
                     post.comments.length > 4
-                      ? "max-h-52 overflow-y-auto pr-1"
+                      ? "max-h-44 overflow-y-auto pr-1"
                       : "",
                   )}
                 >
@@ -1162,7 +1165,7 @@ export function PostFeed({
                       return (
                         <div
                           key={c.id}
-                          className="rounded-xl border bg-white px-3 py-2"
+                          className="rounded-lg border bg-white px-2.5 py-1.5"
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2">

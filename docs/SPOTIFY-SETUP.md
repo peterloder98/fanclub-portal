@@ -14,7 +14,7 @@ Die Spotify-App muss aus dem **Development-Modus** in den **Extended Quota Mode*
 
 Sonst funktioniert der Login nur für bis zu 25 manuell eingetragene E-Mails im Developer-Dashboard.
 
-Details: **Admin → Spotify (Embed für alle Mitglieder)** — Seite erklärt den Antrag.
+Details: **Fanclub-Portal → Admin → Spotify** (`/admin/settings/spotify`) — nicht im Spotify-Dashboard.
 
 ## Env (Vercel)
 
