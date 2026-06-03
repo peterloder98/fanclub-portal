@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { flyPointsFromElement } from "@/lib/points/fly";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { pollOptionBarClass, pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 type PollRow = {
   id: string;
   question: string;
@@ -206,14 +207,15 @@ export function DashboardPollsInline() {
                     disabled={ended || busyKey === `${poll.id}:${o.id}`}
                     onClick={(e) => void toggleVote(poll, o.id, e.currentTarget)}
                     className={cn(
-                      "group relative w-full overflow-hidden rounded-xl border text-left text-sm transition",
-                      mine.has(o.id) ? "border-blue-400 bg-blue-50" : "hover:bg-slate-50",
+                      "group text-sm",
+                      pollOptionButtonClass(mine.has(o.id), ended),
                     )}
                   >
-                    {showResults ? (
+                    {showResults && pct > 0 ? (
                       <div
-                        className="absolute inset-y-0 left-0 bg-blue-50/90"
+                        className={pollOptionBarClass()}
                         style={{ width: `${pct}%` }}
+                        aria-hidden
                       />
                     ) : null}
                     <div className="relative flex justify-between gap-2 px-3 py-2">

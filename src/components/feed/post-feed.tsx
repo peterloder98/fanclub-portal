@@ -1045,7 +1045,7 @@ export function PostFeed({
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-600">
               {post.likeCount > 0 ? (
                 <UserListPopover
-                  label="Wer hat gelikt?"
+                  label="Wer hat geliked?"
                   users={likersByPostId[post.id] ?? []}
                   loading={likersLoadingPostId === post.id}
                   onMouseEnter={() => void ensureLikers(post.id)}

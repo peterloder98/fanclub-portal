@@ -4,9 +4,9 @@ import Link from "next/link";
 import { PieChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { cn } from "@/lib/cn";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
+import { pollOptionBarClass, pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 
 export type PollFeedData = {
   id: string;
@@ -103,16 +103,13 @@ export function PollFeedCard({
               type="button"
               disabled={ended || busyKey === `${poll.id}:${o.id}`}
               onClick={(e) => onToggleVote(o.id, e.currentTarget)}
-              className={cn(
-                "relative w-full overflow-visible rounded-xl border text-left transition",
-                myOptionIds.has(o.id) ? "border-blue-400 bg-blue-50" : "bg-white hover:bg-slate-50",
-                ended && "cursor-default opacity-90",
-              )}
+              className={pollOptionButtonClass(myOptionIds.has(o.id), ended)}
             >
-              {showResults ? (
+              {showResults && pct > 0 ? (
                 <div
-                  className="absolute inset-y-0 left-0 rounded-xl bg-blue-50/90 transition-all duration-500"
+                  className={pollOptionBarClass()}
                   style={{ width: `${pct}%` }}
+                  aria-hidden
                 />
               ) : null}
               <div className="relative flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">

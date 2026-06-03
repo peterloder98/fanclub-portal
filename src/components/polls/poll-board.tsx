@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { profileToUserListEntry } from "@/lib/profiles/display";
 import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
+import { pollOptionBarClass, pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 
 type PollRow = {
@@ -327,16 +328,13 @@ export function PollBoard({
                     type="button"
                     disabled={ended || busyKey === `${poll.id}:${o.id}`}
                     onClick={(e) => void toggleVote(poll, o.id, e.currentTarget)}
-                    className={cn(
-                      "relative w-full overflow-visible rounded-xl border text-left transition",
-                      picked ? "border-blue-400 bg-blue-50" : "bg-white hover:bg-slate-50",
-                      ended ? "cursor-default opacity-80" : "",
-                    )}
+                    className={pollOptionButtonClass(picked, ended)}
                   >
-                    {showResults ? (
+                    {showResults && pct > 0 ? (
                       <div
-                        className="absolute inset-y-0 left-0 rounded-xl bg-blue-50/90 transition-all duration-500"
+                        className={pollOptionBarClass()}
                         style={{ width: `${pct}%` }}
+                        aria-hidden
                       />
                     ) : null}
                     <div className="relative flex min-h-[48px] items-center gap-3 px-3 py-3 text-sm">
