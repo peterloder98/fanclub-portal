@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Gift,
   Home,
-  Megaphone,
   PieChart,
   Shield,
   Vote,
@@ -23,7 +22,6 @@ export type AppNavItem = {
 
 export const appNav: AppNavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
-  { label: "News & Grüße", href: "/posts", icon: Megaphone },
   { label: "Events", href: "/events", icon: CalendarDays },
   { label: "Votings", href: "/votings", icon: Vote },
   { label: "Umfragen", href: "/polls", icon: PieChart },
