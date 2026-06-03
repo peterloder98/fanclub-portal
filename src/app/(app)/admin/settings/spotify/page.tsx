@@ -10,7 +10,7 @@ export default async function AdminSpotifySettingsPage() {
     <div className="min-h-screen">
       <Topbar
         title="Spotify (Admin)"
-        subtitle="Für alle Mitglieder: Embed in der Sidebar — ohne E-Mail-Liste im Developer-Dashboard"
+        subtitle="Web-Player mit Login — für alle Mitglieder braucht ihr Extended Quota"
       />
       <main className="px-4 py-6 lg:px-8">
         <Link href="/admin" className="mb-4 inline-block text-sm font-medium text-blue-600 hover:underline">
@@ -20,33 +20,30 @@ export default async function AdminSpotifySettingsPage() {
         <div className="grid max-w-2xl gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Aktuelle Lösung (empfohlen)</CardTitle>
+              <CardTitle className="text-base">So funktioniert es in der App</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-700">
               <p>
-                In der Sidebar läuft der <strong>offizielle Spotify-Embed</strong>. Jede/r Fanclub-Mitglied
-                kann ihn nutzen — <strong>ohne</strong> dass du E-Mails im Spotify Developer Dashboard
-                eintragen musst.
+                Mitglieder klicken <strong>Mit Spotify verbinden</strong> und loggen sich mit ihrem
+                eigenen Spotify ein (Premium/Familie). Danach startet der <strong>Web-Player</strong>{" "}
+                automatisch — volle Songs, kein 30-Sek.-Embed.
               </p>
               <p>
-                <strong>Premium / Familien-Abo:</strong> Nutzer:in im selben Browser bei Spotify einloggen
-                → volle Länge im Embed. Free-Konten: nur Vorschau (~30 Sek.) — das legt Spotify fest.
+                Jeder nutzt <strong>seinen</strong> Account — nicht euer Admin-Spotify.
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-amber-200 bg-amber-50/50">
             <CardHeader>
-              <CardTitle className="text-base">Optional später: In-App-Player für alle</CardTitle>
+              <CardTitle className="text-base text-amber-950">
+                Pflicht für alle Mitglieder: Extended Quota
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-700">
+            <CardContent className="space-y-3 text-sm text-amber-950">
               <p>
-                Der alte „Mit Spotify verbinden“-Player (Web Playback SDK) braucht im Development-Modus
-                eine manuelle User-Liste (max. 25) — für einen Fanclub ungeeignet.
-              </p>
-              <p>
-                Für Wiedergabe <strong>für beliebig viele Nutzer</strong> muss die Spotify-App aus dem
-                Development-Modus:
+                Im <strong>Development-Modus</strong> dürfen nur manuell eingetragene E-Mails (max. 25)
+                den Player nutzen. Das reicht für einen Fanclub nicht.
               </p>
               <ol className="list-decimal space-y-2 pl-5">
                 <li>
@@ -54,33 +51,38 @@ export default async function AdminSpotifySettingsPage() {
                     href="https://developer.spotify.com/dashboard"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-blue-600 hover:underline"
+                    className="font-medium text-blue-700 underline"
                   >
                     Spotify Developer Dashboard
                   </a>{" "}
-                  → deine App → <strong>Settings</strong>
+                  → eure App
                 </li>
                 <li>
-                  <strong>Quota Extension Request</strong> / „Extended Quota Mode“ beantragen (Use Case:
-                  Fanclub-Portal, eingebettete Musik für Mitglieder)
+                  <strong>Quota Extension Request</strong> / Extended Quota Mode beantragen
                 </li>
-                <li>Nach Freigabe durch Spotify könnte der In-App-Player wieder aktiviert werden</li>
+                <li>
+                  Use Case: Fanclub-Portal, Mitglieder verbinden eigenes Spotify für Musik im Browser
+                </li>
               </ol>
-              <p className="text-xs text-slate-500">
-                Bis dahin: Embed-Player reicht für fast alle Fälle.
+              <p className="text-xs">
+                Bis zur Freigabe: zum Testen einzelne E-Mails unter User Management eintragen.
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Technik (Vercel)</CardTitle>
+              <CardTitle className="text-base">Vercel / Technik</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-slate-700">
               <p>
-                <code className="text-xs">SPOTIFY_CLIENT_ID</code> und{" "}
-                <code className="text-xs">SPOTIFY_CLIENT_SECRET</code> werden für den Embed nicht
-                benötigt — nur falls ihr später wieder OAuth/Web-Player nutzt.
+                <code className="text-xs">SPOTIFY_CLIENT_ID</code>,{" "}
+                <code className="text-xs">SPOTIFY_CLIENT_SECRET</code>,{" "}
+                <code className="text-xs">APP_BASE_URL</code>,{" "}
+                <code className="text-xs">SMTP_SECRET</code> (für Token-Verschlüsselung).
+              </p>
+              <p className="mt-2">
+                Supabase: <code className="text-xs">026_spotify_connections.sql</code>
               </p>
             </CardContent>
           </Card>

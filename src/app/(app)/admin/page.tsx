@@ -47,7 +47,7 @@ export default function AdminPage() {
                 href="/admin/settings/spotify"
                 className="rounded-xl border bg-white px-4 py-3 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
               >
-                Spotify (Embed für alle Mitglieder)
+                Spotify (Web-Player & Extended Quota)
               </Link>
             </CardContent>
           </Card>

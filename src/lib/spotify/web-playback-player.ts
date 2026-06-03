@@ -85,7 +85,7 @@ export function connectSpotifyWebPlaybackPlayer(getToken: () => Promise<string>)
       const timeout = window.setTimeout(() => {
         reject(
           new Error(
-            "Spotify-Player antwortet nicht. Häufige Ursachen: (1) Deine Spotify-E-Mail fehlt im Developer-Dashboard unter User Management. (2) Familien-Abo: im Browser bei open.spotify.com mit demselben Konto einloggen, Spotify-App kurz öffnen, dann erneut versuchen. (3) Oben den eingebetteten Player nutzen.",
+            "Spotify-Player antwortet nicht. E-Mail im Developer-Dashboard unter User Management eintragen — oder Extended Quota für alle Mitglieder (Admin). Spotify-App kurz öffnen hilft oft.",
           ),
         );
       }, 20_000);
@@ -106,7 +106,7 @@ export function connectSpotifyWebPlaybackPlayer(getToken: () => Promise<string>)
         window.clearTimeout(timeout);
         reject(
           new Error(
-            "Spotify meldet kein Premium für dieses Konto (Web-Player). Familien-/Partner-Accounts manchmal eingeschränkt.",
+            "Spotify meldet kein Premium für dieses Konto. Familien-Profil mit Premium-Slot nutzen oder anderes Konto.",
           ),
         );
       });
