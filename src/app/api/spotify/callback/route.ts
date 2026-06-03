@@ -7,10 +7,30 @@ import {
   saveSpotifyConnection,
 } from "@/lib/spotify/server";
 
+function popupResultUrl(
+  base: string,
+  jar: Awaited<ReturnType<typeof cookies>>,
+  status: "connected" | "error",
+  reason?: string,
+) {
+  const isPopup = jar.get("spotify_oauth_popup")?.value === "1";
+  jar.delete("spotify_oauth_popup");
+  if (isPopup) {
+    const q = new URLSearchParams({ status });
+    if (reason) q.set("reason", reason);
+    return `${base}/spotify/connect-result?${q}`;
+  }
+  if (status === "connected") {
+    return `${base}/dashboard?spotify=connected`;
+  }
+  return `${base}/dashboard?spotify=error&reason=${encodeURIComponent(reason ?? "error")}`;
+}
+
 export async function GET(request: Request) {
   const base = (process.env.APP_BASE_URL ?? new URL(request.url).origin).replace(/\/$/, "");
+  const jar = await cookies();
   const fail = (reason: string) =>
-    NextResponse.redirect(`${base}/dashboard?spotify=error&reason=${encodeURIComponent(reason)}`);
+    NextResponse.redirect(popupResultUrl(base, jar, "error", reason));
 
   const user = await requireAppUser();
   if (!user) return fail("unauthorized");
@@ -18,7 +38,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const jar = await cookies();
   const expected = jar.get("spotify_oauth_state")?.value;
   jar.delete("spotify_oauth_state");
 
@@ -38,7 +57,7 @@ export async function GET(request: Request) {
       displayName: profile?.display_name ?? null,
       scopes: tokens.scope ?? null,
     });
-    return NextResponse.redirect(`${base}/dashboard?spotify=connected`);
+    return NextResponse.redirect(popupResultUrl(base, jar, "connected"));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "callback_failed";
     return fail(msg);

@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Music2 } from "lucide-react";
 import { ANNI_SPOTIFY_ARTIST_ID } from "@/lib/spotify/constants";
 import { SpotifyWebPlayer } from "@/components/app-shell/spotify-web-player";
+import {
+  isSpotifyOAuthMessage,
+  openSpotifyConnectPopup,
+} from "@/lib/spotify/open-connect-popup";
 
 type Status = {
   configured: boolean;
@@ -14,6 +18,8 @@ type Status = {
 export function SidebarSpotifyPlayer() {
   const [status, setStatus] = useState<Status | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const popupPollRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -35,7 +41,40 @@ export function SidebarSpotifyPlayer() {
 
   useEffect(() => {
     void refresh();
+    return () => {
+      if (popupPollRef.current) window.clearInterval(popupPollRef.current);
+    };
   }, [refresh]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (!isSpotifyOAuthMessage(event.data)) return;
+      setConnecting(false);
+      void refresh();
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [refresh]);
+
+  function connectSpotify() {
+    setConnecting(true);
+    const popup = openSpotifyConnectPopup();
+    if (!popup) {
+      setConnecting(false);
+      window.location.href = "/api/spotify/login";
+      return;
+    }
+    if (popupPollRef.current) window.clearInterval(popupPollRef.current);
+    popupPollRef.current = window.setInterval(() => {
+      if (popup.closed) {
+        if (popupPollRef.current) window.clearInterval(popupPollRef.current);
+        popupPollRef.current = null;
+        setConnecting(false);
+        void refresh();
+      }
+    }, 500);
+  }
 
   async function disconnect() {
     setDisconnecting(true);
@@ -81,12 +120,14 @@ export function SidebarSpotifyPlayer() {
           <p className="mb-2 px-1 text-[10px] leading-snug text-slate-600">
             Mit deinem eigenen Spotify-Konto anmelden — jeder Nutzer separat, volle Titel mit Premium.
           </p>
-          <a
-            href="/api/spotify/login"
-            className="mb-2 flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white shadow-sm transition hover:bg-[#1ed760]"
+          <button
+            type="button"
+            disabled={connecting}
+            onClick={() => connectSpotify()}
+            className="mb-2 flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white shadow-sm transition hover:bg-[#1ed760] disabled:opacity-60"
           >
-            Mit Spotify verbinden
-          </a>
+            {connecting ? "Spotify-Fenster …" : "Mit Spotify verbinden"}
+          </button>
           <div className="overflow-hidden rounded-xl border border-blue-200/60 shadow-sm shadow-blue-900/5 ring-1 ring-rose-500/10">
             <iframe
               title="Spotify — Anni Perka (Vorschau)"
