@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Heart, MessageCircle, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
@@ -69,6 +69,7 @@ export function PostFeed({
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const commentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [dragActive, setDragActive] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
@@ -810,7 +811,7 @@ export function PostFeed({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       <Card className="overflow-hidden">
         <CardContent className="grid gap-3 pt-5">
           <textarea
@@ -936,78 +937,69 @@ export function PostFeed({
         (() => {
           const post = item.post;
           return (
-        <Card key={post.id} className="overflow-hidden">
-          <CardHeader className="pb-2 pt-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* role badge removed on purpose */}
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-                  <div className="h-7 w-7 overflow-hidden rounded-full border bg-slate-50">
-                    {post.authorAvatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={post.authorAvatarUrl}
-                        alt=""
-                        width={28}
-                        height={28}
-                        style={{ width: 28, height: 28 }}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="grid h-full w-full place-items-center text-[10px] font-semibold text-slate-600">
-                        {post.authorName
-                          .split(" ")
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((p) => p[0]?.toUpperCase())
-                          .join("")}
-                      </div>
-                    )}
+        <Card key={post.id} className="overflow-hidden rounded-xl">
+          <div className="px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border bg-slate-50">
+                {post.authorAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={post.authorAvatarUrl}
+                    alt=""
+                    width={24}
+                    height={24}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full w-full place-items-center text-[9px] font-semibold text-slate-600">
+                    {post.authorName
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((p) => p[0]?.toUpperCase())
+                      .join("")}
                   </div>
-                  <span className="font-medium text-slate-800">{post.authorName}</span>
-                  <span>·</span>
-                  <span>{post.createdAtLabel}</span>
-                </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1 truncate text-xs text-slate-600">
+                <span className="font-semibold text-slate-800">{post.authorName}</span>
+                <span className="text-slate-400"> · {post.createdAtLabel}</span>
               </div>
               {canManagePost(post) ? (
-                <div className="flex shrink-0 items-center gap-1">
+                <div className="flex shrink-0 items-center gap-0.5">
                   <button
                     type="button"
                     onClick={() => startEdit(post)}
-                    className="grid h-9 w-9 place-items-center rounded-xl border bg-white text-slate-600 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+                    className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
                     aria-label="Post bearbeiten"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => void deletePost(post.id)}
-                    className="grid h-9 w-9 place-items-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 shadow-sm shadow-slate-900/5 transition hover:bg-rose-100"
+                    className="grid h-7 w-7 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
                     aria-label="Post löschen"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ) : null}
             </div>
-          </CardHeader>
 
-          <CardContent className="pt-0">
             {editingId === post.id ? (
-              <div className="grid gap-2">
+              <div className="mt-2 grid gap-2">
                 <textarea
                   value={editBody}
                   onChange={(e) => setEditBody(e.target.value)}
-                  rows={4}
-                  className="w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  rows={3}
+                  className="w-full rounded-lg border bg-white px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                 />
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => void saveEdit(post.id)}
-                    className="h-9 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+                    className="h-8 rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white"
                   >
                     Speichern
                   </button>
@@ -1017,32 +1009,32 @@ export function PostFeed({
                       setEditingId(null);
                       setEditBody("");
                     }}
-                    className="h-9 rounded-xl border bg-white px-4 text-sm font-medium text-slate-700"
+                    className="h-8 rounded-lg border px-3 text-xs font-medium text-slate-700"
                   >
                     Abbrechen
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="text-sm leading-6 text-slate-800">{post.body}</div>
+              <p className="mt-1.5 text-sm leading-snug text-slate-800">{post.body}</p>
             )}
 
             {post.media.length ? (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
                 {post.media.slice(0, 4).map((m) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={m.id}
                     src={m.url}
                     alt=""
-                    className="w-full rounded-2xl border object-cover"
-                    style={{ maxHeight: 360 }}
+                    className="w-full rounded-lg border object-cover"
+                    style={{ maxHeight: 280 }}
                   />
                 ))}
               </div>
             ) : null}
 
-            <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="mt-2 flex items-center gap-1.5 border-t border-slate-100 pt-2">
               <button
                 type="button"
                 disabled={Boolean(likeBusy[post.id])}
@@ -1071,7 +1063,6 @@ export function PostFeed({
                         flyPointsFromElement({ fromEl: btn, delta: -1 });
                       }
                     } catch (e) {
-                      // revert optimistic UI on failure
                       toggleLike(post.id);
                       setLoadError(e instanceof Error ? e.message : "Like fehlgeschlagen");
                     } finally {
@@ -1080,10 +1071,10 @@ export function PostFeed({
                   })();
                 }}
                 className={cn(
-                  "inline-flex h-8 items-center gap-1.5 rounded-lg border bg-white px-2.5 text-xs font-medium shadow-sm shadow-slate-900/5 transition hover:bg-slate-50",
+                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition",
                   post.likedByMe
-                    ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-50"
-                    : "text-slate-700",
+                    ? "bg-rose-50 text-rose-700"
+                    : "text-slate-600 hover:bg-slate-50",
                   likeBusy[post.id] ? "opacity-60" : "",
                 )}
               >
@@ -1093,15 +1084,6 @@ export function PostFeed({
                     post.likedByMe ? "fill-rose-600 text-rose-600" : "",
                   )}
                 />
-                Like
-              </button>
-
-              <div className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm shadow-slate-900/5">
-                <MessageCircle className="h-3.5 w-3.5 text-slate-500" />
-                Kommentar
-              </div>
-
-              <div className="ml-auto flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                 {post.likeCount > 0 ? (
                   <UserListPopover
                     label="Wer hat geliked?"
@@ -1109,96 +1091,102 @@ export function PostFeed({
                     loading={likersLoadingPostId === post.id}
                     onMouseEnter={() => void ensureLikers(post.id)}
                   >
-                    {post.likeCount} {post.likeCount === 1 ? "Like" : "Likes"}
+                    <span>{post.likeCount}</span>
                   </UserListPopover>
                 ) : (
-                  <span>0 Likes</span>
+                  <span>Like</span>
                 )}
-                <span aria-hidden>·</span>
-                <span>
-                  {post.comments.length}{" "}
-                  {post.comments.length === 1 ? "Kommentar" : "Kommentare"}
-                </span>
-              </div>
-            </div>
+              </button>
 
-            <div className="mt-2 rounded-xl border bg-slate-50 p-2">
-              <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => commentInputRefs.current[post.id]?.focus()}
+                className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                {post.comments.length > 0 ? (
+                  <span>{post.comments.length}</span>
+                ) : (
+                  <span className="sr-only">Kommentieren</span>
+                )}
+              </button>
+
+              <div className="flex min-w-0 flex-1 items-center gap-1.5">
                 <input
+                  ref={(el) => {
+                    commentInputRefs.current[post.id] = el;
+                  }}
                   value={draftByPostId[post.id] ?? ""}
                   onChange={(e) =>
                     setDraftByPostId((d) => ({ ...d, [post.id]: e.target.value }))
                   }
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      addComment(post.id);
+                    }
+                  }}
                   placeholder="Kommentieren…"
-                  className="h-8 w-full rounded-lg border bg-white px-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  className="h-7 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                 />
                 <button
                   type="button"
                   onClick={() => addComment(post.id)}
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-900 text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-900 text-white hover:bg-slate-800"
                   aria-label="Kommentar senden"
                 >
-                  <SendHorizontal className="h-4 w-4" />
+                  <SendHorizontal className="h-3.5 w-3.5" />
                 </button>
               </div>
+            </div>
 
-              {post.comments.length ? (
-                <div
-                  className={cn(
-                    "mt-2 grid gap-1.5",
-                    post.comments.length > 4
-                      ? "max-h-44 overflow-y-auto pr-1"
-                      : "",
-                  )}
-                >
-                  {[...post.comments]
-                    .slice()
-                    .sort(
-                      (a, b) =>
-                        new Date(b.createdAt).getTime() -
-                        new Date(a.createdAt).getTime(),
-                    )
-                    .map((c) => {
-                      const canEdit = me?.id === c.authorId;
-                      const canDelete =
-                        me && (me.id === c.authorId || me.role === "admin");
-                      return (
-                        <div
-                          key={c.id}
-                          className="rounded-lg border bg-white px-2.5 py-1.5"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <div className="!h-7 !w-7 shrink-0 overflow-hidden rounded-full border bg-slate-50">
-                                {c.authorAvatarUrl ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    src={c.authorAvatarUrl}
-                                    alt=""
-                                    width={28}
-                                    height={28}
-                                    style={{ width: 28, height: 28 }}
-                                    className="!h-7 !w-7 object-cover"
-                                  />
-                                ) : (
-                                  <div className="grid h-full w-full place-items-center text-[10px] font-semibold text-slate-600">
-                                    {c.author
-                                      .split(" ")
-                                      .filter(Boolean)
-                                      .slice(0, 2)
-                                      .map((p) => p[0]?.toUpperCase())
-                                      .join("")}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="text-xs font-semibold text-slate-700">
-                                {c.author}
-                              </div>
+            {post.comments.length ? (
+              <div
+                className={cn(
+                  "mt-2 space-y-2 border-t border-slate-100 pt-2",
+                  post.comments.length > 4 ? "max-h-40 overflow-y-auto pr-0.5" : "",
+                )}
+              >
+                {[...post.comments]
+                  .slice()
+                  .sort(
+                    (a, b) =>
+                      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+                  )
+                  .map((c) => {
+                    const canEdit = me?.id === c.authorId;
+                    const canDelete =
+                      me && (me.id === c.authorId || me.role === "admin");
+                    return (
+                      <div key={c.id} className="flex gap-2">
+                        <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border bg-slate-50">
+                          {c.authorAvatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={c.authorAvatarUrl}
+                              alt=""
+                              width={20}
+                              height={20}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="grid h-full w-full place-items-center text-[8px] font-semibold text-slate-600">
+                              {c.author
+                                .split(" ")
+                                .filter(Boolean)
+                                .slice(0, 2)
+                                .map((p) => p[0]?.toUpperCase())
+                                .join("")}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-slate-500">
-                                {c.createdAtLabel}
-                              </span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-semibold text-slate-700">
+                              {c.author}
+                            </span>
+                            <span className="text-[10px] text-slate-400">{c.createdAtLabel}</span>
+                            <div className="ml-auto flex items-center gap-0.5">
                               {canEdit ? (
                                 <button
                                   type="button"
@@ -1206,37 +1194,37 @@ export function PostFeed({
                                     setEditingCommentId(c.id);
                                     setEditCommentText(c.text);
                                   }}
-                                  className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
+                                  className="grid h-6 w-6 place-items-center rounded text-slate-500 hover:bg-slate-100"
                                   aria-label="Kommentar bearbeiten"
                                 >
-                                  <Pencil className="h-3.5 w-3.5" />
+                                  <Pencil className="h-3 w-3" />
                                 </button>
                               ) : null}
                               {canDelete ? (
                                 <button
                                   type="button"
                                   onClick={() => void deleteComment(post.id, c.id)}
-                                  className="grid h-7 w-7 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
+                                  className="grid h-6 w-6 place-items-center rounded text-rose-600 hover:bg-rose-50"
                                   aria-label="Kommentar löschen"
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-3 w-3" />
                                 </button>
                               ) : null}
                             </div>
                           </div>
                           {editingCommentId === c.id ? (
-                            <div className="mt-2 grid gap-2">
+                            <div className="mt-1 grid gap-1.5">
                               <textarea
                                 value={editCommentText}
                                 onChange={(e) => setEditCommentText(e.target.value)}
                                 rows={2}
-                                className="w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                                className="w-full rounded-md border px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                               />
-                              <div className="flex gap-2">
+                              <div className="flex gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => void saveCommentEdit(post.id, c.id)}
-                                  className="h-8 rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white"
+                                  className="h-7 rounded-md bg-slate-900 px-2.5 text-[11px] font-semibold text-white"
                                 >
                                   Speichern
                                 </button>
@@ -1246,23 +1234,23 @@ export function PostFeed({
                                     setEditingCommentId(null);
                                     setEditCommentText("");
                                   }}
-                                  className="grid h-8 w-8 place-items-center rounded-lg border"
+                                  className="grid h-7 w-7 place-items-center rounded-md border"
                                   aria-label="Abbrechen"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="mt-1 text-sm text-slate-800">{c.text}</div>
+                            <p className="text-xs leading-snug text-slate-700">{c.text}</p>
                           )}
                         </div>
-                      );
-                    })}
-                </div>
-              ) : null}
-            </div>
-          </CardContent>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : null}
+          </div>
         </Card>
           );
         })())
