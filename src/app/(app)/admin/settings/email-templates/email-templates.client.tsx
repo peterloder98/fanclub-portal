@@ -246,13 +246,14 @@ export function EmailTemplatesClient() {
                       ))}
                     </ul>
                     <p className="mt-2">
-                      Signatur: Standard oben oder Platzhalter{" "}
-                      <code className="text-[11px]">{`{{admin_signature_text}}`}</code> — Texte
-                      unter{" "}
+                      Die gewählte{" "}
                       <Link href="/admin/signatures" className="text-blue-600 hover:underline">
-                        Admin-Signaturen
-                      </Link>
-                      .
+                        Admin-Signatur
+                      </Link>{" "}
+                      wird beim Versand automatisch angehängt. Am Ende der Vorlage keine Grußformeln,
+                      Namenszeilen oder{" "}
+                      <code className="text-[11px]">{`{{admin_signature_text}}`}</code> — nur den
+                      eigentlichen Inhalt.
                     </p>
                   </div>
 

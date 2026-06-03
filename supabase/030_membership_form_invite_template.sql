@@ -16,11 +16,7 @@ kommst du auf unsere eigene Seite und kannst alle benötigten Daten ausfüllen u
 
 Im Anschluss überweise bitte den Mitgliedsbeitrag von {{fee_eur}} auf das im Antrag genannte Konto.
 
-Nach Eingang des Betrages schalten wir dich als Benutzer für unsere Fanclub App frei und fügen dich in die Fanclub Whatsapp Gruppe hinzu.
-
-Wir freuen uns sehr über dein Interesse und hoffen dich bald als neues Mitglied begrüßen zu dürfen.
-
-{{admin_signature_text}}',
+Nach Eingang des Betrages schalten wir dich als Benutzer für unsere Fanclub App frei und fügen dich in die Fanclub Whatsapp Gruppe hinzu.',
   NULL
 )
 on conflict (key) do update set

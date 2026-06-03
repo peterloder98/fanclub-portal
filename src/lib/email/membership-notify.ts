@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { loadApplicationPdfBytes } from "@/lib/membership/application-pdf-service";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 
 function appBaseUrl() {
@@ -155,6 +156,7 @@ export async function sendMemberInviteAfterApproval(input: {
 
   const inviteUrl = linkData.properties.action_link;
   const subject = "Fanclub: Zugang zur App freigeschaltet";
+  const sig = await loadDefaultMailSignature();
   const text = [
     `Hallo ${input.firstName},`,
     ``,
@@ -162,8 +164,27 @@ export async function sendMemberInviteAfterApproval(input: {
     inviteUrl,
     ``,
     `Bitte setze über den Link dein Passwort und melde dich danach an.`,
+    ``,
+    sig.text,
   ].join("\n");
 
-  const result = await sendEmailViaAccount({ to: input.email, subject, text });
+  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px"><p>Hallo ${input.firstName},</p><p>deine Mitgliedschaft wurde freigeschaltet. Du kannst dich jetzt in der Fanclub-App anmelden:</p><p><a href="${inviteUrl}">${inviteUrl}</a></p><p>Bitte setze über den Link dein Passwort und melde dich danach an.</p>${sig.htmlBlock}</body></html>`;
+
+  const result = await sendEmailViaAccount({
+    to: input.email,
+    subject,
+    text,
+    html,
+    attachments: sig.imageBuffer
+      ? [
+          {
+            filename: "signatur.png",
+            content: sig.imageBuffer,
+            contentType: sig.contentType,
+            cid: sig.imageCid!,
+          },
+        ]
+      : undefined,
+  });
   return { ...result, inviteUrl };
 }

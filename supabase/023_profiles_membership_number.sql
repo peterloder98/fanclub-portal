@@ -14,7 +14,7 @@ values (
   'Zahlungserinnerung Mitgliedsbeitrag',
   'Erinnerung an offenen Mitgliedsbeitrag vor Freischaltung der App / WhatsApp.',
   'Zahlungserinnerung Mitgliedsbeitrag Anni Perka Fanclub',
-  E'Hallo {{first_name}},\n\nvielen Dank für deinen Mitgliedschaftsantrag beim Anni-Perka-Fanclub e. V.\n\nDer Mitgliedsbeitrag in Höhe von {{fee_eur}} ist bei uns noch nicht eingegangen. Bitte überweise den Betrag auf das im Antrag genannte Konto.\n\nErst nach Zahlungseingang schalten wir deinen Zugang zur Fanclub-App frei und nehmen dich – sofern gewünscht – in die WhatsApp-Gruppe als aktives Mitglied auf.\n\nBei Fragen melde dich gerne bei uns.\n\n{{admin_signature_text}}',
+  E'Hallo {{first_name}},\n\nvielen Dank für deinen Mitgliedschaftsantrag beim Anni-Perka-Fanclub e. V.\n\nDer Mitgliedsbeitrag in Höhe von {{fee_eur}} ist bei uns noch nicht eingegangen. Bitte überweise den Betrag auf das im Antrag genannte Konto.\n\nErst nach Zahlungseingang schalten wir deinen Zugang zur Fanclub-App frei und nehmen dich – sofern gewünscht – in die WhatsApp-Gruppe als aktives Mitglied auf.\n\nBei Fragen melde dich gerne bei uns.',
   NULL
 )
 on conflict (key) do nothing;

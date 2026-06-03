@@ -38,11 +38,7 @@ dein Antrag als neues Mitglied für den Anni Perka Fanclub ist eingegangen.
 
 Bitte denke an die Überweisung des Mitgliedsbeitrages auf das im Antrag angegebene Konto.
 
-Sobald der Betrag eingegangen ist, schalten wir dich für die Fanclub App als Benutzer frei und fügen dich in die WhatsApp-Gruppe des Fanclubs hinzu.
-
-Wir freuen uns auf dich.
-
-{{admin_signature_text}}',
+Sobald der Betrag eingegangen ist, schalten wir dich für die Fanclub App als Benutzer frei und fügen dich in die WhatsApp-Gruppe des Fanclubs hinzu.',
   NULL
 )
 on conflict (key) do update set

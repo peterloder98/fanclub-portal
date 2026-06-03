@@ -28,7 +28,7 @@ values
   'Antrag eingegangen (an Antragsteller/in)',
   'Wird nach digitalem Absenden des Mitgliedschaftsantrags versendet (mit PDF-Anhang).',
   'Dein Mitgliedschaftsantrag – Anni-Perka-Fanclub',
-  E'Hallo {{first_name}},\n\nvielen Dank für deinen digital unterzeichneten Mitgliedschaftsantrag beim Anni-Perka-Fanclub e. V. Im Anhang findest du deinen Antrag inklusive Satzung.\n\nWir prüfen deinen Antrag und bitten dich, den Mitgliedsbeitrag in Höhe von {{fee_eur}} auf das im Antrag angegebene Konto zu überweisen.\n\nSobald der Beitrag bei uns eingegangen ist, erhältst du eine weitere E-Mail mit einem Zugangslink zur Fanclub-App. Wenn du die Aufnahme in die WhatsApp-Gruppe gewünscht hast, nehmen wir dich dafür ebenfalls auf.\n\nBei Fragen erreichst du uns jederzeit.\n\n{{admin_signature_text}}',
+  E'Liebe/r {{first_name}},\n\nvielen Dank für deinen digital unterzeichneten Mitgliedschaftsantrag beim Anni-Perka-Fanclub e. V. Im Anhang findest du deinen Antrag inklusive Satzung.\n\nWir prüfen deinen Antrag und bitten dich, den Mitgliedsbeitrag in Höhe von {{fee_eur}} auf das im Antrag angegebene Konto zu überweisen.\n\nSobald der Beitrag bei uns eingegangen ist, erhältst du eine weitere E-Mail mit einem Zugangslink zur Fanclub-App. Wenn du die Aufnahme in die WhatsApp-Gruppe gewünscht hast, nehmen wir dich dafür ebenfalls auf.\n\nBei Fragen erreichst du uns jederzeit.',
   NULL
 ),
 (
@@ -36,7 +36,7 @@ values
   'Neuer Antrag (an Admins)',
   'Benachrichtigung an alle Admins bei neuem Mitgliedschaftsantrag.',
   'Neuer Mitgliedschaftsantrag: {{applicant_name}}',
-  E'Es ist ein neuer digital unterzeichneter Mitgliedschaftsantrag eingegangen.\n\nName: {{applicant_name}}\nE-Mail: {{email}}\nAntrags-ID: {{application_id}}\n\nBitte prüfe den Antrag im Admin-Bereich und schalte die Mitgliedschaft nach Zahlungseingang frei:\n{{admin_applications_url}}\n\nDer vollständige Antrag ist als PDF angehängt.\n\n{{admin_signature_text}}',
+  E'Hallo {{admin_first_name}},\n\nsoeben ({{submitted_at}}) ist ein neuer Mitgliedschaftsantrag von {{applicant_name}} eingegangen.\n\nBitte klicke hier, um ihn dir anzusehen:\n{{application_admin_url}}\n\nSobald der Beitrag eingegangen ist, schalte das Mitglied als neu frei.\n\nDer vollständige Antrag ist als PDF angehängt.',
   NULL
 )
 on conflict (key) do nothing;

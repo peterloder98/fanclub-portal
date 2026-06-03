@@ -14,12 +14,7 @@ soeben ({{submitted_at}}) ist ein neuer Mitgliedschaftsantrag von {{applicant_na
 Bitte klicke hier, um ihn dir anzusehen:
 {{application_admin_url}}
 
-Sobald der Beitrag eingegangen ist, schalte das Mitglied als neu frei.
-
-Liebe Grüße
-Deine Anni Perka Fanclub App
-
-{{admin_signature_text}}',
+Sobald der Beitrag eingegangen ist, schalte das Mitglied als neu frei.',
   NULL
 )
 on conflict (key) do update set

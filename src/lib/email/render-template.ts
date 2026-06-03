@@ -37,6 +37,38 @@ function replaceVars(template: string, vars: Record<string, string>) {
   return out;
 }
 
+/** Entfernt Signatur-Platzhalter und typische Abschlusszeilen (werden separat angehängt). */
+export function stripTemplateBodyArtifacts(body: string): string {
+  let t = body
+    .replace(/\{\{admin_signature_block\}\}/gi, "")
+    .replace(/\{\{admin_signature_text\}\}/gi, "")
+    .trimEnd();
+
+  const trailingLine =
+    /^(liebe grüße|viele grüße|herzliche grüße|mit freundlichen grüßen|freundliche grüße|deine anni perka fanclub app|eure anni perka fanclub app|wir freuen uns)/i;
+
+  const lines = t.split("\n");
+  while (lines.length > 0) {
+    const last = lines[lines.length - 1]?.trim() ?? "";
+    if (!last) {
+      lines.pop();
+      continue;
+    }
+    if (trailingLine.test(last)) {
+      lines.pop();
+      continue;
+    }
+    break;
+  }
+  return lines.join("\n").trimEnd();
+}
+
+function appendSignatureToPlainText(body: string, signatureText: string) {
+  const core = stripTemplateBodyArtifacts(body);
+  if (!signatureText.trim()) return core;
+  return core ? `${core}\n\n${signatureText.trim()}` : signatureText.trim();
+}
+
 function textToHtmlParagraphs(text: string) {
   const escaped = text
     .replace(/&/g, "&amp;")
@@ -58,9 +90,7 @@ Der Mitgliedsbeitrag in Höhe von {{fee_eur}} ist bei uns noch nicht eingegangen
 
 Erst nach Zahlungseingang schalten wir deinen Zugang zur Fanclub-App frei und nehmen dich – sofern gewünscht – in die WhatsApp-Gruppe als aktives Mitglied auf.
 
-Bei Fragen melde dich gerne bei uns.
-
-{{admin_signature_text}}`,
+Bei Fragen melde dich gerne bei uns.`,
 };
 
 export async function renderEmailFromTemplate(
@@ -95,16 +125,12 @@ export async function renderEmailFromTemplate(
   };
 
   const subject = replaceVars(row.subject, allVars);
-  const text = replaceVars(row.body_text, allVars);
+  const bodyCore = stripTemplateBodyArtifacts(row.body_text);
+  const text = appendSignatureToPlainText(replaceVars(bodyCore, allVars), sig.text);
 
   const bodyHtml = row.body_html?.trim()
-    ? replaceVars(row.body_html, allVars)
-    : `${textToHtmlParagraphs(
-        replaceVars(
-          row.body_text.replace(/\{\{admin_signature_block\}\}/g, "").replace(/\{\{admin_signature_text\}\}/g, ""),
-          allVars,
-        ),
-      )}${sig.htmlBlock}`;
+    ? replaceVars(stripTemplateBodyArtifacts(row.body_html), allVars)
+    : `${textToHtmlParagraphs(replaceVars(bodyCore, allVars))}${sig.htmlBlock}`;
 
   const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f8fafc;padding:24px"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0">${bodyHtml}</div></body></html>`;
 

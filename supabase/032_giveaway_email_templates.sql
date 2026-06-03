@@ -10,10 +10,7 @@ values
 
 das Gewinnspiel {{giveaway_title}} ist beendet und wartet auf die glücklichen Gewinner, bitte klickt hier und lost die Gewinner aus:
 
-{{giveaway_admin_url}}
-
-Liebe Grüße
-Eure Anni Perka Fanclub App',
+{{giveaway_admin_url}}',
   NULL
 ),
 (
@@ -29,9 +26,7 @@ Wir dürfen dir mitteilen, dass du folgenden Preis gewonnen hast:
 
 „{{prize_name}}“
 
-Bitte melde dich kurz per E-Mail oder WhatsApp-Nachricht (an einen der Admins), um die weiteren Schritte und wie du deinen Gewinn erhältst zu besprechen.
-
-{{admin_signature_text}}',
+Bitte melde dich kurz per E-Mail oder WhatsApp-Nachricht (an einen der Admins), um die weiteren Schritte und wie du deinen Gewinn erhältst zu besprechen.',
   NULL
 )
 on conflict (key) do update set
