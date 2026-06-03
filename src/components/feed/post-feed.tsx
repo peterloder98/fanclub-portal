@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { profileToUserListEntry } from "@/lib/profiles/display";
 import { optimizePostImage } from "@/lib/posts/optimize-image";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
 import { flyPointsFromElement } from "@/lib/points/fly";
@@ -422,21 +423,16 @@ export function PostFeed({
           const voterIds = Array.from(new Set(voteRows.map((v) => v.user_id)));
           const { data: voterProfiles } = await supabase
             .from("profiles")
-            .select("id,first_name,last_name,email")
+            .select("id,first_name,last_name,email,avatar_path,updated_at")
             .in("id", voterIds.length ? voterIds : ["00000000-0000-0000-0000-000000000000"]);
           const voterMap = new Map(
-            (voterProfiles ?? []).map((p) => [
-              p.id,
-              p.first_name && p.last_name
-                ? `${p.first_name} ${p.last_name}`
-                : (p.email ?? "Mitglied"),
-            ]),
+            (voterProfiles ?? []).map((p) => [p.id, profileToUserListEntry(p)]),
           );
           const byOpt: Record<string, PollVoter[]> = {};
           voteRows.forEach((v) => {
-            const name = voterMap.get(v.user_id);
-            if (!name) return;
-            (byOpt[v.option_id] ??= []).push({ id: v.user_id, name });
+            const voter = voterMap.get(v.user_id);
+            if (!voter) return;
+            (byOpt[v.option_id] ??= []).push(voter);
           });
 
           setFeedPolls(
@@ -470,9 +466,13 @@ export function PostFeed({
           setMyPollOptionsByPoll(mineByPoll);
           setPollVotersByOption(byOpt);
         }
-      } catch {
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        const recursion = /infinite recursion|profiles_select_authenticated/i.test(msg);
         setLoadError(
-          "Feed konnte nicht geladen werden. Hast du `supabase/004_posts_comments_likes.sql` (und für Moderation/Bilder `supabase/008_posts_moderation_media.sql`) schon ausgeführt?",
+          recursion
+            ? "Feed konnte nicht geladen werden: Datenbank-Policy für Profile verursacht eine Endlosschleife. Bitte `supabase/025_fix_profiles_select_recursion.sql` im Supabase SQL Editor ausführen und die Seite neu laden."
+            : `Feed konnte nicht geladen werden: ${msg}. Falls Tabellen fehlen: \`supabase/004_posts_comments_likes.sql\` und \`008_posts_moderation_media.sql\`.`,
         );
       }
     }

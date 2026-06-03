@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
-import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { profileToUserListEntry } from "@/lib/profiles/display";
 import { PollEndCountdown } from "@/components/polls/poll-end-countdown";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 
@@ -128,17 +128,7 @@ export function PollBoard({
       .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", voterIds.length ? voterIds : ["00000000-0000-0000-0000-000000000000"]);
     const pMap = new Map<string, Voter>(
-      (profiles ?? []).map((p) => [
-        p.id,
-        {
-          id: p.id,
-          name:
-            p.first_name && p.last_name
-              ? `${p.first_name} ${p.last_name}`
-              : (p.email ?? "Mitglied"),
-          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
-        },
-      ]),
+      (profiles ?? []).map((p) => [p.id, profileToUserListEntry(p)]),
     );
 
     const byOpt: Record<string, Voter[]> = {};

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
+import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -64,7 +65,8 @@ export function Topbar({
         className,
       )}
     >
-      <div className="min-w-0">
+      <BrandLogo className="lg:hidden" showText={false} imageClassName="h-10 w-10" />
+      <div className="min-w-0 flex-1">
         <div className="truncate text-base font-semibold text-slate-900">
           {title}
         </div>
