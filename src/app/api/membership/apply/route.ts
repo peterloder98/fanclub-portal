@@ -10,7 +10,11 @@ import { cacheApplicationPdf } from "@/lib/membership/application-pdf-service";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
 import { provisionMembershipApplicant } from "@/lib/membership/provision-applicant";
 import { isValidPostalCode } from "@/lib/postal-code";
-import { seedSmtpFromEnvIfEmpty } from "@/lib/smtp/accounts";
+import {
+  repairDefaultSmtpPasswordFromEnv,
+  seedSmtpFromEnvIfEmpty,
+} from "@/lib/smtp/accounts";
+import { formatMembershipEmailWarning } from "@/lib/smtp/email-warning";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
 const postalCode = z.string().regex(/^\d{5}$/, "PLZ muss genau 5 Ziffern haben");
@@ -111,6 +115,9 @@ export async function POST(request: Request) {
     await seedSmtpFromEnvIfEmpty().catch((e) => {
       console.warn("[smtp] Seed übersprungen:", e);
     });
+    await repairDefaultSmtpPasswordFromEnv().catch((e) => {
+      console.warn("[smtp] Passwort-Reparatur übersprungen:", e);
+    });
     const applicantBuf = dataUrlToBuffer(input.signature_applicant);
     const applicantPath = `${appId}/applicant.png`;
     const { error: up1 } = await admin.storage
@@ -188,7 +195,13 @@ export async function POST(request: Request) {
     const email = input.email.trim().toLowerCase();
     const submittedAt = new Date().toISOString();
 
-    let emailWarning: string | null = null;
+    let applicantMailResult:
+      | { ok: true; skipped: false }
+      | { ok: false; skipped: boolean; error?: string }
+      | null = null;
+    let adminMailResult: Awaited<
+      ReturnType<typeof notifyAdminsNewMembershipApplication>
+    > | null = null;
 
     try {
       await cacheApplicationPdf(appId);
@@ -197,39 +210,36 @@ export async function POST(request: Request) {
     }
 
     try {
-      const applicantMail = await sendApplicantConfirmationEmail({
+      applicantMailResult = await sendApplicantConfirmationEmail({
         applicationId: appId,
         email,
         firstName: input.first_name.trim(),
         lastName: input.last_name.trim(),
         feeCents: 1500,
       });
-      if (!applicantMail.ok && applicantMail.skipped) {
-        emailWarning = "Bestätigungs-E-Mail: SMTP nicht konfiguriert.";
-      }
     } catch (e) {
       console.error("[membership] Bestätigungs-Mail fehlgeschlagen:", e);
-      emailWarning = "Bestätigungs-E-Mail konnte nicht gesendet werden.";
+      const msg = e instanceof Error ? e.message : "Unbekannter Fehler";
+      applicantMailResult = { ok: false, skipped: false, error: msg };
     }
 
     try {
-      const adminMail = await notifyAdminsNewMembershipApplication({
+      adminMailResult = await notifyAdminsNewMembershipApplication({
         applicationId: appId,
         applicantName,
         email,
         submittedAt,
       });
-      if (!adminMail.sent && adminMail.reason === "no_smtp_account") {
-        emailWarning = emailWarning
-          ? `${emailWarning} Admin-Benachrichtigung: SMTP fehlt.`
-          : "Admin-Benachrichtigung: SMTP nicht konfiguriert.";
-      }
     } catch (e) {
       console.error("[membership] Admin-Benachrichtigung fehlgeschlagen:", e);
-      emailWarning = emailWarning
-        ? `${emailWarning} Admin-Mail fehlgeschlagen.`
-        : "Admin-Benachrichtigung fehlgeschlagen.";
+      const msg = e instanceof Error ? e.message : "Unbekannter Fehler";
+      adminMailResult = { sent: false, reason: "send_failed", error: msg };
     }
+
+    const emailWarning = formatMembershipEmailWarning({
+      applicant: applicantMailResult ?? undefined,
+      admin: adminMailResult ?? undefined,
+    });
 
     const appBase = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
     await logMemberActivity({

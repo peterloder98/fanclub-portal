@@ -331,7 +331,6 @@ export function PollBoard({
                 allowMultiple={poll.allow_multiple}
                 hasVoted={hasVoted}
                 ended={ended}
-                showEndDate={false}
               />
               <div className="mt-2">
                 <PollParticipantSummary

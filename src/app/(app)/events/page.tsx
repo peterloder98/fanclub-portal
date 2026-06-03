@@ -74,7 +74,7 @@ export default async function EventsPage() {
     <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
       <Topbar
         title="Events"
-        subtitle="Konzerttermine aus Artistflow (automatisch synchronisiert)."
+        subtitle="Alle wichtigen Konzerttermine von Anni"
       />
       <main className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 lg:px-6">
         {error ? (

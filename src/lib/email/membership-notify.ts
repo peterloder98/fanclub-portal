@@ -56,6 +56,7 @@ export async function notifyAdminsNewMembershipApplication(input: {
     : null;
 
   let sentCount = 0;
+  let lastError: string | undefined;
   for (const adm of recipients) {
     const adminFirst =
       adm.first_name?.trim() || adm.last_name?.trim() || "Vorstand";
@@ -87,10 +88,15 @@ export async function notifyAdminsNewMembershipApplication(input: {
     });
 
     if (result.ok) sentCount += 1;
+    else if ("error" in result && result.error) lastError = result.error;
   }
 
   if (sentCount === 0) {
-    return { sent: false, reason: "no_smtp_account" as const };
+    return {
+      sent: false,
+      reason: lastError ? ("send_failed" as const) : ("no_smtp_account" as const),
+      error: lastError,
+    };
   }
 
   return { sent: true as const, count: sentCount };
@@ -127,15 +133,13 @@ export async function sendApplicantConfirmationEmail(input: {
     ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
   ];
 
-  const result = await sendEmailViaAccount({
+  return sendEmailViaAccount({
     to: input.email,
     subject: rendered.subject,
     text: rendered.text,
     html: rendered.html,
     attachments,
   });
-
-  return result;
 }
 
 export async function sendMemberInviteAfterApproval(input: {

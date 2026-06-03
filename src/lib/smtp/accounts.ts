@@ -182,6 +182,35 @@ export async function testSmtpConnection(id?: string) {
   return { ok: true as const, email: creds.public.email };
 }
 
+/** Passwort mit aktuellem SMTP_SECRET neu setzen, wenn Entschlüsselung fehlschlägt (z. B. Vercel-Deploy). */
+export async function repairDefaultSmtpPasswordFromEnv() {
+  const email = process.env.SMTP_SEED_EMAIL?.trim();
+  const password = process.env.SMTP_SEED_PASSWORD?.trim();
+  if (!email || !password) return { repaired: false as const, reason: "env_incomplete" as const };
+
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("smtp_accounts")
+    .select("id,email,password_ciphertext")
+    .eq("is_default", true)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || data.email !== email) return { repaired: false as const, reason: "no_matching_account" as const };
+
+  try {
+    decryptSmtpPassword(data.password_ciphertext);
+    return { repaired: false as const, ok: true as const };
+  } catch {
+    const { error: upErr } = await admin
+      .from("smtp_accounts")
+      .update({ password_ciphertext: encryptSmtpPassword(password) })
+      .eq("id", data.id);
+    if (upErr) throw new Error(upErr.message);
+    return { repaired: true as const };
+  }
+}
+
 export async function seedSmtpFromEnvIfEmpty() {
   const existing = await listSmtpAccounts();
   if (existing.length > 0) return { seeded: false as const, count: existing.length };

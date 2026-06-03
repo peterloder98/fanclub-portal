@@ -29,15 +29,20 @@ export async function sendEmailViaAccount(input: SendViaAccountInput) {
     password: creds.password,
   });
 
-  await transport.sendMail({
-    from: formatFromHeader(creds.public.email, creds.public.display_name),
-    replyTo: input.replyTo ?? creds.public.reply_to ?? creds.public.email,
-    to: input.to,
-    subject: input.subject,
-    text: input.text,
-    html: input.html ?? input.text.replace(/\n/g, "<br>"),
-    attachments: input.attachments,
-  });
+  try {
+    await transport.sendMail({
+      from: formatFromHeader(creds.public.email, creds.public.display_name),
+      replyTo: input.replyTo ?? creds.public.reply_to ?? creds.public.email,
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html ?? input.text.replace(/\n/g, "<br>"),
+      attachments: input.attachments,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "SMTP-Versand fehlgeschlagen";
+    return { ok: false as const, skipped: false as const, error: msg };
+  }
 
   return { ok: true as const, skipped: false as const };
 }

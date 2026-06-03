@@ -6,7 +6,11 @@ import L from "leaflet";
 import { EventMapMarker } from "./event-map-marker";
 import type { MapEvent } from "./events-map.types";
 
-/** Deutschland, Österreich, Südtirol */
+/** Deutschland (Dashboard: ganzes Land sichtbar), Events etwas enger */
+const GERMANY_BOUNDS: L.LatLngBoundsExpression = [
+  [47.0, 5.5],
+  [55.4, 15.0],
+];
 const DACH_SW: [number, number] = [47.2, 5.8];
 const DACH_NE: [number, number] = [55.2, 15.2];
 const DACH_BOUNDS: L.LatLngBoundsExpression = [DACH_SW, DACH_NE];
@@ -65,18 +69,17 @@ export function EventsMapClient({
     const dachMarkers = markers.filter((m) =>
       isDachCoord(m.lat as number, m.lng as number),
     );
-    const maxZoom = mapVariant === "dashboard" ? 8 : 7;
-    const minZoom = mapVariant === "dashboard" ? 6 : 5;
-
-    if (dachMarkers.length) {
+    if (mapVariant === "dashboard") {
+      map.fitBounds(GERMANY_BOUNDS, { padding: [10, 10], maxZoom: 6 });
+    } else if (dachMarkers.length) {
       const bounds = L.latLngBounds(
         dachMarkers.map((m) => [m.lat as number, m.lng as number]),
       );
-      map.fitBounds(bounds, { padding: [16, 16], maxZoom });
+      map.fitBounds(bounds, { padding: [16, 16], maxZoom: 7 });
       const z = map.getZoom();
-      if (z < minZoom) map.setZoom(minZoom);
+      if (z < 5) map.setZoom(5);
     } else {
-      map.setView(GERMANY_CENTER, mapVariant === "dashboard" ? 6 : 6);
+      map.fitBounds(DACH_BOUNDS, { padding: [12, 12], maxZoom: 7 });
     }
     requestAnimationFrame(() => map.invalidateSize());
     // eslint-disable-next-line react-hooks/exhaustive-deps
