@@ -65,7 +65,13 @@ export function PostFeed({
   const [draftByPostId, setDraftByPostId] = useState<Record<string, string>>(
     {},
   );
-  const [me, setMe] = useState<{ id: string; name: string; role: "admin" | "anni" | "member" } | null>(null);
+  const [me, setMe] = useState<{
+    id: string;
+    name: string;
+    role: "admin" | "anni" | "member";
+    avatarUrl: string | null;
+    initials: string;
+  } | null>(null);
   const [newText, setNewText] = useState("");
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -79,6 +85,7 @@ export function PostFeed({
   const [editBody, setEditBody] = useState("");
   const [likeBusy, setLikeBusy] = useState<Record<string, boolean>>({});
   const [composerExpanded, setComposerExpanded] = useState(false);
+  const composerRef = useRef<HTMLDivElement>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
 
@@ -199,7 +206,7 @@ export function PostFeed({
 
         const { data: profile, error: profileErr } = await supabase
           .from("profiles")
-          .select("first_name,last_name,role")
+          .select("first_name,last_name,role,avatar_path,updated_at")
           .eq("id", user.id)
           .maybeSingle();
         if (profileErr) throw profileErr;
@@ -208,8 +215,17 @@ export function PostFeed({
           profile?.first_name && profile?.last_name
             ? `${profile.first_name} ${profile.last_name}`
             : user.email ?? "Du";
+        const parts = name.trim().split(/\s+/).filter(Boolean);
+        const initials =
+          (parts.at(0)?.[0] ?? "U") + (parts.length > 1 ? (parts.at(-1)?.[0] ?? "") : "");
 
-        setMe({ id: user.id, name, role: (profile?.role ?? "member") as any });
+        setMe({
+          id: user.id,
+          name,
+          role: (profile?.role ?? "member") as "admin" | "anni" | "member",
+          avatarUrl: getAvatarPublicUrl(profile?.avatar_path ?? null, profile?.updated_at ?? null),
+          initials: initials.toUpperCase(),
+        });
 
         // Load posts (v1)
         const { data: postsData, error: postsErr } = await supabase
@@ -651,6 +667,7 @@ export function PostFeed({
 
       setNewText("");
       setNewFiles([]);
+      setComposerExpanded(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       // Only show immediately if approved; pending goes to admin queue.
@@ -841,6 +858,22 @@ export function PostFeed({
     setEditCommentText("");
   }
 
+  const composerHasContent = Boolean(newText.trim() || newFiles.length > 0);
+
+  const tryCollapseComposer = () => {
+    if (!composerHasContent && !dragActive) setComposerExpanded(false);
+  };
+
+  useEffect(() => {
+    if (!composerExpanded) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (composerRef.current?.contains(e.target as Node)) return;
+      tryCollapseComposer();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [composerExpanded, composerHasContent, dragActive]);
+
   async function deleteComment(postId: string, commentId: string) {
     if (!me) return;
     if (!window.confirm("Kommentar löschen?")) return;
@@ -861,100 +894,131 @@ export function PostFeed({
 
   return (
     <div className="grid gap-3">
-      <Card className="overflow-hidden">
-        <CardContent className="grid gap-3 pt-5">
-          <textarea
-            value={newText}
-            onChange={(e) => setNewText(e.target.value)}
-            onFocus={() => setComposerExpanded(true)}
-            placeholder="Schreib etwas…"
-            rows={composerExpanded ? 3 : 1}
-            className={cn(
-              "w-full resize-none rounded-2xl border bg-white px-3 py-2 text-sm outline-none transition-[min-height] focus:ring-4 focus:ring-[color:var(--ring)]",
-              composerExpanded ? "min-h-[88px]" : "min-h-[44px]",
-            )}
-          />
-          <div
-            onDragEnter={(e) => {
-              e.preventDefault();
-              setDragActive(true);
-              setComposerExpanded(true);
-            }}
-            onDragLeave={(e) => {
-              e.preventDefault();
-              setDragActive(false);
-            }}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragActive(false);
-              const picked = Array.from(e.dataTransfer.files ?? [])
-                .filter((f) => f.type.startsWith("image/"))
-                .slice(0, 4);
-              if (picked.length) setNewFiles(picked);
-            }}
-            className={cn(
-              "rounded-xl border border-dashed px-3 py-2 transition",
-              dragActive
-                ? "border-blue-400 bg-blue-50/60"
-                : "border-slate-200 bg-slate-50/80",
-            )}
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) =>
-                  setNewFiles(Array.from(e.target.files ?? []).slice(0, 4))
-                }
+      <Card className="overflow-hidden border-blue-100/90 bg-gradient-to-br from-sky-50/80 via-white to-rose-50/50 shadow-sm shadow-blue-900/5">
+        <CardContent ref={composerRef} className="pt-4">
+          <div className="flex items-start gap-3">
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden rounded-full border-2 border-white bg-gradient-to-br from-blue-100 to-rose-100 shadow-sm transition-all duration-200 ease-out",
+                composerExpanded ? "h-12 w-12 shadow-md ring-2 ring-blue-200/80" : "h-9 w-9 ring-1 ring-slate-200/80",
+              )}
+              aria-hidden
+            >
+              {me?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={me.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full w-full place-items-center text-xs font-semibold text-slate-600">
+                  {me?.initials ?? "…"}
+                </div>
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <textarea
+                value={newText}
+                onChange={(e) => setNewText(e.target.value)}
+                onFocus={() => setComposerExpanded(true)}
+                onBlur={() => {
+                  window.setTimeout(() => tryCollapseComposer(), 120);
+                }}
+                placeholder="Schreib etwas…"
+                rows={composerExpanded ? 3 : 1}
+                className={cn(
+                  "w-full resize-none rounded-2xl border px-3 py-2.5 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400",
+                  composerExpanded
+                    ? "min-h-[88px] border-blue-200/80 bg-white shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
+                    : "min-h-[40px] border-slate-200/90 bg-white/90 focus:border-blue-200 focus:ring-2 focus:ring-blue-500/10",
+                )}
               />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="h-9 rounded-xl border bg-white px-3 text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
-              >
-                Foto auswählen
-              </button>
-              <button
-                type="button"
-                disabled={!me || submitting || !newText.trim()}
-                onClick={submitNewPost}
-                className="h-9 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800 disabled:opacity-60"
-              >
-                {submitting
-                  ? "Sende…"
-                  : me?.role === "member"
-                    ? "Zur Freigabe senden"
-                    : "Posten"}
-              </button>
-            </div>
-            {newFiles.length ? (
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {newFiles.map((f) => (
+
+              {composerExpanded ? (
+                <div className="mt-2.5 grid gap-2.5">
                   <div
-                    key={`${f.name}-${f.lastModified}`}
-                    className="aspect-square overflow-hidden rounded-lg border bg-white"
-                    title={f.name}
+                    onDragEnter={(e) => {
+                      e.preventDefault();
+                      setDragActive(true);
+                      setComposerExpanded(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setDragActive(false);
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragActive(false);
+                      const picked = Array.from(e.dataTransfer.files ?? [])
+                        .filter((f) => f.type.startsWith("image/"))
+                        .slice(0, 4);
+                      if (picked.length) setNewFiles(picked);
+                    }}
+                    className={cn(
+                      "rounded-xl border border-dashed px-3 py-2.5 transition",
+                      dragActive
+                        ? "border-blue-400 bg-blue-50/70"
+                        : "border-blue-200/60 bg-gradient-to-r from-white/90 to-sky-50/50",
+                    )}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={URL.createObjectURL(f)}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) =>
+                          setNewFiles(Array.from(e.target.files ?? []).slice(0, 4))
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/50"
+                      >
+                        Foto auswählen
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!me || submitting || !newText.trim()}
+                        onClick={submitNewPost}
+                        className="h-9 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/15 transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-60"
+                      >
+                        {submitting
+                          ? "Sende…"
+                          : me?.role === "member"
+                            ? "Zur Freigabe senden"
+                            : "Posten"}
+                      </button>
+                    </div>
+                    {newFiles.length ? (
+                      <div className="mt-2 grid grid-cols-4 gap-2">
+                        {newFiles.map((f) => (
+                          <div
+                            key={`${f.name}-${f.lastModified}`}
+                            className="aspect-square overflow-hidden rounded-lg border border-white bg-white shadow-sm"
+                            title={f.name}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={URL.createObjectURL(f)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          {me?.role === "member" ? (
-            <div className="text-xs text-slate-600">
-              Dein Post wird erst nach Freigabe durch einen Admin angezeigt.
+                  {me?.role === "member" ? (
+                    <p className="text-xs text-slate-500">
+                      Dein Post wird erst nach Freigabe durch einen Admin angezeigt.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          </div>
         </CardContent>
       </Card>
 
