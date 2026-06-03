@@ -25,11 +25,14 @@ function MapLifecycle({ onMap }: { onMap: (map: L.Map) => void }) {
   return null;
 }
 
+const PIN_W = 30;
+const PIN_H = 40;
+const PIN_HEAD = 20;
+/** Leaflet anchor: tip of pin — fixed so highlight only scales visually upward */
+const PIN_ANCHOR: [number, number] = [PIN_W / 2, PIN_H - 2];
+
 function createFlagIcon(highlighted = false) {
   const scale = highlighted ? 1.45 : 1;
-  const w = Math.round(30 * scale);
-  const h = Math.round(40 * scale);
-  const head = Math.round(20 * scale);
   const headGradient = highlighted
     ? "linear-gradient(135deg,#f59e0b,#22c55e)"
     : "linear-gradient(135deg,#2563eb,#f43f5e)";
@@ -43,18 +46,20 @@ function createFlagIcon(highlighted = false) {
     : "inset 0 2px 5px rgba(255,255,255,.35), inset 0 -3px 6px rgba(15,23,42,.22)";
   return L.divIcon({
     className: highlighted ? "fc-event-pin-highlight" : "",
-    iconSize: [w, h],
-    iconAnchor: [Math.round(w / 2), h - 2],
-    popupAnchor: [0, -Math.round(34 * scale)],
+    iconSize: [PIN_W, PIN_H],
+    iconAnchor: PIN_ANCHOR,
+    popupAnchor: [0, -34],
     html: `
       <div style="
-        width:${w}px;height:${h}px;position:relative;
+        width:${PIN_W}px;height:${PIN_H}px;position:relative;
+        transform:scale(${scale});
+        transform-origin:50% 100%;
         filter: drop-shadow(0 10px 14px rgba(15,23,42,.22));
         transition: transform 0.15s ease, filter 0.15s ease;
       ">
         <div style="
           position:absolute;left:50%;top:0;transform:translateX(-50%);
-          width:${head}px;height:${head}px;border-radius:12px;
+          width:${PIN_HEAD}px;height:${PIN_HEAD}px;border-radius:12px;
           background: ${headGradient};
           border:${headBorder};
           box-shadow: ${glow};
