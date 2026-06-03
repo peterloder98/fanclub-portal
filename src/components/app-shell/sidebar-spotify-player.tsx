@@ -19,9 +19,11 @@ export function SidebarSpotifyPlayer() {
         <span className="text-[11px] font-semibold text-slate-800">Anni Perka</span>
       </div>
 
+      <p className="mb-1 px-1 text-[10px] font-medium text-emerald-800">
+        Spotify-Player (für alle Mitglieder)
+      </p>
       <p className="mb-2 px-1 text-[10px] leading-snug text-slate-600">
-        Für <strong>alle Mitglieder</strong> — kein separates Anmelden in der App. Mit Spotify Premium
-        (auch Familien-Profil): einmal im Browser bei{" "}
+        Kein „Verbinden“ nötig. Mit Premium/Familie: bei{" "}
         <a
           href="https://open.spotify.com"
           target="_blank"
