@@ -2,13 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Music2 } from "lucide-react";
-import { ANNI_SPOTIFY_ARTIST_ID } from "@/lib/spotify/constants";
+import { SpotifyEmbedPlayer } from "@/components/app-shell/spotify-embed-player";
 import { SpotifyWebPlayer } from "@/components/app-shell/spotify-web-player";
 import {
   isSpotifyOAuthMessage,
   openSpotifyConnectPopup,
 } from "@/lib/spotify/open-connect-popup";
-
 import type { SpotifyDiagnostics } from "@/components/app-shell/spotify-web-player-types";
 import { resetSpotifyWebPlaybackPlayer } from "@/lib/spotify/web-playback-player";
 
@@ -23,6 +22,7 @@ export function SidebarSpotifyPlayer() {
   const [status, setStatus] = useState<Status | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [showPremiumConnect, setShowPremiumConnect] = useState(false);
   const popupPollRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
@@ -114,54 +114,65 @@ export function SidebarSpotifyPlayer() {
         ) : null}
       </div>
 
+      <p className="mb-2 px-1 text-[10px] leading-snug text-slate-600">
+        Player unten funktioniert für alle (Free & Premium). Volle Titel im Portal nur mit Spotify
+        Premium + Verbindung.
+      </p>
+
+      <SpotifyEmbedPlayer />
+
       {!configured ? (
-        <p className="px-1 text-[10px] leading-snug text-slate-600">
-          Spotify nicht konfiguriert: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET und APP_BASE_URL
-          setzen, dann Dev-Server neu starten bzw. Vercel-Redeploy.
+        <p className="mt-2 px-1 text-[10px] leading-snug text-slate-600">
+          Optional: SPOTIFY_CLIENT_ID/SECRET in Vercel für „Premium im Portal“.
         </p>
-      ) : connected ? (
-        <>
-          <SpotifyWebPlayer
-            displayName={status?.displayName ?? null}
-            diagnostics={status?.diagnostics ?? null}
-          />
-          <div className="mt-2 overflow-hidden rounded-xl border border-blue-200/60 shadow-sm shadow-blue-900/5 ring-1 ring-rose-500/10">
-            <iframe
-              title="Spotify — Anni Perka (Vorschau)"
-              src={`https://open.spotify.com/embed/artist/${ANNI_SPOTIFY_ARTIST_ID}?utm_source=generator&theme=0`}
-              width="100%"
-              height="152"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="block border-0"
-            />
-          </div>
-        </>
       ) : (
-        <>
-          <p className="mb-2 px-1 text-[10px] leading-snug text-slate-600">
-            Mit deinem eigenen Spotify-Konto anmelden — jeder Nutzer separat, volle Titel mit Premium.
-          </p>
-          <button
-            type="button"
-            disabled={connecting}
-            onClick={() => connectSpotify()}
-            className="mb-2 flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white shadow-sm transition hover:bg-[#1ed760] disabled:opacity-60"
-          >
-            {connecting ? "Spotify-Fenster …" : "Mit Spotify verbinden"}
-          </button>
-          <div className="overflow-hidden rounded-xl border border-blue-200/60 shadow-sm shadow-blue-900/5 ring-1 ring-rose-500/10">
-            <iframe
-              title="Spotify — Anni Perka (Vorschau)"
-              src={`https://open.spotify.com/embed/artist/${ANNI_SPOTIFY_ARTIST_ID}?utm_source=generator&theme=0`}
-              width="100%"
-              height="152"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="block border-0"
+        <div className="mt-2 space-y-2">
+          {connected ? (
+            <SpotifyWebPlayer
+              displayName={status?.displayName ?? null}
+              diagnostics={status?.diagnostics ?? null}
             />
-          </div>
-        </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowPremiumConnect((v) => !v)}
+                className="w-full text-left text-[10px] font-medium text-blue-700 hover:underline"
+              >
+                {showPremiumConnect ? "▲" : "▼"} Premium: volle Wiedergabe im Portal
+              </button>
+              {showPremiumConnect ? (
+                <div className="space-y-2 rounded-xl border border-slate-200 bg-white/80 p-2">
+                  <p className="text-[10px] leading-snug text-slate-600">
+                    Free-Konten: bei Spotify nur ~30 Sek. Vorschau — das ist eine Spotify-Regel, nicht
+                    von uns begrenzt. Volle Songs nur mit Premium.
+                  </p>
+                  <p className="text-[10px] leading-snug text-amber-800">
+                    Developer-Modus: Jede Spotify-E-Mail muss im{" "}
+                    <a
+                      href="https://developer.spotify.com/dashboard"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Spotify Dashboard
+                    </a>{" "}
+                    unter User Management eingetragen werden (max. 25). Kommt nicht automatisch beim
+                    Login. Für alle Mitglieder später „Extended Quota“ beantragen.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={connecting}
+                    onClick={() => connectSpotify()}
+                    className="flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white shadow-sm transition hover:bg-[#1ed760] disabled:opacity-60"
+                  >
+                    {connecting ? "Spotify-Fenster …" : "Mit Spotify verbinden"}
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
       )}
     </div>
   );

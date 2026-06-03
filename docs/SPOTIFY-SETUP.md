@@ -34,7 +34,29 @@ Wenn die Seite nur lädt oder „Something went wrong“ zeigt: VPN aus, 10 Minu
 
 `supabase/026_spotify_connections.sql` im SQL Editor ausführen.
 
+## Development-Modus: User Management (wichtig)
+
+Solange die App im **Development**-Modus ist, dürfen nur Spotify-Nutzer die App nutzen, die du **manuell** einträgst:
+
+1. [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) → deine App → **User Management**
+2. **Add new user** → Spotify-E-Mail des Nutzers (dieselbe wie in der Spotify-App)
+3. Max. **25 Nutzer** im Development-Modus
+
+**Beim Login über die Fanclub-App werden Nutzer dort nicht automatisch hinzugefügt.**  
+Wer nicht eingetragen ist, scheitert OAuth/Web-Player oft still oder mit Fehlern.
+
+Für alle Fanclub-Mitglieder später: im Dashboard **Quota Extension** / Produktionsfreigabe beantragen („Extended Quota Mode“).
+
+## Free vs. Premium – was geht in der App?
+
+| | Embed-Player (immer sichtbar) | „Mit Spotify verbinden“ (Web Player) |
+|---|------------------------------|--------------------------------------|
+| **Free** | Ja, oft nur **~30 Sek. Vorschau** pro Titel (Spotify-Regel) | Nein – volle Wiedergabe technisch nicht erlaubt |
+| **Premium** | Ja, volle Wiedergabe im Embed wenn in Spotify eingeloggt | Ja, volle Titel über grünen Button im Portal |
+
+Volle Songs für Free-Konten kann **keine App** über die offizielle Spotify-API anbieten – nur Spotify selbst mit Premium-Abo.
+
 ## In der App
 
-Sidebar → **Mit Spotify verbinden** → Spotify-Login (Nutzer-Konto, nicht Developer).  
-**Spotify Premium** nötig für Wiedergabe im Browser über den eingebauten Player.
+1. **Embed-Player** in der Sidebar – für alle, ohne Dashboard-Freigabe.
+2. Optional **Mit Spotify verbinden** (Premium) → volle Wiedergabe im Portal; Nutzer muss im Development-Modus in User Management stehen.
