@@ -10,6 +10,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { AdminSignatureSettings } from "@/components/admin/admin-signature-settings";
+import { PointsGuideCard } from "@/components/points/points-guide-card";
 import {
   AVATAR_ACCEPT,
   AVATAR_MIN_DIMENSION,
@@ -164,6 +165,10 @@ export default function ProfilePage() {
             {busy ? <div className="text-sm text-slate-600">Upload…</div> : null}
           </CardContent>
         </Card>
+
+        <div className="mt-4">
+          <PointsGuideCard />
+        </div>
 
         {role === "admin" ? (
           <Card className="mt-4 max-w-xl">

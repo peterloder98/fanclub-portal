@@ -82,6 +82,12 @@ export function Topbar({
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Statuspunkte
             </div>
+            <Link
+              href="/profile#punkte"
+              className="text-[9px] font-medium text-blue-600 hover:underline"
+            >
+              Übersicht
+            </Link>
             <div
               id={POINTS_TARGET_ID}
               data-points-target="true"

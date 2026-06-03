@@ -2,6 +2,7 @@
 
 import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { appNav, NavList } from "@/components/app-shell/nav";
+import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
 import { SidebarSpotifyPlayer } from "@/components/app-shell/sidebar-spotify-player";
 
 export type SidebarUser = {
@@ -25,6 +26,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
         <div className="rounded-2xl border bg-white/70 p-2 shadow-sm shadow-slate-900/5 backdrop-blur">
           <NavList items={appNav} isAdmin={isAdmin} />
+          <ReferMembershipNavCta />
         </div>
       </div>
 

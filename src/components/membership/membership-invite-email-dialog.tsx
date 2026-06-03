@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { flyPointsFromElement } from "@/lib/points/fly";
 import {
   getMembershipFormInviteDraft,
   sendMembershipFormInviteEmail,
@@ -25,7 +26,7 @@ export function MembershipInviteEmailDialog({
   open: boolean;
   onClose: () => void;
   variant: Variant;
-  onSent?: (message: string) => void;
+  onSent?: (message: string, pointsAwarded?: number) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [mailTo, setMailTo] = useState("");
@@ -42,6 +43,7 @@ export function MembershipInviteEmailDialog({
   const [activeSignatureText, setActiveSignatureText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sendBtnRef = useRef<HTMLButtonElement>(null);
 
   const isAdmin = variant === "admin";
 
@@ -244,6 +246,7 @@ export function MembershipInviteEmailDialog({
             Abbrechen
           </button>
           <button
+            ref={sendBtnRef}
             type="button"
             disabled={pending || loading || !canSend}
             className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
@@ -258,16 +261,26 @@ export function MembershipInviteEmailDialog({
                       signatureId,
                       greetingName,
                     });
-                    onSent?.(`E-Mail an ${mailTo} gesendet.`);
+                    onSent?.(`E-Mail an ${mailTo} gesendet.`, 0);
                   } else {
-                    await sendMemberReferralEmailAction({
+                    const result = await sendMemberReferralEmailAction({
                       to: mailTo,
                       recipientName,
                       senderName,
                       subject: mailSubject,
                       body: mailBody,
                     });
-                    onSent?.(`Einladung an ${mailTo} gesendet.`);
+                    if (result.pointsAwarded > 0) {
+                      flyPointsFromElement({
+                        fromEl: sendBtnRef.current,
+                        delta: result.pointsAwarded,
+                      });
+                    }
+                    const ptsHint =
+                      result.pointsAwarded > 0
+                        ? ` +${result.pointsAwarded} Punkte!`
+                        : " (Punkte für diese Adresse bereits vergeben.)";
+                    onSent?.(`Einladung an ${mailTo} gesendet.${ptsHint}`, result.pointsAwarded);
                   }
                   onClose();
                   setError(null);

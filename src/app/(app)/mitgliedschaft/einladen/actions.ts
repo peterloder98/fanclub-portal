@@ -7,6 +7,7 @@ import {
   composeMemberReferralBody,
 } from "@/lib/email/member-referral-template";
 import { getMembershipApplicationFormUrl } from "@/lib/membership/application-form-url";
+import { awardMembershipReferralPoints } from "@/lib/points/award-membership-referral";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -49,7 +50,7 @@ export async function sendMemberReferralEmailAction(input: {
   subject: string;
   body: string;
 }) {
-  await requireMemberAction();
+  const { user } = await requireMemberAction();
 
   const to = input.to.trim();
   const recipientName = input.recipientName.trim();
@@ -78,5 +79,7 @@ export async function sendMemberReferralEmailAction(input: {
     throw new Error(result.error ?? "E-Mail konnte nicht gesendet werden (SMTP prüfen).");
   }
 
-  return { ok: true as const };
+  const { awarded, points } = await awardMembershipReferralPoints(user.id, to);
+
+  return { ok: true as const, pointsAwarded: awarded ? points : 0 };
 }
