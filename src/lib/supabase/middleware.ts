@@ -1,11 +1,19 @@
+/**
+ * @deprecated Logic lives in root `middleware.ts` (Vercel Edge — no @/ imports there).
+ * Kept for reference; use root middleware for session refresh.
+ */
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest) {
-  const { url, anonKey } = getSupabaseEnv();
-  const response = NextResponse.next({ request });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error("Missing Supabase public env vars.");
+  }
+
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -13,17 +21,18 @@ export async function updateSession(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
+        cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
+        });
+        response = NextResponse.next({ request });
+        cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
       },
     },
   });
 
-  // Refresh session if expired - required for Server Components
   await supabase.auth.getUser();
 
   return { response, supabase };
 }
-
