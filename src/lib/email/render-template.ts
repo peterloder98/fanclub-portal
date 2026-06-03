@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { loadMailSignature } from "@/lib/email/signatures";
+import { escapePlainTextForHtml, linkifyEscapedHtml } from "@/lib/email/linkify-plain-text";
 
 export type EmailTemplateRow = {
   key: string;
@@ -70,13 +71,13 @@ function appendSignatureToPlainText(body: string, signatureText: string) {
 }
 
 function textToHtmlParagraphs(text: string) {
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  const escaped = escapePlainTextForHtml(text);
   return escaped
     .split(/\n\n+/)
-    .map((p) => `<p style="margin:0 0 1em;font-size:15px;line-height:1.5;color:#1e293b">${p.replace(/\n/g, "<br>")}</p>`)
+    .map((p) => {
+      const inner = linkifyEscapedHtml(p.replace(/\n/g, "<br>"));
+      return `<p style="margin:0 0 1em;font-size:15px;line-height:1.5;color:#1e293b">${inner}</p>`;
+    })
     .join("");
 }
 

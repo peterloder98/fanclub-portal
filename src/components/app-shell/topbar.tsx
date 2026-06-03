@@ -79,15 +79,11 @@ export function Topbar({
 
       <div className="ml-auto flex items-center gap-2">
         <div className="grid w-[13.5rem] grid-cols-2 gap-2 sm:w-[15rem]">
-          <Link
-            href="/punkte"
-            className="relative flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5 transition hover:border-blue-200 hover:bg-blue-50/40"
-          >
+          <div className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
             <PointsBurst />
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Statuspunkte
             </div>
-            <div className="text-[9px] font-medium text-blue-600">Regeln →</div>
             <div
               id={POINTS_TARGET_ID}
               data-points-target="true"
@@ -96,7 +92,13 @@ export function Topbar({
             >
               {points}
             </div>
-          </Link>
+            <Link
+              href="/punkte"
+              className="text-[9px] font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              Regeln
+            </Link>
+          </div>
           <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Aktueller Rang
@@ -113,8 +115,13 @@ export function Topbar({
           <Bell className="h-4 w-4 text-slate-600" />
         </button>
 
-        <div className="group relative">
-          <div className="h-10 w-10 overflow-hidden rounded-full border bg-slate-50 shadow-sm shadow-slate-900/10">
+        <div className="group relative z-20">
+          <button
+            type="button"
+            className="block h-10 w-10 overflow-hidden rounded-full border bg-slate-50 shadow-sm shadow-slate-900/10 ring-offset-2 transition hover:ring-2 hover:ring-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+            aria-label="Profilmenü"
+            aria-haspopup="true"
+          >
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -123,10 +130,11 @@ export function Topbar({
                 {initials}
               </div>
             )}
-          </div>
+          </button>
 
-          <div className="pointer-events-none absolute right-0 top-[calc(100%+0.75rem)] z-50 hidden w-64 rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15 group-hover:block group-hover:pointer-events-auto">
-            <div className="flex items-center gap-3">
+          <div className="pointer-events-none invisible absolute right-0 top-full z-50 w-64 pt-2 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+            <div className="rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15">
+              <div className="flex items-center gap-3">
               <div className="h-10 w-10 overflow-hidden rounded-full border bg-slate-50">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -143,32 +151,33 @@ export function Topbar({
                 </div>
                 <div className="text-xs capitalize text-slate-600">{role}</div>
               </div>
-            </div>
+              </div>
 
-            <div className="mt-3 grid gap-2">
-              <Link
-                href="/punkte"
-                className="flex h-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-800 shadow-sm transition hover:bg-blue-50"
-              >
-                Statuspunkte
-              </Link>
-              <Link
-                href="/profile"
-                className="flex h-9 items-center justify-center rounded-xl border bg-white text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
-              >
-                Profil
-              </Link>
-              <button
-                type="button"
-                onClick={async () => {
-                  const s = createSupabaseBrowserClient();
-                  await s.auth.signOut();
-                  window.location.href = "/login";
-                }}
-                className="flex h-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
-              >
-                Abmelden
-              </button>
+              <div className="mt-3 grid gap-2">
+                <Link
+                  href="/punkte"
+                  className="flex h-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-800 shadow-sm transition hover:bg-blue-50"
+                >
+                  Statuspunkte
+                </Link>
+                <Link
+                  href="/profile"
+                  className="flex h-9 items-center justify-center rounded-xl border bg-white text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+                >
+                  Profil
+                </Link>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const s = createSupabaseBrowserClient();
+                    await s.auth.signOut();
+                    window.location.href = "/login";
+                  }}
+                  className="flex h-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
+                >
+                  Abmelden
+                </button>
+              </div>
             </div>
           </div>
         </div>
