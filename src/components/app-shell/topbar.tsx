@@ -36,7 +36,7 @@ export function Topbar({
       setUserId(user.id);
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name,last_name,avatar_path,role")
+        .select("first_name,last_name,avatar_path,role,updated_at")
         .eq("id", user.id)
         .maybeSingle();
       const displayName =
@@ -49,7 +49,9 @@ export function Topbar({
       const first = parts.at(0)?.[0] ?? "U";
       const last = parts.length > 1 ? (parts.at(-1)?.[0] ?? "") : "";
       setInitials((first + last).toUpperCase());
-      setAvatarUrl(getAvatarPublicUrl(profile?.avatar_path ?? null));
+      setAvatarUrl(
+        getAvatarPublicUrl(profile?.avatar_path ?? null, profile?.updated_at ?? null),
+      );
       await refreshPoints(user.id);
     }
     void load();
@@ -111,7 +113,7 @@ export function Topbar({
             )}
           </div>
 
-          <div className="pointer-events-none absolute right-0 top-11 z-50 hidden w-64 rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15 group-hover:block group-hover:pointer-events-auto">
+          <div className="pointer-events-none absolute right-0 top-[calc(100%+0.75rem)] z-50 hidden w-64 rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15 group-hover:block group-hover:pointer-events-auto">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 overflow-hidden rounded-full border bg-slate-50">
                 {avatarUrl ? (

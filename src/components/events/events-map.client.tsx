@@ -30,6 +30,17 @@ function createFlagIcon(highlighted = false) {
   const w = Math.round(30 * scale);
   const h = Math.round(40 * scale);
   const head = Math.round(20 * scale);
+  const headGradient = highlighted
+    ? "linear-gradient(135deg,#f59e0b,#22c55e)"
+    : "linear-gradient(135deg,#2563eb,#f43f5e)";
+  const footGradient = highlighted
+    ? "linear-gradient(135deg,#22c55e,#eab308)"
+    : "linear-gradient(135deg,#f43f5e,#2563eb)";
+  const stemColor = highlighted ? "#14532d" : "#0f172a";
+  const headBorder = highlighted ? "3px solid #fef08a" : "2px solid rgba(255,255,255,.92)";
+  const glow = highlighted
+    ? "0 0 0 4px rgba(250,204,21,.45), 0 0 18px rgba(34,197,94,.55)"
+    : "inset 0 2px 5px rgba(255,255,255,.35), inset 0 -3px 6px rgba(15,23,42,.22)";
   return L.divIcon({
     className: highlighted ? "fc-event-pin-highlight" : "",
     iconSize: [w, h],
@@ -39,14 +50,14 @@ function createFlagIcon(highlighted = false) {
       <div style="
         width:${w}px;height:${h}px;position:relative;
         filter: drop-shadow(0 10px 14px rgba(15,23,42,.22));
-        transition: transform 0.15s ease;
+        transition: transform 0.15s ease, filter 0.15s ease;
       ">
         <div style="
           position:absolute;left:50%;top:0;transform:translateX(-50%);
           width:${head}px;height:${head}px;border-radius:12px;
-          background: linear-gradient(135deg,#2563eb,#f43f5e);
-          border:2px solid rgba(255,255,255,.92);
-          box-shadow: inset 0 2px 5px rgba(255,255,255,.35), inset 0 -3px 6px rgba(15,23,42,.22);
+          background: ${headGradient};
+          border:${headBorder};
+          box-shadow: ${glow};
         "></div>
         <div style="
           position:absolute;left:50%;top:3px;transform:translateX(-50%);
@@ -56,12 +67,12 @@ function createFlagIcon(highlighted = false) {
         "></div>
         <div style="
           position:absolute;left:50%;top:18px;transform:translateX(-50%);
-          width:3px;height:18px;border-radius:2px;background:#0f172a;opacity:.78;
+          width:3px;height:18px;border-radius:2px;background:${stemColor};opacity:.88;
         "></div>
         <div style="
           position:absolute;left:50%;top:33px;transform:translateX(-50%) rotate(45deg);
           width:10px;height:10px;border-radius:2px;
-          background: linear-gradient(135deg,#f43f5e,#2563eb);
+          background: ${footGradient};
           border:1px solid rgba(255,255,255,.72);
         "></div>
       </div>

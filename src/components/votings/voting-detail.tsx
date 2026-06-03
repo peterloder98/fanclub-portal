@@ -97,7 +97,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
     const authorIds = Array.from(new Set((commentRows ?? []).map((c) => c.author_id)));
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,first_name,last_name,email,avatar_path")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", authorIds.length ? authorIds : ["00000000-0000-0000-0000-000000000000"]);
 
     const profileMap = new Map(
@@ -108,7 +108,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
             p.first_name && p.last_name
               ? `${p.first_name} ${p.last_name}`
               : (p.email ?? "Mitglied"),
-          avatarUrl: getAvatarPublicUrl(p.avatar_path),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
         },
       ]),
     );

@@ -103,7 +103,7 @@ export function PostFeed({
       }
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id,first_name,last_name,email,avatar_path")
+        .select("id,first_name,last_name,email,avatar_path,updated_at")
         .in("id", ids);
       const users: UserListEntry[] = (profiles ?? [])
         .map((p) => ({
@@ -112,7 +112,7 @@ export function PostFeed({
             p.first_name && p.last_name
               ? `${p.first_name} ${p.last_name}`
               : (p.email ?? "Mitglied"),
-          avatarUrl: getAvatarPublicUrl(p.avatar_path),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "de"));
       setLikersByPostId((m) => ({ ...m, [postId]: users }));
@@ -236,7 +236,7 @@ export function PostFeed({
         );
         const { data: authorProfiles, error: authorsErr } = await supabase
           .from("profiles")
-          .select("id,first_name,last_name,email,avatar_path")
+          .select("id,first_name,last_name,email,avatar_path,updated_at")
           .in("id", authorIds.length ? authorIds : ["00000000-0000-0000-0000-000000000000"]);
         if (authorsErr) throw authorsErr;
 
@@ -248,7 +248,7 @@ export function PostFeed({
                 a.first_name && a.last_name
                   ? `${a.first_name} ${a.last_name}`
                   : a.email ?? "Mitglied",
-              avatarUrl: getAvatarPublicUrl(a.avatar_path),
+              avatarUrl: getAvatarPublicUrl(a.avatar_path, a.updated_at),
             },
           ]),
         );
@@ -257,7 +257,7 @@ export function PostFeed({
           postAuthorIds.length
             ? await supabase
                 .from("profiles")
-                .select("id,first_name,last_name,email,avatar_path")
+                .select("id,first_name,last_name,email,avatar_path,updated_at")
                 .in("id", postAuthorIds)
             : { data: [], error: null };
         if (postAuthorsErr) throw postAuthorsErr;
@@ -269,7 +269,7 @@ export function PostFeed({
                 a.first_name && a.last_name
                   ? `${a.first_name} ${a.last_name}`
                   : a.email ?? "Mitglied",
-              avatarUrl: getAvatarPublicUrl(a.avatar_path),
+              avatarUrl: getAvatarPublicUrl(a.avatar_path, a.updated_at),
             },
           ]),
         );
@@ -369,7 +369,7 @@ export function PostFeed({
           const pollAuthorIds = Array.from(new Set(polls.map((p) => p.author_id)));
           const { data: pollAuthors } = await supabase
             .from("profiles")
-            .select("id,first_name,last_name,email,avatar_path")
+            .select("id,first_name,last_name,email,avatar_path,updated_at")
             .in(
               "id",
               pollAuthorIds.length ? pollAuthorIds : ["00000000-0000-0000-0000-000000000000"],
@@ -382,7 +382,7 @@ export function PostFeed({
                   a.first_name && a.last_name
                     ? `${a.first_name} ${a.last_name}`
                     : (a.email ?? "Mitglied"),
-                avatarUrl: getAvatarPublicUrl(a.avatar_path),
+                avatarUrl: getAvatarPublicUrl(a.avatar_path, a.updated_at),
               },
             ]),
           );
@@ -750,13 +750,14 @@ export function PostFeed({
     const ids = Array.from(new Set((vRows ?? []).map((r) => r.user_id)));
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,first_name,last_name,email")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const mapped =
       (profiles ?? []).map((p) => ({
         id: p.id,
         name:
           p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : (p.email ?? "Mitglied"),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
       })) ?? [];
     setPollVotersByOption((m) => ({ ...m, [optionId]: mapped }));
   }

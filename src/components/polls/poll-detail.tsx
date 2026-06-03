@@ -106,7 +106,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
     );
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,first_name,last_name,email,avatar_path")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", authorIds.length ? authorIds : ["00000000-0000-0000-0000-000000000000"]);
 
     const profileMap = new Map(
@@ -117,7 +117,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
             p.first_name && p.last_name
               ? `${p.first_name} ${p.last_name}`
               : (p.email ?? "Mitglied"),
-          avatarUrl: getAvatarPublicUrl(p.avatar_path),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
         },
       ]),
     );
@@ -242,14 +242,14 @@ export function PollDetail({ pollId }: { pollId: string }) {
     const ids = Array.from(new Set((vRows ?? []).map((r) => r.user_id)));
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,first_name,last_name,email,avatar_path")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"]);
     const mapped =
       (profiles ?? []).map((p) => ({
         id: p.id,
         name:
           p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : (p.email ?? "Mitglied"),
-        avatarUrl: getAvatarPublicUrl(p.avatar_path),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
       })) ?? [];
     setVotersByOption((m) => ({ ...m, [optionId]: mapped }));
   }

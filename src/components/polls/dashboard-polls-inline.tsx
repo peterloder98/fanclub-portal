@@ -72,7 +72,7 @@ export function DashboardPollsInline() {
     const voterIds = Array.from(new Set((voteRows ?? []).map((v) => v.user_id)));
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,first_name,last_name,email,avatar_path")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", voterIds.length ? voterIds : ["00000000-0000-0000-0000-000000000000"]);
     const pMap = new Map(
       (profiles ?? []).map((p) => [
@@ -83,7 +83,7 @@ export function DashboardPollsInline() {
             p.first_name && p.last_name
               ? `${p.first_name} ${p.last_name}`
               : (p.email ?? "Mitglied"),
-          avatarUrl: getAvatarPublicUrl(p.avatar_path),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
         },
       ]),
     );
