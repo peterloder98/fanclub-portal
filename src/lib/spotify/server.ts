@@ -159,6 +159,7 @@ export async function getSpotifyDiagnostics(userId: string) {
       product,
       premium: isSpotifyPremiumProduct(product ?? undefined),
       displayName: profile?.display_name ?? row.display_name,
+      spotifyEmail: profile?.email ?? null,
     };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Token-Fehler";

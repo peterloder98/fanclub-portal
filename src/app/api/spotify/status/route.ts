@@ -33,6 +33,7 @@ export async function GET() {
               scopes: diagnostics.scopes,
               premium: diagnostics.premium,
               product: diagnostics.product,
+              spotifyEmail: diagnostics.spotifyEmail ?? null,
             }
           : null,
     });

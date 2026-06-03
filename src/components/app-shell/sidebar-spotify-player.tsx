@@ -115,8 +115,16 @@ export function SidebarSpotifyPlayer() {
       </div>
 
       <p className="mb-2 px-1 text-[10px] leading-snug text-slate-600">
-        Player unten funktioniert für alle (Free & Premium). Volle Titel im Portal nur mit Spotify
-        Premium + Verbindung.
+        <strong>Zum Hören:</strong> Embed-Player (oben) — bei Premium/Familie im Browser bei{" "}
+        <a
+          href="https://open.spotify.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-700 underline"
+        >
+          Spotify
+        </a>{" "}
+        einloggen, dann volle Songs. Verbinden unten nur für optionalen In-App-Player.
       </p>
 
       <SpotifyEmbedPlayer />

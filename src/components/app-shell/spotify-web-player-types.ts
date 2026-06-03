@@ -7,4 +7,5 @@ export type SpotifyDiagnostics = {
   scopes?: string;
   premium: boolean | null;
   product: string | null;
+  spotifyEmail?: string | null;
 };

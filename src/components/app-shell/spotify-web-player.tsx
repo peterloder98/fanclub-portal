@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ANNI_SPOTIFY_ARTIST_ID } from "@/lib/spotify/constants";
-import { connectSpotifyWebPlaybackPlayer } from "@/lib/spotify/web-playback-player";
+import {
+  connectSpotifyWebPlaybackPlayer,
+  resetSpotifyWebPlaybackPlayer,
+} from "@/lib/spotify/web-playback-player";
 import type { SpotifyDiagnostics } from "@/components/app-shell/spotify-web-player-types";
+
+const SPOTIFY_ARTIST_URL = `https://open.spotify.com/artist/${ANNI_SPOTIFY_ARTIST_ID}`;
 
 export function SpotifyWebPlayer({
   displayName,
@@ -12,6 +17,8 @@ export function SpotifyWebPlayer({
   displayName: string | null;
   diagnostics?: SpotifyDiagnostics | null;
 }) {
+  const [playerStarted, setPlayerStarted] = useState(false);
+  const [loadingPlayer, setLoadingPlayer] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,45 +34,38 @@ export function SpotifyWebPlayer({
     return json.access_token;
   }, []);
 
-  useEffect(() => {
-    if (diagnostics) {
-      if (!diagnostics.tokenOk && diagnostics.tokenError) {
-        setError(diagnostics.tokenError);
-        return;
-      }
-      if (diagnostics.premium === false) {
-        setError(
-          `Spotify-Konto: „${diagnostics.product ?? "unbekannt"}“ — Web-Player braucht Premium. Unten die eingebettete Vorschau nutzen.`,
-        );
-        return;
-      }
-      if (!diagnostics.scopeOk) {
-        setError(
-          'Berechtigung „streaming“ fehlt. Bitte „Trennen“ und erneut „Mit Spotify verbinden“ (Häkchen bei Spotify setzen).',
-        );
-        return;
-      }
+  const preflightError = (() => {
+    if (!diagnostics) return null;
+    if (!diagnostics.tokenOk && diagnostics.tokenError) return diagnostics.tokenError;
+    if (!diagnostics.scopeOk) {
+      return 'Berechtigung „streaming“ fehlt. „Trennen“ → erneut verbinden und alle Häkchen bei Spotify setzen.';
     }
+    if (diagnostics.premium === false) {
+      return `Spotify meldet „${diagnostics.product ?? "kein Premium"}“. Für den In-App-Player brauchst du ein Premium-Profil (auch Familien-Mitglied mit Premium-Slot). Sonst den Player oben im Embed nutzen.`;
+    }
+    return null;
+  })();
 
-    let cancelled = false;
-    async function init() {
-      try {
-        const deviceId = await connectSpotifyWebPlaybackPlayer(getToken);
-        if (cancelled) return;
-        deviceIdRef.current = deviceId;
-        setReady(Boolean(deviceId));
-        setError(null);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Player-Start fehlgeschlagen");
-        }
-      }
+  async function startInAppPlayer() {
+    if (preflightError) {
+      setError(preflightError);
+      return;
     }
-    void init();
-    return () => {
-      cancelled = true;
-    };
-  }, [getToken, diagnostics]);
+    setLoadingPlayer(true);
+    setError(null);
+    setPlayerStarted(true);
+    resetSpotifyWebPlaybackPlayer();
+    try {
+      const deviceId = await connectSpotifyWebPlaybackPlayer(getToken);
+      deviceIdRef.current = deviceId;
+      setReady(Boolean(deviceId));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Player-Start fehlgeschlagen");
+      setReady(false);
+    } finally {
+      setLoadingPlayer(false);
+    }
+  }
 
   async function playAnni() {
     setBusy(true);
@@ -96,11 +96,10 @@ export function SpotifyWebPlayer({
         },
       );
       if (!playRes.ok && playRes.status !== 204) {
-        const body = await playRes.text().catch(() => "");
         throw new Error(
           playRes.status === 403
-            ? "Wiedergabe verweigert (Premium/Device). Spotify-App einmal öffnen und erneut versuchen."
-            : `Wiedergabe fehlgeschlagen (${playRes.status})${body ? `: ${body.slice(0, 120)}` : ""}`,
+            ? "Wiedergabe verweigert. Spotify-App auf dem Handy öffnen, kurz Musik starten, dann hier erneut „Abspielen“."
+            : `Wiedergabe fehlgeschlagen (${playRes.status}).`,
         );
       }
     } catch (e) {
@@ -111,26 +110,65 @@ export function SpotifyWebPlayer({
   }
 
   return (
-    <div className="space-y-2 px-1">
+    <div className="space-y-2 rounded-xl border border-slate-200 bg-white/80 p-2">
       <p className="text-[10px] leading-snug text-slate-600">
         Verbunden als <span className="font-semibold text-slate-800">{displayName ?? "Spotify"}</span>
-        . Dein privater Account — nicht für andere Mitglieder sichtbar.
       </p>
-      <button
-        type="button"
-        disabled={!ready || busy}
-        onClick={() => void playAnni()}
-        className="flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white transition hover:bg-[#1ed760] disabled:opacity-50"
-      >
-        {busy ? "Starte…" : ready ? "▶ Anni Perka abspielen" : error ? "Player nicht verfügbar" : "Player verbindet…"}
-      </button>
+
+      {diagnostics?.spotifyEmail ? (
+        <p className="text-[10px] leading-snug text-amber-900">
+          Developer-Modus: Diese E-Mail im{" "}
+          <a
+            href="https://developer.spotify.com/dashboard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline"
+          >
+            Spotify Dashboard
+          </a>{" "}
+          unter <strong>User Management</strong> eintragen:{" "}
+          <code className="break-all text-[9px]">{diagnostics.spotifyEmail}</code>
+        </p>
+      ) : null}
+
+      <p className="text-[10px] leading-snug text-slate-600">
+        <strong>Familien-Abo:</strong> Oft reicht der <strong>Embed-Player oben</strong> (bei Spotify im
+        Browser eingeloggt = volle Länge). Der In-App-Player darunter ist optional und hängt oft ohne
+        Dashboard-Freigabe.
+      </p>
+
+      {!playerStarted ? (
+        <button
+          type="button"
+          disabled={loadingPlayer || Boolean(preflightError)}
+          onClick={() => void startInAppPlayer()}
+          className="flex h-9 w-full items-center justify-center rounded-xl border border-[#1DB954] bg-white text-xs font-semibold text-[#1a7f3c] transition hover:bg-[#1DB954]/10 disabled:opacity-50"
+        >
+          In-App-Player starten (optional)
+        </button>
+      ) : (
+        <button
+          type="button"
+          disabled={!ready || busy}
+          onClick={() => void playAnni()}
+          className="flex h-9 w-full items-center justify-center rounded-xl bg-[#1DB954] text-xs font-semibold text-white transition hover:bg-[#1ed760] disabled:opacity-50"
+        >
+          {busy ? "Starte…" : loadingPlayer ? "Verbinde…" : ready ? "▶ Anni Perka abspielen" : "Verbinde…"}
+        </button>
+      )}
+
       {error ? <p className="text-[10px] text-rose-700">{error}</p> : null}
       {diagnostics?.product ? (
         <p className="text-[10px] text-slate-500">Spotify-Produkt: {diagnostics.product}</p>
       ) : null}
-      <p className="text-[10px] text-slate-500">
-        Premium nötig für den grünen Button. Hilft oft: Trennen → neu verbinden, Spotify-App kurz öffnen.
-      </p>
+      <a
+        href={SPOTIFY_ARTIST_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-center text-[10px] font-medium text-blue-700 hover:underline"
+      >
+        In Spotify-App öffnen
+      </a>
     </div>
   );
 }
