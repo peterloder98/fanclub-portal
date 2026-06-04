@@ -336,9 +336,6 @@ export function PollBoard({
               />
             </CardHeader>
             <CardContent className="grid gap-3 pb-4 pt-0">
-              {hasVoted && !ended ? (
-                <p className="text-sm font-semibold text-emerald-700">Du hast teilgenommen</p>
-              ) : null}
               <PollOptionsList
                 pollId={poll.id}
                 opts={opts}

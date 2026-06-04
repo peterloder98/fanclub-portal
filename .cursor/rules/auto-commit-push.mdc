@@ -1,0 +1,16 @@
+---
+description: Nach abgeschlossener Arbeit automatisch committen und pushen
+alwaysApply: true
+---
+
+# Git: automatisch committen und pushen
+
+Wenn du im **fanclub-portal** Änderungen umsetzt und die Aufgabe erledigt ist:
+
+1. `npm run build` ausführen (bei UI/Code-Änderungen).
+2. **Ohne Nachfrage** alle relevanten Änderungen stagen, mit klarer Commit-Message committen und `git push origin` (aktueller Branch, meist `main`).
+3. Nicht fragen „Soll ich committen/pushen?“ — das ist Standard, sofern der Nutzer nicht ausdrücklich etwas anderes will.
+4. Keine Secrets (`.env`, Credentials) committen.
+5. Kein `--no-verify`, kein force-push, keine git-config-Änderungen.
+
+Deploy auf Vercel nur, wenn der Nutzer Deploy explizit erwähnt oder es aus dem Kontext klar folgt.

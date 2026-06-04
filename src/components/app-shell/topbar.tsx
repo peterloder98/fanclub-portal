@@ -77,33 +77,28 @@ export function Topbar({
         ) : null}
       </div>
 
-      <div className="ml-auto flex items-center gap-2.5 self-center">
-        <div className="flex items-stretch gap-2">
-          <div className="relative flex min-w-[6.25rem] flex-col justify-center gap-0.5 rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/40 px-3 py-2.5 text-center shadow-sm shadow-slate-900/5">
-            <PointsBurst />
-            <div className="text-[10px] font-semibold leading-tight text-slate-600">
-              Statuspunkte
-            </div>
+      <div className="ml-auto flex h-10 items-center gap-2">
+        <Link
+          href="/punkte"
+          className="relative flex h-10 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-2.5 shadow-sm shadow-slate-900/5 transition hover:border-blue-200"
+        >
+          <PointsBurst />
+          <div className="text-left leading-none">
+            <div className="text-[9px] font-medium text-slate-500">Punkte</div>
             <div
               id={POINTS_TARGET_ID}
               data-points-target="true"
               ref={(el) => setPointsTargetElement(el)}
-              className="text-base font-bold tabular-nums text-slate-900 transition-all"
+              className="text-sm font-bold tabular-nums text-slate-900"
             >
               {points}
             </div>
-            <Link
-              href="/punkte"
-              className="text-[9px] font-medium text-blue-700 hover:text-blue-900 hover:underline"
-            >
-              Regeln
-            </Link>
           </div>
-          <div className="flex min-w-[6.25rem] flex-col justify-center gap-0.5 rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/30 px-3 py-2.5 text-center shadow-sm shadow-slate-900/5">
-            <div className="text-[10px] font-semibold leading-tight text-slate-600">
-              Aktueller Rang
-            </div>
-            <div className="text-base font-bold tabular-nums text-slate-900">{rank}</div>
+        </Link>
+        <div className="flex h-10 min-w-[4.5rem] items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/40 px-2.5 text-center shadow-sm shadow-slate-900/5">
+          <div className="leading-none">
+            <div className="text-[9px] font-medium text-slate-500">Rang</div>
+            <div className="text-sm font-bold text-slate-900">{rank}</div>
           </div>
         </div>
 

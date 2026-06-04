@@ -53,13 +53,13 @@ export default async function DashboardPage() {
         subtitle="Willkommen zurück — hier siehst du alles Wichtige auf einen Blick."
       />
 
-      <main className="px-4 py-6 lg:px-6">
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4">
+      <main className="px-4 py-4 pb-2 lg:px-6 lg:pb-3">
+        <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4">
           <section className="min-w-0">
             <PostFeed embedPollsInFeed />
           </section>
 
-          <aside className="flex max-h-[calc(100vh-5.5rem)] min-h-0 flex-col gap-2 lg:sticky lg:top-20">
+          <aside className="flex h-[calc(100dvh-4.5rem)] min-h-0 flex-col gap-1.5 lg:sticky lg:top-16">
             <div className="shrink-0">
               <EventsCountdown
                 compact
@@ -68,18 +68,18 @@ export default async function DashboardPage() {
               />
             </div>
             <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <CardContent className="flex h-full min-h-0 flex-1 flex-col p-1.5">
+              <CardContent className="flex h-full min-h-0 flex-1 flex-col p-1">
                 <EventsMap
                   events={mapEvents}
-                  minHeight={280}
+                  minHeight={200}
                   mapVariant="dashboard"
                   fillHeight
                 />
               </CardContent>
             </Card>
 
-            <Card className="flex max-h-[min(220px,28vh)] min-h-[100px] shrink-0 flex-col overflow-hidden">
-              <CardContent className="flex min-h-0 flex-1 flex-col p-2">
+            <Card className="flex min-h-0 shrink-0 flex-col overflow-hidden">
+              <CardContent className="flex max-h-[min(32dvh,240px)] min-h-0 flex-col p-2 pb-1">
                 <DashboardGiveawaysInline items={giveawayItems} />
               </CardContent>
             </Card>

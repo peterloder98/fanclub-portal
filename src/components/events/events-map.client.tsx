@@ -116,7 +116,18 @@ export function EventsMapClient({
       isDachCoord(m.lat as number, m.lng as number),
     );
     if (mapVariant === "dashboard") {
-      map.fitBounds(GERMANY_BOUNDS, { padding: [10, 10], maxZoom: 6 });
+      if (dachMarkers.length > 0) {
+        const bounds = L.latLngBounds(
+          dachMarkers.map((m) => [m.lat as number, m.lng as number]),
+        );
+        map.fitBounds(bounds, {
+          paddingTopLeft: [10, 10],
+          paddingBottomRight: [4, 10],
+          maxZoom: 8,
+        });
+      } else {
+        map.fitBounds(GERMANY_BOUNDS, { padding: [10, 10], maxZoom: 6 });
+      }
     } else if (dachMarkers.length) {
       const bounds = L.latLngBounds(
         dachMarkers.map((m) => [m.lat as number, m.lng as number]),

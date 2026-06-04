@@ -68,16 +68,27 @@ export function PollHeaderMeta({
             >
               {question}
             </h3>
-            <RunningCountdownBadge
-              endsAt={endsAt}
-              endedLabel="Beendet"
-              runningPrefix="Endet in"
-              inline
-              className={cn(
-                "shrink-0",
-                compact ? "!px-1.5 !py-0.5 !text-[10px]" : "!px-2 !py-1 !text-[11px]",
-              )}
-            />
+            <div className="flex shrink-0 flex-col items-end gap-0.5">
+              <RunningCountdownBadge
+                endsAt={endsAt}
+                endedLabel="Beendet"
+                runningPrefix="Endet in"
+                inline
+                className={cn(
+                  compact ? "!px-1.5 !py-0.5 !text-[10px]" : "!px-2 !py-1 !text-[11px]",
+                )}
+              />
+              {hasVoted && !ended ? (
+                <span
+                  className={cn(
+                    "font-semibold leading-none text-emerald-700",
+                    compact ? "text-[9px]" : "text-[10px]",
+                  )}
+                >
+                  Du hast teilgenommen
+                </span>
+              ) : null}
+            </div>
           </div>
 
           {(showBadges || showParticipants) && (
