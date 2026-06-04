@@ -50,6 +50,7 @@ export function GiveawayDetailClient({
   userId,
   signatures,
   yearEndAdmin,
+  hasEntries = false,
 }: {
   giveaway: {
     id: string;
@@ -80,6 +81,8 @@ export function GiveawayDetailClient({
   userId: string | null;
   signatures: MailSignatureOption[];
   yearEndAdmin?: ReactNode;
+  /** Mindestens eine Teilnahme — Quiz-Lösungen im Admin gesperrt. */
+  hasEntries?: boolean;
 }) {
   const phase = giveawayPhase(giveaway.ends_at, giveaway.status, giveaway.is_paused);
   const [busy, setBusy] = useState(false);
@@ -95,10 +98,16 @@ export function GiveawayDetailClient({
   const [localWinners, setLocalWinners] = useState(winners);
   const [localStatus, setLocalStatus] = useState(giveaway.status);
   const [signatureId, setSignatureId] = useState(signatures[0]?.id ?? "");
+  const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(false);
 
   const isYearEnd = Boolean(giveaway.is_year_end_lottery);
   const canParticipate =
-    !isYearEnd && phase === "active" && !giveaway.is_paused && !localEntered && userId;
+    !isYearEnd &&
+    phase === "active" &&
+    !giveaway.is_paused &&
+    !localEntered &&
+    userId &&
+    !adminEditingGiveaway;
   const showWinners = localStatus === "drawn" && localWinners.length > 0;
 
   const quizReview = useMemo(() => {
@@ -261,7 +270,13 @@ export function GiveawayDetailClient({
         <CardContent className="grid gap-4">
           {yearEndAdmin}
           {isAdmin && !isYearEnd ? (
-            <GiveawayAdminControls giveaway={giveaway} prizes={prizes} questions={questions} />
+            <GiveawayAdminControls
+              giveaway={giveaway}
+              prizes={prizes}
+              questions={questions}
+              hasEntries={hasEntries}
+              onEditingChange={setAdminEditingGiveaway}
+            />
           ) : null}
 
           {giveaway.description ? (
@@ -357,8 +372,10 @@ export function GiveawayDetailClient({
           ) : null}
 
           {quizReview && localEntered && giveaway.entry_mode === "quiz" ? (
-            <div className="grid gap-2">
-              <h4 className="text-sm font-semibold text-slate-900">Deine Antworten</h4>
+            <div className="grid gap-2" aria-label="Deine persönliche Teilnahme">
+              <h4 className="text-sm font-semibold text-slate-900">
+                Deine Antworten (Teilnahme — nicht bearbeitbar)
+              </h4>
               {quizReview.map(({ q, r }) =>
                 r ? (
                   <div key={q.id} className="rounded-lg border p-2 text-sm">

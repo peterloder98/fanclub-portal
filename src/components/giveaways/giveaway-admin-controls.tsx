@@ -19,6 +19,8 @@ export function GiveawayAdminControls({
   giveaway,
   prizes: initialPrizes,
   questions: initialQuestions,
+  hasEntries = false,
+  onEditingChange,
 }: {
   giveaway: {
     id: string;
@@ -35,6 +37,9 @@ export function GiveawayAdminControls({
     text: string;
     options: { id: string; label: string; is_correct?: boolean }[];
   }>;
+  /** Sobald Teilnehmer eingetragen sind: nur Texte/Preise, keine „richtige“ Antwort ändern. */
+  hasEntries?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -118,7 +123,13 @@ export function GiveawayAdminControls({
           <button
             type="button"
             disabled={busy}
-            onClick={() => setEditing((v) => !v)}
+            onClick={() => {
+              setEditing((v) => {
+                const next = !v;
+                onEditingChange?.(next);
+                return next;
+              });
+            }}
             className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"
           >
             {editing ? "Abbrechen" : "Bearbeiten"}
@@ -128,6 +139,11 @@ export function GiveawayAdminControls({
 
       {editing ? (
         <form onSubmit={(e) => void onSave(e)} className="mt-3 grid gap-3">
+          <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-2.5 py-2 text-xs text-blue-950">
+            Hier bearbeitest du nur den <strong>Inhalt des Gewinnspiels</strong> (Titel, Texte,
+            Preise, Quiz-Fragen). Deine persönliche Teilnahme oder Quiz-Antworten änderst du hier
+            nicht — die bleiben unter „Deine Antworten“ gespeichert.
+          </p>
           <input type="hidden" name="giveaway_id" value={giveaway.id} />
           <input type="hidden" name="entry_mode" value={giveaway.entry_mode} />
           <label className="grid gap-1">
@@ -193,7 +209,13 @@ export function GiveawayAdminControls({
           </div>
           {giveaway.entry_mode === "quiz" ? (
             <div className="space-y-2">
-              <span className="text-xs font-medium text-slate-600">Quiz-Fragen</span>
+              <span className="text-xs font-medium text-slate-600">Quiz-Fragen (Gewinnspiel-Inhalt)</span>
+              {hasEntries ? (
+                <p className="text-xs text-slate-500">
+                  Es gibt bereits Teilnahmen: Frage- und Antworttexte dürfen korrigiert werden, die
+                  festgelegte richtige Antwort pro Frage kann nicht mehr geändert werden.
+                </p>
+              ) : null}
               {questions.map((q, qi) => (
                 <div key={qi} className="rounded-lg border bg-white p-2">
                   <input
@@ -212,10 +234,16 @@ export function GiveawayAdminControls({
                         type="radio"
                         name={`correct-${qi}`}
                         checked={q.correctIndex === oi}
+                        disabled={hasEntries}
                         onChange={() =>
                           setQuestions((arr) =>
                             arr.map((x, j) => (j === qi ? { ...x, correctIndex: oi } : x)),
                           )
+                        }
+                        title={
+                          hasEntries
+                            ? "Richtige Antwort kann nach Teilnahmen nicht geändert werden"
+                            : undefined
                         }
                       />
                       <input

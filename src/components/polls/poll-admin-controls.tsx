@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Trash2 } from "lucide-react";
 import { endPollEarly, deletePoll, updatePoll } from "@/app/(app)/polls/actions";
 
 type PollOption = { id: string; label: string };
@@ -8,6 +9,7 @@ type PollOption = { id: string; label: string };
 export function PollAdminControls({
   poll,
   options: initialOptions,
+  voteCountByOptionId = {},
 }: {
   poll: {
     id: string;
@@ -16,6 +18,8 @@ export function PollAdminControls({
     ends_at: string;
   };
   options: PollOption[];
+  /** Stimmen pro Antwortoption — Löschen nur ohne Stimmen, Text immer korrigierbar. */
+  voteCountByOptionId?: Record<string, number>;
 }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -31,6 +35,11 @@ export function PollAdminControls({
   const endInput = new Date(endLocal.getTime() - endLocal.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 16);
+
+  function optionVotes(optionId: string) {
+    if (!optionId) return 0;
+    return voteCountByOptionId[optionId] ?? 0;
+  }
 
   async function onEndEarly() {
     if (!window.confirm("Umfrage jetzt beenden?")) return;
@@ -139,20 +148,49 @@ export function PollAdminControls({
             )}
           </label>
           <div className="space-y-1.5">
-            <span className="text-xs font-medium text-slate-600">Antworten</span>
-            {options.map((o, i) => (
-              <input
-                key={o.id || `new-${i}`}
-                value={o.label}
-                onChange={(e) =>
-                  setOptions((arr) =>
-                    arr.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
-                  )
-                }
-                required
-                className="h-9 w-full rounded-lg border px-2 text-sm"
-              />
-            ))}
+            <span className="text-xs font-medium text-slate-600">Antwortmöglichkeiten</span>
+            <p className="text-xs text-slate-500">
+              Schreibfehler im Text darfst du jederzeit korrigieren. Optionen mit Stimmen können
+              nicht gelöscht werden — nur der Text ist editierbar.
+            </p>
+            {options.map((o, i) => {
+              const votes = optionVotes(o.id);
+              const canRemove = !o.id || votes === 0;
+              return (
+                <div key={o.id || `new-${i}`} className="flex gap-1">
+                  <input
+                    value={o.label}
+                    onChange={(e) =>
+                      setOptions((arr) =>
+                        arr.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
+                      )
+                    }
+                    required
+                    className="h-9 min-w-0 flex-1 rounded-lg border px-2 text-sm"
+                    aria-describedby={votes > 0 ? `poll-opt-votes-${i}` : undefined}
+                  />
+                  {votes > 0 ? (
+                    <span
+                      id={`poll-opt-votes-${i}`}
+                      className="flex shrink-0 items-center rounded-lg bg-slate-100 px-2 text-[10px] font-medium tabular-nums text-slate-600"
+                      title="Stimmen für diese Option"
+                    >
+                      {votes} Stimmen
+                    </span>
+                  ) : null}
+                  {options.length > 2 && canRemove ? (
+                    <button
+                      type="button"
+                      title="Option entfernen"
+                      onClick={() => setOptions((arr) => arr.filter((_, j) => j !== i))}
+                      className="rounded-lg border px-2 text-slate-500 hover:bg-slate-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })}
             {options.length < 10 ? (
               <button
                 type="button"

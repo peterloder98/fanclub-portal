@@ -130,9 +130,11 @@ export async function updatePoll(formData: FormData) {
     const opt = input.options[i]!;
     if (opt.id && existingIds.has(opt.id)) {
       keptIds.add(opt.id);
+      const label = opt.label.trim();
+      if (!label) throw new Error("Antwortoption darf nicht leer sein.");
       await admin
         .from("poll_options")
-        .update({ label: opt.label, sort_order: i })
+        .update({ label, sort_order: i })
         .eq("id", opt.id);
     } else {
       await admin.from("poll_options").insert({

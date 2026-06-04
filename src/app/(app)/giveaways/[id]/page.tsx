@@ -73,6 +73,11 @@ export default async function GiveawayDetailPage({
     .eq("user_id", user.id)
     .maybeSingle();
 
+  const { count: entryCount } = await supabase
+    .from("giveaway_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("giveaway_id", id);
+
   const initialQuizResult =
     myEntry && g.entry_mode === "quiz"
       ? await loadQuizReviewForUser(supabase, user.id, id, qIds)
@@ -211,6 +216,7 @@ export default async function GiveawayDetailPage({
           comments={comments}
           isAdmin={isAdmin}
           userId={user.id}
+          hasEntries={(entryCount ?? 0) > 0}
           signatures={signatures}
           yearEndAdmin={
             yearEndAdmin && g.points_year ? (

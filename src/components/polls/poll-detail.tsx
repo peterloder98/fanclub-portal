@@ -332,6 +332,9 @@ export function PollDetail({ pollId }: { pollId: string }) {
             <PollAdminControls
               poll={poll}
               options={options.map((o) => ({ id: o.id, label: o.label }))}
+              voteCountByOptionId={Object.fromEntries(
+                options.map((o) => [o.id, counts.get(o.id) ?? 0]),
+              )}
             />
           ) : null}
           <PollHeaderMeta

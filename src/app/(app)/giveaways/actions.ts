@@ -581,14 +581,54 @@ export async function updateGiveawayFull(formData: FormData) {
     })
     .eq("id", id);
 
-  await admin.from("giveaway_prizes").delete().eq("giveaway_id", id);
-  await admin.from("giveaway_prizes").insert(
-    prizes.map((name, i) => ({
-      giveaway_id: id,
-      name,
-      sort_order: i,
-    })),
-  );
+  if ((entryCount ?? 0) > 0) {
+    const { data: existingPrizes } = await admin
+      .from("giveaway_prizes")
+      .select("id,sort_order")
+      .eq("giveaway_id", id)
+      .order("sort_order", { ascending: true });
+    const { data: winnerRows } = await admin
+      .from("giveaway_winners")
+      .select("prize_id")
+      .eq("giveaway_id", id);
+    const lockedPrizeIds = new Set((winnerRows ?? []).map((w) => w.prize_id));
+
+    for (let i = 0; i < prizes.length; i++) {
+      const name = prizes[i]!;
+      const row = existingPrizes?.[i];
+      if (row) {
+        const { error: pErr } = await admin
+          .from("giveaway_prizes")
+          .update({ name, sort_order: i })
+          .eq("id", row.id);
+        if (pErr) throw new Error(pErr.message);
+      } else {
+        const { error: insErr } = await admin.from("giveaway_prizes").insert({
+          giveaway_id: id,
+          name,
+          sort_order: i,
+        });
+        if (insErr) throw new Error(insErr.message);
+      }
+    }
+    for (let i = prizes.length; i < (existingPrizes ?? []).length; i++) {
+      const pid = existingPrizes![i]!.id;
+      if (lockedPrizeIds.has(pid)) {
+        throw new Error("Ein Preis mit zugewiesenem Gewinner kann nicht entfernt werden.");
+      }
+      const { error: delErr } = await admin.from("giveaway_prizes").delete().eq("id", pid);
+      if (delErr) throw new Error(delErr.message);
+    }
+  } else {
+    await admin.from("giveaway_prizes").delete().eq("giveaway_id", id);
+    await admin.from("giveaway_prizes").insert(
+      prizes.map((name, i) => ({
+        giveaway_id: id,
+        name,
+        sort_order: i,
+      })),
+    );
+  }
 
   if (entryMode === "quiz") {
     if ((entryCount ?? 0) === 0) {
