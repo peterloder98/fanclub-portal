@@ -3,19 +3,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Download, X } from "lucide-react";
-import { openEventInPreferredCalendar } from "@/lib/calendar/open-event-calendar";
 import {
-  buildGoogleCalendarUrl,
-  buildOutlookOfficeUrl,
-  buildOutlookWebUrl,
-} from "@/lib/calendar/event-calendar-links";
+  openEventInPreferredCalendar,
+  openGoogleCalendarPopup,
+} from "@/lib/calendar/open-event-calendar";
+import { buildGoogleCalendarUrl, buildOutlookWebUrl } from "@/lib/calendar/event-calendar-links";
 import { formatLocation } from "@/lib/events/format";
 import {
-  getPreferredCalendar,
   PREFERRED_CALENDAR_OPTIONS,
-  setPreferredCalendar,
+  normalizePreferredCalendar,
   type PreferredCalendar,
 } from "@/lib/calendar/preferred-calendar";
+
+async function saveCalendarPreference(pref: PreferredCalendar) {
+  await fetch("/api/profile/calendar-preference", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preference: pref }),
+  });
+}
 
 export function EventCalendarDialog({
   open,
@@ -27,6 +33,7 @@ export function EventCalendarDialog({
   postalCode,
   city,
   preferredCalendar: preferredCalendarProp,
+  onPreferenceChange,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,6 +44,7 @@ export function EventCalendarDialog({
   postalCode?: string | null;
   city?: string | null;
   preferredCalendar?: PreferredCalendar;
+  onPreferenceChange?: (pref: PreferredCalendar) => void;
 }) {
   const [storedPref, setStoredPref] = useState<PreferredCalendar>("ask");
 
@@ -57,11 +65,10 @@ export function EventCalendarDialog({
 
   const googleUrl = useMemo(() => buildGoogleCalendarUrl(payload), [payload]);
   const outlookUrl = useMemo(() => buildOutlookWebUrl(payload), [payload]);
-  const outlookOfficeUrl = useMemo(() => buildOutlookOfficeUrl(payload), [payload]);
 
   useEffect(() => {
     if (!open) return;
-    setStoredPref(preferredCalendarProp ?? getPreferredCalendar());
+    setStoredPref(normalizePreferredCalendar(preferredCalendarProp));
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -70,6 +77,11 @@ export function EventCalendarDialog({
   }, [open, onClose, preferredCalendarProp]);
 
   function openOnce(pref: PreferredCalendar) {
+    if (pref === "google" && googleUrl) {
+      openGoogleCalendarPopup(googleUrl);
+      onClose();
+      return;
+    }
     const result = openEventInPreferredCalendar(pref, payload, title);
     if (!result.ok && result.message !== "ask") {
       window.alert(result.message);
@@ -78,10 +90,15 @@ export function EventCalendarDialog({
     if (result.ok) onClose();
   }
 
-  function onDefaultChange(value: string) {
+  async function onDefaultChange(value: string) {
     const pref = value as PreferredCalendar;
-    setPreferredCalendar(pref);
     setStoredPref(pref);
+    onPreferenceChange?.(pref);
+    try {
+      await saveCalendarPreference(pref);
+    } catch {
+      /* ignore */
+    }
   }
 
   if (!open || typeof document === "undefined") return null;
@@ -117,8 +134,8 @@ export function EventCalendarDialog({
 
         <p className="mt-3 text-xs leading-relaxed text-slate-500">
           {storedPref === "ask"
-            ? "Kalender wählen — unten kannst du einen Standard festlegen, dann reicht ein Klick auf den Button."
-            : "Oder einmalig einen anderen Kalender wählen:"}
+            ? "Kalender wählen — unten kannst du einen Standard für dein Konto festlegen."
+            : "Oder einmalig einen anderen Kalender:"}
         </p>
 
         <div className="mt-4 grid gap-2">
@@ -137,33 +154,24 @@ export function EventCalendarDialog({
               onClick={() => openOnce("outlook")}
               className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0078d4] text-sm font-semibold text-white"
             >
-              Outlook (privat)
-            </button>
-          ) : null}
-          {outlookOfficeUrl ? (
-            <button
-              type="button"
-              onClick={() => openOnce("outlook-office")}
-              className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[#0078d4] bg-white text-sm font-semibold text-[#0078d4]"
-            >
-              Outlook (Arbeit/Schule)
+              Outlook
             </button>
           ) : null}
           <button
             type="button"
-            onClick={() => openOnce("apple")}
+            onClick={() => openOnce("ics")}
             className="flex h-11 items-center justify-center gap-2 rounded-xl border bg-slate-50 text-sm font-semibold text-slate-800"
           >
             <Download className="h-4 w-4" aria-hidden />
-            Apple / andere (Datei)
+            .ics-Datei für deine App
           </button>
         </div>
 
         <label className="mt-4 block">
-          <span className="text-xs font-medium text-slate-600">Standard-Kalender für Events</span>
+          <span className="text-xs font-medium text-slate-600">Standard-Kalender (dein Konto)</span>
           <select
             value={storedPref}
-            onChange={(e) => onDefaultChange(e.target.value)}
+            onChange={(e) => void onDefaultChange(e.target.value)}
             className="mt-1.5 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900"
           >
             {PREFERRED_CALENDAR_OPTIONS.map((o) => (
@@ -175,7 +183,7 @@ export function EventCalendarDialog({
         </label>
 
         <p className="mt-2 text-center text-[10px] text-slate-400">
-          Einstellung gilt in diesem Browser. iPhone/Mac: Apple → Datei → „Zum Kalender hinzufügen“
+          Google/Outlook öffnen in einem kleinen Fenster · .ics: Datei antippen → „Zum Kalender hinzufügen“
         </p>
       </div>
     </div>

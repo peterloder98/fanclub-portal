@@ -5,6 +5,7 @@ import { PieChart } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import type { PollVoter } from "@/components/polls/poll-vote-stats";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
+import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PollOptionsList } from "@/components/polls/poll-options-list";
 import { cn } from "@/lib/cn";
 import { useMemo } from "react";
@@ -120,22 +121,14 @@ export function PollFeedCard({
     <Card className="overflow-hidden">
       <CardHeader className="space-y-0 pb-0">
         <div className="flex items-center gap-2 pb-3 text-xs text-slate-600">
-          <div className="h-6 w-6 overflow-hidden rounded-full border bg-slate-50">
-            {poll.authorAvatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={poll.authorAvatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-[9px] font-semibold text-slate-600">
-                {poll.authorName
-                  .split(" ")
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .map((p) => p[0]?.toUpperCase())
-                  .join("")}
-              </div>
-            )}
-          </div>
-          <span className="font-medium text-slate-800">{poll.authorName}</span>
+          <HoverEnlargeAvatar
+            name={poll.authorName}
+            avatarUrl={poll.authorAvatarUrl}
+            size="sm"
+            className="shrink-0"
+          >
+            <span className="font-medium text-slate-800">{poll.authorName}</span>
+          </HoverEnlargeAvatar>
           <span>·</span>
           <span>{poll.createdAtLabel}</span>
         </div>

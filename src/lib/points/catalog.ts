@@ -34,21 +34,28 @@ export const POINTS_RULES: PointsRule[] = [
   },
   {
     id: "poll_vote",
-    label: "Erste Stimme in einer Umfrage",
+    label: "An Umfrage teilgenommen",
     points: POINT_VALUES.pollVote,
     how: "In einer Umfrage mindestens eine Antwort wählen.",
     note: `Pro Umfrage einmal. Alle Stimmen zurücknehmen: −${POINT_VALUES.pollVote} Punkte.`,
   },
   {
+    id: "birthday_comment",
+    label: "Zum Geburtstag gratuliert",
+    points: POINT_VALUES.birthdayComment,
+    how: "Einmal einen Kommentar unter einem Geburtstags-Beitrag im Feed schreiben.",
+    note: "Einmal pro Geburtstags-Beitrag. Kommentar löschen: −2 Punkte.",
+  },
+  {
     id: "post_comment",
-    label: "Kommentar zu einem Beitrag",
+    label: "Beitrag kommentiert",
     points: POINT_VALUES.postComment,
-    how: "Einen Kommentar unter einem Beitrag im Dashboard schreiben.",
-    note: "Einmal pro Beitrag.",
+    how: "Einen Kommentar unter einem normalen Beitrag im Dashboard schreiben.",
+    note: "Einmal pro Beitrag — weitere Kommentare bringen keine zusätzlichen Punkte. Löschen: −3 Punkte.",
   },
   {
     id: "giveaway_entry",
-    label: "Am Gewinnspiel teilnehmen",
+    label: "An Gewinnspiel teilgenommen",
     points: POINT_VALUES.giveawayEntry,
     how: "Einmalig bei einem Gewinnspiel mitmachen (Eintrag absenden).",
     note: "Geringer Bonus — der mögliche Gewinn ist der Hauptanreiz.",
@@ -62,14 +69,14 @@ export const POINTS_RULES: PointsRule[] = [
   },
   {
     id: "post_like",
-    label: "Beitrag liken",
+    label: "Beitrag geliked",
     points: POINT_VALUES.postLike,
     how: "Den Daumen bei einem Beitrag setzen.",
     note: "Like zurücknehmen: Punkt wird wieder abgezogen.",
   },
   {
     id: "giveaway_like",
-    label: "Gewinnspiel liken",
+    label: "Gewinnspiel geliked",
     points: POINT_VALUES.giveawayLike,
     how: "Ein Gewinnspiel mit „Gefällt mir“ markieren.",
     note: "Like zurücknehmen: Punkt wird wieder abgezogen.",
@@ -83,7 +90,6 @@ export const POINTS_RULES: PointsRule[] = [
   },
 ];
 
-/** Nach Punkten absteigend sortiert (für Anzeige). */
 export function pointsRulesSortedByPoints(): PointsRule[] {
   return [...POINTS_RULES].sort((a, b) => b.points - a.points);
 }

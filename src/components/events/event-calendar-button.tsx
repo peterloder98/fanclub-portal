@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarPlus } from "lucide-react";
 import { EventCalendarDialog } from "@/components/events/event-calendar-dialog";
 import { openEventInPreferredCalendar } from "@/lib/calendar/open-event-calendar";
 import {
-  getPreferredCalendar,
+  normalizePreferredCalendar,
   type PreferredCalendar,
 } from "@/lib/calendar/preferred-calendar";
 import { formatLocation } from "@/lib/events/format";
@@ -28,6 +28,20 @@ export function EventCalendarButton({
   const [open, setOpen] = useState(false);
   const [preference, setPreference] = useState<PreferredCalendar>("ask");
 
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/profile/calendar-preference");
+        if (res.ok) {
+          const json = (await res.json()) as { preference?: string };
+          setPreference(normalizePreferredCalendar(json.preference));
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, []);
+
   const payload = useMemo(() => {
     if (!startAt) return null;
     const location = formatLocation({
@@ -46,18 +60,16 @@ export function EventCalendarButton({
 
   const handleClick = useCallback(() => {
     if (!payload) return;
-    const pref = getPreferredCalendar();
-    setPreference(pref);
-    if (pref === "ask") {
+    if (preference === "ask") {
       setOpen(true);
       return;
     }
-    const result = openEventInPreferredCalendar(pref, payload, title);
+    const result = openEventInPreferredCalendar(preference, payload, title);
     if (!result.ok) {
       window.alert(result.message);
       setOpen(true);
     }
-  }, [payload, title]);
+  }, [payload, title, preference]);
 
   if (!startAt) return null;
 
@@ -82,6 +94,7 @@ export function EventCalendarButton({
         postalCode={postalCode}
         city={city}
         preferredCalendar={preference}
+        onPreferenceChange={setPreference}
       />
     </>
   );

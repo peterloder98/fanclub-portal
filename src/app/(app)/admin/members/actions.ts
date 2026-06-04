@@ -7,6 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
 import { logAdminAction } from "@/lib/admin/audit-log";
+import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -142,6 +143,7 @@ export async function createMember(formData: FormData) {
     { onConflict: "id" },
   );
   if (profileErr) throw new Error(profileErr.message);
+  await syncProfileMapCoords(admin, userId);
 
   // Membership
   const start = input.membership_start;
@@ -204,6 +206,7 @@ export async function updateMember(formData: FormData) {
     })
     .eq("id", input.user_id);
   if (profileErr) throw new Error(profileErr.message);
+  await syncProfileMapCoords(admin, input.user_id);
 
   // Update membership: update latest row (best-effort)
   const { data: latestMembership, error: mSelErr } = await admin

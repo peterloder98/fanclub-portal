@@ -6,6 +6,7 @@ export const POINT_VALUES = {
   pollVote: 5,
   giveawayEntry: 2,
   postComment: 3,
+  birthdayComment: 2,
   postLike: 1,
   giveawayLike: 1,
   giveawayComment: 1,

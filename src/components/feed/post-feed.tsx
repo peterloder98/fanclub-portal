@@ -1063,31 +1063,17 @@ export function PostFeed({
         <Card key={post.id} className="overflow-hidden rounded-xl">
           <div className="px-3 py-2.5">
             <div className="flex items-center gap-2">
-              <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full border bg-slate-50">
-                {post.authorAvatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={post.authorAvatarUrl}
-                    alt=""
-                    width={24}
-                    height={24}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="grid h-full w-full place-items-center text-[9px] font-semibold text-slate-600">
-                    {post.authorName
-                      .split(" ")
-                      .filter(Boolean)
-                      .slice(0, 2)
-                      .map((p) => p[0]?.toUpperCase())
-                      .join("")}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1 truncate text-xs text-slate-600">
-                <span className="font-semibold text-slate-800">{post.authorName}</span>
-                <span className="text-slate-400"> · {post.createdAtLabel}</span>
-              </div>
+              <HoverEnlargeAvatar
+                name={post.authorName}
+                avatarUrl={post.authorAvatarUrl}
+                size="sm"
+                className="min-w-0 flex-1"
+              >
+                <span className="truncate text-xs text-slate-600">
+                  <span className="font-semibold text-slate-800">{post.authorName}</span>
+                  <span className="text-slate-400"> · {post.createdAtLabel}</span>
+                </span>
+              </HoverEnlargeAvatar>
               {canManagePost(post) ? (
                 <div className="flex shrink-0 items-center gap-0.5">
                   <button

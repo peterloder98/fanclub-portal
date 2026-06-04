@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import type { MemberMapCluster } from "@/lib/members/cluster-map";
+import type { MemberMapPlacement } from "@/lib/members/spread-member-map";
 
 const GERMANY_BOUNDS: [[number, number], [number, number]] = [
   [47.0, 5.5],
@@ -10,20 +10,19 @@ const GERMANY_BOUNDS: [[number, number], [number, number]] = [
 ];
 const GERMANY_CENTER: [number, number] = [51.1, 10.45];
 
-function clusterRadius(count: number) {
-  if (count >= 10) return 18;
-  if (count >= 5) return 14;
-  if (count >= 2) return 11;
-  return 8;
-}
-
-export function MembersMapClient({ clusters }: { clusters: MemberMapCluster[] }) {
+export function MembersMapClient({
+  placements,
+  memberCount,
+}: {
+  placements: MemberMapPlacement[];
+  memberCount: number;
+}) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const withCoords = useMemo(
-    () => clusters.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng)),
-    [clusters],
+  const markers = useMemo(
+    () => placements.filter((p) => Number.isFinite(p.position[0]) && Number.isFinite(p.position[1])),
+    [placements],
   );
 
   if (!mounted) {
@@ -37,7 +36,7 @@ export function MembersMapClient({ clusters }: { clusters: MemberMapCluster[] })
     );
   }
 
-  if (!withCoords.length) {
+  if (!markers.length) {
     return (
       <div
         className="grid h-full min-h-[360px] place-items-center rounded-xl border bg-slate-50 px-4 text-center text-sm text-slate-600"
@@ -65,28 +64,29 @@ export function MembersMapClient({ clusters }: { clusters: MemberMapCluster[] })
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {withCoords.map((c) => (
+        {markers.map((m) => (
           <CircleMarker
-            key={c.id}
-            center={[c.lat, c.lng]}
-            radius={clusterRadius(c.count)}
+            key={m.point.userId}
+            center={m.position}
+            radius={9}
             pathOptions={{
               color: "#1d4ed8",
-              fillColor: c.count >= 5 ? "#2563eb" : "#60a5fa",
-              fillOpacity: 0.75,
+              fillColor: "#60a5fa",
+              fillOpacity: 0.8,
               weight: 2,
             }}
           >
             <Tooltip direction="top" opacity={0.95}>
               <span className="text-sm font-medium">
-                {c.count === 1
-                  ? `1 Mitglied · ${c.label}`
-                  : `${c.count} Mitglieder · ${c.label}`}
+                {[m.point.postalCode, m.point.city].filter(Boolean).join(" ")}
               </span>
             </Tooltip>
           </CircleMarker>
         ))}
       </MapContainer>
+      <p className="mt-2 px-1 text-center text-[10px] text-slate-500">
+        {memberCount} {memberCount === 1 ? "Mitglied" : "Mitglieder"} auf der Karte
+      </p>
     </div>
   );
 }

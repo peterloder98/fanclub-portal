@@ -114,7 +114,7 @@ export function PollHeaderMeta({
                 <span
                   className={cn(
                     "font-semibold leading-tight text-emerald-700",
-                    compact ? "text-[10px]" : "text-xs",
+                    compact ? "text-xs" : "text-sm",
                   )}
                 >
                   Du hast teilgenommen

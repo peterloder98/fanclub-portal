@@ -2,9 +2,12 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { MembersLeaderboard } from "@/components/members/members-leaderboard";
 import { MembersMap } from "@/components/members/members-map";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
-import { geocodeGermanPlz, isGermanCountry } from "@/lib/members/geocode-plz";
-import { clusterMemberPoints, type MemberMapPoint } from "@/lib/members/cluster-map";
+import { geocodeProfileMapCoords, syncProfileMapCoords } from "@/lib/members/geocode-profile";
+import { isGermanCountry } from "@/lib/members/geocode-plz";
+import type { MemberMapPoint } from "@/lib/members/cluster-map";
+import { spreadMemberMapPlacements } from "@/lib/members/spread-member-map";
 import { profileDisplayName } from "@/lib/profiles/display";
 
 type LeaderRow = {
@@ -27,11 +30,11 @@ export default async function MitgliederPage() {
   const { data: profiles } = activeList.length
     ? await supabase
         .from("profiles")
-        .select("id,first_name,last_name,postal_code,city,country")
+        .select("id,first_name,last_name,postal_code,city,country,map_lat,map_lng")
         .in("id", activeList)
     : { data: [] };
 
-  const plzCache = new Map<string, { lat: number; lng: number } | null>();
+  const admin = createSupabaseAdminClient();
   const mapPoints: MemberMapPoint[] = [];
 
   for (const p of profiles ?? []) {
@@ -39,23 +42,30 @@ export default async function MitgliederPage() {
     const city = (p.city ?? "").trim();
     if (!plz || plz.length !== 5 || !isGermanCountry(p.country)) continue;
 
-    const plzKey = `${plz}|${city}`;
-    if (!plzCache.has(plzKey)) {
-      plzCache.set(plzKey, await geocodeGermanPlz(plz, city));
+    let lat = typeof p.map_lat === "number" ? p.map_lat : null;
+    let lng = typeof p.map_lng === "number" ? p.map_lng : null;
+
+    if (lat == null || lng == null) {
+      const coords =
+        (await geocodeProfileMapCoords(p)) ??
+        (await syncProfileMapCoords(admin, p.id).then((r) =>
+          r.ok && r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng } : null,
+        ));
+      if (!coords) continue;
+      lat = coords.lat;
+      lng = coords.lng;
     }
-    const coords = plzCache.get(plzKey);
-    if (!coords) continue;
 
     mapPoints.push({
       userId: p.id,
       postalCode: plz,
       city: city || "Deutschland",
-      lat: coords.lat,
-      lng: coords.lng,
+      lat,
+      lng,
     });
   }
 
-  const clusters = clusterMemberPoints(mapPoints, 20);
+  const placements = spreadMemberMapPlacements(mapPoints);
 
   let rows: LeaderRow[] = [];
   const { data: leaderboard, error: lbErr } = await supabase.rpc(
@@ -97,13 +107,13 @@ export default async function MitgliederPage() {
       <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 lg:px-8">
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,360px)] lg:items-stretch">
           <div className="flex min-h-[420px] flex-col rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm lg:min-h-[520px]">
-            <h2 className="px-1 text-base font-semibold text-slate-900">Mitglieder in Deutschland</h2>
+            <h2 className="px-1 text-base font-semibold text-slate-900">Hier sind unsere Mitglieder her</h2>
             <p className="mt-1 px-1 text-xs text-slate-600">
-              Nur PLZ und Ort — keine Straßen. Mehrere in einer Stadt = größerer Pin. Nahe Orte
-              werden als Region zusammengefasst (ca. 20 km).
+              In diesen Bereichen sind unsere Mitglieder zu Hause (keine persönlichen Adressen, nur
+              regionale Einordnung!).
             </p>
             <div className="mt-3 min-h-0 flex-1">
-              <MembersMap clusters={clusters} />
+              <MembersMap placements={placements} memberCount={mapPoints.length} />
             </div>
           </div>
 

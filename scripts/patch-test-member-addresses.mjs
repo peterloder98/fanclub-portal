@@ -53,6 +53,20 @@ for (let i = 0; i < MEMBER_ADDRESSES.length; i++) {
     })
     .eq("id", profile.id);
 
+  if (!error) {
+    const plz = addr.postal_code.replace(/\D/g, "").slice(0, 5);
+    const res = await fetch(`https://api.zippopotam.us/de/${plz}`);
+    if (res.ok) {
+      const data = await res.json();
+      const place = data.places?.[0];
+      const lat = place?.latitude != null ? Number(place.latitude) : null;
+      const lng = place?.longitude != null ? Number(place.longitude) : null;
+      if (lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)) {
+        await admin.from("profiles").update({ map_lat: lat, map_lng: lng }).eq("id", profile.id);
+      }
+    }
+  }
+
   if (error) {
     console.error(`${email}: ${error.message}`);
     continue;

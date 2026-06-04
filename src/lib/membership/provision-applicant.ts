@@ -142,6 +142,9 @@ async function syncApplicantProfile(
   );
   if (profileErr) throw new Error(profileErr.message);
 
+  const { syncProfileMapCoords } = await import("@/lib/members/geocode-profile");
+  await syncProfileMapCoords(admin, userId);
+
   const { data: existingMembership } = await admin
     .from("memberships")
     .select("id,status")
