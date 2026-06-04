@@ -552,7 +552,7 @@ export function PostFeed({
               id: crypto.randomUUID(),
               authorId: me.id,
               author: me.name,
-              authorAvatarUrl: null,
+              authorAvatarUrl: me.avatarUrl,
               createdAt: new Date().toISOString(),
               createdAtLabel: nowLabel,
               text,
@@ -678,7 +678,7 @@ export function PostFeed({
             authorId: me.id,
             authorName: me.name,
             authorRole: me.role,
-            authorAvatarUrl: null,
+            authorAvatarUrl: me.avatarUrl,
             createdAtLabel: new Date(postRow.created_at).toLocaleString("de-DE", {
               dateStyle: "short",
               timeStyle: "short",
