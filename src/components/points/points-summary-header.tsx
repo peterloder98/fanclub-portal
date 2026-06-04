@@ -37,8 +37,8 @@ export function PointsSummaryHeader({ userId }: { userId: string | null }) {
             <h2 className="text-lg font-bold text-slate-900">Jahres-Sonderverlosung</h2>
             <p className="mt-2 text-sm leading-relaxed text-slate-700">{POINTS_YEAR_END_NOTE}</p>
             <p className="mt-2 text-sm font-semibold text-amber-900">
-              Die zehn Mitglieder mit den meisten Statuspunkten im abgelaufenen Jahr nehmen automatisch
-              teil — du musst nichts extra anmelden.
+              Genau zehn Mitglieder mit den meisten Statuspunkten im abgelaufenen Jahr nehmen automatisch
+              teil — bei Punktgleichstand nach festen Regeln, nicht per Zufall.
             </p>
           </div>
         </div>

@@ -1,8 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { performGiveawayDraw } from "@/lib/giveaways/perform-draw";
 import { notifyAdminsGiveawayEnded } from "@/lib/email/giveaway-notify";
+import {
+  rankYearEndTopN,
+  YEAR_END_TIE_BREAK_SUMMARY,
+  type YearEndCandidate,
+} from "@/lib/giveaways/year-end-ranking";
 
 export const YEAR_END_LOTTERY_TOP_N = 10;
+export { YEAR_END_TIE_BREAK_SUMMARY };
 
 export function yearBounds(pointsYear: number) {
   const start = new Date(pointsYear, 0, 1).toISOString();
@@ -20,7 +26,7 @@ export function defaultPointsYearForYearEndRun(at = new Date()) {
 export async function sumPointsByUserForYear(
   admin: SupabaseClient,
   pointsYear: number,
-): Promise<Array<{ user_id: string; total: number }>> {
+): Promise<Array<{ user_id: string; total: number; activityCount: number }>> {
   const { start, end } = yearBounds(pointsYear);
   const { data: rows, error } = await admin
     .from("points_transactions")
@@ -29,24 +35,82 @@ export async function sumPointsByUserForYear(
     .lt("created_at", end);
   if (error) throw error;
 
-  const byUser = new Map<string, number>();
+  const byUser = new Map<string, { total: number; activityCount: number }>();
   for (const r of rows ?? []) {
-    byUser.set(r.user_id, (byUser.get(r.user_id) ?? 0) + (r.points ?? 0));
+    const cur = byUser.get(r.user_id) ?? { total: 0, activityCount: 0 };
+    cur.total += r.points ?? 0;
+    cur.activityCount += 1;
+    byUser.set(r.user_id, cur);
   }
 
   return [...byUser.entries()]
-    .map(([user_id, total]) => ({ user_id, total }))
-    .filter((x) => x.total > 0)
-    .sort((a, b) => b.total - a.total);
+    .map(([user_id, stats]) => ({ user_id, ...stats }))
+    .filter((x) => x.total > 0);
 }
+
+async function buildYearEndCandidates(
+  admin: SupabaseClient,
+  pointsYear: number,
+): Promise<YearEndCandidate[]> {
+  const sums = await sumPointsByUserForYear(admin, pointsYear);
+  if (!sums.length) return [];
+
+  const ids = sums.map((s) => s.user_id);
+
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id,first_name,last_name,membership_number")
+    .in("id", ids);
+
+  const { data: memberships } = await admin
+    .from("memberships")
+    .select("user_id,start_date,status")
+    .in("user_id", ids)
+    .eq("status", "active");
+
+  const membershipStart = new Map<string, string>();
+  for (const m of memberships ?? []) {
+    const prev = membershipStart.get(m.user_id);
+    if (!prev || m.start_date < prev) membershipStart.set(m.user_id, m.start_date);
+  }
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  return sums.map((s) => {
+    const p = profileMap.get(s.user_id);
+    return {
+      user_id: s.user_id,
+      total: s.total,
+      activityCount: s.activityCount,
+      membership_number: p?.membership_number ?? null,
+      membership_start: membershipStart.get(s.user_id) ?? null,
+      last_name: p?.last_name ?? "",
+      first_name: p?.first_name ?? "",
+    };
+  });
+}
+
+export type YearEndTopMember = {
+  rank: number;
+  userId: string;
+  points: number;
+  activityCount: number;
+  profile: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    membership_number: string | null;
+  } | null;
+};
 
 export async function getTopMembersForYear(
   admin: SupabaseClient,
   pointsYear: number,
   limit = YEAR_END_LOTTERY_TOP_N,
-) {
-  const ranked = await sumPointsByUserForYear(admin, pointsYear);
-  const top = ranked.slice(0, limit);
+): Promise<YearEndTopMember[]> {
+  const candidates = await buildYearEndCandidates(admin, pointsYear);
+  const top = rankYearEndTopN(candidates, limit);
   if (!top.length) return [];
 
   const ids = top.map((t) => t.user_id);
@@ -56,9 +120,11 @@ export async function getTopMembersForYear(
     .in("id", ids);
 
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
-  return top.map((t) => ({
+  return top.map((t, index) => ({
+    rank: index + 1,
     userId: t.user_id,
     points: t.total,
+    activityCount: t.activityCount,
     profile: profileMap.get(t.user_id) ?? null,
   }));
 }
@@ -110,7 +176,8 @@ export async function createYearEndGiveaway(
 
   const title = `Sonderverlosung Top-${YEAR_END_LOTTERY_TOP_N} Statuspunkte ${pointsYear}`;
   const description =
-    `Die ${top.length} Mitglieder mit den meisten Statuspunkten in ${pointsYear} nehmen automatisch teil. ` +
+    `Genau ${YEAR_END_LOTTERY_TOP_N} Mitglieder mit den meisten Statuspunkten in ${pointsYear} nehmen automatisch teil. ` +
+    `Bei Punktgleichstand gilt: ${YEAR_END_TIE_BREAK_SUMMARY} ` +
     `Weitere Teilnahme ist nicht möglich. Nach Eintrag der Preise durch den Vorstand wird ausgelost und die Gewinner per E-Mail benachrichtigt. ` +
     `Ab dem neuen Jahr startet die Statuspunkte-Zählung wieder bei null.`;
 

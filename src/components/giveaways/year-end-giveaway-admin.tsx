@@ -7,10 +7,13 @@ import {
   removeYearEndGiveawayPrize,
 } from "@/app/(app)/giveaways/actions";
 import type { MailSignatureOption } from "@/lib/email/signatures";
+import { YEAR_END_TIE_BREAK_SUMMARY } from "@/lib/giveaways/year-end-ranking";
 
 type TopMember = {
+  rank: number;
   userId: string;
   points: number;
+  activityCount: number;
   name: string;
   membershipNumber: string | null;
 };
@@ -90,13 +93,15 @@ export function YearEndGiveawayAdmin({
     <div className="rounded-xl border border-violet-200 bg-gradient-to-br from-violet-50/90 via-white to-amber-50/50 p-4 text-sm">
       <div className="font-semibold text-violet-950">Jahresend-Sonderverlosung {pointsYear}</div>
       <p className="mt-1.5 leading-relaxed text-slate-600">
-        Die Top-10 nach Statuspunkten {pointsYear} sind automatisch dabei. Trag die Preise ein,
-        bestätige — dann erfolgt die Auslosung sofort und die Gewinner erhalten eine E-Mail.
+        Genau 10 Mitglieder nach Statuspunkten {pointsYear} — bei Punktgleichstand nach festen
+        Kriterien, ohne Zufall. Trag die Preise ein, bestätige — dann Auslosung und E-Mails an die
+        Gewinner.
       </p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-500">{YEAR_END_TIE_BREAK_SUMMARY}</p>
 
       <div className="mt-3">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Berechtigte Top-10
+          Berechtigte Top-10 (endgültige Reihenfolge)
         </h4>
         <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-slate-800">
           {topMembers.map((m) => (
@@ -106,6 +111,7 @@ export function YearEndGiveawayAdmin({
                 <span className="text-slate-500"> · Nr. {m.membershipNumber}</span>
               ) : null}
               <span className="tabular-nums text-emerald-700"> · {m.points} Pkt.</span>
+              <span className="text-slate-500"> · {m.activityCount} Aktivitäten</span>
             </li>
           ))}
         </ol>

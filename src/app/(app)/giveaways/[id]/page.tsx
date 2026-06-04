@@ -173,8 +173,10 @@ export default async function GiveawayDetailPage({
 
   let yearEndAdmin: {
     topMembers: Array<{
+      rank: number;
       userId: string;
       points: number;
+      activityCount: number;
       name: string;
       membershipNumber: string | null;
     }>;
@@ -186,8 +188,10 @@ export default async function GiveawayDetailPage({
       const top = await getTopMembersForYear(admin, g.points_year);
       yearEndAdmin = {
         topMembers: top.map((t) => ({
+          rank: t.rank,
           userId: t.userId,
           points: t.points,
+          activityCount: t.activityCount,
           name:
             t.profile?.first_name && t.profile?.last_name
               ? `${t.profile.first_name} ${t.profile.last_name}`
