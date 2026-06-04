@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
+import { validateImageUpload } from "@/lib/security/upload-validation";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -16,6 +17,19 @@ export async function POST(request: Request) {
 
   if (!postId) return NextResponse.json({ error: "missing_postId" }, { status: 400 });
 
+  const { data: post } = await supabase
+    .from("posts")
+    .select("author_id,status")
+    .eq("id", postId)
+    .maybeSingle();
+  if (!post) return NextResponse.json({ error: "post_not_found" }, { status: 404 });
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const isAdmin = me?.role === "admin";
+  if (!isAdmin && post.author_id !== user.id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const blobs = files.filter((f) => f instanceof Blob) as Blob[];
   if (blobs.length === 0) return NextResponse.json({ error: "missing_files" }, { status: 400 });
   if (blobs.length > 4) return NextResponse.json({ error: "too_many_files" }, { status: 400 });
@@ -25,6 +39,13 @@ export async function POST(request: Request) {
 
   for (let i = 0; i < blobs.length; i += 1) {
     const b = blobs[i]!;
+    const validation = validateImageUpload(b, {
+      maxBytes: 5 * 1024 * 1024,
+      label: `Bild ${i + 1}`,
+    });
+    if (validation) {
+      return NextResponse.json({ error: validation }, { status: 400 });
+    }
     const path = `${postId}/${user.id}/${Date.now()}_${i}.webp`;
     const { error } = await admin.storage.from("post-media").upload(path, b, {
       upsert: false,

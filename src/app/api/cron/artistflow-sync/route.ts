@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 import { syncArtistflowEventsFromFeed } from "@/lib/artistflow/sync";
+import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export async function GET(request: Request) {
-  const u = new URL(request.url);
-  const secret = u.searchParams.get("secret");
-  const expected = process.env.CRON_SECRET;
-
-  if (!expected || secret !== expected) {
+  if (!authorizeCronRequest(request)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 

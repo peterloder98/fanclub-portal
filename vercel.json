@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/birthday-posts",
-      "schedule": "0 6,7 * * *"
+      "schedule": "0 7 * * *"
     }
   ]
 }

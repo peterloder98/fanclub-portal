@@ -12,6 +12,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/mitgliedschaft/ausstehend",
   "/documents",
   "/api/membership",
+  "/api/cron",
 ];
 
 function isPublicPath(pathname: string) {

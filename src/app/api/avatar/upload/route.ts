@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { validateImageUpload } from "@/lib/security/upload-validation";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -19,6 +20,14 @@ export async function POST(request: Request) {
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "missing_file" }, { status: 400 });
+  }
+
+  const uploadErrMsg = validateImageUpload(file, {
+    maxBytes: 2 * 1024 * 1024,
+    label: "Profilbild",
+  });
+  if (uploadErrMsg) {
+    return NextResponse.json({ error: uploadErrMsg }, { status: 400 });
   }
 
   const admin = createSupabaseAdminClient();

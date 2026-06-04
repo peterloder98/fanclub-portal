@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runBirthdayPosts } from "@/lib/birthday/run-birthday-posts";
+import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-function authorizeCron(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
-}
-
 /** Täglich 08:00 Europe/Berlin: Geburtstags-Gratulation als Feed-Post. */
 export async function GET(request: Request) {
-  if (!authorizeCron(request)) {
+  if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

@@ -103,10 +103,12 @@ export function Topbar({
 
         <button
           type="button"
-          className="grid h-10 w-10 place-items-center rounded-xl border bg-white shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
-          aria-label="Benachrichtigungen"
+          disabled
+          className="grid h-10 w-10 cursor-not-allowed place-items-center rounded-xl border bg-slate-50 shadow-sm shadow-slate-900/5 opacity-60"
+          aria-label="Benachrichtigungen (demnächst)"
+          title="Benachrichtigungen kommen demnächst"
         >
-          <Bell className="h-4 w-4 text-slate-600" />
+          <Bell className="h-4 w-4 text-slate-500" aria-hidden />
         </button>
 
         <div className="group relative z-20">

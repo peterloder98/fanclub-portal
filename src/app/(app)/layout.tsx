@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SkipToContent } from "@/components/app-shell/skip-to-content";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import type { SidebarUser } from "@/components/app-shell/sidebar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -64,8 +65,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen lg:flex">
+      <SkipToContent />
       <Sidebar user={await loadUser()} />
-      <div className="min-h-0 min-w-0 flex-1 lg:flex lg:flex-col">{children}</div>
+      <div
+        id="main-content"
+        tabIndex={-1}
+        className="min-h-0 min-w-0 flex-1 outline-none lg:flex lg:flex-col"
+      >
+        {children}
+      </div>
     </div>
   );
 }

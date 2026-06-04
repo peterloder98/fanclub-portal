@@ -5,19 +5,13 @@ import {
   defaultPointsYearForYearEndRun,
   findYearEndGiveawayForYear,
 } from "@/lib/giveaways/year-end-lottery";
+import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-function authorizeCron(request: Request) {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
-  const auth = request.headers.get("authorization");
-  return auth === `Bearer ${secret}`;
-}
-
 /** Am Jahreswechsel (z. B. Vercel Cron 1. Jan. 06:00 UTC): Top-10-Gewinnspiel für das abgelaufene Jahr anlegen. */
 export async function GET(request: Request) {
-  if (!authorizeCron(request)) {
+  if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

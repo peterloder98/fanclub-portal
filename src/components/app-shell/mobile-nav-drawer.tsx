@@ -14,8 +14,13 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
@@ -31,16 +36,23 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
       </button>
 
       {open ? (
-        <div className="fixed inset-0 z-[60] lg:hidden" role="presentation">
+        <div className="fixed inset-0 z-[60] lg:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-slate-900/40"
             aria-label="Menü schließen"
             onClick={() => setOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col border-r bg-[color:var(--background)] shadow-xl">
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-nav-title"
+            className="absolute inset-y-0 left-0 flex w-[min(100%,18rem)] flex-col border-r bg-[color:var(--background)] shadow-xl"
+          >
             <div className="flex h-14 items-center justify-between border-b px-3">
-              <span className="text-sm font-semibold text-slate-900">Navigation</span>
+              <span id="mobile-nav-title" className="text-sm font-semibold text-slate-900">
+                Navigation
+              </span>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
