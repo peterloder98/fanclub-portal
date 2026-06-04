@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Sparkles, UserPlus } from "lucide-react";
 import { MEMBERSHIP_REFERRAL_POINTS } from "@/lib/points/award-membership-referral";
+import { MEMBERSHIP_REFERRAL_COMPLETION_POINTS } from "@/lib/points/award-membership-referral-completed";
 import { cn } from "@/lib/cn";
 
 /** Hervorgehobener Block unter der Navigation — ein zusammenhängendes Badge. */
@@ -51,9 +52,15 @@ export function ReferMembershipNavCta() {
             <span className={active ? "text-white/40" : "text-amber-400"} aria-hidden>
               ·
             </span>
-            <span className="inline-flex items-center gap-0.5">
-              <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
-              +{MEMBERSHIP_REFERRAL_POINTS} Punkte
+            <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">
+              <span className="inline-flex items-center gap-0.5">
+                <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
+                +{MEMBERSHIP_REFERRAL_POINTS}
+              </span>
+              <span className={active ? "text-white/50" : "text-slate-400"} aria-hidden>
+                /
+              </span>
+              <span>+{MEMBERSHIP_REFERRAL_COMPLETION_POINTS}</span>
             </span>
           </p>
         </div>

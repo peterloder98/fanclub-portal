@@ -14,6 +14,8 @@ import {
   prepareSmtpForSend,
 } from "@/lib/smtp/prepare-send";
 import { formatMembershipEmailWarning } from "@/lib/smtp/email-warning";
+import { resolveMembershipReferrer } from "@/lib/membership/resolve-referrer";
+import { notifyReferrerApplicationSubmitted } from "@/lib/email/referrer-application-submitted";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
 const postalCode = z.string().regex(/^\d{5}$/, "PLZ muss genau 5 Ziffern haben");
@@ -46,6 +48,7 @@ const schema = z
     signed_at_place: z.string().min(1),
     signed_at_date: z.string().min(1),
     signature_applicant: z.string().min(1),
+    referrer_user_id: z.string().uuid().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.whatsapp_opt_in) {
@@ -149,10 +152,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ungültiges Datum" }, { status: 400 });
     }
 
+    const emailNorm = input.email.trim().toLowerCase();
+    const referredByUserId = await resolveMembershipReferrer(
+      admin,
+      emailNorm,
+      input.referrer_user_id,
+    );
+
     const { error: insErr } = await admin.from("membership_applications").insert({
       id: appId,
       user_id: userId,
       status: "submitted",
+      referred_by_user_id: referredByUserId,
       first_name: input.first_name.trim(),
       last_name: input.last_name.trim(),
       birthdate: input.birthdate,
@@ -165,7 +176,7 @@ export async function POST(request: Request) {
       phone: input.phone.trim(),
       mobile_dial_code: input.mobile_dial_code.trim(),
       mobile_number: input.mobile_number.trim(),
-      email: input.email.trim().toLowerCase(),
+      email: emailNorm,
       membership_start_date: input.membership_start_date || null,
       account_holder: input.account_holder?.trim() || null,
       iban: input.iban?.trim() || null,
@@ -188,8 +199,33 @@ export async function POST(request: Request) {
     }
 
     const applicantName = `${input.first_name.trim()} ${input.last_name.trim()}`;
-    const email = input.email.trim().toLowerCase();
+    const email = emailNorm;
     const submittedAt = new Date().toISOString();
+
+    if (referredByUserId) {
+      await admin
+        .from("membership_referral_sends")
+        .update({ application_id: appId })
+        .eq("sender_id", referredByUserId)
+        .ilike("recipient_email", email)
+        .is("application_id", null);
+
+      try {
+        const notifyResult = await notifyReferrerApplicationSubmitted({
+          referrerUserId: referredByUserId,
+          applicantFirstName: input.first_name.trim(),
+          applicantLastName: input.last_name.trim(),
+        });
+        if (notifyResult.ok) {
+          await admin
+            .from("membership_applications")
+            .update({ referrer_notified_at: submittedAt })
+            .eq("id", appId);
+        }
+      } catch (e) {
+        console.error("[membership] Werber-Benachrichtigung fehlgeschlagen:", e);
+      }
+    }
 
     let applicantMailResult:
       | { ok: true; skipped: false }

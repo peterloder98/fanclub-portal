@@ -13,6 +13,10 @@ import {
 } from "@/components/ui/phone-input";
 import { DEFAULT_COUNTRY } from "@/lib/countries";
 import { isValidPostalCode } from "@/lib/postal-code";
+import {
+  MEMBERSHIP_REFERRER_STORAGE_KEY,
+  readReferrerIdFromSearchParams,
+} from "@/lib/membership/referral-link";
 
 const MEMBERSHIP_FEE_EUR = 15;
 
@@ -66,6 +70,17 @@ export function MembershipApplicationForm() {
     setWhatsappDial(mobileDial);
     setWhatsappNumber(mobileNumber);
   }, [form.whatsapp_opt_in, mobileDial, mobileNumber, whatsappTouched]);
+
+  useEffect(() => {
+    const fromUrl = readReferrerIdFromSearchParams(window.location.search);
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(MEMBERSHIP_REFERRER_STORAGE_KEY, fromUrl);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
 
   const mobileFull = formatFullPhone(mobileDial, mobileNumber);
   const whatsappFull = formatFullPhone(whatsappDial, whatsappNumber);
@@ -137,6 +152,14 @@ export function MembershipApplicationForm() {
 
     setBusy(true);
     try {
+      let referrerUserId: string | undefined;
+      try {
+        const stored = sessionStorage.getItem(MEMBERSHIP_REFERRER_STORAGE_KEY);
+        if (stored && /^[0-9a-f-]{36}$/i.test(stored)) referrerUserId = stored;
+      } catch {
+        /* ignore */
+      }
+
       const res = await fetch("/api/membership/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,6 +174,7 @@ export function MembershipApplicationForm() {
           privacy_accepted: true,
           statute_accepted: true,
           signature_applicant: signature,
+          referrer_user_id: referrerUserId,
         }),
       });
       const json = (await res.json()) as {

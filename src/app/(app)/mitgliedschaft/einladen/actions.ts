@@ -6,7 +6,7 @@ import {
   MEMBER_REFERRAL_SUBJECT,
   composeMemberReferralBody,
 } from "@/lib/email/member-referral-template";
-import { getMembershipApplicationFormUrl } from "@/lib/membership/application-form-url";
+import { getMembershipApplicationFormUrlForReferrer } from "@/lib/membership/referral-link";
 import { awardMembershipReferralPoints } from "@/lib/points/award-membership-referral";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -29,7 +29,7 @@ export async function getMemberReferralPrefillAction() {
     .maybeSingle();
 
   const senderName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
-  const applicationLink = getMembershipApplicationFormUrl();
+  const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id);
 
   return {
     subject: MEMBER_REFERRAL_SUBJECT,
@@ -61,7 +61,7 @@ export async function sendMemberReferralEmailAction(input: {
   if (!recipientName) throw new Error("Bitte den Namen der Empfängerin / des Empfängers eingeben.");
   if (!senderName) throw new Error("Bitte deinen Namen als Absender/in eingeben.");
 
-  const applicationLink = getMembershipApplicationFormUrl();
+  const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id);
   const subject = input.subject.trim() || MEMBER_REFERRAL_SUBJECT;
   const text =
     input.body.trim() ||

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MembershipInviteEmailDialog } from "@/components/membership/membership-invite-email-dialog";
 import { MEMBERSHIP_REFERRAL_POINTS } from "@/lib/points/award-membership-referral";
+import { MEMBERSHIP_REFERRAL_COMPLETION_POINTS } from "@/lib/points/award-membership-referral-completed";
 import Link from "next/link";
 
 export function ReferMembershipClient() {
@@ -26,8 +27,22 @@ export function ReferMembershipClient() {
           <p>
             Lade jemanden per E-Mail zum digitalen Mitgliedsantrag ein. Die Mail geht von der
             offiziellen Fanclub-Adresse — du gibst nur Empfänger, Namen und kannst den Text bei
-            Bedarf anpassen. Pro erfolgreicher Einladung an eine neue Adresse gibt es{" "}
-            <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span>.
+            Bedarf anpassen.
+          </p>
+          <ul className="list-inside list-disc space-y-1 text-slate-700">
+            <li>
+              <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span>{" "}
+              pro neuer Empfänger-Adresse beim Versand der Einladung
+            </li>
+            <li>
+              <span className="font-semibold text-emerald-700">
+                +{MEMBERSHIP_REFERRAL_COMPLETION_POINTS} Punkte
+              </span>{" "}
+              wenn die Person den Antrag digital einreicht und später vom Vorstand freigeschaltet wird
+            </li>
+          </ul>
+          <p className="text-xs text-slate-500">
+            Nach digitaler Antragstellung informieren wir dich kurz per E-Mail.
           </p>
           <p className="text-xs text-slate-500">
             <Link href="/punkte" className="font-medium text-blue-700 hover:underline">

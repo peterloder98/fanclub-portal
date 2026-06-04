@@ -18,6 +18,7 @@ import {
 } from "@/lib/membership/activity-log";
 import { deleteMembershipApplicationCompletely } from "@/lib/membership/delete-application";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
+import { awardMembershipReferralCompletionPoints } from "@/lib/points/award-membership-referral-completed";
 
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -27,7 +28,7 @@ async function activateApplication(
 ) {
   const { data: app, error: appErr } = await admin
     .from("membership_applications")
-    .select("id,user_id,email,first_name,last_name,status,fee_cents")
+    .select("id,user_id,email,first_name,last_name,status,fee_cents,referred_by_user_id")
     .eq("id", applicationId)
     .maybeSingle();
 
@@ -97,6 +98,15 @@ async function activateApplication(
     }).catch((e) => {
       console.error("[membership] Freischaltungs-Mail fehlgeschlagen:", e);
     });
+  }
+
+  const referrerId = (app as { referred_by_user_id?: string | null }).referred_by_user_id;
+  if (referrerId) {
+    try {
+      await awardMembershipReferralCompletionPoints(referrerId, applicationId);
+    } catch (e) {
+      console.error("[points] Werbeprämie +100 fehlgeschlagen:", e);
+    }
   }
 
   return app;

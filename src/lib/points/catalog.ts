@@ -13,6 +13,13 @@ export const POINTS_YEAR_HINT =
 
 export const POINTS_RULES: PointsRule[] = [
   {
+    id: "membership_referral_completed",
+    label: "Empfehlung: Antrag eingereicht & Mitglied freigegeben",
+    points: 100,
+    how: "Du lädst jemanden per „Neues Mitglied werben“ ein, die Person reicht den Antrag digital ein und wird vom Vorstand freigeschaltet.",
+    note: "Einmal pro erfolgreicher Empfehlung. Zusätzlich +20 Punkte beim Versand der Einladung.",
+  },
+  {
     id: "membership_referral",
     label: "Mitgliedsantrag per E-Mail empfehlen",
     points: 20,
@@ -62,6 +69,11 @@ export const POINTS_RULES: PointsRule[] = [
     note: "Einmal pro Gewinnspiel.",
   },
 ];
+
+/** Nach Punkten absteigend sortiert (für Anzeige). */
+export function pointsRulesSortedByPoints(): PointsRule[] {
+  return [...POINTS_RULES].sort((a, b) => b.points - a.points);
+}
 
 export const POINTS_RANKS = [
   { from: 0, label: "Fan" },
