@@ -6,9 +6,9 @@ import L from "leaflet";
 import { EventMapHoverContent } from "./event-map-hover-content";
 import type { MapEvent } from "./events-map.types";
 
-const PIN_W = 30;
-const PIN_H = 40;
-const PIN_HEAD = 20;
+const PIN_W = 22;
+const PIN_H = 30;
+const PIN_HEAD = 15;
 const HIGHLIGHT_SCALE = 1.35;
 const SLOT_W = Math.ceil(PIN_W * HIGHLIGHT_SCALE);
 const SLOT_H = Math.ceil(PIN_H * HIGHLIGHT_SCALE);
@@ -52,16 +52,16 @@ function pinHtml(highlighted: boolean, selected: boolean) {
         "></div>
         <div style="
           position:absolute;left:50%;top:3px;transform:translateX(-50%);
-          width:10px;height:6px;border-radius:999px;
+          width:8px;height:5px;border-radius:999px;
           background:rgba(255,255,255,.55);
         "></div>
         <div style="
-          position:absolute;left:50%;top:18px;transform:translateX(-50%);
-          width:3px;height:18px;border-radius:2px;background:${stemColor};opacity:.88;
+          position:absolute;left:50%;top:14px;transform:translateX(-50%);
+          width:2px;height:13px;border-radius:2px;background:${stemColor};opacity:.88;
         "></div>
         <div style="
-          position:absolute;left:50%;top:33px;transform:translateX(-50%) rotate(45deg);
-          width:10px;height:10px;border-radius:2px;
+          position:absolute;left:50%;top:24px;transform:translateX(-50%) rotate(45deg);
+          width:8px;height:8px;border-radius:2px;
           background:${footGradient};
           border:1px solid rgba(255,255,255,.72);
         "></div>

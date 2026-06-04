@@ -11,6 +11,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { AdminSignatureSettings } from "@/components/admin/admin-signature-settings";
 import { PointsGuideCard } from "@/components/points/points-guide-card";
+import { PreferredCalendarSettings } from "@/components/profile/preferred-calendar-settings";
 import {
   AVATAR_ACCEPT,
   AVATAR_MIN_DIMENSION,
@@ -169,6 +170,15 @@ export default function ProfilePage() {
             ) : null}
 
             {busy ? <div className="text-sm text-slate-600">Upload…</div> : null}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-4 max-w-xl">
+          <CardHeader>
+            <CardTitle>Kalender</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PreferredCalendarSettings />
           </CardContent>
         </Card>
 

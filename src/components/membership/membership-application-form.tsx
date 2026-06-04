@@ -18,6 +18,8 @@ import {
   readReferrerIdFromSearchParams,
 } from "@/lib/membership/referral-link";
 import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
+import { GenderSelect } from "@/components/ui/gender-select";
+import { normalizeGender } from "@/lib/person/gender";
 
 const MEMBERSHIP_FEE_EUR = 15;
 
@@ -154,6 +156,10 @@ export function MembershipApplicationForm() {
       setError("Bitte ein vollständiges Geburtsdatum (TT.MM.JJJJ) eingeben.");
       return;
     }
+    if (!form.gender || !["m", "w", "d"].includes(form.gender)) {
+      setError("Bitte Geschlecht für die Anrede wählen.");
+      return;
+    }
 
     setBusy(true);
     try {
@@ -279,12 +285,12 @@ export function MembershipApplicationForm() {
             onChange={(birthdate) => setForm((f) => ({ ...f, birthdate }))}
           />
           <label className="grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Geschlecht (optional)</span>
-            <input
+            <span className="text-sm font-medium text-slate-700">Geschlecht *</span>
+            <GenderSelect
               value={form.gender}
-              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+              onChange={(gender) => setForm((f) => ({ ...f, gender }))}
             />
+            <span className="text-xs text-slate-500">Für persönliche Anrede (z. B. Geburtstagsgrüße)</span>
           </label>
           <label className="grid gap-1 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">Straße *</span>

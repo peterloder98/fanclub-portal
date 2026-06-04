@@ -36,7 +36,7 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id,first_name,birthdate")
+    .select("id,first_name,birthdate,gender")
     .not("birthdate", "is", null);
 
   const { data: activeMemberships } = await admin
@@ -46,7 +46,6 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
   const activeIds = new Set((activeMemberships ?? []).map((m) => m.user_id));
 
   let created = 0;
-  let variant = 0;
 
   for (const p of profiles ?? []) {
     if (!activeIds.has(p.id) || !p.birthdate) continue;
@@ -61,7 +60,12 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
       .limit(1);
     if (existing?.length) continue;
 
-    const { title, body } = birthdayPostBody(p.first_name ?? "Fan", variant++);
+    const { title, body } = birthdayPostBody(
+      p.first_name ?? "Fan",
+      p.gender,
+      p.id,
+      todayIso,
+    );
     const { error } = await admin.from("posts").insert({
       author_id: authorId,
       author_role: "anni",

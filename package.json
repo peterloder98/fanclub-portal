@@ -10,7 +10,8 @@
     "test": "vitest run",
     "seed:test-members": "node --env-file=.env.local scripts/reset-and-seed-test-members.mjs",
     "test:birthday-cron": "node --env-file=.env.local scripts/test-birthday-cron.mjs",
-    "patch:test-addresses": "node --env-file=.env.local scripts/patch-test-member-addresses.mjs"
+    "patch:test-addresses": "node --env-file=.env.local scripts/patch-test-member-addresses.mjs",
+    "set:gender-from-names": "node --experimental-strip-types --env-file=.env.local scripts/set-profile-gender-from-names.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

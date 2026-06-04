@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GenderSelect } from "@/components/ui/gender-select";
 import { createMember } from "@/app/(app)/admin/members/actions";
 
 export function CreateMemberSection() {
@@ -109,12 +110,8 @@ export function CreateMemberSection() {
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-sm font-medium text-slate-700">Geschlecht</span>
-                <input
-                  name="gender"
-                  placeholder="m/w/div"
-                  className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                />
+                <span className="text-sm font-medium text-slate-700">Geschlecht *</span>
+                <GenderSelect name="gender" value="" />
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-medium text-slate-700">Beginn Mitgliedschaft</span>

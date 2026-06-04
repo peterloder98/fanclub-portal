@@ -25,10 +25,26 @@ describe("year-end ranking", () => {
     expect(rankYearEndTopN([fewer, more], 1)[0]?.user_id).toBe("b");
   });
 
-  it("breaks ties by lower membership number", () => {
-    const late = c({ user_id: "a", total: 100, activityCount: 3, membership_number: "42" });
-    const early = c({ user_id: "b", total: 100, activityCount: 3, membership_number: "7" });
-    expect(rankYearEndTopN([late, early], 1)[0]?.user_id).toBe("b");
+  it("breaks ties by earlier membership start", () => {
+    const newer = c({
+      user_id: "a",
+      total: 100,
+      activityCount: 3,
+      membership_start: "2025-06-01",
+    });
+    const older = c({
+      user_id: "b",
+      total: 100,
+      activityCount: 3,
+      membership_start: "2023-01-15",
+    });
+    expect(rankYearEndTopN([newer, older], 1)[0]?.user_id).toBe("b");
+  });
+
+  it("breaks ties by last name alphabetically", () => {
+    const z = c({ user_id: "a", total: 50, activityCount: 1, membership_start: "2024-01-01", last_name: "Zimmermann" });
+    const a = c({ user_id: "b", total: 50, activityCount: 1, membership_start: "2024-01-01", last_name: "Ackermann" });
+    expect(rankYearEndTopN([z, a], 1)[0]?.user_id).toBe("b");
   });
 
   it("returns exactly 10 when more tie at cutoff", () => {

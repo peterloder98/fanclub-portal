@@ -1,6 +1,7 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GenderSelect } from "@/components/ui/gender-select";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
@@ -128,6 +129,13 @@ export default async function AdminMemberDetailPage({
                     type="date"
                     defaultValue={formatDE(profile.birthdate ?? null)}
                     className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className="text-sm font-medium text-slate-700">Geschlecht *</span>
+                  <GenderSelect
+                    name="gender"
+                    value={profile.gender === "m" || profile.gender === "w" || profile.gender === "d" ? profile.gender : ""}
                   />
                 </label>
 
