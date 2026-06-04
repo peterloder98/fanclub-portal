@@ -25,6 +25,7 @@ export function CommentWarningButton({
         type="button"
         disabled={pending}
         title="Verwarnung aussprechen"
+        aria-label="Verwarnung aussprechen"
         onClick={() => {
           setError(null);
           const ok = window.confirm(
@@ -53,7 +54,6 @@ export function CommentWarningButton({
           });
         }}
         className="grid h-6 w-6 place-items-center rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
-        aria-label="Verwarnung"
       >
         <AlertTriangle className="h-3.5 w-3.5" />
       </button>

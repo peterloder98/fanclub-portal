@@ -1206,7 +1206,8 @@ export function PostFeed({
                     type="button"
                     onClick={() => startEdit(post)}
                     className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
-                    aria-label="Post bearbeiten"
+                    title="Bearbeiten"
+                    aria-label="Bearbeiten"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -1214,7 +1215,8 @@ export function PostFeed({
                     type="button"
                     onClick={() => void deletePost(post.id)}
                     className="grid h-7 w-7 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
-                    aria-label="Post löschen"
+                    title="Löschen"
+                    aria-label="Löschen"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -1423,7 +1425,8 @@ export function PostFeed({
                                     setEditCommentText(c.text);
                                   }}
                                   className="grid h-6 w-6 place-items-center rounded text-slate-500 hover:bg-slate-100"
-                                  aria-label="Kommentar bearbeiten"
+                                  title="Bearbeiten"
+                                  aria-label="Bearbeiten"
                                 >
                                   <Pencil className="h-3 w-3" />
                                 </button>
@@ -1433,7 +1436,8 @@ export function PostFeed({
                                   type="button"
                                   onClick={() => void deleteComment(post.id, c.id)}
                                   className="grid h-6 w-6 place-items-center rounded text-rose-600 hover:bg-rose-50"
-                                  aria-label="Kommentar löschen"
+                                  title="Löschen"
+                                  aria-label="Löschen"
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </button>
