@@ -1,7 +1,7 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { MembersMap } from "@/components/members/members-map";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { geocodeGermanPlz } from "@/lib/members/geocode-plz";
+import { geocodeGermanPlz, isGermanCountry } from "@/lib/members/geocode-plz";
 import { clusterMemberPoints, type MemberMapPoint } from "@/lib/members/cluster-map";
 
 type LeaderRow = {
@@ -34,13 +34,13 @@ export default async function MitgliederPage() {
   for (const p of profiles ?? []) {
     const plz = (p.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
     const city = (p.city ?? "").trim();
-    const country = (p.country ?? "DE").toUpperCase();
-    if (!plz || plz.length !== 5 || (country !== "DE" && country !== "DEUTSCHLAND")) continue;
+    if (!plz || plz.length !== 5 || !isGermanCountry(p.country)) continue;
 
-    if (!plzCache.has(plz)) {
-      plzCache.set(plz, await geocodeGermanPlz(plz));
+    const plzKey = `${plz}|${city}`;
+    if (!plzCache.has(plzKey)) {
+      plzCache.set(plzKey, await geocodeGermanPlz(plz, city));
     }
-    const coords = plzCache.get(plz);
+    const coords = plzCache.get(plzKey);
     if (!coords) continue;
 
     mapPoints.push({
