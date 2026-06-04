@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Marker, Tooltip, useMap } from "react-leaflet";
+import { useMemo } from "react";
+import { Marker } from "react-leaflet";
 import L from "leaflet";
+import { MapTooltipTowardCenter } from "@/components/maps/map-tooltip-toward-center";
 import { EventMapHoverContent } from "./event-map-hover-content";
 import type { MapEvent } from "./events-map.types";
 
@@ -79,62 +80,6 @@ function createPinIcon(highlighted: boolean, selected: boolean) {
   });
 }
 
-/** Tooltip zeigt zur Kartenmitte, damit er im sichtbaren Bereich bleibt */
-function TooltipTowardCenter({
-  position,
-  children,
-}: {
-  position: [number, number];
-  children: ReactNode;
-}) {
-  const map = useMap();
-  const [direction, setDirection] = useState<"top" | "bottom" | "left" | "right">("top");
-  const [offset, setOffset] = useState<L.PointExpression>([0, -SLOT_H]);
-
-  useEffect(() => {
-    const update = () => {
-      const c = map.getCenter();
-      const dLat = position[0] - c.lat;
-      const dLng = position[1] - c.lng;
-      const pad = SLOT_H + 6;
-
-      if (Math.abs(dLat) > Math.abs(dLng)) {
-        if (dLat > 0) {
-          setDirection("bottom");
-          setOffset([0, pad]);
-        } else {
-          setDirection("top");
-          setOffset([0, -pad]);
-        }
-      } else if (dLng > 0) {
-        setDirection("left");
-        setOffset([-pad, -SLOT_H / 2]);
-      } else {
-        setDirection("right");
-        setOffset([pad, -SLOT_H / 2]);
-      }
-    };
-    update();
-    map.on("move zoom", update);
-    return () => {
-      map.off("move zoom", update);
-    };
-  }, [map, position]);
-
-  return (
-    <Tooltip
-      direction={direction}
-      offset={offset}
-      opacity={1}
-      sticky={false}
-      permanent
-      className="fc-event-hover-tip"
-    >
-      {children}
-    </Tooltip>
-  );
-}
-
 export function EventMapMarker({
   event,
   position,
@@ -175,9 +120,13 @@ export function EventMapMarker({
       }}
     >
       {showTooltip ? (
-        <TooltipTowardCenter position={position}>
+        <MapTooltipTowardCenter
+          position={position}
+          anchorOffset={SLOT_H + 8}
+          className="fc-event-hover-tip"
+        >
           <EventMapHoverContent event={event} />
-        </TooltipTowardCenter>
+        </MapTooltipTowardCenter>
       ) : null}
     </Marker>
   );

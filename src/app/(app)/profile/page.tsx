@@ -9,7 +9,7 @@ import { UploadDropzone } from "@/components/ui/upload-dropzone";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
-import { AdminSignatureSettings } from "@/components/admin/admin-signature-settings";
+import Link from "next/link";
 import { PointsGuideCard } from "@/components/points/points-guide-card";
 import { PreferredCalendarSettings } from "@/components/profile/preferred-calendar-settings";
 import {
@@ -189,10 +189,16 @@ export default function ProfilePage() {
         {role === "admin" ? (
           <Card className="mt-4 max-w-xl">
             <CardHeader>
-              <CardTitle>Admin-Signatur</CardTitle>
+              <CardTitle>Signaturen</CardTitle>
             </CardHeader>
-            <CardContent>
-              <AdminSignatureSettings />
+            <CardContent className="text-sm text-slate-600">
+              <p>Fanclub-Signatur und deine persönliche Unterschrift bearbeitest du im Admin-Bereich.</p>
+              <Link
+                href="/admin/signatures"
+                className="mt-3 inline-block font-medium text-blue-600 hover:underline"
+              >
+                Zu Admin · Signaturen
+              </Link>
             </CardContent>
           </Card>
         ) : null}

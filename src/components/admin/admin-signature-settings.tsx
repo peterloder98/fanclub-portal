@@ -7,13 +7,12 @@ import { SignaturePad } from "@/components/profile/signature-pad";
 export function AdminSignatureSettings() {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [userId, setUserId] = useState<string | null>(null);
-  const [sigText, setSigText] = useState(
-    "Peter Loder\nFan-Admin-Scherzkeks\n+49 1512 5744383",
-  );
+  const [sigText, setSigText] = useState("");
   const [sigPath, setSigPath] = useState<string | null>(null);
   const [sigImageUrl, setSigImageUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [creatingNew, setCreatingNew] = useState(false);
 
   const loadImageUrl = useCallback(async (path: string | null) => {
     if (!path) {
@@ -22,12 +21,9 @@ export function AdminSignatureSettings() {
     }
     try {
       const res = await fetch("/api/signature/image");
-      const json = (await res.json()) as { url?: string; error?: string };
-      if (res.ok && json.url) {
-        setSigImageUrl(json.url);
-        return;
-      }
-      setSigImageUrl(null);
+      const json = (await res.json()) as { url?: string };
+      if (res.ok && json.url) setSigImageUrl(json.url);
+      else setSigImageUrl(null);
     } catch {
       setSigImageUrl(null);
     }
@@ -45,12 +41,10 @@ export function AdminSignatureSettings() {
         .select("admin_signature_text,admin_signature_image_path")
         .eq("id", user.id)
         .maybeSingle();
-      setSigText(
-        (p as { admin_signature_text?: string })?.admin_signature_text ??
-          "Peter Loder\nFan-Admin-Scherzkeks\n+49 1512 5744383",
-      );
+      setSigText((p as { admin_signature_text?: string })?.admin_signature_text ?? "");
       const path = (p as { admin_signature_image_path?: string })?.admin_signature_image_path ?? null;
       setSigPath(path);
+      setCreatingNew(!path);
       await loadImageUrl(path);
     }
     void load();
@@ -76,7 +70,7 @@ export function AdminSignatureSettings() {
   function confirmOverwrite(): boolean {
     if (!sigPath) return true;
     return window.confirm(
-      "Du hast bereits eine gespeicherte Unterschrift. Soll die neue Unterschrift die bisherige überschreiben?\n\nOK = überschreiben\nAbbrechen = verwerfen",
+      "Die gespeicherte Unterschrift überschreiben?\n\nOK = überschreiben\nAbbrechen = verwerfen",
     );
   }
 
@@ -93,6 +87,7 @@ export function AdminSignatureSettings() {
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
       setSigPath(json.path ?? null);
       await loadImageUrl(json.path ?? null);
+      setCreatingNew(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
     } finally {
@@ -102,68 +97,81 @@ export function AdminSignatureSettings() {
 
   return (
     <div className="grid gap-4">
+      <p className="text-sm text-slate-600">Deine persönliche Signatur für E-Mails, die du als Admin versendest.</p>
+
       <label className="grid gap-1">
-        <span className="text-sm font-medium text-slate-700">Signatur-Text (E-Mail)</span>
+        <span className="text-sm font-medium text-slate-700">Signatur-Text (persönlich)</span>
         <textarea
           value={sigText}
           onChange={(e) => setSigText(e.target.value)}
           rows={4}
-          className="w-full rounded-2xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+          className="w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
         />
       </label>
-      <div>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => void saveText()}
+        className="h-10 w-fit rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+      >
+        Text speichern
+      </button>
+
+      <div className="rounded-2xl border bg-slate-50 p-4">
+        <div className="text-sm font-semibold text-slate-900">Gespeicherte Unterschrift:</div>
+        {sigImageUrl && !creatingNew ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={sigImageUrl}
+            alt="Deine Unterschrift"
+            className="mt-3 max-h-32 w-auto rounded-xl border bg-white p-2"
+          />
+        ) : (
+          <p className="mt-2 text-sm text-slate-600">Noch keine Unterschrift gespeichert.</p>
+        )}
+      </div>
+
+      {sigImageUrl && !creatingNew ? (
         <button
           type="button"
           disabled={busy}
-          onClick={() => void saveText()}
-          className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+          onClick={() => setCreatingNew(true)}
+          className="h-10 w-fit rounded-xl border bg-white px-4 text-sm font-semibold text-slate-800"
         >
-          Text speichern
+          Neue Unterschrift erstellen
         </button>
-      </div>
+      ) : null}
 
-      {sigPath ? (
-        <div className="rounded-2xl border bg-slate-50 p-4">
-          <div className="text-sm font-semibold text-slate-900">Gespeicherte Unterschrift</div>
+      {creatingNew || !sigImageUrl ? (
+        <div className="grid gap-3 rounded-2xl border border-dashed border-slate-200 p-4">
+          <SignaturePad disabled={busy} onSave={async (blob) => upload(blob, "image/png")} />
+          <div className="text-sm font-medium text-slate-700">Oder Bild hochladen</div>
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            disabled={busy}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              await upload(file, file.type || "image/png");
+              e.target.value = "";
+            }}
+          />
           {sigImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={sigImageUrl}
-              alt="Gespeicherte Admin-Unterschrift"
-              className="mt-3 max-h-32 w-auto rounded-xl border bg-white p-2"
-            />
-          ) : (
-            <p className="mt-2 text-sm text-amber-800">
-              Vorschau konnte nicht geladen werden. Prüfe, ob der Storage-Bucket{" "}
-              <span className="font-mono">signatures</span> existiert.
-            </p>
-          )}
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => {
+                setCreatingNew(false);
+                void loadImageUrl(sigPath);
+              }}
+              className="h-9 w-fit rounded-lg border px-3 text-sm font-medium text-slate-700"
+            >
+              Abbrechen
+            </button>
+          ) : null}
         </div>
-      ) : (
-        <p className="text-sm text-slate-600">Noch keine Unterschrift gespeichert.</p>
-      )}
-
-      <SignaturePad
-        disabled={busy}
-        onSave={async (blob) => {
-          await upload(blob, "image/png");
-        }}
-      />
-
-      <div className="grid gap-2">
-        <div className="text-sm font-medium text-slate-700">Unterschrift (Upload)</div>
-        <input
-          type="file"
-          accept="image/png,image/jpeg"
-          disabled={busy}
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            await upload(file, file.type || "image/png");
-            e.target.value = "";
-          }}
-        />
-      </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">

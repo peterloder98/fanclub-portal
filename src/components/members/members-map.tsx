@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { MemberMapPlacement } from "@/lib/members/spread-member-map";
+import type { MemberMapCluster } from "@/lib/members/cluster-map";
 
 const MembersMapClient = dynamic(
   () => import("./members-map.client").then((m) => m.MembersMapClient),
@@ -16,11 +16,11 @@ const MembersMapClient = dynamic(
 );
 
 export function MembersMap({
-  placements,
+  clusters,
   memberCount,
 }: {
-  placements: MemberMapPlacement[];
+  clusters: MemberMapCluster[];
   memberCount: number;
 }) {
-  return <MembersMapClient placements={placements} memberCount={memberCount} />;
+  return <MembersMapClient clusters={clusters} memberCount={memberCount} />;
 }

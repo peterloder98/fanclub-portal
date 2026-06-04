@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Tooltip } from "react-leaflet";
-import type { MemberMapPlacement } from "@/lib/members/spread-member-map";
+import { MapContainer, TileLayer, CircleMarker } from "react-leaflet";
+import type { MemberMapCluster } from "@/lib/members/cluster-map";
+import { MapTooltipTowardCenter } from "@/components/maps/map-tooltip-toward-center";
 
 const GERMANY_BOUNDS: [[number, number], [number, number]] = [
   [47.0, 5.5],
@@ -10,19 +11,26 @@ const GERMANY_BOUNDS: [[number, number], [number, number]] = [
 ];
 const GERMANY_CENTER: [number, number] = [51.1, 10.45];
 
+function clusterRadius(count: number) {
+  if (count >= 6) return 16;
+  if (count >= 3) return 13;
+  if (count >= 2) return 11;
+  return 9;
+}
+
 export function MembersMapClient({
-  placements,
+  clusters,
   memberCount,
 }: {
-  placements: MemberMapPlacement[];
+  clusters: MemberMapCluster[];
   memberCount: number;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const markers = useMemo(
-    () => placements.filter((p) => Number.isFinite(p.position[0]) && Number.isFinite(p.position[1])),
-    [placements],
+    () => clusters.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng)),
+    [clusters],
   );
 
   if (!mounted) {
@@ -48,44 +56,47 @@ export function MembersMapClient({
   }
 
   return (
-    <div className="h-full min-h-[360px] w-full overflow-hidden rounded-xl border">
-      <MapContainer
-        center={GERMANY_CENTER}
-        zoom={5}
-        minZoom={4}
-        maxZoom={12}
-        maxBounds={GERMANY_BOUNDS}
-        maxBoundsViscosity={0.85}
-        className="h-full w-full"
-        scrollWheelZoom
-        aria-label="Mitgliederkarte Deutschland"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {markers.map((m) => (
-          <CircleMarker
-            key={m.point.userId}
-            center={m.position}
-            radius={9}
-            pathOptions={{
-              color: "#1d4ed8",
-              fillColor: "#60a5fa",
-              fillOpacity: 0.8,
-              weight: 2,
-            }}
-          >
-            <Tooltip direction="top" opacity={0.95}>
-              <span className="text-sm font-medium">
-                {[m.point.postalCode, m.point.city].filter(Boolean).join(" ")}
-              </span>
-            </Tooltip>
-          </CircleMarker>
-        ))}
-      </MapContainer>
-      <p className="mt-2 px-1 text-center text-[10px] text-slate-500">
+    <div className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-xl border">
+      <div className="min-h-0 flex-1">
+        <MapContainer
+          center={GERMANY_CENTER}
+          zoom={5}
+          minZoom={4}
+          maxZoom={12}
+          maxBounds={GERMANY_BOUNDS}
+          maxBoundsViscosity={0.85}
+          className="h-full w-full"
+          scrollWheelZoom
+          aria-label="Mitgliederkarte Deutschland"
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {markers.map((c) => (
+            <CircleMarker
+              key={c.id}
+              center={[c.lat, c.lng]}
+              radius={clusterRadius(c.count)}
+              pathOptions={{
+                color: "#1d4ed8",
+                fillColor: c.count >= 3 ? "#2563eb" : "#60a5fa",
+                fillOpacity: 0.8,
+                weight: 2,
+              }}
+            >
+              <MapTooltipTowardCenter position={[c.lat, c.lng]} anchorOffset={14}>
+                <span className="text-sm font-semibold">{c.label}</span>
+              </MapTooltipTowardCenter>
+            </CircleMarker>
+          ))}
+        </MapContainer>
+      </div>
+      <p className="shrink-0 border-t bg-slate-50 px-2 py-1.5 text-center text-[11px] text-slate-600">
         {memberCount} {memberCount === 1 ? "Mitglied" : "Mitglieder"} auf der Karte
+        {markers.length < memberCount
+          ? ` · ${markers.length} ${markers.length === 1 ? "Region" : "Regionen"}`
+          : null}
       </p>
     </div>
   );

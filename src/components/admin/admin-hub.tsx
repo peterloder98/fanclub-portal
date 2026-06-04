@@ -73,8 +73,8 @@ const SECTIONS: AdminHubSection[] = [
       },
       {
         href: "/admin/signatures",
-        title: "Admin-Signaturen",
-        description: "Persönliche Signatur für ausgehende E-Mails.",
+        title: "Signaturen",
+        description: "Fanclub-Signatur und persönliche Admin-Unterschrift.",
         icon: PenLine,
         iconClassName: "from-amber-500 to-orange-600",
       },

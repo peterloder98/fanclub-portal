@@ -1,4 +1,5 @@
 import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { ticketDisplay } from "@/lib/events/ticket";
 
 export type ExternalEventRow = {
   id: string;
@@ -17,6 +18,7 @@ export function EventsRows({ events }: { events: ExternalEventRow[] }) {
       {events.map((e) => {
         const { date, time } = formatEventStart(e.start_at);
         const location = formatLocation(e);
+        const ticket = ticketDisplay(e.ticket_url);
         return (
           <div
             key={e.id}
@@ -37,15 +39,17 @@ export function EventsRows({ events }: { events: ExternalEventRow[] }) {
               </div>
             </div>
 
-            {e.ticket_url ? (
+            {ticket.href ? (
               <a
-                href={e.ticket_url}
+                href={ticket.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex text-sm font-medium text-blue-700 hover:underline"
               >
                 Tickets / Infos →
               </a>
+            ) : ticket.text ? (
+              <p className="mt-2 text-sm font-medium text-slate-700">{ticket.text}</p>
             ) : null}
           </div>
         );

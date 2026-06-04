@@ -1,10 +1,11 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { AdminSignatureMail } from "@/lib/email/admin-signature-mail";
+import {
+  getClubSignatureImagePath,
+  getClubSignatureText,
+} from "@/lib/email/club-signature-settings";
 
 export const CLUB_SIGNATURE_ID = "club-default";
-
-const CLUB_SIGNATURE_TEXT =
-  "Anni-Perka-Fanclub e. V.\nVorstand";
 
 export type MailSignatureOption = {
   id: string;
@@ -43,18 +44,34 @@ const CID = "admin-signature";
 export async function loadMailSignature(
   signatureId: string,
 ): Promise<AdminSignatureMail> {
+  const admin = createSupabaseAdminClient();
+
   if (signatureId === CLUB_SIGNATURE_ID) {
-    const text = CLUB_SIGNATURE_TEXT;
+    const text = await getClubSignatureText();
+    const imagePath = await getClubSignatureImagePath();
+    let imageBuffer: Buffer | null = null;
+    let contentType = "image/png";
+    if (imagePath) {
+      const { data: file, error: dlErr } = await admin.storage
+        .from("signatures")
+        .download(imagePath);
+      if (!dlErr && file) {
+        imageBuffer = Buffer.from(await file.arrayBuffer());
+        contentType = file.type || "image/png";
+      }
+    }
+    const htmlBlock = imageBuffer
+      ? `<p style="margin-top:1.25rem"><img src="cid:club-signature" alt="Fanclub-Signatur" style="max-width:220px;height:auto" /></p><p style="white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`
+      : `<p style="margin-top:1.25rem;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`;
     return {
       text,
-      htmlBlock: `<p style="margin-top:1.25rem;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`,
-      imageCid: null,
-      imageBuffer: null,
-      contentType: "image/png",
+      htmlBlock,
+      imageCid: imageBuffer ? "club-signature" : null,
+      imageBuffer,
+      contentType,
     };
   }
 
-  const admin = createSupabaseAdminClient();
   const { data: profile, error } = await admin
     .from("profiles")
     .select("admin_signature_text,admin_signature_image_path")
@@ -62,7 +79,8 @@ export async function loadMailSignature(
     .maybeSingle();
   if (error) throw new Error(error.message);
 
-  const text = profile?.admin_signature_text?.trim() ?? CLUB_SIGNATURE_TEXT;
+  const text =
+    profile?.admin_signature_text?.trim() ?? (await getClubSignatureText());
   let imageBuffer: Buffer | null = null;
   let contentType = "image/png";
 

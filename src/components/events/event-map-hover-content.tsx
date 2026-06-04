@@ -1,6 +1,7 @@
 "use client";
 
 import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "./events-map.types";
 
 /** Kompakte Vorschau beim Hover über einen Pin */
@@ -12,6 +13,7 @@ export function EventMapHoverContent({ event }: { event: MapEvent }) {
     postal_code: event.postal_code,
     city: event.city,
   });
+  const ticket = ticketDisplay(event.ticket_url);
 
   return (
     <div className="max-w-[200px] leading-snug">
@@ -22,6 +24,9 @@ export function EventMapHoverContent({ event }: { event: MapEvent }) {
       </div>
       {location ? (
         <div className="mt-0.5 line-clamp-2 text-[10px] text-slate-500">{location}</div>
+      ) : null}
+      {ticket.text ? (
+        <div className="mt-0.5 line-clamp-3 text-[10px] font-medium text-slate-700">{ticket.text}</div>
       ) : null}
     </div>
   );

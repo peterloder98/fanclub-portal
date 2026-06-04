@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { ticketDisplay } from "@/lib/events/ticket";
 
 export type ExternalEventRow = {
   id: string;
@@ -23,6 +24,7 @@ function EventCard({
 }) {
   const { date, time } = formatEventStart(event.start_at);
   const location = formatLocation(event);
+  const ticket = ticketDisplay(event.ticket_url);
 
   return (
     <Card className={highlight ? "border-blue-200 bg-blue-50/40" : undefined}>
@@ -38,15 +40,17 @@ function EventCard({
           {time ? <span className="text-slate-600"> · {time} Uhr</span> : null}
         </div>
         {location ? <div>{location}</div> : null}
-        {event.ticket_url ? (
+        {ticket.href ? (
           <a
-            href={event.ticket_url}
+            href={ticket.href}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex w-fit text-sm font-medium text-blue-700 hover:underline"
           >
             Tickets / Infos →
           </a>
+        ) : ticket.text ? (
+          <p className="text-sm font-medium text-slate-700">{ticket.text}</p>
         ) : null}
       </CardContent>
     </Card>

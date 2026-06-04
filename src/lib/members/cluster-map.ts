@@ -65,17 +65,57 @@ export function clusterMemberPoints(
     }
   }
 
+  return clustersToResult(clusters);
+}
+
+/** Ein Pin pro Standort-Bucket (gleiche Koordinaten) — mit Mitgliederzahl, ohne 20-km-Zusammenlegung. */
+export function groupMembersByMapLocation(points: MemberMapPoint[]): MemberMapCluster[] {
+  const buckets = new Map<
+    string,
+    { lat: number; lng: number; count: number; cityCounts: Map<string, number> }
+  >();
+
+  for (const p of points) {
+    const key = `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.count += 1;
+      const cityLabel = p.city || p.postalCode;
+      existing.cityCounts.set(cityLabel, (existing.cityCounts.get(cityLabel) ?? 0) + 1);
+    } else {
+      buckets.set(key, {
+        lat: p.lat,
+        lng: p.lng,
+        count: 1,
+        cityCounts: new Map([[p.city || p.postalCode, 1]]),
+      });
+    }
+  }
+
+  const clusters = [...buckets.values()].map((b) => ({
+    lat: b.lat,
+    lng: b.lng,
+    count: b.count,
+    cityCounts: b.cityCounts,
+  }));
+
+  return clustersToResult(clusters);
+}
+
+function clustersToResult(
+  clusters: {
+    lat: number;
+    lng: number;
+    count: number;
+    cityCounts: Map<string, number>;
+  }[],
+): MemberMapCluster[] {
   return clusters.map((c, i) => {
     const cities = [...c.cityCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
     const top = cities[0] ?? "Region";
-    const label =
-      c.count === 1
-        ? top
-        : cities.length === 1
-          ? `${top} (${c.count} Mitglieder)`
-          : `Region · ${c.count} Mitglieder`;
+    const label = c.count === 1 ? "1 Mitglied" : `${c.count} Mitglieder`;
     return {
       id: `cluster-${i}`,
       lat: c.lat,

@@ -7,7 +7,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { geocodeProfileMapCoords, syncProfileMapCoords } from "@/lib/members/geocode-profile";
 import { isGermanCountry } from "@/lib/members/geocode-plz";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
-import { spreadMemberMapPlacements } from "@/lib/members/spread-member-map";
+import { groupMembersByMapLocation, type MemberMapCluster } from "@/lib/members/cluster-map";
 import { profileDisplayName } from "@/lib/profiles/display";
 
 type LeaderRow = {
@@ -65,7 +65,7 @@ export default async function MitgliederPage() {
     });
   }
 
-  const placements = spreadMemberMapPlacements(mapPoints);
+  const clusters: MemberMapCluster[] = groupMembersByMapLocation(mapPoints);
 
   let rows: LeaderRow[] = [];
   const { data: leaderboard, error: lbErr } = await supabase.rpc(
@@ -113,7 +113,7 @@ export default async function MitgliederPage() {
               regionale Einordnung!).
             </p>
             <div className="mt-3 min-h-0 flex-1">
-              <MembersMap placements={placements} memberCount={mapPoints.length} />
+              <MembersMap clusters={clusters} memberCount={mapPoints.length} />
             </div>
           </div>
 
