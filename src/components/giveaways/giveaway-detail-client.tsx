@@ -306,17 +306,17 @@ export function GiveawayDetailClient({
           ) : localEntered ? (
             <div
               className={cn(
-                "rounded-xl border px-3 py-2 text-sm",
-                giveaway.entry_mode === "quiz" && !localEntered.is_eligible
-                  ? "border-amber-200 bg-amber-50 text-amber-950"
+                "rounded-xl border px-3 py-2 text-sm font-medium",
+                !localEntered.is_eligible
+                  ? "border-rose-200 bg-rose-50 text-rose-800"
                   : "border-emerald-200 bg-emerald-50 text-emerald-900",
               )}
             >
-              {giveaway.entry_mode === "simple"
-                ? "Glückwunsch, du nimmst nun am Gewinnspiel teil, wir drücken dir die Daumen!"
-                : localEntered.is_eligible
-                  ? "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"
-                  : "Danke für deine Teilnahme, leider war nicht alles richtig, vielleicht hast du beim Nächsten Mal mehr Glück!"}
+              {!localEntered.is_eligible
+                ? "Leider hat es diesmal nicht geklappt"
+                : giveaway.entry_mode === "simple"
+                  ? "Glückwunsch, du nimmst nun am Gewinnspiel teil, wir drücken dir die Daumen!"
+                  : "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"}
             </div>
           ) : phase !== "active" ? null : (
             <p className="text-sm text-slate-600">Noch nicht teilgenommen.</p>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Sparkles, Trophy } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { rankFromPoints } from "@/lib/points/rank";
-import { POINTS_YEAR_END_NOTE } from "@/lib/points/values";
+import { YearEndLotteryCollapsible } from "@/components/points/year-end-lottery-collapsible";
 
 export function PointsSummaryHeader({ userId }: { userId: string | null }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -28,21 +28,7 @@ export function PointsSummaryHeader({ userId }: { userId: string | null }) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border-2 border-amber-300/90 bg-gradient-to-br from-amber-50 via-white to-rose-50/80 px-5 py-5 shadow-sm shadow-amber-900/10">
-        <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 text-white shadow-sm">
-            <Trophy className="h-5 w-5" aria-hidden />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Jahres-Sonderverlosung</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">{POINTS_YEAR_END_NOTE}</p>
-            <p className="mt-2 text-sm font-semibold text-amber-900">
-              Genau zehn Mitglieder mit den meisten Statuspunkten im abgelaufenen Jahr nehmen automatisch
-              teil — bei Punktgleichstand nach festen Regeln, nicht per Zufall.
-            </p>
-          </div>
-        </div>
-      </div>
+      <YearEndLotteryCollapsible />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-sm">

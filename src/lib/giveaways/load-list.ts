@@ -29,7 +29,7 @@ export async function loadGiveawayListItems(
 
   const { data: entries } = await supabase
     .from("giveaway_entries")
-    .select("giveaway_id,user_id")
+    .select("giveaway_id,user_id,is_eligible")
     .in("giveaway_id", ids);
 
   const prizeNamesByG = new Map<string, string[]>();
@@ -44,9 +44,12 @@ export async function loadGiveawayListItems(
     countByG.set(e.giveaway_id, (countByG.get(e.giveaway_id) ?? 0) + 1);
   });
 
-  const mySet = new Set(
-    (entries ?? []).filter((e) => e.user_id === userId).map((e) => e.giveaway_id),
-  );
+  const myEntryByGiveaway = new Map<string, boolean>();
+  for (const e of entries ?? []) {
+    if (userId && e.user_id === userId) {
+      myEntryByGiveaway.set(e.giveaway_id, Boolean(e.is_eligible));
+    }
+  }
 
   return (rows ?? []).map((g) => ({
     id: g.id,
@@ -61,6 +64,7 @@ export async function loadGiveawayListItems(
     pointsYear: (g as { points_year?: number | null }).points_year ?? null,
     prizeNames: prizeNamesByG.get(g.id) ?? [],
     entryCount: countByG.get(g.id) ?? 0,
-    myEntered: mySet.has(g.id),
+    myEntered: myEntryByGiveaway.has(g.id),
+    myEligible: myEntryByGiveaway.get(g.id) ?? null,
   }));
 }

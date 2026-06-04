@@ -23,6 +23,8 @@ export type GiveawayListItem = {
   prizeNames: string[];
   entryCount: number;
   myEntered: boolean;
+  /** null = nicht teilgenommen; false = teilgenommen, nicht qualifiziert */
+  myEligible: boolean | null;
   isYearEndLottery?: boolean;
   pointsYear?: number | null;
 };
@@ -152,7 +154,13 @@ export function GiveawayBoard({
                           {g.entry_mode === "quiz" ? " · Quiz" : " · Einfach"}
                         </p>
                         {g.myEntered ? (
-                          <p className="mt-1 text-xs font-medium text-emerald-700">Du bist dabei</p>
+                          g.myEligible === false && !g.isYearEndLottery ? (
+                            <p className="mt-1 text-xs font-medium text-rose-700">
+                              Leider hat es diesmal nicht geklappt
+                            </p>
+                          ) : (
+                            <p className="mt-1 text-xs font-medium text-emerald-700">Du bist dabei</p>
+                          )
                         ) : null}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
