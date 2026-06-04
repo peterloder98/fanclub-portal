@@ -1,20 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 import { cn } from "@/lib/cn";
-
-function pad2(n: number) {
-  return String(Math.max(0, Math.floor(n))).padStart(2, "0");
-}
-
-function formatCountdown(totalSeconds: number) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const days = Math.floor(s / 86400);
-  const hours = Math.floor((s % 86400) / 3600);
-  const minutes = Math.floor((s % 3600) / 60);
-  const seconds = Math.floor(s % 60);
-  return `${pad2(days)}:${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
-}
 
 export function PollEndCountdown({
   endsAt,
@@ -45,11 +33,11 @@ export function PollEndCountdown({
       </div>
       <div
         className={cn(
-          "font-mono text-lg font-semibold tracking-tight tabular-nums",
+          "text-sm font-semibold leading-snug tabular-nums",
           ended ? "text-slate-500" : "text-slate-900",
         )}
       >
-        {formatCountdown(secondsLeft)}
+        {formatCountdownVerbose(secondsLeft)}
       </div>
     </div>
   );

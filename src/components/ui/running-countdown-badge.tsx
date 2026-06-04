@@ -40,9 +40,13 @@ export function RunningCountdownBadge({
   return (
     <Badge
       variant="brand"
-      className={cn("max-w-full font-mono text-[11px] tabular-nums tracking-tight", className)}
+      className={cn(
+        "max-w-full whitespace-normal text-left text-[11px] font-semibold leading-snug tracking-normal",
+        className,
+      )}
     >
-      <span className="font-sans font-semibold">{runningPrefix}</span> {text}
+      {runningPrefix ? <span className="block text-[10px] font-medium opacity-90">{runningPrefix}</span> : null}
+      <span className="block tabular-nums">{text}</span>
     </Badge>
   );
 }

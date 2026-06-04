@@ -2,19 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-function pad2(n: number) {
-  return String(Math.max(0, Math.floor(n))).padStart(2, "0");
-}
-
-function formatTT_HH_MM_SS(totalSeconds: number) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const days = Math.floor(s / 86400);
-  const hours = Math.floor((s % 86400) / 3600);
-  const minutes = Math.floor((s % 3600) / 60);
-  const seconds = Math.floor(s % 60);
-  return `${pad2(days)}:${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
-}
+import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 
 export function EventsCountdown({
   nextStartAt,
@@ -57,8 +45,8 @@ export function EventsCountdown({
             <div className="mt-1 text-xs text-slate-600">Kein Termin mit Datum.</div>
           ) : (
             <>
-              <div className="mt-1 font-mono text-2xl font-semibold tracking-tight text-slate-900">
-                {formatTT_HH_MM_SS(secondsLeft)}
+              <div className="mt-1 text-sm font-semibold leading-snug text-slate-900">
+                {formatCountdownVerbose(secondsLeft)}
               </div>
               {nextTitle || dateLabel ? (
                 <div className="mt-1 truncate text-xs text-slate-700">
@@ -86,8 +74,8 @@ export function EventsCountdown({
           ) : (
             <div className="grid gap-1">
               <div className="flex items-baseline gap-3">
-                <div className="font-mono text-4xl font-semibold tracking-tight text-slate-900">
-                  {formatTT_HH_MM_SS(secondsLeft)}
+                <div className="text-lg font-semibold leading-snug text-slate-900">
+                  {formatCountdownVerbose(secondsLeft)}
                 </div>
               </div>
               {nextTitle || dateLabel ? (

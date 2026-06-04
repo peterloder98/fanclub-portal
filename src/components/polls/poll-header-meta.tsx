@@ -15,7 +15,6 @@ export function PollHeaderMeta({
   hasVoted,
   ended,
   compact = false,
-  showEndDate = true,
   icon,
   className,
   participantCount,
@@ -29,7 +28,6 @@ export function PollHeaderMeta({
   hasVoted: boolean;
   ended?: boolean;
   compact?: boolean;
-  showEndDate?: boolean;
   icon?: ReactNode;
   className?: string;
   participantCount?: number;
@@ -37,11 +35,6 @@ export function PollHeaderMeta({
   onEnsureParticipants?: () => void;
   participantsLoading?: boolean;
 }) {
-  const endLabel = new Date(endsAt).toLocaleString("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
   const showBadges = allowMultiple || (hasVoted && !ended);
   const showParticipants = participantCount !== undefined;
 
@@ -66,23 +59,26 @@ export function PollHeaderMeta({
         ) : null}
 
         <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
-            <h3
-              className={cn(
-                "min-w-0 flex-1 font-semibold leading-snug text-slate-900",
-                compact ? "text-sm" : "text-base",
-              )}
-            >
-              {question}
-            </h3>
-            <RunningCountdownBadge
-              endsAt={endsAt}
-              endedLabel="Beendet"
-              className={cn("shrink-0", compact && "!px-1.5 !py-0.5 !text-[10px]")}
-            />
-          </div>
+          <h3
+            className={cn(
+              "font-semibold leading-snug text-slate-900",
+              compact ? "text-sm" : "text-base",
+            )}
+          >
+            {question}
+          </h3>
 
-          {(showBadges || showParticipants || showEndDate) && (
+          <RunningCountdownBadge
+            endsAt={endsAt}
+            endedLabel="Beendet"
+            runningPrefix="Endet in"
+            className={cn(
+              "w-full max-w-none",
+              compact ? "!px-2 !py-1 !text-[10px]" : "!px-2.5 !py-1.5 !text-xs",
+            )}
+          />
+
+          {(showBadges || showParticipants) && (
             <div
               className={cn(
                 "flex flex-wrap items-center gap-x-2 gap-y-1",
@@ -112,10 +108,6 @@ export function PollHeaderMeta({
                 ) : (
                   <span className="text-slate-500">{personenTeilgenommen(0)}</span>
                 )
-              ) : null}
-
-              {showEndDate ? (
-                <span className="text-slate-400">bis {endLabel}</span>
               ) : null}
             </div>
           )}

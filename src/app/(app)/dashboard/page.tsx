@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PostFeed } from "@/components/feed/post-feed";
 import type { MapEvent } from "@/components/events/events-map";
 import { EventsMap } from "@/components/events/events-map";
+import { EventsCountdown } from "@/components/events/events-countdown";
+import { pickNextEvent } from "@/lib/events/pick-next-event";
 import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-giveaways-inline";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
@@ -21,6 +23,8 @@ export default async function DashboardPage() {
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(50);
+
+  const nextEvent = pickNextEvent(events ?? []);
 
   const mapEvents: MapEvent[] = (events ?? []).map((e) => ({
     id: e.id,
@@ -56,11 +60,18 @@ export default async function DashboardPage() {
           </section>
 
           <aside className="flex max-h-[calc(100vh-5.5rem)] min-h-0 flex-col gap-2 lg:sticky lg:top-20">
-            <Card className="flex min-h-[min(420px,52vh)] flex-1 flex-col overflow-hidden">
+            <div className="shrink-0">
+              <EventsCountdown
+                compact
+                nextStartAt={nextEvent?.start_at ?? null}
+                nextTitle={nextEvent?.title ?? null}
+              />
+            </div>
+            <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <CardContent className="flex h-full min-h-0 flex-1 flex-col p-1.5">
                 <EventsMap
                   events={mapEvents}
-                  minHeight={360}
+                  minHeight={280}
                   mapVariant="dashboard"
                   fillHeight
                 />

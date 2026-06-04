@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 
-export function pad2(n: number) {
-  return String(Math.max(0, Math.floor(n))).padStart(2, "0");
-}
+export { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 
+/** @deprecated Nutze formatCountdownVerbose – Alias für bestehende Imports */
 export function formatCountdown(totalSeconds: number) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const days = Math.floor(s / 86400);
-  const hours = Math.floor((s % 86400) / 3600);
-  const minutes = Math.floor((s % 3600) / 60);
-  const seconds = Math.floor(s % 60);
-  return `${pad2(days)}:${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}`;
+  return formatCountdownVerbose(totalSeconds);
 }
 
 export function useCountdown(endsAt: string) {
@@ -27,5 +22,5 @@ export function useCountdown(endsAt: string) {
   const ended = !Number.isFinite(target) || target <= now;
   const secondsLeft = ended ? 0 : Math.max(0, Math.floor((target - now) / 1000));
 
-  return { ended, secondsLeft, text: formatCountdown(secondsLeft) };
+  return { ended, secondsLeft, text: formatCountdownVerbose(secondsLeft) };
 }
