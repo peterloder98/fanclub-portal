@@ -95,17 +95,18 @@ const LAST_NAMES = [
   "Wolf",
   "Schäfer",
 ];
-const CITIES = [
-  ["München", "80331"],
-  ["Hamburg", "20095"],
-  ["Berlin", "10115"],
-  ["Köln", "50667"],
-  ["Frankfurt am Main", "60311"],
-  ["Stuttgart", "70173"],
-  ["Leipzig", "04109"],
-  ["Dresden", "01067"],
-  ["Hannover", "30159"],
-  ["Nürnberg", "90402"],
+/** Fake-Adressen (Straße, PLZ, Ort) für Karte / Mitglieder-Übersicht */
+const MEMBER_ADDRESSES = [
+  { street: "Sendlinger Str. 14", postal_code: "80331", city: "München" },
+  { street: "Speersort 1", postal_code: "20095", city: "Hamburg" },
+  { street: "Unter den Linden 77", postal_code: "10117", city: "Berlin" },
+  { street: "Domkloster 4", postal_code: "50667", city: "Köln" },
+  { street: "Zeil 85", postal_code: "60313", city: "Frankfurt am Main" },
+  { street: "Königstraße 28", postal_code: "70173", city: "Stuttgart" },
+  { street: "Nikolaistraße 33", postal_code: "04109", city: "Leipzig" },
+  { street: "Prager Str. 4", postal_code: "01069", city: "Dresden" },
+  { street: "Kröpcke 1", postal_code: "30159", city: "Hannover" },
+  { street: "Königstraße 39", postal_code: "90402", city: "Nürnberg" },
 ];
 
 function buildMembers() {
@@ -115,7 +116,7 @@ function buildMembers() {
     const last = LAST_NAMES[i];
     const n = i + 1;
     const num = String(n).padStart(2, "0");
-    const [city, plz] = CITIES[i];
+    const addr = MEMBER_ADDRESSES[i];
     const gender = i % 2 === 0 ? "w" : "m";
     return {
       email: `mail+mitglied${num}@peter-loder.de`,
@@ -128,9 +129,9 @@ function buildMembers() {
         last_name: last,
         birthdate: `${1985 + (i % 12)}-${String((i % 12) + 1).padStart(2, "0")}-15`,
         gender,
-        street: `Teststraße ${n}`,
-        postal_code: plz,
-        city,
+        street: addr.street,
+        postal_code: addr.postal_code,
+        city: addr.city,
         country: "DE",
         phone: `+49 170 ${String(1000000 + n).slice(-7)}`,
       },

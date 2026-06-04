@@ -22,6 +22,7 @@ export function PollAdminControls({
   const [error, setError] = useState<string | null>(null);
   const [question, setQuestion] = useState(poll.question);
   const [allowMultiple, setAllowMultiple] = useState(poll.allow_multiple);
+  const allowMultipleLocked = poll.allow_multiple;
   const [options, setOptions] = useState(
     initialOptions.map((o) => ({ id: o.id, label: o.label })),
   );
@@ -114,13 +115,28 @@ export function PollAdminControls({
             required
             className="h-9 rounded-lg border px-2 text-sm"
           />
-          <label className="flex items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              checked={allowMultiple}
-              onChange={(e) => setAllowMultiple(e.target.checked)}
-            />
-            Mehrfachauswahl
+          <label className="flex flex-col gap-1 text-xs">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allowMultiple}
+                disabled={allowMultipleLocked}
+                onChange={(e) => {
+                  if (allowMultipleLocked) return;
+                  setAllowMultiple(e.target.checked);
+                }}
+              />
+              Mehrfachauswahl
+            </span>
+            {allowMultipleLocked ? (
+              <span className="text-slate-500">
+                Bereits aktiv — kann nicht mehr abgeschaltet werden (Stimmen bleiben gültig).
+              </span>
+            ) : (
+              <span className="text-slate-500">
+                Nachträglich nur aktivieren möglich, nicht wieder deaktivieren.
+              </span>
+            )}
           </label>
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-slate-600">Antworten</span>
