@@ -1,9 +1,9 @@
-export function rankFromPoints(points: number) {
-  if (points >= 700) return "Diamond-Fan";
-  if (points >= 450) return "Gold-Fan";
-  if (points >= 250) return "Silber-Fan";
-  if (points >= 120) return "Bronze-Fan";
-  if (points >= 50) return "Aktiv-Fan";
-  return "Fan";
-}
+import { POINTS_RANKS } from "@/lib/points/values";
 
+export function rankFromPoints(points: number): (typeof POINTS_RANKS)[number]["label"] {
+  let rank: (typeof POINTS_RANKS)[number]["label"] = POINTS_RANKS[0].label;
+  for (const tier of POINTS_RANKS) {
+    if (points >= tier.from) rank = tier.label;
+  }
+  return rank;
+}

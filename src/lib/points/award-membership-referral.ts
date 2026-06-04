@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export const MEMBERSHIP_REFERRAL_POINTS = 20;
+import { POINT_VALUES } from "@/lib/points/values";
+
+export const MEMBERSHIP_REFERRAL_POINTS = POINT_VALUES.membershipReferral;
 
 export async function awardMembershipReferralPoints(
   senderId: string,

@@ -5,6 +5,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { UserListPopover } from "@/components/ui/user-list-popover";
 import { personenNehmenTeil } from "@/lib/text/plural-de";
 import { cn } from "@/lib/cn";
+import { flyPointsFromElement } from "@/lib/points/fly";
+import { POINT_VALUES } from "@/lib/points/values";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
 
 export function EventParticipationRow({
@@ -56,7 +58,7 @@ export function EventParticipationRow({
     setLoadingList(false);
   }
 
-  async function toggleJoin() {
+  async function toggleJoin(fromEl: HTMLElement) {
     setBusy(true);
     const supabase = createSupabaseBrowserClient();
     const {
@@ -76,6 +78,7 @@ export function EventParticipationRow({
         setJoined(false);
         setCount((c) => Math.max(0, c - 1));
         setAttendees((a) => a.filter((x) => x.id !== user.id));
+        flyPointsFromElement({ fromEl, delta: -POINT_VALUES.eventParticipation });
       } else {
         await supabase.from("event_participations").insert({
           event_id: eventId,
@@ -83,6 +86,7 @@ export function EventParticipationRow({
         });
         setJoined(true);
         setCount((c) => c + 1);
+        flyPointsFromElement({ fromEl, delta: +POINT_VALUES.eventParticipation });
       }
     } finally {
       setBusy(false);
@@ -94,7 +98,7 @@ export function EventParticipationRow({
       <button
         type="button"
         disabled={busy}
-        onClick={() => void toggleJoin()}
+        onClick={(e) => void toggleJoin(e.currentTarget)}
         className={cn(
           "rounded-lg px-2.5 py-1 text-xs font-semibold transition",
           joined

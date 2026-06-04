@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { flyPointsFromElement } from "@/lib/points/fly";
+import { POINT_VALUES } from "@/lib/points/values";
 import { giveawayPhase } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminControls } from "@/components/giveaways/giveaway-admin-controls";
@@ -106,7 +107,7 @@ export function GiveawayDetailClient({
     try {
       await participateSimple(giveaway.id);
       setLocalEntered({ is_eligible: true });
-      flyPointsFromElement({ fromEl, delta: +10 });
+      flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Teilnahme fehlgeschlagen");
     } finally {
@@ -129,7 +130,7 @@ export function GiveawayDetailClient({
       const result = await participateQuiz(giveaway.id, JSON.stringify(payload));
       setQuizResult(result);
       setLocalEntered({ is_eligible: result.eligible });
-      if (result.eligible) flyPointsFromElement({ fromEl, delta: +10 });
+      if (result.eligible) flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Quiz fehlgeschlagen");
     } finally {

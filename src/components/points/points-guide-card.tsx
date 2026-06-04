@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Sparkles, Trophy } from "lucide-react";
 import {
   POINTS_RANKS,
+  POINTS_YEAR_END_NOTE,
   POINTS_YEAR_HINT,
   pointsRulesSortedByPoints,
 } from "@/lib/points/catalog";
@@ -74,6 +75,11 @@ export function PointsGuideCard({ id = "punkte" }: { id?: string }) {
             ))}
           </ul>
         </section>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200/90 bg-white px-5 py-4 text-sm leading-relaxed text-slate-600 shadow-sm shadow-slate-900/5">
+        <p className="font-semibold text-slate-900">Jahresende & Einlösung</p>
+        <p className="mt-2">{POINTS_YEAR_END_NOTE}</p>
       </div>
 
       <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50/90 via-white to-blue-50/80 px-5 py-4 text-sm leading-relaxed text-slate-700">

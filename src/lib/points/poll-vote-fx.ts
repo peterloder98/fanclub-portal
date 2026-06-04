@@ -1,4 +1,5 @@
 import { flyPointsFromElement } from "@/lib/points/fly";
+import { POINT_VALUES } from "@/lib/points/values";
 
 /**
  * Punkte-Animation: +5 beim ersten Vote auf einer Umfrage.
@@ -14,10 +15,10 @@ export function applyPollVotePointsFx(params: {
   const after = Math.max(0, votesAfter);
 
   if (before === 0 && after > 0) {
-    flyPointsFromElement({ fromEl, delta: +5 });
+    flyPointsFromElement({ fromEl, delta: +POINT_VALUES.pollVote });
     return;
   }
   if (before > 0 && after === 0) {
-    flyPointsFromElement({ fromEl, delta: -5 });
+    flyPointsFromElement({ fromEl, delta: -POINT_VALUES.pollVote });
   }
 }
