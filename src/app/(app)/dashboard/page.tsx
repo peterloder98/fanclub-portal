@@ -41,7 +41,7 @@ export default async function DashboardPage() {
 
   let giveawayItems: Awaited<ReturnType<typeof loadGiveawayListItems>> = [];
   try {
-    giveawayItems = await loadGiveawayListItems(user.id);
+    giveawayItems = await loadGiveawayListItems(user.id, "newest");
   } catch {
     giveawayItems = [];
   }

@@ -1,12 +1,22 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function loadGiveawayListItems(userId: string | null) {
+export type GiveawayListSort = "newest" | "ends_at";
+
+export async function loadGiveawayListItems(
+  userId: string | null,
+  sort: GiveawayListSort = "ends_at",
+) {
   const supabase = await createSupabaseServerClient();
-  const { data: rows } = await supabase
+  const query = supabase
     .from("giveaways")
-    .select("id,title,description,entry_mode,ends_at,status,is_paused,is_year_end_lottery,points_year")
-    .eq("is_active", true)
-    .order("ends_at", { ascending: false });
+    .select(
+      "id,title,description,entry_mode,ends_at,created_at,status,is_paused,is_year_end_lottery,points_year",
+    )
+    .eq("is_active", true);
+
+  const { data: rows } = await (sort === "newest"
+    ? query.order("created_at", { ascending: false })
+    : query.order("ends_at", { ascending: true }));
 
   const ids = (rows ?? []).map((r) => r.id);
   if (!ids.length) return [];
@@ -44,6 +54,7 @@ export async function loadGiveawayListItems(userId: string | null) {
     description: g.description,
     entry_mode: g.entry_mode as "simple" | "quiz",
     ends_at: g.ends_at,
+    created_at: g.created_at as string,
     status: g.status,
     isPaused: Boolean((g as { is_paused?: boolean }).is_paused),
     isYearEndLottery: Boolean((g as { is_year_end_lottery?: boolean }).is_year_end_lottery),

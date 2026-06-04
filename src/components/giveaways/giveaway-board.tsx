@@ -17,6 +17,7 @@ export type GiveawayListItem = {
   description: string | null;
   entry_mode: "simple" | "quiz";
   ends_at: string;
+  created_at: string;
   status: string;
   isPaused: boolean;
   prizeNames: string[];
@@ -27,6 +28,7 @@ export type GiveawayListItem = {
 };
 
 type AdminTab = "active" | "ended" | "create";
+type GiveawaySort = "newest" | "ends_at";
 
 export function GiveawayBoard({
   items,
@@ -42,15 +44,25 @@ export function GiveawayBoard({
   const [tab, setTab] = useState<AdminTab>(
     isAdmin && ["active", "ended", "create"].includes(initialTab) ? initialTab : "active",
   );
+  const [sort, setSort] = useState<GiveawaySort>("newest");
 
   const filtered = useMemo(() => {
-    return items.filter((g) => {
+    const list = items.filter((g) => {
       const phase = giveawayPhase(g.ends_at, g.status, g.isPaused);
       if (tab === "active") return phase === "active" || phase === "paused";
       if (tab === "ended") return phase === "ended" || phase === "drawn";
       return true;
     });
-  }, [items, tab]);
+    const sorted = [...list];
+    if (sort === "newest") {
+      sorted.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    } else {
+      sorted.sort((a, b) => new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime());
+    }
+    return sorted;
+  }, [items, tab, sort]);
 
   return (
     <div className="grid gap-4">
@@ -82,6 +94,36 @@ export function GiveawayBoard({
       ) : null}
 
       {tab === "create" && isAdmin ? <GiveawayAdminCreate /> : null}
+
+      {tab !== "create" ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-600">Sortierung:</span>
+          <button
+            type="button"
+            onClick={() => setSort("newest")}
+            className={cn(
+              "rounded-lg border px-2.5 py-1 text-xs font-medium",
+              sort === "newest"
+                ? "border-slate-900 bg-slate-900 text-white"
+                : "bg-white text-slate-700 hover:bg-slate-50",
+            )}
+          >
+            Neuestes zuerst
+          </button>
+          <button
+            type="button"
+            onClick={() => setSort("ends_at")}
+            className={cn(
+              "rounded-lg border px-2.5 py-1 text-xs font-medium",
+              sort === "ends_at"
+                ? "border-slate-900 bg-slate-900 text-white"
+                : "bg-white text-slate-700 hover:bg-slate-50",
+            )}
+          >
+            Nach Ablaufzeit
+          </button>
+        </div>
+      ) : null}
 
       {tab !== "create" ? (
         filtered.length ? (

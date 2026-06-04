@@ -551,6 +551,10 @@ export function PostFeed({
       dateStyle: "short",
       timeStyle: "short",
     });
+    const tempId = crypto.randomUUID();
+    const post = posts.find((p) => p.id === postId);
+    const isBirthday = Boolean(post?.isBirthday);
+
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
@@ -560,7 +564,7 @@ export function PostFeed({
           comments: [
             ...p.comments,
             {
-              id: crypto.randomUUID(),
+              id: tempId,
               authorId: me.id,
               author: me.name,
               authorAvatarUrl: me.avatarUrl,
@@ -573,26 +577,69 @@ export function PostFeed({
       }),
     );
 
-    // Persist to DB (best-effort)
-    const post = posts.find((p) => p.id === postId);
-    const isBirthday = Boolean(post?.isBirthday);
-    const pointsDelta = isBirthday ? POINT_VALUES.birthdayComment : POINT_VALUES.postComment;
-
     void (async () => {
       try {
         const supabase = createSupabaseBrowserClient();
-        const { error } = await supabase.from("post_comments").insert({
-          post_id: postId,
-          author_id: me.id,
-          body: text,
+        const { data: inserted, error } = await supabase
+          .from("post_comments")
+          .insert({
+            post_id: postId,
+            author_id: me.id,
+            body: text,
+          })
+          .select("id")
+          .single();
+
+        if (error) {
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id !== postId
+                ? p
+                : { ...p, comments: p.comments.filter((c) => c.id !== tempId) },
+            ),
+          );
+          setLoadError(error.message);
+          return;
+        }
+
+        if (inserted?.id) {
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id !== postId
+                ? p
+                : {
+                    ...p,
+                    comments: p.comments.map((c) =>
+                      c.id === tempId ? { ...c, id: inserted.id } : c,
+                    ),
+                  },
+            ),
+          );
+        }
+
+        const ptsRes = await fetch("/api/points/post-comment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId }),
         });
-        if (!error) {
-          const { error: ptsErr } = await supabase.rpc("ensure_post_comment_points", {
+        const ptsJson = (await ptsRes.json()) as {
+          ok?: boolean;
+          points?: number;
+          changed?: boolean;
+        };
+        if (ptsRes.ok && ptsJson.ok && ptsJson.changed && typeof ptsJson.points === "number") {
+          flyPointsFromElement({ fromEl: null, delta: ptsJson.points });
+          emitPointsGain(ptsJson.points);
+        } else if (!ptsRes.ok) {
+          const fallbackDelta = isBirthday
+            ? POINT_VALUES.birthdayComment
+            : POINT_VALUES.postComment;
+          const { error: rpcErr } = await supabase.rpc("ensure_post_comment_points", {
             p_post_id: postId,
           });
-          if (!ptsErr) {
-            flyPointsFromElement({ fromEl: null, delta: pointsDelta });
-            emitPointsGain(pointsDelta);
+          if (!rpcErr) {
+            flyPointsFromElement({ fromEl: null, delta: fallbackDelta });
+            emitPointsGain(fallbackDelta);
           }
         }
       } catch {
@@ -897,6 +944,10 @@ export function PostFeed({
   async function deleteComment(postId: string, commentId: string) {
     if (!me) return;
     if (!window.confirm("Kommentar löschen?")) return;
+    const post = posts.find((p) => p.id === postId);
+    const comment = post?.comments.find((c) => c.id === commentId);
+    const isOwn = comment?.authorId === me.id;
+
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.from("post_comments").delete().eq("id", commentId);
     if (error) {
@@ -910,6 +961,37 @@ export function PostFeed({
           : { ...p, comments: p.comments.filter((c) => c.id !== commentId) },
       ),
     );
+
+    if (!isOwn) return;
+
+    try {
+      const ptsRes = await fetch("/api/points/post-comment", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId }),
+      });
+      const ptsJson = (await ptsRes.json()) as {
+        ok?: boolean;
+        points?: number;
+        changed?: boolean;
+      };
+      if (ptsRes.ok && ptsJson.ok && ptsJson.points) {
+        const delta = ptsJson.changed ? -ptsJson.points : 0;
+        if (delta !== 0) {
+          flyPointsFromElement({ fromEl: null, delta });
+          emitPointsGain(delta);
+        }
+      } else {
+        await supabase.rpc("revoke_post_comment_points", { p_post_id: postId });
+        const delta = post?.isBirthday
+          ? -POINT_VALUES.birthdayComment
+          : -POINT_VALUES.postComment;
+        flyPointsFromElement({ fromEl: null, delta });
+        emitPointsGain(delta);
+      }
+    } catch {
+      // ignore
+    }
   }
 
   return (
