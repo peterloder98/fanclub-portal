@@ -20,6 +20,7 @@ import {
   type Voter as PollVoter,
 } from "@/components/polls/poll-feed-card";
 import { UserListPopover, type UserListEntry } from "@/components/ui/user-list-popover";
+import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 
@@ -1268,27 +1269,12 @@ export function PostFeed({
                       me && (me.id === c.authorId || me.role === "admin");
                     return (
                       <div key={c.id} className="flex gap-2">
-                        <div className="h-5 w-5 shrink-0 overflow-hidden rounded-full border bg-slate-50">
-                          {c.authorAvatarUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={c.authorAvatarUrl}
-                              alt=""
-                              width={20}
-                              height={20}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="grid h-full w-full place-items-center text-[8px] font-semibold text-slate-600">
-                              {c.author
-                                .split(" ")
-                                .filter(Boolean)
-                                .slice(0, 2)
-                                .map((p) => p[0]?.toUpperCase())
-                                .join("")}
-                            </div>
-                          )}
-                        </div>
+                        <HoverEnlargeAvatar
+                          name={c.author}
+                          avatarUrl={c.authorAvatarUrl}
+                          size="xs"
+                          className="shrink-0"
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] font-semibold text-slate-700">

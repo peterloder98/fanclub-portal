@@ -517,3 +517,149 @@ export async function updateGiveawayBasics(formData: FormData) {
   revalidatePath("/giveaways");
   revalidatePath(`/giveaways/${id}`);
 }
+
+export async function updateGiveawayFull(formData: FormData) {
+  const { admin } = await requireAdmin();
+  const id = String(formData.get("giveaway_id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const endsAtRaw = String(formData.get("ends_at") ?? "");
+  const entryMode = String(formData.get("entry_mode") ?? "simple") as "simple" | "quiz";
+
+  const prizes = formData
+    .getAll("prizes")
+    .map((p) => String(p).trim())
+    .filter(Boolean);
+
+  const questionsRaw = String(formData.get("questions_json") ?? "[]");
+  let questions: Array<{
+    text: string;
+    options: [string, string, string];
+    correctIndex: number;
+  }> = [];
+  try {
+    questions = JSON.parse(questionsRaw) as typeof questions;
+  } catch {
+    questions = [];
+  }
+
+  if (!id || title.length < 3) throw new Error("Titel zu kurz.");
+  if (!prizes.length) throw new Error("Mindestens ein Preis.");
+  const endsAt = new Date(endsAtRaw);
+  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum.");
+
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("status,entry_mode,is_year_end_lottery")
+    .eq("id", id)
+    .maybeSingle();
+  if (!g) throw new Error("Gewinnspiel nicht gefunden.");
+  if (g.is_year_end_lottery) throw new Error("Jahresend-Gewinnspiel bitte über die Sonderverlosung bearbeiten.");
+  if (g.status === "drawn") throw new Error("Nach Auslosung nicht mehr vollständig bearbeitbar.");
+
+  const { count: entryCount } = await admin
+    .from("giveaway_entries")
+    .select("id", { count: "exact", head: true })
+    .eq("giveaway_id", id);
+
+  if ((entryCount ?? 0) > 0 && g.entry_mode !== entryMode) {
+    throw new Error("Teilnahme-Modus kann nicht geändert werden, sobald Einträge existieren.");
+  }
+
+  if (entryMode === "quiz" && questions.length < 3) {
+    throw new Error("Quiz: mindestens 3 Fragen.");
+  }
+
+  await admin
+    .from("giveaways")
+    .update({
+      title,
+      description: description || null,
+      ends_at: endsAt.toISOString(),
+      entry_mode: entryMode,
+      status: endsAt.getTime() > Date.now() ? "active" : g.status,
+    })
+    .eq("id", id);
+
+  await admin.from("giveaway_prizes").delete().eq("giveaway_id", id);
+  await admin.from("giveaway_prizes").insert(
+    prizes.map((name, i) => ({
+      giveaway_id: id,
+      name,
+      sort_order: i,
+    })),
+  );
+
+  if (entryMode === "quiz") {
+    if ((entryCount ?? 0) === 0) {
+      const { data: oldQ } = await admin
+        .from("giveaway_questions")
+        .select("id")
+        .eq("giveaway_id", id);
+      const qIds = (oldQ ?? []).map((q) => q.id);
+      if (qIds.length) {
+        await admin.from("giveaway_question_options").delete().in("question_id", qIds);
+        await admin.from("giveaway_questions").delete().eq("giveaway_id", id);
+      }
+      for (let qi = 0; qi < questions.length; qi++) {
+        const q = questions[qi]!;
+        const { data: qRow, error: qErr } = await admin
+          .from("giveaway_questions")
+          .insert({
+            giveaway_id: id,
+            question_text: q.text,
+            sort_order: qi,
+          })
+          .select("id")
+          .single();
+        if (qErr) throw new Error(qErr.message);
+        await admin.from("giveaway_question_options").insert(
+          q.options.map((label, oi) => ({
+            question_id: qRow.id,
+            label,
+            sort_order: oi,
+            is_correct: oi === q.correctIndex,
+          })),
+        );
+      }
+    } else {
+      const { data: existingQ } = await admin
+        .from("giveaway_questions")
+        .select("id,sort_order")
+        .eq("giveaway_id", id)
+        .order("sort_order");
+      for (let qi = 0; qi < (existingQ ?? []).length && qi < questions.length; qi++) {
+        const qRow = existingQ![qi]!;
+        const q = questions[qi]!;
+        await admin
+          .from("giveaway_questions")
+          .update({ question_text: q.text })
+          .eq("id", qRow.id);
+        const { data: opts } = await admin
+          .from("giveaway_question_options")
+          .select("id,sort_order")
+          .eq("question_id", qRow.id)
+          .order("sort_order");
+        for (let oi = 0; oi < 3 && oi < (opts ?? []).length; oi++) {
+          await admin
+            .from("giveaway_question_options")
+            .update({ label: q.options[oi] })
+            .eq("id", opts![oi]!.id);
+        }
+      }
+    }
+  } else {
+    const { data: oldQ } = await admin
+      .from("giveaway_questions")
+      .select("id")
+      .eq("giveaway_id", id);
+    const qIds = (oldQ ?? []).map((q) => q.id);
+    if (qIds.length) {
+      await admin.from("giveaway_question_options").delete().in("question_id", qIds);
+      await admin.from("giveaway_questions").delete().eq("giveaway_id", id);
+    }
+  }
+
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${id}`);
+}

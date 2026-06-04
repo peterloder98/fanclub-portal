@@ -12,6 +12,8 @@ import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { PollAdminControls } from "@/components/polls/poll-admin-controls";
+import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 type Poll = {
   id: string;
   question: string;
@@ -47,6 +49,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
   const [participants, setParticipants] = useState<
     Array<{ id: string; name: string; avatarUrl: string | null }>
   >([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const ended = poll ? new Date(poll.ends_at).getTime() < Date.now() : false;
 
@@ -69,6 +72,13 @@ export function PollDetail({ pollId }: { pollId: string }) {
     } = await supabase.auth.getUser();
     if (!user) return;
     setUserId(user.id);
+
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    setIsAdmin(me?.role === "admin");
 
     const { data: pollRow, error: pollErr } = await supabase
       .from("polls")
@@ -317,7 +327,13 @@ export function PollDetail({ pollId }: { pollId: string }) {
       </Link>
 
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="space-y-2 pb-3">
+          {isAdmin && !ended ? (
+            <PollAdminControls
+              poll={poll}
+              options={options.map((o) => ({ id: o.id, label: o.label }))}
+            />
+          ) : null}
           <PollHeaderMeta
             question={poll.question}
             endsAt={poll.ends_at}
@@ -401,17 +417,13 @@ export function PollDetail({ pollId }: { pollId: string }) {
             {comments.map((c) => (
               <div key={c.id} className="rounded-xl border bg-slate-50 px-3 py-2">
                 <div className="flex items-center gap-2 text-xs text-slate-600">
-                  <div className="h-6 w-6 overflow-hidden rounded-full border bg-white">
-                    {c.authorAvatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.authorAvatarUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="grid h-full w-full place-items-center text-[9px] font-semibold">
-                        {c.authorName[0]}
-                      </div>
-                    )}
-                  </div>
-                  <span className="font-semibold text-slate-700">{c.authorName}</span>
+                  <HoverEnlargeAvatar
+                    name={c.authorName}
+                    avatarUrl={c.authorAvatarUrl}
+                    size="xs"
+                  >
+                    <span className="font-semibold text-slate-700">{c.authorName}</span>
+                  </HoverEnlargeAvatar>
                   <span>·</span>
                   <span>
                     {new Date(c.created_at).toLocaleString("de-DE", {

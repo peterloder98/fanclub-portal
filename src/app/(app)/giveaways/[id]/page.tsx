@@ -53,7 +53,7 @@ export default async function GiveawayDetailPage({
   const { data: options } = qIds.length
     ? await supabase
         .from("giveaway_question_options")
-        .select("id,question_id,label,sort_order")
+        .select("id,question_id,label,sort_order,is_correct")
         .in("question_id", qIds)
         .order("sort_order", { ascending: true })
     : { data: [] };
@@ -63,7 +63,7 @@ export default async function GiveawayDetailPage({
     text: q.question_text,
     options: (options ?? [])
       .filter((o) => o.question_id === q.id)
-      .map((o) => ({ id: o.id, label: o.label })),
+      .map((o) => ({ id: o.id, label: o.label, is_correct: o.is_correct })),
   }));
 
   const { data: myEntry } = await supabase

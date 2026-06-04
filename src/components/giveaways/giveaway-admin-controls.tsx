@@ -1,14 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import {
   pauseGiveaway,
   resumeGiveaway,
-  updateGiveawayBasics,
+  updateGiveawayFull,
 } from "@/app/(app)/giveaways/actions";
+
+type QuizQ = {
+  id?: string;
+  text: string;
+  options: [string, string, string];
+  correctIndex: number;
+};
 
 export function GiveawayAdminControls({
   giveaway,
+  prizes: initialPrizes,
+  questions: initialQuestions,
 }: {
   giveaway: {
     id: string;
@@ -17,12 +27,41 @@ export function GiveawayAdminControls({
     ends_at: string;
     status: string;
     is_paused: boolean;
+    entry_mode: "simple" | "quiz";
   };
+  prizes: { id: string; name: string }[];
+  questions: Array<{
+    id: string;
+    text: string;
+    options: { id: string; label: string; is_correct?: boolean }[];
+  }>;
 }) {
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const drawn = giveaway.status === "drawn";
+
+  const [prizes, setPrizes] = useState(
+    initialPrizes.length ? initialPrizes.map((p) => p.name) : [""],
+  );
+  const [questions, setQuestions] = useState<QuizQ[]>(() =>
+    initialQuestions.length
+      ? initialQuestions.map((q) => ({
+          id: q.id,
+          text: q.text,
+          options: [
+            q.options[0]?.label ?? "",
+            q.options[1]?.label ?? "",
+            q.options[2]?.label ?? "",
+          ] as [string, string, string],
+          correctIndex: Math.max(0, q.options.findIndex((o) => o.is_correct)),
+        }))
+      : [
+          { text: "", options: ["", "", ""], correctIndex: 0 },
+          { text: "", options: ["", "", ""], correctIndex: 0 },
+          { text: "", options: ["", "", ""], correctIndex: 0 },
+        ],
+  );
 
   const endLocal = new Date(giveaway.ends_at);
   const endInput = new Date(endLocal.getTime() - endLocal.getTimezoneOffset() * 60000)
@@ -46,8 +85,14 @@ export function GiveawayAdminControls({
     e.preventDefault();
     setBusy(true);
     setError(null);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    prizes.filter(Boolean).forEach((p) => fd.append("prizes", p.trim()));
+    if (giveaway.entry_mode === "quiz") {
+      fd.set("questions_json", JSON.stringify(questions));
+    }
     try {
-      await updateGiveawayBasics(new FormData(e.currentTarget));
+      await updateGiveawayFull(fd);
       setEditing(false);
       window.location.reload();
     } catch (err) {
@@ -57,9 +102,8 @@ export function GiveawayAdminControls({
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-sm">
-      <div className="font-semibold text-amber-950">Admin</div>
-      <div className="mt-2 flex flex-wrap gap-2">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm">
+      <div className="flex flex-wrap gap-2">
         {!drawn ? (
           <button
             type="button"
@@ -70,32 +114,42 @@ export function GiveawayAdminControls({
             {giveaway.is_paused ? "Fortsetzen" : "Pausieren"}
           </button>
         ) : null}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => setEditing((v) => !v)}
-          className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"
-        >
-          {editing ? "Abbrechen" : "Bearbeiten"}
-        </button>
+        {!drawn ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => setEditing((v) => !v)}
+            className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"
+          >
+            {editing ? "Abbrechen" : "Bearbeiten"}
+          </button>
+        ) : null}
       </div>
 
       {editing ? (
-        <form onSubmit={(e) => void onSave(e)} className="mt-3 grid gap-2">
+        <form onSubmit={(e) => void onSave(e)} className="mt-3 grid gap-3">
           <input type="hidden" name="giveaway_id" value={giveaway.id} />
-          <input
-            name="title"
-            defaultValue={giveaway.title}
-            required
-            className="h-9 rounded-lg border px-2 text-sm"
-          />
-          <textarea
-            name="description"
-            defaultValue={giveaway.description ?? ""}
-            rows={2}
-            className="rounded-lg border px-2 py-1 text-sm"
-          />
-          {!drawn ? (
+          <input type="hidden" name="entry_mode" value={giveaway.entry_mode} />
+          <label className="grid gap-1">
+            <span className="text-xs font-medium text-slate-600">Titel</span>
+            <input
+              name="title"
+              defaultValue={giveaway.title}
+              required
+              className="h-9 rounded-lg border px-2 text-sm"
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className="text-xs font-medium text-slate-600">Beschreibung</span>
+            <textarea
+              name="description"
+              defaultValue={giveaway.description ?? ""}
+              rows={2}
+              className="rounded-lg border px-2 py-1 text-sm"
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className="text-xs font-medium text-slate-600">Ende</span>
             <input
               name="ends_at"
               type="datetime-local"
@@ -103,13 +157,97 @@ export function GiveawayAdminControls({
               required
               className="h-9 rounded-lg border px-2 text-sm"
             />
+          </label>
+          <div>
+            <span className="text-xs font-medium text-slate-600">Preise</span>
+            <div className="mt-1 space-y-1.5">
+              {prizes.map((p, i) => (
+                <div key={i} className="flex gap-1">
+                  <input
+                    value={p}
+                    onChange={(e) =>
+                      setPrizes((arr) => arr.map((x, j) => (j === i ? e.target.value : x)))
+                    }
+                    className="h-9 min-w-0 flex-1 rounded-lg border px-2 text-sm"
+                    placeholder={`Preis ${i + 1}`}
+                  />
+                  {prizes.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => setPrizes((arr) => arr.filter((_, j) => j !== i))}
+                      className="rounded-lg border px-2 text-slate-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPrizes((arr) => [...arr, ""])}
+                className="inline-flex items-center gap-1 text-xs font-medium text-blue-700"
+              >
+                <Plus className="h-3 w-3" /> Preis
+              </button>
+            </div>
+          </div>
+          {giveaway.entry_mode === "quiz" ? (
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-slate-600">Quiz-Fragen</span>
+              {questions.map((q, qi) => (
+                <div key={qi} className="rounded-lg border bg-white p-2">
+                  <input
+                    value={q.text}
+                    onChange={(e) =>
+                      setQuestions((arr) =>
+                        arr.map((x, j) => (j === qi ? { ...x, text: e.target.value } : x)),
+                      )
+                    }
+                    placeholder={`Frage ${qi + 1}`}
+                    className="mb-2 h-9 w-full rounded-lg border px-2 text-sm"
+                  />
+                  {q.options.map((opt, oi) => (
+                    <label key={oi} className="mt-1 flex items-center gap-2 text-xs">
+                      <input
+                        type="radio"
+                        name={`correct-${qi}`}
+                        checked={q.correctIndex === oi}
+                        onChange={() =>
+                          setQuestions((arr) =>
+                            arr.map((x, j) => (j === qi ? { ...x, correctIndex: oi } : x)),
+                          )
+                        }
+                      />
+                      <input
+                        value={opt}
+                        onChange={(e) =>
+                          setQuestions((arr) =>
+                            arr.map((x, j) =>
+                              j === qi
+                                ? {
+                                    ...x,
+                                    options: x.options.map((o, k) =>
+                                      k === oi ? e.target.value : o,
+                                    ) as [string, string, string],
+                                  }
+                                : x,
+                            ),
+                          )
+                        }
+                        className="h-8 min-w-0 flex-1 rounded-lg border px-2 text-sm"
+                      />
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
           ) : null}
           <button
             type="submit"
             disabled={busy}
             className="h-9 rounded-lg bg-slate-900 text-xs font-semibold text-white"
           >
-            Speichern
+            Alles speichern
           </button>
         </form>
       ) : null}

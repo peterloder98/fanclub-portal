@@ -12,6 +12,7 @@ import { POINT_VALUES } from "@/lib/points/values";
 import { giveawayPhase } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminControls } from "@/components/giveaways/giveaway-admin-controls";
+import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import {
   drawGiveawayWinners,
   participateQuiz,
@@ -24,7 +25,7 @@ import type { MailSignatureOption } from "@/lib/email/signatures";
 type Question = {
   id: string;
   text: string;
-  options: { id: string; label: string }[];
+  options: { id: string; label: string; is_correct?: boolean }[];
 };
 
 type Winner = {
@@ -144,7 +145,13 @@ export function GiveawayDetailClient({
   }
 
   async function onDraw() {
-    if (!window.confirm("Gewinner jetzt zufällig ermitteln?")) return;
+    if (
+      !window.confirm(
+        "Gewinner jetzt zufällig ermitteln? Es werden höchstens so viele Preise vergeben wie berechtigte Teilnehmer vorhanden sind.",
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -247,12 +254,15 @@ export function GiveawayDetailClient({
             <RunningCountdownBadge
               endsAt={giveaway.ends_at}
               paused={giveaway.is_paused}
+              pausedLabel="Pausiert"
             />
           </div>
         </CardHeader>
         <CardContent className="grid gap-4">
           {yearEndAdmin}
-          {isAdmin && !isYearEnd ? <GiveawayAdminControls giveaway={giveaway} /> : null}
+          {isAdmin && !isYearEnd ? (
+            <GiveawayAdminControls giveaway={giveaway} prizes={prizes} questions={questions} />
+          ) : null}
 
           {giveaway.description ? (
             <p className="text-sm leading-relaxed text-slate-700">{giveaway.description}</p>
@@ -501,12 +511,12 @@ export function GiveawayDetailClient({
             <div className="grid gap-2">
               {commentList.map((c) => (
                 <div key={c.id} className="flex gap-2 text-sm">
-                  <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full border">
-                    {c.authorAvatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.authorAvatarUrl} alt="" className="h-full w-full object-cover" />
-                    ) : null}
-                  </div>
+                  <HoverEnlargeAvatar
+                    name={c.authorName}
+                    avatarUrl={c.authorAvatarUrl}
+                    size="sm"
+                    className="shrink-0"
+                  />
                   <div>
                     <span className="text-xs font-semibold">{c.authorName}</span>
                     <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>

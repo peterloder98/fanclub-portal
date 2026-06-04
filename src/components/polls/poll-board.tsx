@@ -10,6 +10,7 @@ import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import { profileToUserListEntry } from "@/lib/profiles/display";
 import { PieChart } from "lucide-react";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
+import { PollAdminControls } from "@/components/polls/poll-admin-controls";
 import { PollOptionsList } from "@/components/polls/poll-options-list";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
@@ -29,9 +30,11 @@ type Voter = { id: string; name: string; avatarUrl: string | null };
 export function PollBoard({
   initialPolls = [],
   activeOnly = false,
+  isAdmin = false,
 }: {
   initialPolls?: PollRow[];
   activeOnly?: boolean;
+  isAdmin?: boolean;
 }) {
   const searchParams = useSearchParams();
   const refreshToken = searchParams.get("refresh");
@@ -322,7 +325,13 @@ export function PollBoard({
 
         return (
           <Card key={poll.id} className="overflow-hidden">
-            <CardHeader className="space-y-0 pb-0">
+            <CardHeader className="space-y-2 pb-0">
+              {isAdmin && !ended ? (
+                <PollAdminControls
+                  poll={poll}
+                  options={opts.map((o) => ({ id: o.id, label: o.label }))}
+                />
+              ) : null}
               <PollHeaderMeta
                 question={poll.question}
                 endsAt={poll.ends_at}

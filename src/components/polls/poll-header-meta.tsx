@@ -58,16 +58,48 @@ export function PollHeaderMeta({
           </div>
         ) : null}
 
-        <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3
-              className={cn(
-                "min-w-0 flex-1 font-semibold leading-snug text-slate-900",
-                compact ? "text-sm" : "text-base",
-              )}
-            >
-              {question}
-            </h3>
+            <div className="min-w-0 flex-1">
+              <h3
+                className={cn(
+                  "font-semibold leading-snug text-slate-900",
+                  compact ? "text-sm" : "text-base",
+                )}
+              >
+                {question}
+              </h3>
+              {(showBadges || showParticipants) ? (
+                <div
+                  className={cn(
+                    "mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5",
+                    compact ? "text-[10px]" : "text-xs",
+                  )}
+                >
+                  {allowMultiple ? (
+                    <Badge
+                      variant="neutral"
+                      className={compact ? "!px-1.5 !py-0 !text-[10px]" : "!py-0"}
+                    >
+                      Mehrfachauswahl
+                    </Badge>
+                  ) : null}
+                  {showParticipants ? (
+                    participantCount > 0 || (participants?.length ?? 0) > 0 ? (
+                      <PollParticipantSummary
+                        participantCount={participantCount}
+                        participants={participants ?? []}
+                        loading={participantsLoading}
+                        onEnsureParticipants={onEnsureParticipants}
+                        className={compact ? "!text-[10px]" : undefined}
+                      />
+                    ) : (
+                      <span className="text-slate-500">{personenTeilgenommen(0)}</span>
+                    )
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
             <div className="flex shrink-0 flex-col items-end gap-0.5">
               <RunningCountdownBadge
                 endsAt={endsAt}
@@ -90,34 +122,6 @@ export function PollHeaderMeta({
               ) : null}
             </div>
           </div>
-
-          {(showBadges || showParticipants) && (
-            <div
-              className={cn(
-                "flex flex-wrap items-center gap-x-2 gap-y-1",
-                compact ? "text-[10px]" : "text-xs",
-              )}
-            >
-              {allowMultiple ? (
-                <Badge variant="neutral" className={compact ? "!px-1.5 !py-0 !text-[10px]" : undefined}>
-                  Mehrfachauswahl
-                </Badge>
-              ) : null}
-              {showParticipants ? (
-                participantCount > 0 || (participants?.length ?? 0) > 0 ? (
-                  <PollParticipantSummary
-                    participantCount={participantCount}
-                    participants={participants ?? []}
-                    loading={participantsLoading}
-                    onEnsureParticipants={onEnsureParticipants}
-                    className={compact ? "!text-[10px]" : undefined}
-                  />
-                ) : (
-                  <span className="text-slate-500">{personenTeilgenommen(0)}</span>
-                )
-              ) : null}
-            </div>
-          )}
         </div>
       </div>
     </header>

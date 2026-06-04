@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { UserAvatar } from "@/components/ui/user-avatar";
+import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { cn } from "@/lib/cn";
 
 export type UserListEntry = {
@@ -65,8 +65,9 @@ export function UserListPopover({
         ) : users.length ? (
           users.slice(0, 16).map((u) => (
             <span key={u.id} className="flex items-center gap-2 py-1">
-              <UserAvatar name={u.name} avatarUrl={u.avatarUrl} size="xs" />
-              <span className="min-w-0 truncate">{u.name}</span>
+              <HoverEnlargeAvatar name={u.name} avatarUrl={u.avatarUrl} size="xs">
+                <span className="min-w-0 truncate">{u.name}</span>
+              </HoverEnlargeAvatar>
             </span>
           ))
         ) : (
