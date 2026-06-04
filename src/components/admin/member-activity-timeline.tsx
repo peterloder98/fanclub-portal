@@ -85,7 +85,14 @@ export function MemberActivityTimeline({
       ) : (
         <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto">
           {rows.map((r) => (
-            <li key={r.id} className="rounded-lg border bg-white px-3 py-2 text-xs">
+            <li
+              key={r.id}
+              className={
+                r.event_type === "warning_issued"
+                  ? "rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs"
+                  : "rounded-lg border bg-white px-3 py-2 text-xs"
+              }
+            >
               <div className="flex flex-wrap items-baseline justify-between gap-1">
                 <span className="font-semibold text-slate-900">{r.title}</span>
                 <span className="text-slate-500">{formatWhen(r.created_at)}</span>

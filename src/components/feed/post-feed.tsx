@@ -1399,7 +1399,7 @@ export function PostFeed({
                                 <CommentWarningButton
                                   commentType="post"
                                   commentId={c.id}
-                                  onDone={() =>
+                                  onRemoved={() =>
                                     setPosts((prev) =>
                                       prev.map((p) =>
                                         p.id === post.id

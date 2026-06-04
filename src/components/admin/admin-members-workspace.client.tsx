@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
@@ -92,6 +93,21 @@ function SortBtn({
       {label}
       {active ? <span className="text-[10px]">{dir === "asc" ? "▲" : "▼"}</span> : null}
     </button>
+  );
+}
+
+function WarningCountBadge({ count }: { count: number }) {
+  if (count <= 0) {
+    return <span className="text-slate-500">0</span>;
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 font-semibold text-rose-700"
+      title={`${count} Verwarnung${count === 1 ? "" : "en"}`}
+    >
+      <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      {count}
+    </span>
   );
 }
 
@@ -589,11 +605,7 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2">{formatDE(m.birthdate)}</td>
                       <td className="px-3 py-2">{formatDE(m.joined_at)}</td>
                       <td className="px-3 py-2 tabular-nums">
-                        {m.warning_count > 0 ? (
-                          <span className="font-semibold text-rose-700">{m.warning_count}</span>
-                        ) : (
-                          "0"
-                        )}
+                        <WarningCountBadge count={m.warning_count} />
                       </td>
                       <td className="px-3 py-2">
                         {m.membership_status ? (

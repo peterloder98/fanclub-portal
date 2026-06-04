@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../actions";
 
 function formatDE(date: string | null) {
@@ -88,12 +89,17 @@ export default async function AdminMemberDetailPage({
                     placeholder="Wird bei Freigabe automatisch vergeben"
                   />
                 </label>
-                {(profile as { warning_count?: number }).warning_count ? (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 md:col-span-2">
-                    Verwarnungen (nur Admin):{" "}
-                    <strong>{(profile as { warning_count?: number }).warning_count}</strong>
-                  </div>
-                ) : null}
+                {(() => {
+                  const wc = (profile as { warning_count?: number }).warning_count ?? 0;
+                  return wc > 0 ? (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-900 md:col-span-2">
+                      <span className="inline-flex items-center gap-1.5 font-semibold">
+                        <AlertTriangle className="h-4 w-4" aria-hidden />
+                        Verwarnungen (nur Admin): {wc}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Vorname</span>
                   <input

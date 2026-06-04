@@ -65,6 +65,13 @@ export default async function AdminMembersPage({
         }
       });
 
+      const { data: warningRows } = await admin.from("member_warnings").select("member_id");
+      const warningsByUser = new Map<string, number>();
+      (warningRows ?? []).forEach((w) => {
+        const id = w.member_id as string;
+        warningsByUser.set(id, (warningsByUser.get(id) ?? 0) + 1);
+      });
+
       return {
         members: (profiles ?? []).map((p) => ({
           id: p.id,
@@ -73,7 +80,10 @@ export default async function AdminMembersPage({
           last_name: p.last_name,
           birthdate: p.birthdate ?? null,
           joined_at: membershipByUser.get(p.id)?.start_date ?? null,
-          warning_count: (p as { warning_count?: number }).warning_count ?? 0,
+          warning_count: Math.max(
+            (p as { warning_count?: number }).warning_count ?? 0,
+            warningsByUser.get(p.id) ?? 0,
+          ),
           membership_status: membershipByUser.get(p.id)?.status ?? null,
           email: p.email ?? null,
         })),

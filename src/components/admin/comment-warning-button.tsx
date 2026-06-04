@@ -1,18 +1,21 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
 
 export function CommentWarningButton({
   commentType,
   commentId,
-  onDone,
+  onRemoved,
 }: {
   commentType: "post" | "poll" | "giveaway";
   commentId: string;
-  onDone: () => void;
+  /** Sofort aus der UI entfernen (vor Server-Antwort). */
+  onRemoved: () => void;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -28,17 +31,24 @@ export function CommentWarningButton({
             "Kommentar löschen und automatische Verwarnung per E-Mail senden?",
           );
           if (!ok) return;
+          onRemoved();
           startTransition(async () => {
             try {
               const result = await issueCommentWarning({ commentType, commentId });
+              router.refresh();
               if (result.isThirdWarning) {
                 window.alert(
                   "Hinweis: Dies ist bereits die 3. Verwarnung für dieses Mitglied. Evtl. sind weitere Schritte nötig.",
                 );
               }
-              onDone();
             } catch (e) {
               setError(e instanceof Error ? e.message : "Verwarnung fehlgeschlagen");
+              window.alert(
+                e instanceof Error
+                  ? e.message
+                  : "Verwarnung fehlgeschlagen — bitte Seite neu laden.",
+              );
+              router.refresh();
             }
           });
         }}

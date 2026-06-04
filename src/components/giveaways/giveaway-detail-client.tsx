@@ -543,7 +543,7 @@ export function GiveawayDetailClient({
                         <CommentWarningButton
                           commentType="giveaway"
                           commentId={c.id}
-                          onDone={() =>
+                          onRemoved={() =>
                             setCommentList((list) => list.filter((x) => x.id !== c.id))
                           }
                         />

@@ -439,7 +439,9 @@ export function PollDetail({ pollId }: { pollId: string }) {
                     <CommentWarningButton
                       commentType="poll"
                       commentId={c.id}
-                      onDone={() => void load()}
+                      onRemoved={() =>
+                        setComments((list) => list.filter((x) => x.id !== c.id))
+                      }
                     />
                   ) : null}
                 </div>
