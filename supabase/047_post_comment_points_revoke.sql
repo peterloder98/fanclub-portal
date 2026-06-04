@@ -66,6 +66,10 @@ create unique index if not exists points_unique_comment
   on public.points_transactions(user_id, entity_type, entity_id)
   where reason = 'post_comment';
 
+-- 046 legte ensure_post_comment_points mit Rückgabe boolean an — für jsonb zuerst droppen
+drop function if exists public.ensure_post_comment_points(uuid);
+drop function if exists public.revoke_post_comment_points(uuid);
+
 create or replace function public.ensure_post_comment_points(p_post_id uuid)
 returns jsonb
 language plpgsql
@@ -77,7 +81,7 @@ declare
   v_has_comment boolean;
   v_points int;
   v_reason text;
-  v_inserted boolean;
+  v_row_count int;
 begin
   if auth.uid() is null then
     return jsonb_build_object('ok', false, 'error', 'unauthorized');
@@ -107,13 +111,13 @@ begin
   values (auth.uid(), v_points, v_reason, 'post', p_post_id)
   on conflict do nothing;
 
-  get diagnostics v_inserted = row_count;
+  get diagnostics v_row_count = row_count;
 
   return jsonb_build_object(
     'ok', true,
     'points', v_points,
     'reason', v_reason,
-    'awarded', v_inserted > 0
+    'awarded', v_row_count > 0
   );
 end;
 $$;
