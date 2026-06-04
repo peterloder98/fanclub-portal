@@ -3,6 +3,7 @@ import path from "path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 export type MembershipApplicationPdfData = {
   id: string;
+  membership_number?: string | null;
   first_name: string;
   last_name: string;
   birthdate: string;
@@ -81,6 +82,12 @@ export async function buildMembershipApplicationPdf(
   draw("Mitgliedsantrag – Anni-Perka-Fanclub e. V.", true, 16);
   draw(`Antrags-ID: ${data.id}`, false, 9);
   y -= 8;
+  draw(
+    line(
+      "Mitgliedsnummer",
+      data.membership_number?.trim() || "Wird nach Freigabe vergeben",
+    ),
+  );
   draw(line("Name", `${data.first_name} ${data.last_name}`));
   draw(line("Geburtsdatum", formatDE(data.birthdate)));
   if (data.gender) draw(line("Geschlecht", data.gender));

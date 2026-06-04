@@ -30,6 +30,17 @@ const TEMPLATES: Array<(s: string, g: NormalizedGender) => { title: string; body
   }),
 ];
 
+export function listBirthdayTemplatePreviews(
+  firstName = "Max",
+  genderRaw: string | null | undefined = "m",
+) {
+  const g = normalizeGender(genderRaw);
+  return TEMPLATES.map((fn, index) => {
+    const { title, body } = fn(firstName, g);
+    return { index: index + 1, title, body };
+  });
+}
+
 export function birthdayPostBody(
   firstName: string,
   genderRaw: string | null | undefined,

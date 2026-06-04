@@ -54,9 +54,14 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<Normaliz
   const updated_at = asString(item.updated_at);
 
   const ticketHref = (asString(item.ticketHref) ?? "").trim();
+  const ticketText = (asString(item.ticketText) ?? "").trim();
   const ticketUrl = (asString(item.ticketUrl) ?? asString(item.ticket_url) ?? "").trim();
-  const ticketRaw = ticketHref || ticketUrl;
-  const ticket_url = ticketRaw || null;
+  let ticket_url: string | null = null;
+  if (isHttpUrl(ticketHref)) ticket_url = ticketHref;
+  else if (isHttpUrl(ticketUrl)) ticket_url = ticketUrl;
+  else if (ticketText) ticket_url = ticketText;
+  else if (ticketHref) ticket_url = ticketHref;
+  else if (ticketUrl) ticket_url = ticketUrl;
 
   const published = asBool(item.published) ?? true;
   const secret = asBool(item.secret) ?? false;

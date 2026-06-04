@@ -13,6 +13,7 @@ import { giveawayPhase } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminControls } from "@/components/giveaways/giveaway-admin-controls";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
+import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import {
   drawGiveawayWinners,
   participateQuiz,
@@ -534,9 +535,20 @@ export function GiveawayDetailClient({
                     size="sm"
                     className="shrink-0"
                   />
-                  <div>
-                    <span className="text-xs font-semibold">{c.authorName}</span>
-                    <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-semibold">{c.authorName}</span>
+                      <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>
+                      {isAdmin ? (
+                        <CommentWarningButton
+                          commentType="giveaway"
+                          commentId={c.id}
+                          onDone={() =>
+                            setCommentList((list) => list.filter((x) => x.id !== c.id))
+                          }
+                        />
+                      ) : null}
+                    </div>
                     <p className="text-slate-700">{c.body}</p>
                   </div>
                 </div>

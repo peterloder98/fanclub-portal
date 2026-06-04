@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buildFullMembershipPdf, type MembershipApplicationPdfData } from "@/lib/membership/pdf";
+import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 
 const BUCKET = "membership-signatures";
 
@@ -7,7 +8,10 @@ function cachedPdfPath(applicationId: string) {
   return `${applicationId}/application.pdf`;
 }
 
-async function buildPdfForApplication(applicationId: string) {
+async function buildPdfForApplication(
+  applicationId: string,
+  membershipNumber?: string | null,
+) {
   const admin = createSupabaseAdminClient();
   const { data: row, error } = await admin
     .from("membership_applications")
@@ -29,6 +33,7 @@ async function buildPdfForApplication(applicationId: string) {
 
   const data: MembershipApplicationPdfData = {
     id: row.id,
+    membership_number: membershipNumber?.trim() || MEMBERSHIP_NUMBER_PENDING_LABEL,
     first_name: row.first_name,
     last_name: row.last_name,
     birthdate: row.birthdate,
@@ -58,10 +63,13 @@ async function buildPdfForApplication(applicationId: string) {
 }
 
 /** Generate once and store in Supabase Storage for fast preview. */
-export async function cacheApplicationPdf(applicationId: string) {
+export async function cacheApplicationPdf(
+  applicationId: string,
+  membershipNumber?: string | null,
+) {
   const admin = createSupabaseAdminClient();
   const path = cachedPdfPath(applicationId);
-  const bytes = await buildPdfForApplication(applicationId);
+  const bytes = await buildPdfForApplication(applicationId, membershipNumber);
 
   const { error: upErr } = await admin.storage.from(BUCKET).upload(path, bytes, {
     contentType: "application/pdf",
@@ -75,6 +83,44 @@ export async function cacheApplicationPdf(applicationId: string) {
     .eq("id", applicationId);
 
   return path;
+}
+
+/** Regenerate contract PDF with assigned membership number and store on profile. */
+export async function storeApprovedMemberContractPdf(
+  userId: string,
+  applicationId: string,
+  membershipNumber: string,
+) {
+  const admin = createSupabaseAdminClient();
+  const bytes = await buildPdfForApplication(applicationId, membershipNumber);
+  const appPath = cachedPdfPath(applicationId);
+  const contractPath = `${userId}/contract.pdf`;
+
+  const { error: appUpErr } = await admin.storage.from(BUCKET).upload(appPath, bytes, {
+    contentType: "application/pdf",
+    upsert: true,
+  });
+  if (appUpErr) throw new Error(appUpErr.message);
+
+  const { error: contractUpErr } = await admin.storage.from(BUCKET).upload(contractPath, bytes, {
+    contentType: "application/pdf",
+    upsert: true,
+  });
+  if (contractUpErr) throw new Error(contractUpErr.message);
+
+  const { error: appRowErr } = await admin
+    .from("membership_applications")
+    .update({ application_pdf_path: appPath })
+    .eq("id", applicationId);
+  if (appRowErr) throw new Error(appRowErr.message);
+
+  const { error: profileErr } = await admin
+    .from("profiles")
+    .update({ contract_pdf_path: contractPath })
+    .eq("id", userId);
+  if (profileErr) throw new Error(profileErr.message);
+
+  return contractPath;
 }
 
 export async function loadApplicationPdfBytes(applicationId: string) {

@@ -107,6 +107,13 @@ const SECTIONS: AdminHubSection[] = [
     subtitle: "Termine aus Artistflow und Karte.",
     items: [
       {
+        href: "/admin/birthday-posts",
+        title: "Geburtstagsposts",
+        description: "5 Textvorlagen, Cron 08:00, Anheften bis 23:59.",
+        icon: FileText,
+        iconClassName: "from-pink-500 to-rose-600",
+      },
+      {
         href: "/admin/events-sync",
         title: "Artistflow Sync",
         description: "Import, Geocoding, Logs und manueller Sync.",

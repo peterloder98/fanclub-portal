@@ -51,7 +51,7 @@ export default async function AdminMembersPage({
 
       const { data: profiles, error: pErr } = await admin
         .from("profiles")
-        .select("id,membership_number,first_name,last_name,birthdate,email")
+        .select("id,membership_number,first_name,last_name,birthdate,email,contribution_date,warning_count")
         .order("membership_number", { ascending: true, nullsFirst: false });
       if (pErr) return { members: [], membersError: pErr.message };
 
@@ -67,6 +67,8 @@ export default async function AdminMembersPage({
           first_name: p.first_name,
           last_name: p.last_name,
           birthdate: p.birthdate ?? null,
+          contribution_date: (p as { contribution_date?: string | null }).contribution_date ?? null,
+          warning_count: (p as { warning_count?: number }).warning_count ?? 0,
           membership_status: membershipByUser.get(p.id) ?? null,
           email: p.email ?? null,
         })),

@@ -8,6 +8,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
 import { logAdminAction } from "@/lib/admin/audit-log";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
+import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -30,6 +31,7 @@ const schema = z.object({
 const updateSchema = z.object({
   user_id: z.string().uuid(),
   membership_number: z.string().optional().default(""),
+  contribution_date: z.string().optional().default(""),
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   street: z.string().optional().default(""),
@@ -120,8 +122,11 @@ export async function createMember(formData: FormData) {
     });
   if (linkErr) throw new Error(linkErr.message);
 
-  // Profile
-  const membershipNumber = input.membership_number?.trim() || null;
+  // Profile — Mitgliedsnummer erst bei Freigabe (Status aktiv)
+  let membershipNumber = input.membership_number?.trim() || null;
+  if (input.status === "active" && !membershipNumber) {
+    membershipNumber = await allocateNextMembershipNumber(admin);
+  }
 
   const { error: profileErr } = await admin.from("profiles").upsert(
     {
@@ -189,10 +194,28 @@ export async function updateMember(formData: FormData) {
   const input = updateSchema.parse(Object.fromEntries(formData.entries()));
   const admin = createSupabaseAdminClient();
 
+  const { data: existingProfile } = await admin
+    .from("profiles")
+    .select("membership_number")
+    .eq("id", input.user_id)
+    .maybeSingle();
+
+  let membershipNumber = input.membership_number?.trim() || null;
+  if (
+    input.status === "active" &&
+    !membershipNumber &&
+    !existingProfile?.membership_number?.trim()
+  ) {
+    membershipNumber = await allocateNextMembershipNumber(admin);
+  } else if (!membershipNumber) {
+    membershipNumber = existingProfile?.membership_number?.trim() || null;
+  }
+
   const { error: profileErr } = await admin
     .from("profiles")
     .update({
-      membership_number: input.membership_number?.trim() || null,
+      membership_number: membershipNumber,
+      contribution_date: input.contribution_date?.trim() || null,
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,

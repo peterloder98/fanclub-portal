@@ -15,6 +15,18 @@ describe("normalizeArtistflowEvent", () => {
     expect(e.published).toBe(true);
   });
 
+  it("uses ticketText when no URL", () => {
+    const e = normalizeArtistflowEvent({
+      dateSort: "2026-09-26",
+      title: "Geburtstag Einkaufscenter SMC",
+      city: "Frankfurt (Oder)",
+      ticketText: "Eintritt frei",
+      ticketHref: "",
+      ticketUrl: "",
+    });
+    expect(e.ticket_url).toBe("Eintritt frei");
+  });
+
   it("falls back to stable hash when event_id missing", () => {
     const e1 = normalizeArtistflowEvent({
       dateSort: "2026-01-01",

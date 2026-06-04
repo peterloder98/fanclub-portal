@@ -14,6 +14,7 @@ import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { PollAdminControls } from "@/components/polls/poll-admin-controls";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
+import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 type Poll = {
   id: string;
   question: string;
@@ -434,6 +435,13 @@ export function PollDetail({ pollId }: { pollId: string }) {
                       timeStyle: "short",
                     })}
                   </span>
+                  {isAdmin ? (
+                    <CommentWarningButton
+                      commentType="poll"
+                      commentId={c.id}
+                      onDone={() => void load()}
+                    />
+                  ) : null}
                 </div>
                 <div className="mt-1 text-sm text-slate-800">{c.body}</div>
               </div>

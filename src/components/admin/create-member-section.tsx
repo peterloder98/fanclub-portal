@@ -37,7 +37,7 @@ export function CreateMemberSection() {
                 <input
                   name="membership_number"
                   className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                  placeholder="optional"
+                  placeholder="Leer lassen — wird bei Freigabe (Status aktiv) automatisch vergeben"
                 />
               </label>
               <label className="grid gap-1">

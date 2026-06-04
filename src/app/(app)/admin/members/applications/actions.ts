@@ -19,6 +19,8 @@ import {
 import { deleteMembershipApplicationCompletely } from "@/lib/membership/delete-application";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
 import { awardMembershipReferralCompletionPoints } from "@/lib/points/award-membership-referral-completed";
+import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
+import { storeApprovedMemberContractPdf } from "@/lib/membership/application-pdf-service";
 
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -38,22 +40,29 @@ async function activateApplication(
     throw new Error("Kein Benutzerkonto verknüpft — Antrag kann nicht freigeschaltet werden.");
   }
 
-  if (membershipNumber?.trim()) {
-    const { error: pErr } = await admin
-      .from("profiles")
-      .update({ membership_number: membershipNumber.trim() })
-      .eq("id", app.user_id);
-    if (pErr) throw new Error(pErr.message);
-  }
-
-  const { data: profile } = await admin
+  const { data: profileBefore } = await admin
     .from("profiles")
     .select("membership_number")
     .eq("id", app.user_id)
     .maybeSingle();
 
-  if (!profile?.membership_number?.trim()) {
-    throw new Error("Bitte zuerst eine Mitgliedsnummer vergeben.");
+  let assignedNumber = profileBefore?.membership_number?.trim() || null;
+  if (!assignedNumber) {
+    assignedNumber =
+      membershipNumber?.trim() || (await allocateNextMembershipNumber(admin));
+    const { error: pErr } = await admin
+      .from("profiles")
+      .update({ membership_number: assignedNumber })
+      .eq("id", app.user_id);
+    if (pErr) throw new Error(pErr.message);
+  }
+
+  const profile = { membership_number: assignedNumber };
+
+  try {
+    await storeApprovedMemberContractPdf(app.user_id, applicationId, assignedNumber);
+  } catch (e) {
+    console.error("[membership] Vertrags-PDF nach Freigabe fehlgeschlagen:", e);
   }
 
   const { data: membership } = await admin
@@ -123,11 +132,11 @@ export async function approveMembershipApplication(applicationId: string) {
 
 export async function approveMembershipApplicationWithNumber(
   applicationId: string,
-  membershipNumber: string,
+  _membershipNumber?: string,
 ) {
   const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  await activateApplication(admin, applicationId, membershipNumber, user.id);
+  await activateApplication(admin, applicationId, undefined, user.id);
   revalidatePath("/admin/members");
   redirect("/admin/members");
 }

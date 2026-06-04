@@ -61,7 +61,7 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
       const { data: existing, error: exErr } = await admin
         .from("external_events")
         .select(
-          "id,external_id,feed_updated_at,content_hash,address,postal_code,city,country,lat,lng,geocoding_status",
+          "id,external_id,feed_updated_at,content_hash,ticket_url,address,postal_code,city,country,lat,lng,geocoding_status",
         )
         .eq("source", "artistflow")
         .eq("external_id", e.external_id)
@@ -124,10 +124,14 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         if (error) throw new Error(error.message);
         result.updated += 1;
       } else {
-        await admin
-          .from("external_events")
-          .update({ last_seen_at: new Date().toISOString(), is_visible })
-          .eq("id", existing.id);
+        const patch: Record<string, unknown> = {
+          last_seen_at: new Date().toISOString(),
+          is_visible,
+        };
+        if ((existing.ticket_url ?? "") !== (e.ticket_url ?? "")) {
+          patch.ticket_url = e.ticket_url;
+        }
+        await admin.from("external_events").update(patch).eq("id", existing.id);
       }
 
       // Geocoding: allow city-only feeds (address/PLZ optional)

@@ -101,6 +101,9 @@ export function MembershipApplicationForm() {
           Satzung erhoben.
         </p>
         <p>
+          <strong>Mitgliedsnummer:</strong> Wird nach Freigabe vergeben.
+        </p>
+        <p>
           Ich bestätige, die{" "}
           <Link href="/documents/satzung.pdf" target="_blank" className="text-blue-600 hover:underline">
             Satzung (Anlage, Seiten 3–4 des Antragsformulars)

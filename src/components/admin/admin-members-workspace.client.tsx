@@ -17,6 +17,7 @@ import {
 } from "@/app/(app)/admin/members/applications/actions";
 import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
+import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 
@@ -26,6 +27,8 @@ export type AdminMemberRow = {
   first_name: string;
   last_name: string;
   birthdate: string | null;
+  contribution_date: string | null;
+  warning_count: number;
   membership_status: string | null;
   email: string | null;
 };
@@ -41,7 +44,14 @@ export type AdminApplicationRow = {
   membership_number: string | null;
 };
 
-type MemberSortKey = "membership_number" | "first_name" | "last_name" | "birthdate" | "membership_status";
+type MemberSortKey =
+  | "membership_number"
+  | "first_name"
+  | "last_name"
+  | "birthdate"
+  | "contribution_date"
+  | "warning_count"
+  | "membership_status";
 type AppSortKey = "created_at" | "last_name" | "email" | "status";
 
 function formatDE(date: string | null) {
@@ -108,7 +118,6 @@ export function AdminMembersWorkspace({
     key: "created_at",
     dir: "desc",
   });
-  const [approveNumber, setApproveNumber] = useState("");
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentSubject, setPaymentSubject] = useState("");
@@ -170,6 +179,10 @@ export function AdminMembersWorkspace({
             return r.last_name;
           case "birthdate":
             return r.birthdate ?? "";
+          case "contribution_date":
+            return r.contribution_date ?? "";
+          case "warning_count":
+            return String(r.warning_count);
           case "membership_status":
             return r.membership_status ?? "";
         }
@@ -225,7 +238,6 @@ export function AdminMembersWorkspace({
       setActionError("Abgelehnte Anträge können nicht freigegeben werden.");
       return;
     }
-    setApproveNumber(selectedApp.membership_number ?? "");
     setShowApproveDialog(true);
     setActionError(null);
   }
@@ -428,7 +440,9 @@ export function AdminMembersWorkspace({
                           onClick={(e) => e.stopPropagation()}
                         />
                       </td>
-                      <td className="px-3 py-2 tabular-nums">{a.membership_number ?? "—"}</td>
+                      <td className="px-3 py-2 tabular-nums text-slate-600">
+                        {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
+                      </td>
                       <td className="px-3 py-2 font-medium text-slate-900">
                         {a.first_name} {a.last_name}
                       </td>
@@ -525,6 +539,22 @@ export function AdminMembersWorkspace({
                     </th>
                     <th className="px-3 py-2">
                       <SortBtn
+                        label="Beitragsdatum"
+                        active={memberSort.key === "contribution_date"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("contribution_date")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Verwarn."
+                        active={memberSort.key === "warning_count"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("warning_count")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
                         label="Status"
                         active={memberSort.key === "membership_status"}
                         dir={memberSort.dir}
@@ -557,6 +587,14 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2">{m.first_name}</td>
                       <td className="px-3 py-2">{m.last_name}</td>
                       <td className="px-3 py-2">{formatDE(m.birthdate)}</td>
+                      <td className="px-3 py-2">{formatDE(m.contribution_date)}</td>
+                      <td className="px-3 py-2 tabular-nums">
+                        {m.warning_count > 0 ? (
+                          <span className="font-semibold text-rose-700">{m.warning_count}</span>
+                        ) : (
+                          "0"
+                        )}
+                      </td>
                       <td className="px-3 py-2">
                         {m.membership_status ? (
                           <Badge
@@ -595,16 +633,9 @@ export function AdminMembersWorkspace({
             <h3 className="text-base font-semibold text-slate-900">Antrag freigeben</h3>
             <p className="mt-1 text-sm text-slate-600">
               {selectedApp.first_name} {selectedApp.last_name} — Status wird auf „aktiv“ gesetzt.
+              Die nächste freie Mitgliedsnummer wird automatisch vergeben; der Vertrag-PDF wird
+              ergänzt und im Mitgliedsdatensatz hinterlegt.
             </p>
-            <label className="mt-4 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Mitgliedsnummer *</span>
-              <input
-                value={approveNumber}
-                onChange={(e) => setApproveNumber(e.target.value)}
-                className="h-11 rounded-xl border px-3 text-sm"
-                placeholder="z. B. 1042"
-              />
-            </label>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
@@ -615,15 +646,12 @@ export function AdminMembersWorkspace({
               </button>
               <button
                 type="button"
-                disabled={pending || !approveNumber.trim()}
+                disabled={pending}
                 className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
                 onClick={() => {
                   startTransition(async () => {
                     try {
-                      await approveMembershipApplicationWithNumber(
-                        selectedApp.id,
-                        approveNumber.trim(),
-                      );
+                      await approveMembershipApplicationWithNumber(selectedApp.id);
                     } catch (e) {
                       setActionError(e instanceof Error ? e.message : "Freigabe fehlgeschlagen");
                       setShowApproveDialog(false);

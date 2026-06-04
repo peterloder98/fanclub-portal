@@ -29,6 +29,7 @@ import { UserListPopover, type UserListEntry } from "@/components/ui/user-list-p
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
+import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 
 type FeedPost = {
   id: string;
@@ -1354,6 +1355,7 @@ export function PostFeed({
                     const canEdit = me?.id === c.authorId;
                     const canDelete =
                       me && (me.id === c.authorId || me.role === "admin");
+                    const canWarn = me?.role === "admin";
                     return (
                       <div key={c.id} className="flex gap-2">
                         <HoverEnlargeAvatar
@@ -1369,6 +1371,26 @@ export function PostFeed({
                             </span>
                             <span className="text-[10px] text-slate-400">{c.createdAtLabel}</span>
                             <div className="ml-auto flex items-center gap-0.5">
+                              {canWarn ? (
+                                <CommentWarningButton
+                                  commentType="post"
+                                  commentId={c.id}
+                                  onDone={() =>
+                                    setPosts((prev) =>
+                                      prev.map((p) =>
+                                        p.id === post.id
+                                          ? {
+                                              ...p,
+                                              comments: p.comments.filter(
+                                                (x) => x.id !== c.id,
+                                              ),
+                                            }
+                                          : p,
+                                      ),
+                                    )
+                                  }
+                                />
+                              ) : null}
                               {canEdit ? (
                                 <button
                                   type="button"
