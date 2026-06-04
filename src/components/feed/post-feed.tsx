@@ -14,6 +14,11 @@ import { flyPointsFromElement } from "@/lib/points/fly";
 import { emitPointsGain } from "@/lib/points/events";
 import { POINT_VALUES } from "@/lib/points/values";
 import {
+  deltaAfterCommentDelete,
+  deltaAfterCommentInsert,
+  fetchPostCommentPointsTxn,
+} from "@/lib/points/post-comment-client";
+import {
   FANCLUB_AUTHOR_LOGO,
   FANCLUB_AUTHOR_NAME,
 } from "@/lib/feed/fanclub-author";
@@ -581,6 +586,13 @@ export function PostFeed({
     void (async () => {
       try {
         const supabase = createSupabaseBrowserClient();
+        const beforeTxn = await fetchPostCommentPointsTxn(
+          supabase,
+          me.id,
+          postId,
+          isBirthday,
+        );
+
         const { data: inserted, error } = await supabase
           .from("post_comments")
           .insert({
@@ -618,30 +630,33 @@ export function PostFeed({
           );
         }
 
-        const ptsRes = await fetch("/api/points/post-comment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ postId }),
-        });
-        const ptsJson = (await ptsRes.json()) as {
-          ok?: boolean;
-          points?: number;
-          changed?: boolean;
-        };
-        if (ptsRes.ok && ptsJson.ok && ptsJson.changed && typeof ptsJson.points === "number") {
-          flyPointsFromElement({ fromEl: null, delta: ptsJson.points });
-          emitPointsGain(ptsJson.points);
-        } else if (!ptsRes.ok) {
-          const fallbackDelta = isBirthday
-            ? POINT_VALUES.birthdayComment
-            : POINT_VALUES.postComment;
-          const { error: rpcErr } = await supabase.rpc("ensure_post_comment_points", {
-            p_post_id: postId,
+        let afterTxn = await fetchPostCommentPointsTxn(
+          supabase,
+          me.id,
+          postId,
+          isBirthday,
+        );
+        let uiDelta = deltaAfterCommentInsert(beforeTxn, afterTxn);
+
+        if (uiDelta === 0) {
+          await fetch("/api/points/post-comment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ postId }),
           });
-          if (!rpcErr) {
-            flyPointsFromElement({ fromEl: null, delta: fallbackDelta });
-            emitPointsGain(fallbackDelta);
-          }
+          afterTxn = await fetchPostCommentPointsTxn(
+            supabase,
+            me.id,
+            postId,
+            isBirthday,
+          );
+          uiDelta = deltaAfterCommentInsert(beforeTxn, afterTxn);
+        }
+
+        if (uiDelta > 0) {
+          const input = commentInputRefs.current[postId];
+          flyPointsFromElement({ fromEl: input ?? null, delta: uiDelta });
+          emitPointsGain(uiDelta);
         }
       } catch {
         // ignore for now
@@ -950,6 +965,12 @@ export function PostFeed({
     const isOwn = comment?.authorId === me.id;
 
     const supabase = createSupabaseBrowserClient();
+    const isBirthday = Boolean(post?.isBirthday);
+    const beforeTxn =
+      isOwn && me
+        ? await fetchPostCommentPointsTxn(supabase, me.id, postId, isBirthday)
+        : null;
+
     const { error } = await supabase.from("post_comments").delete().eq("id", commentId);
     if (error) {
       setLoadError(error.message);
@@ -963,32 +984,35 @@ export function PostFeed({
       ),
     );
 
-    if (!isOwn) return;
+    if (!isOwn || !me) return;
 
     try {
-      const ptsRes = await fetch("/api/points/post-comment", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }),
-      });
-      const ptsJson = (await ptsRes.json()) as {
-        ok?: boolean;
-        points?: number;
-        changed?: boolean;
-      };
-      if (ptsRes.ok && ptsJson.ok && ptsJson.points) {
-        const delta = ptsJson.changed ? -ptsJson.points : 0;
-        if (delta !== 0) {
-          flyPointsFromElement({ fromEl: null, delta });
-          emitPointsGain(delta);
-        }
-      } else {
-        await supabase.rpc("revoke_post_comment_points", { p_post_id: postId });
-        const delta = post?.isBirthday
-          ? -POINT_VALUES.birthdayComment
-          : -POINT_VALUES.postComment;
-        flyPointsFromElement({ fromEl: null, delta });
-        emitPointsGain(delta);
+      let afterTxn = await fetchPostCommentPointsTxn(
+        supabase,
+        me.id,
+        postId,
+        isBirthday,
+      );
+      let uiDelta = deltaAfterCommentDelete(beforeTxn, afterTxn);
+
+      if (uiDelta === 0 && beforeTxn) {
+        await fetch("/api/points/post-comment", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ postId }),
+        });
+        afterTxn = await fetchPostCommentPointsTxn(
+          supabase,
+          me.id,
+          postId,
+          isBirthday,
+        );
+        uiDelta = deltaAfterCommentDelete(beforeTxn, afterTxn);
+      }
+
+      if (uiDelta < 0) {
+        flyPointsFromElement({ fromEl: null, delta: uiDelta });
+        emitPointsGain(uiDelta);
       }
     } catch {
       // ignore
