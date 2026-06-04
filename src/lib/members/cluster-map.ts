@@ -76,7 +76,7 @@ export function groupMembersByMapLocation(points: MemberMapPoint[]): MemberMapCl
   >();
 
   for (const p of points) {
-    const key = `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
+    const key = `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
     const existing = buckets.get(key);
     if (existing) {
       existing.count += 1;

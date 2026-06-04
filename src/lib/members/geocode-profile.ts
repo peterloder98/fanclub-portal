@@ -2,13 +2,30 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { geocodeGermanPlz, isGermanCountry } from "@/lib/members/geocode-plz";
 
 export async function geocodeProfileMapCoords(profile: {
+  street?: string | null;
   postal_code?: string | null;
   city?: string | null;
   country?: string | null;
 }): Promise<{ lat: number; lng: number } | null> {
   const plz = (profile.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
   const city = (profile.city ?? "").trim();
+  const street = (profile.street ?? "").trim();
   if (!plz || plz.length !== 5 || !isGermanCountry(profile.country)) return null;
+
+  if (street || city) {
+    const { geocodeWithNominatim } = await import("@/lib/artistflow/geocode");
+    const nom = await geocodeWithNominatim({
+      address: street || undefined,
+      postal_code: plz,
+      city: city || plz,
+      country: "Deutschland",
+      timeoutMs: 10_000,
+    });
+    if (nom.status === "success") {
+      return { lat: nom.lat, lng: nom.lng };
+    }
+  }
+
   return geocodeGermanPlz(plz, city);
 }
 
@@ -19,7 +36,7 @@ export async function syncProfileMapCoords(
 ): Promise<{ ok: boolean; lat?: number; lng?: number }> {
   const { data: profile, error } = await admin
     .from("profiles")
-    .select("postal_code,city,country")
+    .select("street,postal_code,city,country")
     .eq("id", userId)
     .maybeSingle();
   if (error || !profile) return { ok: false };

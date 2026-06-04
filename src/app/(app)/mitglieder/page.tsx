@@ -2,9 +2,7 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { MembersMap } from "@/components/members/members-map";
 import { UpcomingBirthdays } from "@/components/members/upcoming-birthdays";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
-import { geocodeProfileMapCoords, syncProfileMapCoords } from "@/lib/members/geocode-profile";
 import { isGermanCountry } from "@/lib/members/geocode-plz";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
 import { groupMembersByMapLocation, type MemberMapCluster } from "@/lib/members/cluster-map";
@@ -30,26 +28,19 @@ export default async function MitgliederPage() {
         .in("id", activeList)
     : { data: [] };
 
-  const admin = createSupabaseAdminClient();
   const mapPoints: MemberMapPoint[] = [];
+  let missingCoords = 0;
 
   for (const p of profiles ?? []) {
     const plz = (p.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
     const city = (p.city ?? "").trim();
     if (!plz || plz.length !== 5 || !isGermanCountry(p.country)) continue;
 
-    let lat = typeof p.map_lat === "number" ? p.map_lat : null;
-    let lng = typeof p.map_lng === "number" ? p.map_lng : null;
-
-    if (lat == null || lng == null) {
-      const coords =
-        (await geocodeProfileMapCoords(p)) ??
-        (await syncProfileMapCoords(admin, p.id).then((r) =>
-          r.ok && r.lat != null && r.lng != null ? { lat: r.lat, lng: r.lng } : null,
-        ));
-      if (!coords) continue;
-      lat = coords.lat;
-      lng = coords.lng;
+    const lat = typeof p.map_lat === "number" ? p.map_lat : null;
+    const lng = typeof p.map_lng === "number" ? p.map_lng : null;
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+      missingCoords += 1;
+      continue;
     }
 
     mapPoints.push({
@@ -89,9 +80,19 @@ export default async function MitgliederPage() {
             <p className="mt-1 px-1 text-xs text-slate-600">
               In diesen Bereichen sind unsere Mitglieder zu Hause (keine persönlichen Adressen, nur
               regionale Einordnung!).
+              {missingCoords > 0 ? (
+                <span className="mt-1 block text-amber-800">
+                  {missingCoords} Mitglied(er) ohne Kartenposition — Koordinaten werden beim Speichern
+                  der Adresse automatisch gesetzt.
+                </span>
+              ) : null}
             </p>
             <div className="mt-3 min-h-0 flex-1">
-              <MembersMap clusters={clusters} memberCount={mapPoints.length} />
+              <MembersMap
+                clusters={clusters}
+                memberCount={mapPoints.length}
+                totalActive={activeList.length}
+              />
             </div>
           </div>
 

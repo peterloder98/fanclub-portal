@@ -3,8 +3,6 @@
 import { useMemo } from "react";
 import { Marker } from "react-leaflet";
 import L from "leaflet";
-import { MapTooltipTowardCenter } from "@/components/maps/map-tooltip-toward-center";
-import { EventMapHoverContent } from "./event-map-hover-content";
 import type { MapEvent } from "./events-map.types";
 
 const PIN_W = 22;
@@ -85,7 +83,6 @@ export function EventMapMarker({
   position,
   highlighted,
   selected,
-  showTooltip,
   onSelect,
   onHover,
 }: {
@@ -93,7 +90,6 @@ export function EventMapMarker({
   position: [number, number];
   highlighted: boolean;
   selected: boolean;
-  showTooltip: boolean;
   onSelect: (eventId: string) => void;
   onHover?: (eventId: string | null) => void;
 }) {
@@ -118,16 +114,6 @@ export function EventMapMarker({
         mouseover: () => onHover?.(event.id),
         mouseout: () => onHover?.(null),
       }}
-    >
-      {showTooltip ? (
-        <MapTooltipTowardCenter
-          position={position}
-          anchorOffset={SLOT_H + 8}
-          className="fc-event-hover-tip"
-        >
-          <EventMapHoverContent event={event} />
-        </MapTooltipTowardCenter>
-      ) : null}
-    </Marker>
+    />
   );
 }

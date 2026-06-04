@@ -18,9 +18,17 @@ const MembersMapClient = dynamic(
 export function MembersMap({
   clusters,
   memberCount,
+  totalActive,
 }: {
   clusters: MemberMapCluster[];
   memberCount: number;
+  totalActive?: number;
 }) {
-  return <MembersMapClient clusters={clusters} memberCount={memberCount} />;
+  return (
+    <MembersMapClient
+      clusters={clusters}
+      memberCount={memberCount}
+      totalActive={totalActive}
+    />
+  );
 }

@@ -6,6 +6,8 @@ import L from "leaflet";
 import { EventMapMarker } from "./event-map-marker";
 import { EventMapDetailPanel } from "./event-map-detail-panel";
 import { MapClickDismiss } from "./map-click-dismiss";
+import { MapHoverOverlay } from "@/components/maps/map-hover-overlay";
+import { EventMapHoverContent } from "./event-map-hover-content";
 import { spreadMapMarkerPlacements } from "@/lib/events/spread-map-markers";
 import type { MapEvent } from "./events-map.types";
 
@@ -108,7 +110,10 @@ export function EventsMapClient({
 
   const placements = useMemo(() => spreadMapMarkerPlacements(markers), [markers]);
 
-  const tooltipEventId = hoveredEventId && !selectedEventId ? hoveredEventId : null;
+  const hoveredPlacement = useMemo(() => {
+    if (!hoveredEventId || selectedEventId) return null;
+    return placements.find((p) => p.event.id === hoveredEventId) ?? null;
+  }, [hoveredEventId, selectedEventId, placements]);
 
   useEffect(() => {
     if (!map) return;
@@ -242,11 +247,19 @@ export function EventsMapClient({
               position={position}
               highlighted={event.id === effectiveHighlight}
               selected={event.id === selectedEventId}
-              showTooltip={event.id === tooltipEventId && event.id !== selectedEventId}
               onSelect={selectEvent}
               onHover={setHoveredEventId}
             />
           ))}
+          {hoveredPlacement ? (
+            <MapHoverOverlay
+              lat={hoveredPlacement.position[0]}
+              lng={hoveredPlacement.position[1]}
+              pinOffsetY={38}
+            >
+              <EventMapHoverContent event={hoveredPlacement.event} />
+            </MapHoverOverlay>
+          ) : null}
         </MapContainer>
 
         {selectedEvent ? (

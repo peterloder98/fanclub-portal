@@ -239,6 +239,21 @@ async function createMembers() {
     console.log(`  OK ${userId}`);
   }
 
+  const { geocodeProfileAddress, sleep } = await import("./lib/geocode-profile.mjs");
+  for (const uid of createdIds) {
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("street,postal_code,city,country,first_name,last_name")
+      .eq("id", uid)
+      .maybeSingle();
+    if (!prof) continue;
+    const coords = await geocodeProfileAddress(prof);
+    await sleep(1100);
+    if (coords) {
+      await admin.from("profiles").update({ map_lat: coords.lat, map_lng: coords.lng }).eq("id", uid);
+    }
+  }
+
   return createdIds;
 }
 

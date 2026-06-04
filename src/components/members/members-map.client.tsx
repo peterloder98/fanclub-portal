@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker } from "react-leaflet";
 import type { MemberMapCluster } from "@/lib/members/cluster-map";
-import { MapTooltipTowardCenter } from "@/components/maps/map-tooltip-toward-center";
+import { Tooltip } from "react-leaflet";
 
 const GERMANY_BOUNDS: [[number, number], [number, number]] = [
   [47.0, 5.5],
@@ -21,9 +21,11 @@ function clusterRadius(count: number) {
 export function MembersMapClient({
   clusters,
   memberCount,
+  totalActive,
 }: {
   clusters: MemberMapCluster[];
   memberCount: number;
+  totalActive?: number;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -85,16 +87,19 @@ export function MembersMapClient({
                 weight: 2,
               }}
             >
-              <MapTooltipTowardCenter position={[c.lat, c.lng]} anchorOffset={14}>
+              <Tooltip direction="top" offset={[0, -10]} opacity={1}>
                 <span className="text-sm font-semibold">{c.label}</span>
-              </MapTooltipTowardCenter>
+              </Tooltip>
             </CircleMarker>
           ))}
         </MapContainer>
       </div>
       <p className="shrink-0 border-t bg-slate-50 px-2 py-1.5 text-center text-[11px] text-slate-600">
         {memberCount} {memberCount === 1 ? "Mitglied" : "Mitglieder"} auf der Karte
-        {markers.length < memberCount
+        {typeof totalActive === "number" && totalActive > memberCount
+          ? ` (${totalActive} aktiv)`
+          : null}
+        {markers.length > 0
           ? ` · ${markers.length} ${markers.length === 1 ? "Region" : "Regionen"}`
           : null}
       </p>
