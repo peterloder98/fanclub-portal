@@ -33,7 +33,7 @@ export function PostMediaGallery({
             onClick={() => setLightboxUrl(m.url)}
             className={cn(
               "rounded-lg border bg-slate-50 p-0.5 transition hover:ring-2 hover:ring-blue-200",
-              items.length === 1 ? "max-w-[min(100%,16rem)]" : "max-w-[calc(50%-0.25rem)] sm:max-w-[9rem]",
+              items.length === 1 ? "max-w-[min(100%,12rem)]" : "max-w-[calc(50%-0.25rem)] sm:max-w-[7rem]",
             )}
             aria-label="Bild vergrößern"
           >
@@ -41,7 +41,7 @@ export function PostMediaGallery({
             <img
               src={m.url}
               alt=""
-              className="block max-h-28 w-auto max-w-full object-contain"
+              className="block max-h-20 w-auto max-w-full object-contain"
             />
           </button>
         ))}
@@ -67,7 +67,7 @@ export function PostMediaGallery({
           <img
             src={lightboxUrl}
             alt=""
-            className="max-h-[min(92vh,960px)] max-w-[min(96vw,1200px)] object-contain"
+            className="max-h-[min(88vh,720px)] max-w-[min(96vw,720px)] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

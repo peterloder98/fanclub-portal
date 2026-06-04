@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { validateImageUpload } from "@/lib/security/upload-validation";
+import { processAvatarForStorage } from "@/lib/images/process-server";
+import { AVATAR_INPUT_MAX_BYTES, AVATAR_MAX_BYTES } from "@/lib/images/specs";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -23,11 +25,21 @@ export async function POST(request: Request) {
   }
 
   const uploadErrMsg = validateImageUpload(file, {
-    maxBytes: 2 * 1024 * 1024,
+    maxBytes: AVATAR_INPUT_MAX_BYTES,
     label: "Profilbild",
   });
   if (uploadErrMsg) {
     return NextResponse.json({ error: uploadErrMsg }, { status: 400 });
+  }
+
+  let optimized: Buffer;
+  try {
+    optimized = await processAvatarForStorage(file);
+  } catch {
+    return NextResponse.json({ error: "Bild konnte nicht verarbeitet werden." }, { status: 400 });
+  }
+  if (optimized.length > AVATAR_MAX_BYTES) {
+    return NextResponse.json({ error: "Profilbild nach Komprimierung zu groß." }, { status: 400 });
   }
 
   const admin = createSupabaseAdminClient();
@@ -35,7 +47,7 @@ export async function POST(request: Request) {
 
   const { error: uploadErr } = await admin.storage
     .from("avatars")
-    .upload(objectPath, file, {
+    .upload(objectPath, optimized, {
       upsert: true,
       contentType,
       cacheControl: "3600",

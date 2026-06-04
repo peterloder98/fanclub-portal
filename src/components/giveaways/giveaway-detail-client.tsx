@@ -448,7 +448,7 @@ export function GiveawayDetailClient({
               <h4 className="text-sm font-semibold text-slate-900">Gewinner</h4>
               {localWinners.map((w) => (
                 <div key={w.id} className="flex items-center gap-3 rounded-xl border p-3">
-                  <div className="h-10 w-10 overflow-hidden rounded-full border bg-slate-50">
+                  <div className="h-8 w-8 overflow-hidden rounded-full border bg-slate-50">
                     {w.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={w.avatarUrl} alt="" className="h-full w-full object-cover" />

@@ -19,7 +19,7 @@ export function UserAvatar({
   useEffect(() => {
     setImgFailed(false);
   }, [avatarUrl]);
-  const dim = size === "xs" ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs";
+  const dim = size === "xs" ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[10px]";
   const showImage = Boolean(avatarUrl) && !imgFailed;
 
   return (

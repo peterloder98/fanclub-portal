@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
 import { validateImageUpload } from "@/lib/security/upload-validation";
+import { processPostMediaForStorage } from "@/lib/images/process-server";
+import { POST_MEDIA_INPUT_MAX_BYTES, POST_MEDIA_MAX_BYTES } from "@/lib/images/specs";
 
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -40,14 +42,31 @@ export async function POST(request: Request) {
   for (let i = 0; i < blobs.length; i += 1) {
     const b = blobs[i]!;
     const validation = validateImageUpload(b, {
-      maxBytes: 5 * 1024 * 1024,
+      maxBytes: POST_MEDIA_INPUT_MAX_BYTES,
       label: `Bild ${i + 1}`,
     });
     if (validation) {
       return NextResponse.json({ error: validation }, { status: 400 });
     }
+
+    let optimized: Buffer;
+    try {
+      optimized = await processPostMediaForStorage(b);
+    } catch {
+      return NextResponse.json(
+        { error: `Bild ${i + 1} konnte nicht verarbeitet werden.` },
+        { status: 400 },
+      );
+    }
+    if (optimized.length > POST_MEDIA_MAX_BYTES) {
+      return NextResponse.json(
+        { error: `Bild ${i + 1} ist auch nach Komprimierung zu groß (max. 100 KB).` },
+        { status: 400 },
+      );
+    }
+
     const path = `${postId}/${user.id}/${Date.now()}_${i}.webp`;
-    const { error } = await admin.storage.from("post-media").upload(path, b, {
+    const { error } = await admin.storage.from("post-media").upload(path, optimized, {
       upsert: false,
       contentType: "image/webp",
       cacheControl: "3600",

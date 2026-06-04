@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/cn";
 
-const SIZE = { xs: 24, sm: 28 } as const;
+const SIZE = { xs: 20, sm: 24 } as const;
 
 export function HoverEnlargeAvatar({
   name,

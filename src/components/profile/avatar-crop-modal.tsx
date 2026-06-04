@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { cropAndOptimizeAvatar } from "@/lib/avatars/crop";
+import { AVATAR_STORAGE_PX } from "@/lib/images/specs";
 
 export function AvatarCropModal({
   file,
@@ -69,8 +70,8 @@ export function AvatarCropModal({
           width: Math.round(croppedAreaPixels.width),
           height: Math.round(croppedAreaPixels.height),
         },
-        outputSize: 256,
-        quality: 0.85,
+        outputSize: AVATAR_STORAGE_PX,
+        quality: 0.72,
       });
       await onSave({ blob, contentType });
       onClose();

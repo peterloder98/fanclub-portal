@@ -1,5 +1,8 @@
 "use client";
 
+import { POST_MEDIA_MAX_BYTES, POST_MEDIA_MAX_SIDE_PX } from "@/lib/images/specs";
+
+/** Client-Vorverarbeitung — Server komprimiert erneut auf ≤100 KB. */
 export async function optimizePostImage(file: File): Promise<{
   blob: Blob;
   contentType: string;
@@ -13,7 +16,7 @@ export async function optimizePostImage(file: File): Promise<{
     throw new Error("Bild konnte nicht verarbeitet werden.");
   }
 
-  const maxSide = 1600;
+  const maxSide = Math.min(POST_MEDIA_MAX_SIDE_PX, 640);
   const srcW = bitmap.width;
   const srcH = bitmap.height;
   const scale = Math.min(1, maxSide / Math.max(srcW, srcH));
@@ -30,14 +33,29 @@ export async function optimizePostImage(file: File): Promise<{
   ctx.drawImage(bitmap, 0, 0, outW, outH);
 
   const contentType = "image/webp";
+  const targetBytes = Math.floor(POST_MEDIA_MAX_BYTES * 0.85);
+  let quality = 0.62;
+
+  for (let i = 0; i < 8; i++) {
+    const blob: Blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("Failed to encode image"))),
+        contentType,
+        quality,
+      );
+    });
+    if (blob.size <= targetBytes || quality <= 0.4) {
+      return { blob, contentType, width: outW, height: outH };
+    }
+    quality -= 0.08;
+  }
+
   const blob: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error("Failed to encode image"))),
       contentType,
-      0.82,
+      0.4,
     );
   });
-
   return { blob, contentType, width: outW, height: outH };
 }
-

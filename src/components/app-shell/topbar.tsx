@@ -114,7 +114,7 @@ export function Topbar({
         <div className="group relative z-20">
           <button
             type="button"
-            className="block h-10 w-10 overflow-hidden rounded-full border bg-slate-50 shadow-sm shadow-slate-900/10 ring-offset-2 transition hover:ring-2 hover:ring-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+            className="block h-8 w-8 overflow-hidden rounded-full border bg-slate-50 shadow-sm shadow-slate-900/10 ring-offset-2 transition hover:ring-2 hover:ring-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
             aria-label="Profilmenü"
             aria-haspopup="true"
           >
@@ -131,7 +131,7 @@ export function Topbar({
           <div className="pointer-events-none invisible absolute right-0 top-full z-50 w-64 pt-2 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
             <div className="rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15">
               <div className="flex items-center gap-3">
-              <div className="h-10 w-10 overflow-hidden rounded-full border bg-slate-50">
+              <div className="h-8 w-8 overflow-hidden rounded-full border bg-slate-50">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />

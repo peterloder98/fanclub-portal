@@ -23,6 +23,7 @@
     "react-dom": "19.2.4",
     "react-easy-crop": "^5.5.7",
     "react-leaflet": "^5.0.0",
+    "sharp": "^0.34.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -34,7 +35,6 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"

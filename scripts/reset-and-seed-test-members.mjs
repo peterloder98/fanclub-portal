@@ -161,8 +161,8 @@ async function fetchPortraitBuffer(gender, seed) {
 async function uploadAvatar(userId, gender, seed) {
   const raw = await fetchPortraitBuffer(gender, seed);
   const webp = await sharp(raw)
-    .resize(256, 256, { fit: "cover", position: "attention" })
-    .webp({ quality: 85 })
+    .resize(96, 96, { fit: "cover", position: "attention" })
+    .webp({ quality: 72, effort: 4 })
     .toBuffer();
   const objectPath = `${userId}/avatar.webp`;
   const { error: upErr } = await admin.storage.from("avatars").upload(objectPath, webp, {

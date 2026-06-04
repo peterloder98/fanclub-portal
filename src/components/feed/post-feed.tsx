@@ -901,7 +901,7 @@ export function PostFeed({
             <div
               className={cn(
                 "shrink-0 overflow-hidden rounded-full border-2 border-white bg-gradient-to-br from-blue-100 to-rose-100 shadow-sm transition-all duration-200 ease-out",
-                composerExpanded ? "h-12 w-12 shadow-md ring-2 ring-blue-200/80" : "h-9 w-9 ring-1 ring-slate-200/80",
+                composerExpanded ? "h-10 w-10 shadow-md ring-2 ring-blue-200/80" : "h-7 w-7 ring-1 ring-slate-200/80",
               )}
               aria-hidden
             >
