@@ -27,7 +27,7 @@ export type AdminMemberRow = {
   first_name: string;
   last_name: string;
   birthdate: string | null;
-  contribution_date: string | null;
+  joined_at: string | null;
   warning_count: number;
   membership_status: string | null;
   email: string | null;
@@ -49,7 +49,7 @@ type MemberSortKey =
   | "first_name"
   | "last_name"
   | "birthdate"
-  | "contribution_date"
+  | "joined_at"
   | "warning_count"
   | "membership_status";
 type AppSortKey = "created_at" | "last_name" | "email" | "status";
@@ -179,8 +179,8 @@ export function AdminMembersWorkspace({
             return r.last_name;
           case "birthdate":
             return r.birthdate ?? "";
-          case "contribution_date":
-            return r.contribution_date ?? "";
+          case "joined_at":
+            return r.joined_at ?? "";
           case "warning_count":
             return String(r.warning_count);
           case "membership_status":
@@ -539,10 +539,10 @@ export function AdminMembersWorkspace({
                     </th>
                     <th className="px-3 py-2">
                       <SortBtn
-                        label="Beitragsdatum"
-                        active={memberSort.key === "contribution_date"}
+                        label="Beitrittsdatum"
+                        active={memberSort.key === "joined_at"}
                         dir={memberSort.dir}
-                        onClick={() => toggleMemberSort("contribution_date")}
+                        onClick={() => toggleMemberSort("joined_at")}
                       />
                     </th>
                     <th className="px-3 py-2">
@@ -587,7 +587,7 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2">{m.first_name}</td>
                       <td className="px-3 py-2">{m.last_name}</td>
                       <td className="px-3 py-2">{formatDE(m.birthdate)}</td>
-                      <td className="px-3 py-2">{formatDE(m.contribution_date)}</td>
+                      <td className="px-3 py-2">{formatDE(m.joined_at)}</td>
                       <td className="px-3 py-2 tabular-nums">
                         {m.warning_count > 0 ? (
                           <span className="font-semibold text-rose-700">{m.warning_count}</span>

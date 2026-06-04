@@ -38,7 +38,7 @@ export default async function AdminMemberDetailPage({
   const admin = createSupabaseAdminClient();
   const { data: profile, error: pErr } = await admin
     .from("profiles")
-    .select("id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,contribution_date,warning_count")
+    .select("id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count")
     .eq("id", id)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -86,18 +86,6 @@ export default async function AdminMemberDetailPage({
                     defaultValue={profile.membership_number ?? ""}
                     className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
                     placeholder="Wird bei Freigabe automatisch vergeben"
-                  />
-                </label>
-                <label className="grid gap-1">
-                  <span className="text-sm font-medium text-slate-700">Beitragsdatum</span>
-                  <input
-                    type="date"
-                    name="contribution_date"
-                    defaultValue={formatDE(
-                      (profile as { contribution_date?: string | null }).contribution_date ??
-                        null,
-                    )}
-                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
                   />
                 </label>
                 {(profile as { warning_count?: number }).warning_count ? (

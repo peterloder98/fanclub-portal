@@ -45,19 +45,24 @@ export default async function AdminMembersPage({
       const admin = createSupabaseAdminClient();
       const { data: memberships, error: mErr } = await admin
         .from("memberships")
-        .select("user_id,status")
+        .select("user_id,status,start_date")
         .order("end_date", { ascending: false });
       if (mErr) return { members: [], membersError: mErr.message };
 
       const { data: profiles, error: pErr } = await admin
         .from("profiles")
-        .select("id,membership_number,first_name,last_name,birthdate,email,contribution_date,warning_count")
+        .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
         .order("membership_number", { ascending: true, nullsFirst: false });
       if (pErr) return { members: [], membersError: pErr.message };
 
-      const membershipByUser = new Map<string, string>();
+      const membershipByUser = new Map<string, { status: string; start_date: string | null }>();
       (memberships ?? []).forEach((m) => {
-        if (!membershipByUser.has(m.user_id)) membershipByUser.set(m.user_id, m.status);
+        if (!membershipByUser.has(m.user_id)) {
+          membershipByUser.set(m.user_id, {
+            status: m.status,
+            start_date: m.start_date ?? null,
+          });
+        }
       });
 
       return {
@@ -67,9 +72,9 @@ export default async function AdminMembersPage({
           first_name: p.first_name,
           last_name: p.last_name,
           birthdate: p.birthdate ?? null,
-          contribution_date: (p as { contribution_date?: string | null }).contribution_date ?? null,
+          joined_at: membershipByUser.get(p.id)?.start_date ?? null,
           warning_count: (p as { warning_count?: number }).warning_count ?? 0,
-          membership_status: membershipByUser.get(p.id) ?? null,
+          membership_status: membershipByUser.get(p.id)?.status ?? null,
           email: p.email ?? null,
         })),
         membersError: null,

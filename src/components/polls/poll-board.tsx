@@ -88,7 +88,7 @@ export function PollBoard({
       .from("polls")
       .select("id,question,allow_multiple,ends_at,created_at")
       .eq("is_active", true)
-      .order("created_at", { ascending: false });
+      .order("ends_at", { ascending: false });
     if (pollErr) throw pollErr;
     const rows = pollRows ?? [];
     setPolls((prev) => {
@@ -275,9 +275,13 @@ export function PollBoard({
   }
 
   const visiblePolls = useMemo(() => {
-    if (!activeOnly) return polls;
+    const rows = [...polls];
+    rows.sort(
+      (a, b) => new Date(b.ends_at).getTime() - new Date(a.ends_at).getTime(),
+    );
+    if (!activeOnly) return rows;
     const now = Date.now();
-    return polls.filter((p) => new Date(p.ends_at).getTime() >= now);
+    return rows.filter((p) => new Date(p.ends_at).getTime() >= now);
   }, [polls, activeOnly]);
 
   if (error) {
@@ -300,10 +304,8 @@ export function PollBoard({
     return (
       <div className="rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-700">
         {activeOnly && polls.length
-          ? "Aktuell laufen keine Umfragen."
-          : "Noch keine Umfragen. Admins können oben „Neue Umfrage erstellen“ wählen."}{" "}
-        Migration <span className="font-mono">supabase/010_polls.sql</span> prüfen und Seite
-        neu laden.
+          ? "Aktuell laufen keine Umfragen. Beendete Umfragen findest du unter Umfragen in der Navigation."
+          : "Noch keine Umfragen. Admins können oben „Neue Umfrage erstellen“ wählen."}
       </div>
     );
   }
@@ -326,9 +328,10 @@ export function PollBoard({
         return (
           <Card key={poll.id} className="overflow-hidden">
             <CardHeader className="space-y-2 pb-0">
-              {isAdmin && !ended ? (
+              {isAdmin ? (
                 <PollAdminControls
                   poll={poll}
+                  ended={ended}
                   options={opts.map((o) => ({ id: o.id, label: o.label }))}
                   voteCountByOptionId={Object.fromEntries(
                     opts.map((o) => [o.id, counts.get(o.id) ?? 0]),

@@ -22,7 +22,7 @@ export default async function PollsPage() {
     .from("polls")
     .select("id,question,allow_multiple,ends_at,created_at")
     .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .order("ends_at", { ascending: false });
 
   return (
     <div className="min-h-screen">
@@ -37,7 +37,7 @@ export default async function PollsPage() {
           </div>
         ) : null}
         <Suspense fallback={<div className="text-sm text-slate-600">Lade Umfragen…</div>}>
-          <PollBoard initialPolls={initialPolls ?? []} activeOnly isAdmin={isAdmin} />
+          <PollBoard initialPolls={initialPolls ?? []} isAdmin={isAdmin} />
         </Suspense>
       </main>
     </div>

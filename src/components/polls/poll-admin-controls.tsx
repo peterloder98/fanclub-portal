@@ -8,6 +8,7 @@ type PollOption = { id: string; label: string };
 
 export function PollAdminControls({
   poll,
+  ended = false,
   options: initialOptions,
   voteCountByOptionId = {},
 }: {
@@ -17,6 +18,7 @@ export function PollAdminControls({
     allow_multiple: boolean;
     ends_at: string;
   };
+  ended?: boolean;
   options: PollOption[];
   /** Stimmen pro Antwortoption — Löschen nur ohne Stimmen, Text immer korrigierbar. */
   voteCountByOptionId?: Record<string, number>;
@@ -88,14 +90,16 @@ export function PollAdminControls({
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm">
       <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void onEndEarly()}
-          className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-amber-900"
-        >
-          Vorzeitig beenden
-        </button>
+        {!ended ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void onEndEarly()}
+            className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium text-amber-900"
+          >
+            Vorzeitig beenden
+          </button>
+        ) : null}
         <button
           type="button"
           disabled={busy}

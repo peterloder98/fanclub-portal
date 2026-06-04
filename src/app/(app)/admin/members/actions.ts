@@ -31,7 +31,6 @@ const schema = z.object({
 const updateSchema = z.object({
   user_id: z.string().uuid(),
   membership_number: z.string().optional().default(""),
-  contribution_date: z.string().optional().default(""),
   first_name: z.string().min(1),
   last_name: z.string().min(1),
   street: z.string().optional().default(""),
@@ -215,7 +214,6 @@ export async function updateMember(formData: FormData) {
     .from("profiles")
     .update({
       membership_number: membershipNumber,
-      contribution_date: input.contribution_date?.trim() || null,
       first_name: input.first_name,
       last_name: input.last_name,
       role: input.role,
