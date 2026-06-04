@@ -113,8 +113,8 @@ export function PollHeaderMeta({
               {hasVoted && !ended ? (
                 <span
                   className={cn(
-                    "font-semibold leading-none text-emerald-700",
-                    compact ? "text-[9px]" : "text-[10px]",
+                    "font-semibold leading-tight text-emerald-700",
+                    compact ? "text-[10px]" : "text-xs",
                   )}
                 >
                   Du hast teilgenommen

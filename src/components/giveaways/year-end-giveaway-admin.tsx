@@ -7,6 +7,7 @@ import {
   removeYearEndGiveawayPrize,
 } from "@/app/(app)/giveaways/actions";
 import type { MailSignatureOption } from "@/lib/email/signatures";
+import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { YEAR_END_TIE_BREAK_SUMMARY } from "@/lib/giveaways/year-end-ranking";
 
 type TopMember = {
@@ -16,6 +17,7 @@ type TopMember = {
   activityCount: number;
   name: string;
   membershipNumber: string | null;
+  avatarUrl?: string | null;
 };
 
 export function YearEndGiveawayAdmin({
@@ -103,15 +105,22 @@ export function YearEndGiveawayAdmin({
         <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Berechtigte Top-10 (endgültige Reihenfolge)
         </h4>
-        <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-slate-800">
+        <ol className="mt-1.5 space-y-1.5 text-slate-800">
           {topMembers.map((m) => (
-            <li key={m.userId}>
-              <span className="font-medium">{m.name}</span>
-              {m.membershipNumber ? (
-                <span className="text-slate-500"> · Nr. {m.membershipNumber}</span>
-              ) : null}
-              <span className="tabular-nums text-emerald-700"> · {m.points} Pkt.</span>
-              <span className="text-slate-500"> · {m.activityCount} Aktivitäten</span>
+            <li key={m.userId} className="flex items-start gap-2">
+              <span className="w-5 shrink-0 pt-0.5 text-right text-xs font-bold tabular-nums text-slate-500">
+                {m.rank}.
+              </span>
+              <HoverEnlargeAvatar name={m.name} avatarUrl={m.avatarUrl} size="xs">
+                <span>
+                  <span className="font-medium">{m.name}</span>
+                  {m.membershipNumber ? (
+                    <span className="text-slate-500"> · Nr. {m.membershipNumber}</span>
+                  ) : null}
+                  <span className="tabular-nums text-emerald-700"> · {m.points} Pkt.</span>
+                  <span className="text-slate-500"> · {m.activityCount} Aktivitäten</span>
+                </span>
+              </HoverEnlargeAvatar>
             </li>
           ))}
         </ol>

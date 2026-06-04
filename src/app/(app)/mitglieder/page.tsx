@@ -1,8 +1,11 @@
 import { Topbar } from "@/components/app-shell/topbar";
+import { MembersLeaderboard } from "@/components/members/members-leaderboard";
 import { MembersMap } from "@/components/members/members-map";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { geocodeGermanPlz, isGermanCountry } from "@/lib/members/geocode-plz";
 import { clusterMemberPoints, type MemberMapPoint } from "@/lib/members/cluster-map";
+import { profileDisplayName } from "@/lib/profiles/display";
 
 type LeaderRow = {
   user_id: string;
@@ -61,6 +64,30 @@ export default async function MitgliederPage() {
   );
   if (!lbErr) rows = (leaderboard ?? []) as LeaderRow[];
 
+  const leaderboardUserIds = rows.map((r) => r.user_id);
+  const { data: leaderboardProfiles } = leaderboardUserIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id,first_name,last_name,email,avatar_path,updated_at")
+        .in("id", leaderboardUserIds)
+    : { data: [] };
+  const profileById = new Map((leaderboardProfiles ?? []).map((p) => [p.id, p]));
+
+  const leaderboardRows = rows.map((r) => {
+    const p = profileById.get(r.user_id);
+    const name = p
+      ? profileDisplayName(p)
+      : r.first_name && r.last_name
+        ? `${r.first_name} ${r.last_name}`
+        : "Mitglied";
+    return {
+      userId: r.user_id,
+      name,
+      points: Number(r.points),
+      avatarUrl: p ? getAvatarPublicUrl(p.avatar_path, p.updated_at ?? null) : null,
+    };
+  });
+
   return (
     <div className="min-h-screen">
       <Topbar
@@ -69,7 +96,7 @@ export default async function MitgliederPage() {
       />
       <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 lg:px-8">
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,360px)] lg:items-stretch">
-          <div className="flex min-h-[280px] flex-col rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm lg:min-h-[360px]">
+          <div className="flex min-h-[420px] flex-col rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm lg:min-h-[520px]">
             <h2 className="px-1 text-base font-semibold text-slate-900">Mitglieder in Deutschland</h2>
             <p className="mt-1 px-1 text-xs text-slate-600">
               Nur PLZ und Ort — keine Straßen. Mehrere in einer Stadt = größerer Pin. Nahe Orte
@@ -85,33 +112,8 @@ export default async function MitgliederPage() {
               <h2 className="text-base font-semibold text-slate-900">Statuspunkte-Rangliste</h2>
               <p className="text-xs text-slate-600">Aktuelles Kalenderjahr</p>
             </div>
-            <ol className="max-h-[min(360px,50vh)] overflow-y-auto overscroll-contain px-2 py-2">
-              {rows.length === 0 ? (
-                <li className="px-2 py-4 text-sm text-slate-500">Noch keine Punkte.</li>
-              ) : (
-                rows.map((r, i) => {
-                  const name =
-                    r.first_name && r.last_name
-                      ? `${r.first_name} ${r.last_name}`
-                      : "Mitglied";
-                  return (
-                    <li
-                      key={r.user_id}
-                      className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 hover:bg-slate-50"
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span className="w-6 shrink-0 text-sm font-bold tabular-nums text-slate-500">
-                          {i + 1}.
-                        </span>
-                        <span className="truncate text-sm font-medium text-slate-900">{name}</span>
-                      </span>
-                      <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-0.5 text-sm font-bold tabular-nums text-blue-800">
-                        {r.points}
-                      </span>
-                    </li>
-                  );
-                })
-              )}
+            <ol className="max-h-[min(520px,58vh)] overflow-y-auto overscroll-contain px-2 py-2">
+              <MembersLeaderboard rows={leaderboardRows} />
             </ol>
           </aside>
         </section>

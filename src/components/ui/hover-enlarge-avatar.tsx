@@ -4,8 +4,10 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/cn";
+import { initialsFromName } from "@/lib/user/initials";
 
 const SIZE = { xs: 20, sm: 24 } as const;
+const NAME_TAG_HEIGHT = 22;
 
 export function HoverEnlargeAvatar({
   name,
@@ -18,52 +20,75 @@ export function HoverEnlargeAvatar({
   avatarUrl?: string | null;
   size?: "xs" | "sm";
   className?: string;
-  /** Optional: auch Name als Hover-Anker */
   children?: ReactNode;
 }) {
-  const anchorRef = useRef<HTMLSpanElement>(null);
+  const avatarRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const base = SIZE[size];
   const enlarged = base * 2;
 
   const updatePosition = useCallback(() => {
-    const el = anchorRef.current;
+    const el = avatarRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const left = Math.max(
       8,
       Math.min(rect.left + rect.width / 2 - enlarged / 2, window.innerWidth - enlarged - 8),
     );
-    const top = Math.max(8, rect.top - enlarged - 8);
+    const top = Math.max(8, rect.top - enlarged - NAME_TAG_HEIGHT - 6);
     setCoords({ top, left });
   }, [enlarged]);
 
-  const preview =
-    open && avatarUrl ? (
+  const onEnter = () => {
+    updatePosition();
+    setOpen(true);
+  };
+
+  const preview = open ? (
+    <span
+      role="tooltip"
+      style={{ top: coords.top, left: coords.left, width: enlarged }}
+      className="pointer-events-none fixed z-[250] flex flex-col items-center"
+    >
       <span
-        role="presentation"
-        style={{ top: coords.top, left: coords.left, width: enlarged, height: enlarged }}
-        className="pointer-events-none fixed z-[250] overflow-hidden rounded-full border-2 border-white shadow-xl shadow-slate-900/25"
+        className="overflow-hidden rounded-full border-2 border-white shadow-xl shadow-slate-900/25"
+        style={{ width: enlarged, height: enlarged }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <span className="grid h-full w-full place-items-center bg-gradient-to-br from-blue-600 to-rose-500 text-sm font-bold text-white">
+            {initialsFromName(name)}
+          </span>
+        )}
       </span>
-    ) : null;
+      <span className="mt-1 max-w-[min(10rem,40vw)] truncate rounded-md bg-slate-900/92 px-2 py-0.5 text-center text-[11px] font-medium text-white shadow-sm">
+        {name}
+      </span>
+    </span>
+  ) : null;
 
   return (
-    <span
-      ref={anchorRef}
-      className={cn("inline-flex items-center gap-1.5", className)}
-      onMouseEnter={() => {
-        if (!avatarUrl) return;
-        updatePosition();
-        setOpen(true);
-      }}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
-      {children}
+    <span className={cn("inline-flex items-center gap-1.5", className)}>
+      <span
+        ref={avatarRef}
+        className="inline-flex shrink-0"
+        onMouseEnter={onEnter}
+        onMouseLeave={() => setOpen(false)}
+      >
+        <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
+      </span>
+      {children ? (
+        <span
+          className="min-w-0"
+          onMouseEnter={onEnter}
+          onMouseLeave={() => setOpen(false)}
+        >
+          {children}
+        </span>
+      ) : null}
       {typeof document !== "undefined" && preview
         ? createPortal(preview, document.body)
         : null}

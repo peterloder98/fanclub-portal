@@ -101,6 +101,8 @@ export type YearEndTopMember = {
     last_name: string | null;
     email: string | null;
     membership_number: string | null;
+    avatar_path: string | null;
+    updated_at: string | null;
   } | null;
 };
 
@@ -116,7 +118,7 @@ export async function getTopMembersForYear(
   const ids = top.map((t) => t.user_id);
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email,membership_number")
+    .select("id,first_name,last_name,email,membership_number,avatar_path,updated_at")
     .in("id", ids);
 
   const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));

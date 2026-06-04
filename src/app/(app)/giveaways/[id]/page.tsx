@@ -179,6 +179,7 @@ export default async function GiveawayDetailPage({
       activityCount: number;
       name: string;
       membershipNumber: string | null;
+      avatarUrl: string | null;
     }>;
   } | null = null;
 
@@ -197,6 +198,9 @@ export default async function GiveawayDetailPage({
               ? `${t.profile.first_name} ${t.profile.last_name}`
               : (t.profile?.email ?? "Mitglied"),
           membershipNumber: t.profile?.membership_number ?? null,
+          avatarUrl: t.profile
+            ? getAvatarPublicUrl(t.profile.avatar_path, t.profile.updated_at ?? null)
+            : null,
         })),
       };
     } catch {

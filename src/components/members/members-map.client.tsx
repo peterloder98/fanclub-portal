@@ -29,7 +29,7 @@ export function MembersMapClient({ clusters }: { clusters: MemberMapCluster[] })
   if (!mounted) {
     return (
       <div
-        className="grid h-full min-h-[220px] place-items-center rounded-xl border bg-slate-50 text-sm text-slate-500"
+        className="grid h-full min-h-[360px] place-items-center rounded-xl border bg-slate-50 text-sm text-slate-500"
         role="status"
       >
         Karte wird geladen …
@@ -40,7 +40,7 @@ export function MembersMapClient({ clusters }: { clusters: MemberMapCluster[] })
   if (!withCoords.length) {
     return (
       <div
-        className="grid h-full min-h-[220px] place-items-center rounded-xl border bg-slate-50 px-4 text-center text-sm text-slate-600"
+        className="grid h-full min-h-[360px] place-items-center rounded-xl border bg-slate-50 px-4 text-center text-sm text-slate-600"
         role="status"
       >
         Noch keine Standorte — sobald Mitglieder PLZ und Ort hinterlegt haben, erscheinen Pins.
@@ -49,11 +49,11 @@ export function MembersMapClient({ clusters }: { clusters: MemberMapCluster[] })
   }
 
   return (
-    <div className="h-full min-h-[220px] w-full overflow-hidden rounded-xl border">
+    <div className="h-full min-h-[360px] w-full overflow-hidden rounded-xl border">
       <MapContainer
         center={GERMANY_CENTER}
-        zoom={6}
-        minZoom={5}
+        zoom={5}
+        minZoom={4}
         maxZoom={12}
         maxBounds={GERMANY_BOUNDS}
         maxBoundsViscosity={0.85}
