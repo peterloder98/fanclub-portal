@@ -32,6 +32,12 @@ export default function AdminPage() {
                 E-Mail / SMTP
               </Link>
               <Link
+                href="/admin/settings/notifications"
+                className="rounded-xl border bg-white px-4 py-3 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+              >
+                Mitglieder-Benachrichtigungen (Gewinnspiel / Umfrage)
+              </Link>
+              <Link
                 href="/admin/settings/email-templates"
                 className="rounded-xl border bg-white px-4 py-3 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
               >

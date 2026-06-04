@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { after } from "next/server";
+import { notifyMembersNewPoll } from "@/lib/email/member-activity-broadcast";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -73,6 +75,14 @@ export async function createPoll(formData: FormData) {
     })),
   );
   if (optErr) throw new Error(optErr.message);
+
+  after(async () => {
+    try {
+      await notifyMembersNewPoll(poll.id);
+    } catch (e) {
+      console.error("[member-broadcast] Umfrage-Benachrichtigung:", e);
+    }
+  });
 
   revalidatePath("/polls");
   revalidatePath("/dashboard");

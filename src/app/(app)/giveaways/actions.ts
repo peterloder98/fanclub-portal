@@ -10,6 +10,8 @@ import {
   notifyAdminsGiveawayEnded,
   notifyGiveawayWinner,
 } from "@/lib/email/giveaway-notify";
+import { after } from "next/server";
+import { notifyMembersNewGiveaway } from "@/lib/email/member-activity-broadcast";
 
 async function requireUser() {
   const supabase = await createSupabaseServerClient();
@@ -158,6 +160,14 @@ export async function createGiveaway(formData: FormData) {
       );
     }
   }
+
+  after(async () => {
+    try {
+      await notifyMembersNewGiveaway(row.id);
+    } catch (e) {
+      console.error("[member-broadcast] Gewinnspiel-Benachrichtigung:", e);
+    }
+  });
 
   revalidatePath("/giveaways");
   redirect("/giveaways?tab=active");
