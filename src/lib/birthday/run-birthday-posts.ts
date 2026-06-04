@@ -25,15 +25,6 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
   const todayMd = berlinTodayMd();
   const todayIso = berlinTodayIsoDate();
 
-  const { data: adminProfile } = await admin
-    .from("profiles")
-    .select("id")
-    .eq("role", "admin")
-    .limit(1)
-    .maybeSingle();
-  const authorId = adminProfile?.id;
-  if (!authorId) return { created: 0, reason: "no_admin" as const };
-
   const { data: profiles } = await admin
     .from("profiles")
     .select("id,first_name,birthdate,gender")
@@ -67,7 +58,7 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
       todayIso,
     );
     const { error } = await admin.from("posts").insert({
-      author_id: authorId,
+      author_id: null,
       author_role: "anni",
       title,
       body,

@@ -1,6 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
-import { MembersLeaderboard } from "@/components/members/members-leaderboard";
 import { MembersMap } from "@/components/members/members-map";
+import { UpcomingBirthdays } from "@/components/members/upcoming-birthdays";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -9,13 +9,7 @@ import { isGermanCountry } from "@/lib/members/geocode-plz";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
 import { groupMembersByMapLocation, type MemberMapCluster } from "@/lib/members/cluster-map";
 import { profileDisplayName } from "@/lib/profiles/display";
-
-type LeaderRow = {
-  user_id: string;
-  first_name: string | null;
-  last_name: string | null;
-  points: number;
-};
+import { buildUpcomingBirthdays } from "@/lib/members/upcoming-birthdays";
 
 export default async function MitgliederPage() {
   const supabase = await createSupabaseServerClient();
@@ -30,7 +24,9 @@ export default async function MitgliederPage() {
   const { data: profiles } = activeList.length
     ? await supabase
         .from("profiles")
-        .select("id,first_name,last_name,postal_code,city,country,map_lat,map_lng")
+        .select(
+          "id,first_name,last_name,postal_code,city,country,map_lat,map_lng,birthdate,avatar_path,updated_at,email",
+        )
         .in("id", activeList)
     : { data: [] };
 
@@ -67,42 +63,24 @@ export default async function MitgliederPage() {
 
   const clusters: MemberMapCluster[] = groupMembersByMapLocation(mapPoints);
 
-  let rows: LeaderRow[] = [];
-  const { data: leaderboard, error: lbErr } = await supabase.rpc(
-    "member_year_points_leaderboard",
-    { p_limit: 30 },
+  const birthdayRows = buildUpcomingBirthdays(
+    (profiles ?? []).map((p) => ({
+      id: p.id,
+      first_name: p.first_name,
+      last_name: p.last_name,
+      email: p.email,
+      birthdate: p.birthdate,
+      name: profileDisplayName(p),
+      avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at ?? null),
+    })),
+    10,
   );
-  if (!lbErr) rows = (leaderboard ?? []) as LeaderRow[];
-
-  const leaderboardUserIds = rows.map((r) => r.user_id);
-  const { data: leaderboardProfiles } = leaderboardUserIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id,first_name,last_name,email,avatar_path,updated_at")
-        .in("id", leaderboardUserIds)
-    : { data: [] };
-  const profileById = new Map((leaderboardProfiles ?? []).map((p) => [p.id, p]));
-
-  const leaderboardRows = rows.map((r) => {
-    const p = profileById.get(r.user_id);
-    const name = p
-      ? profileDisplayName(p)
-      : r.first_name && r.last_name
-        ? `${r.first_name} ${r.last_name}`
-        : "Mitglied";
-    return {
-      userId: r.user_id,
-      name,
-      points: Number(r.points),
-      avatarUrl: p ? getAvatarPublicUrl(p.avatar_path, p.updated_at ?? null) : null,
-    };
-  });
 
   return (
     <div className="min-h-screen">
       <Topbar
         title="Mitglieder"
-        subtitle="Wo wir herkommen — und wer die meisten Statuspunkte hat."
+        subtitle="Wo wir herkommen — und wer als Nächstes Geburtstag hat."
       />
       <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 lg:px-8">
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,360px)] lg:items-stretch">
@@ -117,14 +95,14 @@ export default async function MitgliederPage() {
             </div>
           </div>
 
-          <aside className="rounded-2xl border border-slate-200/90 bg-white shadow-sm">
+          <aside className="flex flex-col rounded-2xl border border-slate-200/90 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-4 py-3">
-              <h2 className="text-base font-semibold text-slate-900">Statuspunkte-Rangliste</h2>
-              <p className="text-xs text-slate-600">Aktuelles Kalenderjahr</p>
+              <h2 className="text-base font-semibold text-slate-900">Nächste Geburtstage</h2>
+              <p className="text-xs text-slate-600">Die nächsten 10 Termine im Jahr</p>
             </div>
-            <ol className="max-h-[min(520px,58vh)] overflow-y-auto overscroll-contain px-2 py-2">
-              <MembersLeaderboard rows={leaderboardRows} />
-            </ol>
+            <div className="max-h-[min(520px,58vh)] overflow-y-auto overscroll-contain">
+              <UpcomingBirthdays rows={birthdayRows} />
+            </div>
           </aside>
         </section>
       </main>

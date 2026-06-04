@@ -11,6 +11,12 @@ import { profileToUserListEntry } from "@/lib/profiles/display";
 import { optimizePostImage } from "@/lib/posts/optimize-image";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
 import { flyPointsFromElement } from "@/lib/points/fly";
+import { emitPointsGain } from "@/lib/points/events";
+import { POINT_VALUES } from "@/lib/points/values";
+import {
+  FANCLUB_AUTHOR_LOGO,
+  FANCLUB_AUTHOR_NAME,
+} from "@/lib/feed/fanclub-author";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
 import {
   PollFeedCard,
@@ -194,7 +200,7 @@ export function PostFeed({
 
   const canManagePost = (post: FeedPost) =>
     me &&
-    (me.id === post.authorId || me.role === "admin");
+    (post.isBirthday ? me.role === "admin" : me.id === post.authorId || me.role === "admin");
 
   useEffect(() => {
     async function loadMeAndFeed() {
@@ -364,18 +370,22 @@ export function PostFeed({
               .filter((t) => Number.isFinite(t))
               .sort((a, b) => b - a)[0];
 
+            const isBirthday = Boolean((p as any).is_birthday);
             return {
               id: p.id,
               authorId: p.author_id ?? null,
-              authorName:
-                postAuthorMap.get(p.author_id)?.name ??
-                (p.author_role === "anni"
-                  ? "Anni"
-                  : p.author_role === "admin"
-                    ? "Admin"
-                    : "Mitglied"),
+              authorName: isBirthday
+                ? FANCLUB_AUTHOR_NAME
+                : postAuthorMap.get(p.author_id)?.name ??
+                  (p.author_role === "anni"
+                    ? FANCLUB_AUTHOR_NAME
+                    : p.author_role === "admin"
+                      ? "Admin"
+                      : "Mitglied"),
               authorRole: p.author_role,
-              authorAvatarUrl: postAuthorMap.get(p.author_id)?.avatarUrl ?? null,
+              authorAvatarUrl: isBirthday
+                ? FANCLUB_AUTHOR_LOGO
+                : postAuthorMap.get(p.author_id)?.avatarUrl ?? null,
               createdAtLabel: new Date(p.created_at).toLocaleString("de-DE", {
                 dateStyle: "short",
                 timeStyle: "short",
@@ -384,7 +394,7 @@ export function PostFeed({
               body: p.body,
               status: (p as any).status ?? "approved",
               lastActivityAt: computed ? new Date(computed).toISOString() : p.created_at,
-              isBirthday: Boolean((p as any).is_birthday),
+              isBirthday,
               birthdayDate: (p as any).birthday_date ?? null,
               media: mediaByPost.get(p.id) ?? [],
               likedByMe: likedSet.has(user.id),
@@ -564,6 +574,10 @@ export function PostFeed({
     );
 
     // Persist to DB (best-effort)
+    const post = posts.find((p) => p.id === postId);
+    const isBirthday = Boolean(post?.isBirthday);
+    const pointsDelta = isBirthday ? POINT_VALUES.birthdayComment : POINT_VALUES.postComment;
+
     void (async () => {
       try {
         const supabase = createSupabaseBrowserClient();
@@ -573,8 +587,13 @@ export function PostFeed({
           body: text,
         });
         if (!error) {
-          // comment = +3 points
-          flyPointsFromElement({ fromEl: null, delta: +3 });
+          const { error: ptsErr } = await supabase.rpc("ensure_post_comment_points", {
+            p_post_id: postId,
+          });
+          if (!ptsErr) {
+            flyPointsFromElement({ fromEl: null, delta: pointsDelta });
+            emitPointsGain(pointsDelta);
+          }
         }
       } catch {
         // ignore for now
