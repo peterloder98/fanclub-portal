@@ -5,7 +5,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { pickGiveawayWinners } from "@/lib/giveaways/draw-winners";
+import { performGiveawayDraw } from "@/lib/giveaways/perform-draw";
+import {
+  createYearEndGiveaway,
+  confirmYearEndGiveaway,
+  defaultPointsYearForYearEndRun,
+} from "@/lib/giveaways/year-end-lottery";
 import {
   notifyAdminsGiveawayEnded,
   notifyGiveawayWinner,
@@ -34,9 +39,10 @@ export async function processEndedGiveaways() {
   const now = new Date().toISOString();
   const { data: rows } = await admin
     .from("giveaways")
-    .select("id,title,ends_at,status,admin_ended_notified_at")
+    .select("id,title,ends_at,status,admin_ended_notified_at,is_year_end_lottery")
     .eq("is_active", true)
     .eq("status", "active")
+    .eq("is_year_end_lottery", false)
     .lt("ends_at", now);
 
   for (const g of rows ?? []) {
@@ -175,61 +181,20 @@ export async function createGiveaway(formData: FormData) {
 
 export async function drawGiveawayWinners(giveawayId: string) {
   const { admin } = await requireAdmin();
-
   const { data: g } = await admin
     .from("giveaways")
-    .select("id,title,status,ends_at")
+    .select("is_year_end_lottery")
     .eq("id", giveawayId)
     .maybeSingle();
-  if (!g) throw new Error("Gewinnspiel nicht gefunden.");
-
-  const ended = new Date(g.ends_at).getTime() < Date.now();
-  if (!ended && g.status === "active") {
-    throw new Error("Gewinnspiel läuft noch – Auslosung erst nach Ende.");
+  if (g?.is_year_end_lottery) {
+    throw new Error(
+      "Jahresend-Sonderverlosung: bitte „Bestätigen & auslosen“ verwenden (nach Preiseintrag).",
+    );
   }
-
-  const { data: existing } = await admin
-    .from("giveaway_winners")
-    .select("id")
-    .eq("giveaway_id", giveawayId)
-    .limit(1);
-  if (existing?.length) throw new Error("Gewinner wurden bereits ermittelt.");
-
-  const { data: prizes } = await admin
-    .from("giveaway_prizes")
-    .select("id,sort_order")
-    .eq("giveaway_id", giveawayId)
-    .order("sort_order", { ascending: true });
-
-  const { data: entries } = await admin
-    .from("giveaway_entries")
-    .select("user_id,is_eligible")
-    .eq("giveaway_id", giveawayId)
-    .eq("is_eligible", true);
-
-  const picks = pickGiveawayWinners(prizes ?? [], entries ?? []);
-  if (!picks.length) throw new Error("Keine berechtigten Teilnehmer für die Auslosung.");
-
-  const { error: insErr } = await admin.from("giveaway_winners").insert(
-    picks.map((p) => ({
-      giveaway_id: giveawayId,
-      prize_id: p.prize_id,
-      user_id: p.user_id,
-    })),
-  );
-  if (insErr) throw new Error(insErr.message);
-
-  await admin
-    .from("giveaways")
-    .update({
-      status: "drawn",
-      winners_drawn_at: new Date().toISOString(),
-    })
-    .eq("id", giveawayId);
-
+  const result = await performGiveawayDraw(admin, giveawayId);
   revalidatePath("/giveaways");
   revalidatePath(`/giveaways/${giveawayId}`);
-  return { winnerCount: picks.length };
+  return { winnerCount: result.winnerCount };
 }
 
 export async function sendGiveawayWinnerEmail(
@@ -277,11 +242,14 @@ export async function participateSimple(giveawayId: string) {
 
   const { data: g } = await supabase
     .from("giveaways")
-    .select("id,ends_at,status,entry_mode,is_paused")
+    .select("id,ends_at,status,entry_mode,is_paused,is_year_end_lottery")
     .eq("id", giveawayId)
     .maybeSingle();
   if (!g || g.entry_mode !== "simple") throw new Error("Ungültiges Gewinnspiel.");
   assertGiveawayOpen(g);
+  if (g.is_year_end_lottery) {
+    throw new Error("Bei der Jahres-Sonderverlosung nehmen nur die Top-10 automatisch teil.");
+  }
 
   const { error } = await supabase.from("giveaway_entries").insert({
     giveaway_id: giveawayId,
@@ -325,11 +293,14 @@ export async function participateQuiz(
 
   const { data: g } = await supabase
     .from("giveaways")
-    .select("id,ends_at,status,entry_mode,is_paused")
+    .select("id,ends_at,status,entry_mode,is_paused,is_year_end_lottery")
     .eq("id", giveawayId)
     .maybeSingle();
   if (!g || g.entry_mode !== "quiz") throw new Error("Ungültiges Quiz-Gewinnspiel.");
   assertGiveawayOpen(g);
+  if (g.is_year_end_lottery) {
+    throw new Error("Bei der Jahres-Sonderverlosung nehmen nur die Top-10 automatisch teil.");
+  }
 
   const { data: questions } = await admin
     .from("giveaway_questions")
@@ -396,10 +367,85 @@ export async function participateQuiz(
   return { eligible: allCorrect, results };
 }
 
+export async function setupYearEndGiveaway(pointsYear?: number) {
+  const { userId, admin } = await requireAdmin();
+  const year = pointsYear ?? defaultPointsYearForYearEndRun();
+  const result = await createYearEndGiveaway(admin, { pointsYear: year, authorId: userId });
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${result.giveawayId}`);
+  return result;
+}
+
+export async function confirmYearEndGiveawayAction(
+  giveawayId: string,
+  signatureId?: string,
+) {
+  const { admin } = await requireAdmin();
+  const result = await confirmYearEndGiveaway(admin, giveawayId, signatureId);
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${giveawayId}`);
+  return result;
+}
+
+export async function addYearEndGiveawayPrize(giveawayId: string, name: string) {
+  const { admin } = await requireAdmin();
+  const prizeName = name.trim();
+  if (prizeName.length < 2) throw new Error("Preisname zu kurz.");
+
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("is_year_end_lottery,year_end_confirmed_at,status")
+    .eq("id", giveawayId)
+    .maybeSingle();
+  if (!g?.is_year_end_lottery) throw new Error("Nur für Jahresend-Gewinnspiele.");
+  if (g.year_end_confirmed_at || g.status === "drawn") {
+    throw new Error("Nach Bestätigung können keine Preise mehr ergänzt werden.");
+  }
+
+  const { count } = await admin
+    .from("giveaway_prizes")
+    .select("id", { count: "exact", head: true })
+    .eq("giveaway_id", giveawayId);
+  const sortOrder = count ?? 0;
+
+  const { error } = await admin.from("giveaway_prizes").insert({
+    giveaway_id: giveawayId,
+    name: prizeName,
+    sort_order: sortOrder,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/giveaways/${giveawayId}`);
+}
+
+export async function removeYearEndGiveawayPrize(prizeId: string) {
+  const { admin } = await requireAdmin();
+  const { data: prize } = await admin
+    .from("giveaway_prizes")
+    .select("giveaway_id")
+    .eq("id", prizeId)
+    .maybeSingle();
+  if (!prize?.giveaway_id) throw new Error("Preis nicht gefunden.");
+
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("is_year_end_lottery,year_end_confirmed_at,status")
+    .eq("id", prize.giveaway_id)
+    .maybeSingle();
+  if (!g?.is_year_end_lottery) throw new Error("Nur für Jahresend-Gewinnspiele.");
+  if (g.year_end_confirmed_at || g.status === "drawn") {
+    throw new Error("Nach Bestätigung können Preise nicht mehr entfernt werden.");
+  }
+
+  const { error } = await admin.from("giveaway_prizes").delete().eq("id", prizeId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/giveaways/${prize.giveaway_id}`);
+}
+
 function assertGiveawayOpen(g: {
   ends_at: string;
   status: string;
   is_paused?: boolean;
+  is_year_end_lottery?: boolean;
 }) {
   if (g.is_paused) throw new Error("Gewinnspiel ist pausiert.");
   if (new Date(g.ends_at).getTime() < Date.now()) throw new Error("Gewinnspiel ist beendet.");

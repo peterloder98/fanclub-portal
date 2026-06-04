@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +22,8 @@ export type GiveawayListItem = {
   prizeNames: string[];
   entryCount: number;
   myEntered: boolean;
+  isYearEndLottery?: boolean;
+  pointsYear?: number | null;
 };
 
 type AdminTab = "active" | "ended" | "create";
@@ -29,9 +31,11 @@ type AdminTab = "active" | "ended" | "create";
 export function GiveawayBoard({
   items,
   isAdmin,
+  yearEndBanner,
 }: {
   items: GiveawayListItem[];
   isAdmin: boolean;
+  yearEndBanner?: ReactNode;
 }) {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as AdminTab) || "active";
@@ -50,6 +54,7 @@ export function GiveawayBoard({
 
   return (
     <div className="grid gap-4">
+      {yearEndBanner}
       {isAdmin ? (
         <div className="flex flex-wrap gap-2">
           {(
@@ -88,9 +93,14 @@ export function GiveawayBoard({
                   <Card className="transition hover:shadow-md">
                     <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <Gift className="h-4 w-4 text-blue-600" />
                           <h3 className="text-sm font-semibold text-slate-900">{g.title}</h3>
+                          {g.isYearEndLottery ? (
+                            <Badge variant="brand" className="text-[10px]">
+                              Sonderverlosung
+                            </Badge>
+                          ) : null}
                         </div>
                         {g.description ? (
                           <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>

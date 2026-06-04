@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import { GiveawayBoard } from "@/components/giveaways/giveaway-board";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
 import { processEndedGiveaways } from "./actions";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  defaultPointsYearForYearEndRun,
+  findYearEndGiveawayForYear,
+} from "@/lib/giveaways/year-end-lottery";
+import { YearEndSetupBanner } from "@/components/giveaways/year-end-setup-banner";
 
 export default async function GiveawaysPage() {
   const supabase = await createSupabaseServerClient();
@@ -35,6 +41,23 @@ export default async function GiveawaysPage() {
     items = [];
   }
 
+  let yearEndBanner = null;
+  if (isAdmin) {
+    try {
+      const admin = createSupabaseAdminClient();
+      const pointsYear = defaultPointsYearForYearEndRun();
+      const existing = await findYearEndGiveawayForYear(admin, pointsYear);
+      yearEndBanner = (
+        <YearEndSetupBanner
+          pointsYear={pointsYear}
+          existingGiveawayId={existing?.id ?? null}
+        />
+      );
+    } catch {
+      yearEndBanner = null;
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <Topbar
@@ -47,7 +70,7 @@ export default async function GiveawaysPage() {
       />
       <main className="px-4 py-6 lg:px-8">
         <Suspense fallback={<div className="text-sm text-slate-600">Lade…</div>}>
-          <GiveawayBoard items={items} isAdmin={isAdmin} />
+          <GiveawayBoard items={items} isAdmin={isAdmin} yearEndBanner={yearEndBanner} />
         </Suspense>
       </main>
     </div>

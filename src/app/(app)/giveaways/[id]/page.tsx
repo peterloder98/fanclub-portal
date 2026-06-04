@@ -5,6 +5,9 @@ import { GiveawayDetailClient } from "@/components/giveaways/giveaway-detail-cli
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { listMailSignatureOptions } from "@/lib/email/signatures";
 import { loadQuizReviewForUser } from "@/lib/giveaways/load-quiz-review";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getTopMembersForYear } from "@/lib/giveaways/year-end-lottery";
+import { YearEndGiveawayAdmin } from "@/components/giveaways/year-end-giveaway-admin";
 
 export default async function GiveawayDetailPage({
   params,
@@ -27,7 +30,9 @@ export default async function GiveawayDetailPage({
 
   const { data: g } = await supabase
     .from("giveaways")
-    .select("id,title,description,entry_mode,ends_at,status,is_paused")
+    .select(
+      "id,title,description,entry_mode,ends_at,status,is_paused,is_year_end_lottery,points_year,year_end_confirmed_at",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!g) notFound();
@@ -161,6 +166,35 @@ export default async function GiveawayDetailPage({
     }
   }
 
+  let yearEndAdmin: {
+    topMembers: Array<{
+      userId: string;
+      points: number;
+      name: string;
+      membershipNumber: string | null;
+    }>;
+  } | null = null;
+
+  if (isAdmin && g.is_year_end_lottery && g.points_year) {
+    try {
+      const admin = createSupabaseAdminClient();
+      const top = await getTopMembersForYear(admin, g.points_year);
+      yearEndAdmin = {
+        topMembers: top.map((t) => ({
+          userId: t.userId,
+          points: t.points,
+          name:
+            t.profile?.first_name && t.profile?.last_name
+              ? `${t.profile.first_name} ${t.profile.last_name}`
+              : (t.profile?.email ?? "Mitglied"),
+          membershipNumber: t.profile?.membership_number ?? null,
+        })),
+      };
+    } catch {
+      yearEndAdmin = null;
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <Topbar title="Gewinnspiel" subtitle={g.title} />
@@ -178,6 +212,18 @@ export default async function GiveawayDetailPage({
           isAdmin={isAdmin}
           userId={user.id}
           signatures={signatures}
+          yearEndAdmin={
+            yearEndAdmin && g.points_year ? (
+              <YearEndGiveawayAdmin
+                giveawayId={g.id}
+                pointsYear={g.points_year}
+                confirmed={Boolean(g.year_end_confirmed_at)}
+                prizes={prizes ?? []}
+                topMembers={yearEndAdmin.topMembers}
+                signatures={signatures}
+              />
+            ) : null
+          }
         />
       </main>
     </div>

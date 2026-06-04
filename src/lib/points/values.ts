@@ -25,4 +25,4 @@ export const POINTS_YEAR_HINT =
   "Statuspunkte gelten für das laufende Kalenderjahr. Am 1. Januar startet die Zählung neu — dein Rang in der Leiste zeigt deinen Einsatz im Club.";
 
 export const POINTS_YEAR_END_NOTE =
-  "Aktuell sind Statuspunkte eine Anerkennung für Engagement (Rang in der App), ohne automatische Einlösung am Jahresende. Soll es später Club-Vorteile geben (z. B. Verlosung, Merch, Meet & Greet), legt das der Vorstand separat fest und wir ergänzen die App.";
+  "Am Jahreswechsel werden die zehn Mitglieder mit den meisten Statuspunkten des abgelaufenen Jahres automatisch in eine Sonderverlosung aufgenommen (sichtbar unter Gewinnspiele). Der Vorstand trägt die Preise ein und bestätigt — danach wird ausgelost und die Gewinner per E-Mail benachrichtigt. Ab dem 1. Januar zählen Statuspunkte wieder bei null für das neue Jahr.";

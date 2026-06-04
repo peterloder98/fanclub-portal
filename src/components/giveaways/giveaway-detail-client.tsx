@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, SendHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -48,6 +48,7 @@ export function GiveawayDetailClient({
   isAdmin,
   userId,
   signatures,
+  yearEndAdmin,
 }: {
   giveaway: {
     id: string;
@@ -57,6 +58,8 @@ export function GiveawayDetailClient({
     ends_at: string;
     status: string;
     is_paused: boolean;
+    is_year_end_lottery?: boolean;
+    points_year?: number | null;
   };
   prizes: { id: string; name: string }[];
   questions: Question[];
@@ -75,6 +78,7 @@ export function GiveawayDetailClient({
   isAdmin: boolean;
   userId: string | null;
   signatures: MailSignatureOption[];
+  yearEndAdmin?: ReactNode;
 }) {
   const phase = giveawayPhase(giveaway.ends_at, giveaway.status, giveaway.is_paused);
   const [busy, setBusy] = useState(false);
@@ -91,8 +95,9 @@ export function GiveawayDetailClient({
   const [localStatus, setLocalStatus] = useState(giveaway.status);
   const [signatureId, setSignatureId] = useState(signatures[0]?.id ?? "");
 
+  const isYearEnd = Boolean(giveaway.is_year_end_lottery);
   const canParticipate =
-    phase === "active" && !giveaway.is_paused && !localEntered && userId;
+    !isYearEnd && phase === "active" && !giveaway.is_paused && !localEntered && userId;
   const showWinners = localStatus === "drawn" && localWinners.length > 0;
 
   const quizReview = useMemo(() => {
@@ -246,7 +251,8 @@ export function GiveawayDetailClient({
           </div>
         </CardHeader>
         <CardContent className="grid gap-4">
-          {isAdmin ? <GiveawayAdminControls giveaway={giveaway} /> : null}
+          {yearEndAdmin}
+          {isAdmin && !isYearEnd ? <GiveawayAdminControls giveaway={giveaway} /> : null}
 
           {giveaway.description ? (
             <p className="text-sm leading-relaxed text-slate-700">{giveaway.description}</p>
@@ -261,7 +267,18 @@ export function GiveawayDetailClient({
             </ul>
           </div>
 
-          {localEntered ? (
+          {isYearEnd ? (
+            <div className="rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-sm text-violet-950">
+              {localEntered
+                ? `Du gehörst zu den Top-10 der Statuspunkte ${giveaway.points_year ?? ""} und nimmst automatisch teil.`
+                : `Sonderverlosung nur für die Top-10 der Statuspunkte ${giveaway.points_year ?? ""}. Eine Anmeldung ist nicht möglich.`}
+              {localStatus !== "drawn" ? (
+                <span className="mt-1 block text-slate-600">
+                  Die Auslosung erfolgt, sobald der Vorstand die Preise eingetragen und bestätigt hat.
+                </span>
+              ) : null}
+            </div>
+          ) : localEntered ? (
             <div
               className={cn(
                 "rounded-xl border px-3 py-2 text-sm",
@@ -361,7 +378,10 @@ export function GiveawayDetailClient({
             </div>
           ) : null}
 
-          {isAdmin && (phase === "ended" || phase === "drawn") && localStatus !== "drawn" ? (
+          {isAdmin &&
+          !isYearEnd &&
+          (phase === "ended" || phase === "drawn") &&
+          localStatus !== "drawn" ? (
             <button
               type="button"
               disabled={busy}
