@@ -4,6 +4,7 @@ import { useState } from "react";
 import { EventsMapClient } from "@/components/events/events-map.client";
 import { EventsCountdown } from "@/components/events/events-countdown";
 import { EventParticipationRow } from "@/components/events/event-participation-row";
+import { EventCalendarButton } from "@/components/events/event-calendar-button";
 import { formatEventStart, formatLocation } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "@/components/events/events-map.types";
@@ -100,12 +101,23 @@ export function EventsInteractivePanel({
                     ) : ticket.text ? (
                       <div className="mt-1.5 text-xs text-slate-700">{ticket.text}</div>
                     ) : null}
-                    <EventParticipationRow
-                      eventId={e.id}
-                      initialCount={part.count}
-                      initialJoined={part.joined}
-                      initialAttendees={part.attendees}
-                    />
+                    <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+                      <EventParticipationRow
+                        eventId={e.id}
+                        initialCount={part.count}
+                        initialJoined={part.joined}
+                        initialAttendees={part.attendees}
+                        inline
+                      />
+                      <EventCalendarButton
+                        title={e.title}
+                        startAt={e.start_at}
+                        venue={e.venue}
+                        address={e.address}
+                        postalCode={e.postal_code}
+                        city={e.city}
+                      />
+                    </div>
                   </div>
                 );
               })}

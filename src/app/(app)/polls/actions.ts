@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { logAdminAction } from "@/lib/admin/audit-log";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -18,7 +19,7 @@ async function requireAdmin() {
     .eq("id", user.id)
     .maybeSingle();
   if (me?.role !== "admin") redirect("/polls");
-  return createSupabaseAdminClient();
+  return { admin: createSupabaseAdminClient(), actorId: user.id };
 }
 
 const updatePollSchema = z.object({
@@ -38,26 +39,40 @@ const updatePollSchema = z.object({
 });
 
 export async function endPollEarly(pollId: string) {
-  const admin = await requireAdmin();
+  const { admin, actorId } = await requireAdmin();
   const now = new Date().toISOString();
   const { error } = await admin.from("polls").update({ ends_at: now }).eq("id", pollId);
   if (error) throw new Error(error.message);
+  await logAdminAction(admin, {
+    actorId,
+    action: "poll.end_early",
+    entityType: "poll",
+    entityId: pollId,
+    summary: "Umfrage vorzeitig beendet",
+  });
   revalidatePath("/polls");
   revalidatePath(`/polls/${pollId}`);
   revalidatePath("/dashboard");
 }
 
 export async function deletePoll(pollId: string) {
-  const admin = await requireAdmin();
+  const { admin, actorId } = await requireAdmin();
   const { error } = await admin.from("polls").delete().eq("id", pollId);
   if (error) throw new Error(error.message);
+  await logAdminAction(admin, {
+    actorId,
+    action: "poll.delete",
+    entityType: "poll",
+    entityId: pollId,
+    summary: "Umfrage gelöscht",
+  });
   revalidatePath("/polls");
   revalidatePath("/dashboard");
   redirect("/polls");
 }
 
 export async function updatePoll(formData: FormData) {
-  const admin = await requireAdmin();
+  const { admin, actorId } = await requireAdmin();
   const optionsRaw = String(formData.get("options_json") ?? "[]");
   let options: z.infer<typeof updatePollSchema>["options"] = [];
   try {
@@ -123,6 +138,14 @@ export async function updatePoll(formData: FormData) {
       await admin.from("poll_options").delete().eq("id", id);
     }
   }
+
+  await logAdminAction(admin, {
+    actorId,
+    action: "poll.update",
+    entityType: "poll",
+    entityId: input.poll_id,
+    summary: `Umfrage bearbeitet: „${input.question.slice(0, 80)}“`,
+  });
 
   revalidatePath("/polls");
   revalidatePath(`/polls/${input.poll_id}`);

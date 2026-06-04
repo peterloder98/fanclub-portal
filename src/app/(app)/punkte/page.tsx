@@ -1,15 +1,15 @@
 import { Topbar } from "@/components/app-shell/topbar";
-import { PointsGuideCard } from "@/components/points/points-guide-card";
+import { PunktePageClient } from "@/components/points/punkte-page.client";
 
 export default function PunktePage() {
   return (
     <div className="min-h-screen">
       <Topbar
         title="Statuspunkte"
-        subtitle="Wofür du Punkte bekommst, wie viele — und welche Ränge es gibt."
+        subtitle="Deine Punkte, Rang, Historie — und wie das System funktioniert."
       />
       <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
-        <PointsGuideCard />
+        <PunktePageClient />
       </main>
     </div>
   );

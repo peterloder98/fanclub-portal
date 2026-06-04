@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Sparkles, Trophy } from "lucide-react";
 import {
   POINTS_RANKS,
-  POINTS_YEAR_END_NOTE,
   POINTS_YEAR_HINT,
   pointsRulesSortedByPoints,
 } from "@/lib/points/catalog";
@@ -17,7 +16,7 @@ export function PointsGuideCard({ id = "punkte" }: { id?: string }) {
   return (
     <div id={id} className="scroll-mt-24 w-full space-y-6">
       <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-600/10 via-white to-rose-500/10 px-5 py-5 shadow-sm shadow-slate-900/5">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">Statuspunkte</h2>
+        <h2 className="text-xl font-semibold tracking-tight text-slate-900">So sammelst du Punkte</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{POINTS_YEAR_HINT}</p>
       </div>
 
@@ -75,11 +74,6 @@ export function PointsGuideCard({ id = "punkte" }: { id?: string }) {
             ))}
           </ul>
         </section>
-      </div>
-
-      <div className="rounded-2xl border border-slate-200/90 bg-white px-5 py-4 text-sm leading-relaxed text-slate-600 shadow-sm shadow-slate-900/5">
-        <p className="font-semibold text-slate-900">Jahresende & Einlösung</p>
-        <p className="mt-2">{POINTS_YEAR_END_NOTE}</p>
       </div>
 
       <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50/90 via-white to-blue-50/80 px-5 py-4 text-sm leading-relaxed text-slate-700">

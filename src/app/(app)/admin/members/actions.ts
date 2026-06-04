@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
+import { logAdminAction } from "@/lib/admin/audit-log";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -156,6 +157,14 @@ export async function createMember(formData: FormData) {
   });
   if (membershipErr) throw new Error(membershipErr.message);
 
+  await logAdminAction(admin, {
+    actorId: user.id,
+    action: "member.create",
+    entityType: "profile",
+    entityId: userId,
+    summary: `Mitglied angelegt: ${input.first_name} ${input.last_name}`,
+  });
+
   // Store the invite link temporarily in a redirect param for now
   redirect(`/admin/members?invite=${encodeURIComponent(linkData.properties.action_link)}`);
 }
@@ -238,6 +247,14 @@ export async function updateMember(formData: FormData) {
     }
   }
 
+  await logAdminAction(admin, {
+    actorId: user.id,
+    action: "member.update",
+    entityType: "profile",
+    entityId: input.user_id,
+    summary: `Mitglied bearbeitet: ${input.first_name} ${input.last_name}`,
+  });
+
   redirect(`/admin/members/${input.user_id}`);
 }
 
@@ -257,6 +274,13 @@ export async function deleteMember(userId: string) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) throw new Error(error.message);
+  await logAdminAction(admin, {
+    actorId: user.id,
+    action: "member.delete",
+    entityType: "profile",
+    entityId: userId,
+    summary: "Mitgliedskonto gelöscht",
+  });
   revalidatePath("/admin/members");
   redirect("/admin/members");
 }

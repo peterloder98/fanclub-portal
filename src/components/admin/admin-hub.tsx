@@ -9,6 +9,7 @@ import {
   MapPinned,
   Music2,
   PenLine,
+  ScrollText,
   Shield,
   Users,
 } from "lucide-react";
@@ -111,6 +112,13 @@ const SECTIONS: AdminHubSection[] = [
         description: "Import, Geocoding, Logs und manueller Sync.",
         icon: MapPinned,
         iconClassName: "from-fuchsia-600 to-rose-600",
+      },
+      {
+        href: "/admin/audit",
+        title: "Audit-Log",
+        description: "Nachvollziehen, welcher Admin was geändert hat.",
+        icon: ScrollText,
+        iconClassName: "from-slate-600 to-slate-800",
       },
     ],
   },

@@ -80,20 +80,19 @@ export function Topbar({
       <div className="ml-auto flex h-10 items-center gap-2">
         <Link
           href="/punkte"
-          className="relative flex h-10 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-2.5 shadow-sm shadow-slate-900/5 transition hover:border-blue-200"
+          className="relative flex h-10 min-w-[4.5rem] flex-col items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-2.5 shadow-sm shadow-slate-900/5 transition hover:border-blue-200"
+          aria-label={`Statuspunkte: ${points}, Rang ${rank}`}
         >
           <PointsBurst />
-          <div className="text-left leading-none">
-            <div className="text-[9px] font-medium text-slate-500">Punkte</div>
-            <div
-              id={POINTS_TARGET_ID}
-              data-points-target="true"
-              ref={(el) => setPointsTargetElement(el)}
-              className="text-sm font-bold tabular-nums text-slate-900"
-            >
-              {points}
-            </div>
-          </div>
+          <span className="text-[9px] font-medium leading-none text-slate-500">Punkte</span>
+          <span
+            id={POINTS_TARGET_ID}
+            data-points-target="true"
+            ref={(el) => setPointsTargetElement(el)}
+            className="text-center text-sm font-bold leading-none tabular-nums text-slate-900"
+          >
+            {points}
+          </span>
         </Link>
         <div className="flex h-10 min-w-[4.5rem] items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/40 px-2.5 text-center shadow-sm shadow-slate-900/5">
           <div className="leading-none">

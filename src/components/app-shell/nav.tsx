@@ -10,6 +10,7 @@ import {
   PieChart,
   Shield,
   Sparkles,
+  Users,
   Vote,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -27,6 +28,7 @@ export const appNav: AppNavItem[] = [
   { label: "Votings", href: "/votings", icon: Vote },
   { label: "Umfragen", href: "/polls", icon: PieChart },
   { label: "Gewinnspiele", href: "/giveaways", icon: Gift },
+  { label: "Mitglieder", href: "/mitglieder", icon: Users },
   { label: "Statuspunkte", href: "/punkte", icon: Sparkles },
   { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },
 ];

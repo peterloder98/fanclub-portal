@@ -14,11 +14,14 @@ export function EventParticipationRow({
   initialCount,
   initialJoined,
   initialAttendees,
+  inline = false,
 }: {
   eventId: string;
   initialCount: number;
   initialJoined: boolean;
   initialAttendees: UserListEntry[];
+  /** Kein eigenes Border-Wrapper (z. B. neben Kalender-Button). */
+  inline?: boolean;
 }) {
   const [joined, setJoined] = useState(initialJoined);
   const [count, setCount] = useState(initialCount);
@@ -94,7 +97,12 @@ export function EventParticipationRow({
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-2",
+        !inline && "mt-2 border-t border-slate-100 pt-2",
+      )}
+    >
       <button
         type="button"
         disabled={busy}
