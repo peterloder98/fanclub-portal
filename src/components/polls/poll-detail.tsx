@@ -331,6 +331,9 @@ export function PollDetail({ pollId }: { pollId: string }) {
           />
         </CardHeader>
         <CardContent className="grid gap-1.5">
+          {hasVoted && !ended ? (
+            <p className="mb-1 text-sm font-semibold text-emerald-700">Du hast teilgenommen</p>
+          ) : null}
           {options.map((o) => {
             const c = counts.get(o.id) ?? 0;
             const { display: pct, bar: barPct } = pollPercent(c, totalVotes);

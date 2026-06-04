@@ -10,6 +10,7 @@ export function RunningCountdownBadge({
   endedLabel = "Beendet",
   runningPrefix = "Läuft noch",
   pausedLabel = "Pausiert",
+  inline = false,
   className,
 }: {
   endsAt: string;
@@ -17,6 +18,8 @@ export function RunningCountdownBadge({
   endedLabel?: string;
   runningPrefix?: string;
   pausedLabel?: string;
+  /** Kompakt in einer Zeile (z. B. Umfragen oben rechts) */
+  inline?: boolean;
   className?: string;
 }) {
   const { ended, text } = useCountdown(endsAt);
@@ -41,12 +44,18 @@ export function RunningCountdownBadge({
     <Badge
       variant="brand"
       className={cn(
-        "max-w-full whitespace-normal text-left text-[11px] font-semibold leading-snug tracking-normal",
+        inline
+          ? "inline-flex max-w-[min(100%,14rem)] flex-wrap items-center justify-end gap-x-1 gap-y-0.5 text-right text-[10px] font-semibold leading-snug"
+          : "max-w-full whitespace-normal text-left text-[11px] font-semibold leading-snug tracking-normal",
         className,
       )}
     >
-      {runningPrefix ? <span className="block text-[10px] font-medium opacity-90">{runningPrefix}</span> : null}
-      <span className="block tabular-nums">{text}</span>
+      {runningPrefix ? (
+        <span className={inline ? "shrink-0 font-medium opacity-90" : "block text-[10px] font-medium opacity-90"}>
+          {runningPrefix}
+        </span>
+      ) : null}
+      <span className={cn("tabular-nums", inline ? "text-right" : "block")}>{text}</span>
     </Badge>
   );
 }

@@ -31,6 +31,14 @@ export function PostalCodeInput({
         value={value}
         placeholder="12345"
         onChange={(e) => onChange(sanitizePostalCode(e.target.value))}
+        onKeyDown={(e) => {
+          if (e.key.length === 1 && /\D/.test(e.key)) e.preventDefault();
+        }}
+        onPaste={(e) => {
+          e.preventDefault();
+          const t = e.clipboardData.getData("text");
+          onChange(sanitizePostalCode(t));
+        }}
         className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
       />
       <span className="text-xs text-slate-500">5 Ziffern, keine Buchstaben.</span>

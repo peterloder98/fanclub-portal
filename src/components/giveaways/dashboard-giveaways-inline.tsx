@@ -33,23 +33,25 @@ export function DashboardGiveawaysInline({ items }: { items: GiveawayListItem[] 
                     href={`/giveaways/${g.id}`}
                     className="block rounded-lg border bg-white px-2 py-1.5 transition hover:border-blue-200 hover:bg-blue-50/30"
                   >
-                    <div className="text-xs font-medium leading-snug text-slate-900 line-clamp-2">
-                      {g.title}
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className="min-w-0 flex-1 text-xs font-medium leading-snug text-slate-900 line-clamp-2">
+                        {g.title}
+                      </div>
                       <RunningCountdownBadge
                         endsAt={g.ends_at}
                         paused={g.isPaused}
-                        className="!px-1.5 !py-0.5 !text-[10px]"
+                        inline
+                        runningPrefix="Läuft noch"
+                        className="!shrink-0 !px-1.5 !py-0.5 !text-[9px]"
                       />
-                      {g.myEntered ? (
-                        <span className="text-[10px] font-medium text-emerald-700">dabei</span>
-                      ) : null}
                     </div>
                     {g.prizeNames[0] ? (
-                      <div className="mt-0.5 truncate text-[10px] text-slate-500">
+                      <div className="mt-1 truncate text-[10px] text-slate-500">
                         {g.prizeNames.join(" · ")}
                       </div>
+                    ) : null}
+                    {g.myEntered ? (
+                      <div className="mt-0.5 text-[10px] font-semibold text-emerald-700">teilgenommen</div>
                     ) : null}
                   </Link>
                 </li>

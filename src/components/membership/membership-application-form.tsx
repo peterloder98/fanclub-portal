@@ -17,6 +17,7 @@ import {
   MEMBERSHIP_REFERRER_STORAGE_KEY,
   readReferrerIdFromSearchParams,
 } from "@/lib/membership/referral-link";
+import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 
 const MEMBERSHIP_FEE_EUR = 15;
 
@@ -149,6 +150,10 @@ export function MembershipApplicationForm() {
       setError("Bitte mit deiner Unterschrift den gesamten Antrag bestätigen.");
       return;
     }
+    if (!form.birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate)) {
+      setError("Bitte ein vollständiges Geburtsdatum (TT.MM.JJJJ) eingeben.");
+      return;
+    }
 
     setBusy(true);
     try {
@@ -267,16 +272,12 @@ export function MembershipApplicationForm() {
               className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
             />
           </label>
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Geburtsdatum *</span>
-            <input
-              type="date"
-              required
-              value={form.birthdate}
-              onChange={(e) => setForm((f) => ({ ...f, birthdate: e.target.value }))}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-            />
-          </label>
+          <BirthdateSegmentInput
+            label="Geburtsdatum"
+            required
+            value={form.birthdate}
+            onChange={(birthdate) => setForm((f) => ({ ...f, birthdate }))}
+          />
           <label className="grid gap-1">
             <span className="text-sm font-medium text-slate-700">Geschlecht (optional)</span>
             <input

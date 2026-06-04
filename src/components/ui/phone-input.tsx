@@ -75,6 +75,13 @@ export function PhoneInput({
           value={number}
           placeholder="ohne führende 0"
           onChange={(e) => onNumberChange(sanitizePhoneDigits(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key.length === 1 && /\D/.test(e.key)) e.preventDefault();
+          }}
+          onPaste={(e) => {
+            e.preventDefault();
+            onNumberChange(sanitizePhoneDigits(e.clipboardData.getData("text")));
+          }}
           className="h-11 min-w-0 flex-1 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
         />
       </div>

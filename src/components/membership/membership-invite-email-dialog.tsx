@@ -267,25 +267,41 @@ export function MembershipInviteEmailDialog({
           </label>
         ) : null}
 
-        <label className="mt-3 grid gap-1">
-          <span className="text-sm font-medium text-slate-700">Betreff</span>
-          <input
-            value={mailSubject}
-            onChange={(e) => setMailSubject(e.target.value)}
-            className="h-11 rounded-xl border px-3 text-sm"
-          />
-        </label>
-
-        <label className="mt-3 grid gap-1">
-          <span className="text-sm font-medium text-slate-700">Nachricht</span>
-          <textarea
-            value={mailBody}
-            onChange={(e) => setMailBody(e.target.value)}
-            rows={12}
-            disabled={loading}
-            className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
-          />
-        </label>
+        {isAdmin ? (
+          <>
+            <label className="mt-3 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Betreff</span>
+              <input
+                value={mailSubject}
+                onChange={(e) => setMailSubject(e.target.value)}
+                className="h-11 rounded-xl border px-3 text-sm"
+              />
+            </label>
+            <label className="mt-3 grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Nachricht</span>
+              <textarea
+                value={mailBody}
+                onChange={(e) => setMailBody(e.target.value)}
+                rows={12}
+                disabled={loading}
+                className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
+              />
+            </label>
+          </>
+        ) : (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              E-Mail-Vorschau (fest)
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-800">Betreff: {mailSubject}</p>
+            <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-700">
+              {mailBody}
+            </pre>
+            <p className="mt-2 text-xs text-slate-500">
+              Der Text wird automatisch aus deinen Angaben erzeugt und kann nicht bearbeitet werden.
+            </p>
+          </div>
+        )}
     </EmailDialogShell>
   );
 }

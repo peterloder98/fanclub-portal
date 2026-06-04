@@ -8,7 +8,7 @@ export default function PunktePage() {
         title="Statuspunkte"
         subtitle="Wofür du Punkte bekommst, wie viele — und welche Ränge es gibt."
       />
-      <main className="px-4 py-6 lg:px-6">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
         <PointsGuideCard />
       </main>
     </div>

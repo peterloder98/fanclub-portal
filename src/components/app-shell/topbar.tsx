@@ -77,9 +77,9 @@ export function Topbar({
         ) : null}
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        <div className="grid w-[13.5rem] grid-cols-2 gap-2 sm:w-[15rem]">
-          <div className="relative flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
+      <div className="ml-auto flex items-center gap-2.5 self-center">
+        <div className="flex items-stretch gap-2">
+          <div className="relative flex min-w-[6.25rem] flex-col justify-center gap-0.5 rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/40 px-3 py-2.5 text-center shadow-sm shadow-slate-900/5">
             <PointsBurst />
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Statuspunkte
@@ -88,22 +88,22 @@ export function Topbar({
               id={POINTS_TARGET_ID}
               data-points-target="true"
               ref={(el) => setPointsTargetElement(el)}
-              className="text-sm font-semibold tabular-nums text-slate-900 transition-all"
+              className="text-base font-bold tabular-nums text-slate-900 transition-all"
             >
               {points}
             </div>
             <Link
               href="/punkte"
-              className="text-[9px] font-medium text-blue-600 hover:text-blue-800 hover:underline"
+              className="text-[9px] font-medium text-blue-700 hover:text-blue-900 hover:underline"
             >
               Regeln
             </Link>
           </div>
-          <div className="flex min-w-0 flex-col items-center justify-center rounded-xl border bg-white px-2 py-2 text-center shadow-sm shadow-slate-900/5">
+          <div className="flex min-w-[6.25rem] flex-col justify-center gap-0.5 rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/30 px-3 py-2.5 text-center shadow-sm shadow-slate-900/5">
             <div className="text-[10px] font-semibold leading-tight text-slate-600">
               Aktueller Rang
             </div>
-            <div className="text-sm font-semibold tabular-nums text-slate-900">{rank}</div>
+            <div className="text-base font-bold tabular-nums text-slate-900">{rank}</div>
           </div>
         </div>
 

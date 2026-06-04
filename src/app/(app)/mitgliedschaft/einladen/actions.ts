@@ -62,10 +62,8 @@ export async function sendMemberReferralEmailAction(input: {
   if (!senderName) throw new Error("Bitte deinen Namen als Absender/in eingeben.");
 
   const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id);
-  const subject = input.subject.trim() || MEMBER_REFERRAL_SUBJECT;
-  const text =
-    input.body.trim() ||
-    composeMemberReferralBody({ recipientName, senderName, applicationLink });
+  const subject = MEMBER_REFERRAL_SUBJECT;
+  const text = composeMemberReferralBody({ recipientName, senderName, applicationLink });
   const html = buildHtmlFromPlain(text, "");
 
   const result = await sendEmailViaAccount({ to, subject, text, html });

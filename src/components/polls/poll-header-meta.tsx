@@ -35,7 +35,7 @@ export function PollHeaderMeta({
   onEnsureParticipants?: () => void;
   participantsLoading?: boolean;
 }) {
-  const showBadges = allowMultiple || (hasVoted && !ended);
+  const showBadges = allowMultiple;
   const showParticipants = participantCount !== undefined;
 
   return (
@@ -59,24 +59,26 @@ export function PollHeaderMeta({
         ) : null}
 
         <div className="min-w-0 flex-1 space-y-1.5">
-          <h3
-            className={cn(
-              "font-semibold leading-snug text-slate-900",
-              compact ? "text-sm" : "text-base",
-            )}
-          >
-            {question}
-          </h3>
-
-          <RunningCountdownBadge
-            endsAt={endsAt}
-            endedLabel="Beendet"
-            runningPrefix="Endet in"
-            className={cn(
-              "w-full max-w-none",
-              compact ? "!px-2 !py-1 !text-[10px]" : "!px-2.5 !py-1.5 !text-xs",
-            )}
-          />
+          <div className="flex items-start justify-between gap-2">
+            <h3
+              className={cn(
+                "min-w-0 flex-1 font-semibold leading-snug text-slate-900",
+                compact ? "text-sm" : "text-base",
+              )}
+            >
+              {question}
+            </h3>
+            <RunningCountdownBadge
+              endsAt={endsAt}
+              endedLabel="Beendet"
+              runningPrefix="Endet in"
+              inline
+              className={cn(
+                "shrink-0",
+                compact ? "!px-1.5 !py-0.5 !text-[10px]" : "!px-2 !py-1 !text-[11px]",
+              )}
+            />
+          </div>
 
           {(showBadges || showParticipants) && (
             <div
@@ -90,12 +92,6 @@ export function PollHeaderMeta({
                   Mehrfachauswahl
                 </Badge>
               ) : null}
-              {hasVoted && !ended ? (
-                <Badge variant="success" className={compact ? "!px-1.5 !py-0 !text-[10px]" : undefined}>
-                  Abgestimmt
-                </Badge>
-              ) : null}
-
               {showParticipants ? (
                 participantCount > 0 || (participants?.length ?? 0) > 0 ? (
                   <PollParticipantSummary

@@ -110,6 +110,9 @@ export function PollFeedCard({
           participants={participants}
           onEnsureParticipants={onEnsureParticipants}
         />
+        {hasVoted && !ended ? (
+          <p className="mt-2 text-sm font-semibold text-emerald-700">Du hast teilgenommen</p>
+        ) : null}
         <div className="mt-3">{optionsList}</div>
         <div className="mt-2.5 border-t border-slate-100 pt-2">{footer}</div>
       </div>
@@ -152,6 +155,9 @@ export function PollFeedCard({
         />
       </CardHeader>
       <CardContent className="grid gap-3 pb-4 pt-0">
+        {hasVoted && !ended ? (
+          <p className="text-sm font-semibold text-emerald-700">Du hast teilgenommen</p>
+        ) : null}
         {optionsList}
         {footer}
       </CardContent>
