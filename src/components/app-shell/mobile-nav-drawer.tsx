@@ -76,7 +76,7 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
                 href="/punkte"
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "mt-3 flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-blue-700 shadow-sm",
+                  "mt-3 flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-blue-700 shadow-sm",
                 )}
               >
                 Statuspunkte — Übersicht

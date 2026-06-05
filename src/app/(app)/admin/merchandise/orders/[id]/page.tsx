@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { MerchandiseAdminNav } from "@/components/admin/merchandise/merchandise-admin-nav";
 import { MerchandiseOrderDetail } from "@/components/admin/merchandise-order-detail.client";
 import { getMerchandiseOrderAction } from "@/app/(app)/admin/merchandise/order-actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -38,6 +39,9 @@ export default async function MerchandiseOrderDetailPage({
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink href="/admin/merchandise/orders" label="Zurück zur Bestellliste" />
         <div className="mt-4">
+          <MerchandiseAdminNav />
+        </div>
+        <div className="mt-6">
           <MerchandiseOrderDetail initial={order} />
         </div>
         <p className="mt-6 text-xs text-slate-500">

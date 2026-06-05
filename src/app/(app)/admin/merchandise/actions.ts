@@ -37,6 +37,9 @@ export type MerchandiseProductRow = {
     available: number;
   }>;
   total_available: number;
+  total_reserved: number;
+  total_sold: number;
+  total_gifted: number;
   ledger_entry_ids: string[];
   stock_receipts: Array<{
     id: string;
@@ -135,6 +138,9 @@ export async function listMerchandiseProductsAction(): Promise<{
         available: variantAvailable(v),
       }));
       const total_available = vs.reduce((s, v) => s + v.available, 0);
+      const total_reserved = vs.reduce((s, v) => s + (v.qty_reserved ?? 0), 0);
+      const total_sold = vs.reduce((s, v) => s + v.qty_sold, 0);
+      const total_gifted = vs.reduce((s, v) => s + v.qty_gifted, 0);
       const productReceipts = (receipts ?? [])
         .filter((r) => r.product_id === p.id)
         .map((r) => ({
@@ -157,6 +163,9 @@ export async function listMerchandiseProductsAction(): Promise<{
         ledger_entry_id: (p as { ledger_entry_id?: string | null }).ledger_entry_id ?? null,
         variants: vs,
         total_available,
+        total_reserved,
+        total_sold,
+        total_gifted,
         ledger_entry_ids: linksByProduct.get(p.id) ?? [],
         stock_receipts: productReceipts,
       };
@@ -164,6 +173,13 @@ export async function listMerchandiseProductsAction(): Promise<{
   );
 
   return { products, tableMissing: false };
+}
+
+export async function getMerchandiseProductAction(
+  productId: string,
+): Promise<MerchandiseProductRow | null> {
+  const { products } = await listMerchandiseProductsAction();
+  return products.find((p) => p.id === productId) ?? null;
 }
 
 export async function saveMerchandiseProductAction(input: {
@@ -269,7 +285,10 @@ export async function saveMerchandiseProductAction(input: {
   }
 
   revalidatePath("/admin/merchandise");
+  revalidatePath(`/admin/merchandise/${productId}`);
+  revalidatePath(`/admin/merchandise/${productId}/edit`);
   revalidatePath("/admin/accounting");
+  revalidatePath("/merchandise");
   return { ok: true, id: productId };
 }
 
@@ -400,6 +419,7 @@ export async function addStockReceiptAction(input: {
   }
 
   revalidatePath("/admin/merchandise");
+  revalidatePath(`/admin/merchandise/${input.productId}`);
   revalidatePath("/admin/accounting");
   revalidatePath("/merchandise");
   return { ok: true };

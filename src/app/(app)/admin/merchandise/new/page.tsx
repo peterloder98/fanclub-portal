@@ -1,13 +1,13 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MerchandiseAdminNav } from "@/components/admin/merchandise/merchandise-admin-nav";
-import { MerchandiseProductList } from "@/components/admin/merchandise/merchandise-product-list.client";
+import { MerchandiseProductForm } from "@/components/admin/merchandise/merchandise-product-form.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminMerchandisePage() {
+export default async function AdminMerchandiseNewPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -22,14 +22,14 @@ export default async function AdminMerchandisePage() {
 
   return (
     <div className="min-h-screen">
-      <Topbar title="Merchandise" subtitle="Shop-Admin — Artikel, Bestand & Bestellungen" />
+      <Topbar title="Neuer Artikel" subtitle="Merchandise anlegen" />
       <main className="px-4 py-6 lg:px-8">
-        <AdminBackLink />
+        <AdminBackLink href="/admin/merchandise" label="← Merchandise" />
         <div className="mt-4">
           <MerchandiseAdminNav />
         </div>
         <div className="mt-6">
-          <MerchandiseProductList />
+          <MerchandiseProductForm mode="create" />
         </div>
       </main>
     </div>

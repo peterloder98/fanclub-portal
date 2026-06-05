@@ -77,10 +77,10 @@ export function Topbar({
         ) : null}
       </div>
 
-      <div className="ml-auto flex h-10 items-center gap-2">
+      <div className="ml-auto flex h-10 items-center gap-1.5 sm:gap-2">
         <Link
           href="/punkte"
-          className="relative flex h-10 min-w-[4.5rem] flex-col items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-2.5 shadow-sm shadow-slate-900/5 transition hover:border-blue-200"
+          className="relative flex h-10 min-w-[3.25rem] flex-col items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-2 shadow-sm shadow-slate-900/5 transition hover:border-blue-200 sm:min-w-[4.5rem] sm:px-2.5"
           aria-label={`Statuspunkte: ${points}, Rang ${rank}`}
         >
           <PointsBurst />
@@ -94,7 +94,7 @@ export function Topbar({
             {points}
           </span>
         </Link>
-        <div className="flex h-10 min-w-[4.5rem] items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/40 px-2.5 text-center shadow-sm shadow-slate-900/5">
+        <div className="hidden h-10 min-w-[4.5rem] items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/40 px-2.5 text-center shadow-sm shadow-slate-900/5 sm:flex">
           <div className="leading-none">
             <div className="text-[9px] font-medium text-slate-500">Rang</div>
             <div className="text-sm font-bold text-slate-900">{rank}</div>

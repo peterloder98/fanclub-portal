@@ -15,11 +15,40 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "Storniert",
 };
 
+function CopyButton({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch {
+          /* ignore */
+        }
+      }}
+      className="h-9 rounded-lg border px-3 text-xs font-semibold text-slate-700"
+    >
+      {copied ? "Kopiert" : label}
+    </button>
+  );
+}
+
 export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderDetail }) {
   const router = useRouter();
   const [order, setOrder] = useState(initial);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  const fullAddress = [
+    order.buyer_street,
+    `${order.buyer_postal_code} ${order.buyer_city}`,
+    order.buyer_country !== "DE" ? order.buyer_country : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   function setStatus(status: "shipped" | "cancelled") {
     const label = status === "shipped" ? "als versendet markieren" : "stornieren";
@@ -84,11 +113,11 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
           </p>
           <p className="text-slate-600">{order.buyer_email}</p>
           {order.buyer_phone ? <p className="text-slate-600">{order.buyer_phone}</p> : null}
-          <p className="mt-2 text-slate-700">
-            {order.buyer_street}
-            <br />
-            {order.buyer_postal_code} {order.buyer_city}
-          </p>
+          <p className="mt-2 whitespace-pre-line text-slate-700">{fullAddress}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <CopyButton label="E-Mail kopieren" value={order.buyer_email} />
+            <CopyButton label="Adresse kopieren" value={fullAddress} />
+          </div>
         </div>
         <div className="rounded-xl border bg-white p-4 text-sm">
           <h2 className="text-xs font-semibold uppercase text-slate-500">Positionen</h2>

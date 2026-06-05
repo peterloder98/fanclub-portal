@@ -1,13 +1,19 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MerchandiseAdminNav } from "@/components/admin/merchandise/merchandise-admin-nav";
-import { MerchandiseProductList } from "@/components/admin/merchandise/merchandise-product-list.client";
+import { MerchandiseProductDetail } from "@/components/admin/merchandise/merchandise-product-detail.client";
+import { getMerchandiseProductAction } from "@/app/(app)/admin/merchandise/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminMerchandisePage() {
+export default async function AdminMerchandiseProductPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -20,16 +26,19 @@ export default async function AdminMerchandisePage() {
     .maybeSingle();
   if (me?.role !== "admin") redirect("/dashboard");
 
+  const product = await getMerchandiseProductAction(id);
+  if (!product) notFound();
+
   return (
     <div className="min-h-screen">
-      <Topbar title="Merchandise" subtitle="Shop-Admin — Artikel, Bestand & Bestellungen" />
+      <Topbar title={product.name} subtitle="Artikeldetails & Bestand" />
       <main className="px-4 py-6 lg:px-8">
-        <AdminBackLink />
+        <AdminBackLink href="/admin/merchandise" label="← Alle Artikel" />
         <div className="mt-4">
           <MerchandiseAdminNav />
         </div>
         <div className="mt-6">
-          <MerchandiseProductList />
+          <MerchandiseProductDetail product={product} />
         </div>
       </main>
     </div>

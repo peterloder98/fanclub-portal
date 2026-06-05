@@ -84,7 +84,7 @@ export function EventsInteractivePanel({
                         : "rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
                     }
                   >
-                    <div className="relative min-w-0 pr-28">
+                    <div className="relative min-w-0 sm:pr-28">
                       <div className="truncate text-sm font-semibold text-slate-900">{e.title}</div>
                       <div className="mt-0.5 text-xs text-slate-600">
                         <span className="font-medium text-slate-800">{date}</span>
@@ -94,7 +94,7 @@ export function EventsInteractivePanel({
                         <div className="mt-0.5 text-xs text-slate-600">{location}</div>
                       ) : null}
                       {isAdmin ? (
-                        <div className="absolute right-0 top-0">
+                        <div className="mt-2 flex justify-end sm:absolute sm:right-0 sm:top-0 sm:mt-0">
                           <EventTravelEdit
                             eventId={e.id}
                             initialTravel={travelNotesByEventId?.[e.id]?.travel}
