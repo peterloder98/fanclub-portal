@@ -27,6 +27,7 @@ import {
   DocumentUploadField,
   uploadClubDocument,
 } from "@/components/ui/document-upload-field";
+import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
 
 const MONTHS = [
   "Januar",
@@ -417,13 +418,13 @@ export function ClubAccountingPanel({
       ) : null}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Neue Buchung</CardTitle>
+        <CardHeader className="flex min-h-[3.5rem] flex-row items-center justify-between gap-3 py-4">
+          <CardTitle className="leading-tight">Neue Buchung</CardTitle>
           {!showAddForm ? (
             <button
               type="button"
               onClick={() => setShowAddForm(true)}
-              className="h-9 rounded-lg border bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="shrink-0 rounded-lg border bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               Neuen Eintrag anlegen
             </button>
@@ -452,13 +453,11 @@ export function ClubAccountingPanel({
                 ))}
               </select>
               <input
-                type="number"
-                step="0.01"
-                min="0"
                 value={ledgerAmount}
-                onChange={(e) => setLedgerAmount(e.target.value)}
+                onChange={(e) => setLedgerAmount(sanitizeDecimalInput(e.target.value))}
                 placeholder="Betrag (€)"
-                className="h-10 rounded-xl border px-3 text-sm"
+                className="h-10 rounded-xl border px-3 text-sm tabular-nums"
+                {...decimalInputProps()}
               />
               <input
                 type="date"
@@ -535,13 +534,23 @@ export function ClubAccountingPanel({
                         className="h-10 rounded-xl border px-3 text-sm"
                       />
                       <input
-                        type="number"
-                        step="0.01"
-                        min="0"
                         value={editAmount}
-                        onChange={(ev) => setEditAmount(ev.target.value)}
-                        className="h-10 rounded-xl border px-3 text-sm"
+                        onChange={(ev) => setEditAmount(sanitizeDecimalInput(ev.target.value))}
+                        placeholder="Betrag (€)"
+                        className="h-10 rounded-xl border px-3 text-sm tabular-nums"
+                        {...decimalInputProps()}
                       />
+                      <select
+                        value={editCategory}
+                        onChange={(ev) => setEditCategory(ev.target.value as LedgerCategory)}
+                        className="h-10 rounded-xl border px-3 text-sm"
+                      >
+                        {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         value={editDesc}
                         onChange={(ev) => setEditDesc(ev.target.value)}
@@ -689,14 +698,12 @@ export function ClubAccountingPanel({
                             <option value="expense">Ausgabe</option>
                           </select>
                         </td>
-                        <td className="px-3 py-2">
+                        <td className="min-w-[5.5rem] whitespace-nowrap px-3 py-2">
                           <input
-                            type="number"
-                            step="0.01"
-                            min="0"
                             value={editAmount}
-                            onChange={(ev) => setEditAmount(ev.target.value)}
-                            className="h-9 w-full min-w-[5rem] rounded-lg border px-2 text-xs"
+                            onChange={(ev) => setEditAmount(sanitizeDecimalInput(ev.target.value))}
+                            className="h-9 w-full min-w-[5rem] rounded-lg border px-2 text-xs tabular-nums"
+                            {...decimalInputProps()}
                           />
                         </td>
                         <td className="px-3 py-2">
@@ -760,7 +767,7 @@ export function ClubAccountingPanel({
                           {e.entry_type === "income" ? "Einnahme" : "Ausgabe"}
                         </td>
                         <td
-                          className={`px-3 py-2 font-semibold tabular-nums ${e.entry_type === "income" ? "text-emerald-700" : "text-rose-700"}`}
+                          className={`min-w-[6.5rem] whitespace-nowrap px-3 py-2 font-semibold tabular-nums ${e.entry_type === "income" ? "text-emerald-700" : "text-rose-700"}`}
                         >
                           {e.entry_type === "income" ? "+" : "−"}
                           {formatEur(e.amount_cents)}

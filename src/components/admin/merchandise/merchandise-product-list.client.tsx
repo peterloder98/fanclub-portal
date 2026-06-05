@@ -55,7 +55,6 @@ export function MerchandiseProductList() {
   const stats = useMemo(
     () => ({
       count: products.length,
-      available: products.reduce((s, p) => s + p.total_available, 0),
       reserved: products.reduce((s, p) => s + p.total_reserved, 0),
     }),
     [products],
@@ -73,8 +72,8 @@ export function MerchandiseProductList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="grid flex-1 gap-2 sm:grid-cols-3">
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2 sm:max-w-md lg:max-w-lg">
           <Card className="shadow-sm">
             <CardContent className="flex items-center gap-3 pt-4">
               <Package className="h-8 w-8 text-slate-400" />
@@ -86,12 +85,6 @@ export function MerchandiseProductList() {
           </Card>
           <Card className="shadow-sm">
             <CardContent className="pt-4">
-              <p className="text-xs font-semibold uppercase text-slate-500">Verfügbar</p>
-              <p className="text-2xl font-bold text-emerald-700">{stats.available}</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-            <CardContent className="pt-4">
               <p className="text-xs font-semibold uppercase text-slate-500">Reserviert</p>
               <p className="text-2xl font-bold text-amber-700">{stats.reserved}</p>
             </CardContent>
@@ -99,7 +92,7 @@ export function MerchandiseProductList() {
         </div>
         <Link
           href="/admin/merchandise/new"
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Artikel anlegen

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
@@ -28,6 +28,19 @@ export function Topbar({
   const [role, setRole] = useState<"admin" | "anni" | "member">("member");
   const [userId, setUserId] = useState<string | null>(null);
   const { points, rank, refreshPoints } = usePointsTopbar(userId);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [profileOpen]);
 
   useEffect(() => {
     async function load() {
@@ -62,7 +75,7 @@ export function Topbar({
   return (
     <header
       className={cn(
-        "sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-[color:var(--background)]/80 px-4 backdrop-blur lg:px-8",
+        "sticky top-0 z-50 flex h-16 items-center gap-3 border-b bg-[color:var(--background)]/95 px-4 backdrop-blur lg:px-8",
         className,
       )}
     >
@@ -111,12 +124,14 @@ export function Topbar({
           <Bell className="h-4 w-4 text-slate-500" aria-hidden />
         </button>
 
-        <div className="group relative z-20">
+        <div className="relative" ref={profileRef}>
           <button
             type="button"
-            className="block h-8 w-8 overflow-hidden rounded-full border bg-slate-50 shadow-sm shadow-slate-900/10 ring-offset-2 transition hover:ring-2 hover:ring-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
+            onClick={() => setProfileOpen((v) => !v)}
+            className="block h-9 w-9 overflow-hidden rounded-full border bg-slate-50 shadow-sm shadow-slate-900/10 ring-offset-2 transition hover:ring-2 hover:ring-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
             aria-label="Profilmenü"
             aria-haspopup="true"
+            aria-expanded={profileOpen}
           >
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -128,7 +143,14 @@ export function Topbar({
             )}
           </button>
 
-          <div className="pointer-events-none invisible absolute right-0 top-full z-50 w-64 pt-2 opacity-0 transition-opacity duration-150 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+          <div
+            className={cn(
+              "absolute right-0 top-full z-[60] w-64 pt-2 transition-opacity duration-150",
+              profileOpen
+                ? "visible opacity-100"
+                : "pointer-events-none invisible opacity-0",
+            )}
+          >
             <div className="rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15">
               <div className="flex items-center gap-3">
               <div className="h-8 w-8 overflow-hidden rounded-full border bg-slate-50">
@@ -152,6 +174,7 @@ export function Topbar({
               <div className="mt-3 grid gap-2">
                 <Link
                   href="/profile"
+                  onClick={() => setProfileOpen(false)}
                   className="flex h-9 items-center justify-center rounded-xl border bg-white text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
                 >
                   Mein Profil
@@ -159,6 +182,7 @@ export function Topbar({
                 <button
                   type="button"
                   onClick={async () => {
+                    setProfileOpen(false);
                     const s = createSupabaseBrowserClient();
                     await s.auth.signOut();
                     window.location.href = "/login";

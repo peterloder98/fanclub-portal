@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { formatEur } from "@/lib/club/ledger";
 import { cn } from "@/lib/cn";
+import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
 import {
   addStockReceiptAction,
   deleteMerchandiseProductAction,
@@ -119,10 +120,11 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
             <div className="mt-6 flex flex-wrap gap-2">
               <Link
                 href={`/admin/merchandise/${product.id}/edit`}
-                className="inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold"
+                title="Bearbeiten"
+                className="inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold sm:px-4"
               >
                 <Pencil className="h-4 w-4" />
-                Bearbeiten
+                <span className="hidden sm:inline">Bearbeiten</span>
               </Link>
               <button
                 type="button"
@@ -138,10 +140,11 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
                 type="button"
                 disabled={pending}
                 onClick={handleDelete}
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 px-4 text-sm font-semibold text-rose-700"
+                title="Löschen"
+                className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 px-3 text-sm font-semibold text-rose-700 sm:px-4"
               >
                 <Trash2 className="h-4 w-4" />
-                Löschen
+                <span className="hidden sm:inline">Löschen</span>
               </button>
             </div>
           </div>
@@ -176,10 +179,9 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
               <span className="text-xs font-medium">Menge *</span>
               <input
                 value={restockQty}
-                onChange={(e) => setRestockQty(e.target.value)}
-                type="number"
-                min={1}
-                className="h-11 rounded-xl border px-3 text-sm"
+                onChange={(e) => setRestockQty(sanitizeDecimalInput(e.target.value).replace(/[.,]/g, ""))}
+                className="h-11 rounded-xl border px-3 text-sm tabular-nums"
+                {...decimalInputProps()}
               />
             </label>
             <label className="grid gap-1 sm:col-span-2">
@@ -203,10 +205,9 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
                   <span className="text-xs font-medium">Einkaufssumme (€)</span>
                   <input
                     value={restockPurchaseEur}
-                    onChange={(e) => setRestockPurchaseEur(e.target.value)}
-                    type="number"
-                    step="0.01"
-                    className="h-11 rounded-xl border px-3 text-sm"
+                    onChange={(e) => setRestockPurchaseEur(sanitizeDecimalInput(e.target.value))}
+                    className="h-11 rounded-xl border px-3 text-sm tabular-nums"
+                    {...decimalInputProps()}
                   />
                 </label>
                 <label className="flex items-center gap-2 self-end text-sm">

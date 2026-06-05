@@ -69,17 +69,17 @@ export function EventsInteractivePanel({
                       : "overflow-hidden rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
                   }
                 >
-                  <div className="relative min-w-0 max-w-full sm:pr-28">
-                    <div className="truncate text-sm font-semibold text-slate-900">{e.title}</div>
-                    <div className="mt-0.5 text-xs text-slate-600">
-                      <span className="font-medium text-slate-800">{date}</span>
-                      {time ? <span> · {time} Uhr</span> : null}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-slate-900">{e.title}</div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-600">
+                        <span className="font-medium text-slate-800">{date}</span>
+                        {time ? <span>· {time} Uhr</span> : null}
+                        {location ? <span>· {location}</span> : null}
+                      </div>
                     </div>
-                    {location ? (
-                      <div className="mt-0.5 text-xs text-slate-600">{location}</div>
-                    ) : null}
                     {isAdmin ? (
-                      <div className="mt-2 flex justify-end sm:absolute sm:right-0 sm:top-0 sm:mt-0">
+                      <div className="shrink-0">
                         <EventTravelEdit
                           eventId={e.id}
                           initialTravel={travelNotesByEventId?.[e.id]?.travel}

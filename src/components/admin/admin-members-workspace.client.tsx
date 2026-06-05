@@ -1,27 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
-import {
-  approveMembershipApplicationWithNumber,
-  deleteMembershipApplication,
-  getPaymentReminderDraft,
-  rejectMembershipApplication,
-  sendPaymentReminderEmail,
-} from "@/app/(app)/admin/members/applications/actions";
-import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
 import type { ContributionStatus } from "@/lib/club/membership-contribution";
-import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
-import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
-import type { MailSignatureOption } from "@/lib/email/signatures";
 
 export type AdminMemberRow = {
   id: string;
@@ -127,8 +115,6 @@ export function AdminMembersWorkspace({
   applicationsError: string | null;
 }) {
   const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [memberSort, setMemberSort] = useState<{ key: MemberSortKey; dir: "asc" | "desc" }>({
     key: "membership_number",
     dir: "asc",
@@ -137,18 +123,6 @@ export function AdminMembersWorkspace({
     key: "created_at",
     dir: "desc",
   });
-  const [showApproveDialog, setShowApproveDialog] = useState(false);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentSubject, setPaymentSubject] = useState("");
-  const [paymentBody, setPaymentBody] = useState("");
-  const [paymentSignatures, setPaymentSignatures] = useState<MailSignatureOption[]>([]);
-  const [paymentSignatureId, setPaymentSignatureId] = useState("");
-  const [paymentSignatureTexts, setPaymentSignatureTexts] = useState<Record<string, string>>({});
-  const [paymentActiveSignatureText, setPaymentActiveSignatureText] = useState("");
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [actionError, setActionError] = useState<string | null>(null);
 
   function applicationStatusLabel(status: string) {
     switch (status) {
@@ -234,70 +208,24 @@ export function AdminMembersWorkspace({
     return rows;
   }, [applications, appSort]);
 
-  const selectedApp = sortedApps.find((a) => a.id === selectedAppId) ?? null;
+  const memberSortOptions: { key: MemberSortKey; label: string }[] = [
+    { key: "membership_number", label: "Mitgliedsnr." },
+    { key: "last_name", label: "Nachname" },
+    { key: "joined_at", label: "Beitritt" },
+    { key: "warning_count", label: "Verwarnungen" },
+    { key: "membership_status", label: "Status" },
+    { key: "contribution_status", label: "Beitrag" },
+  ];
 
-
-  function openApproveDialog() {
-    if (!selectedApp) return;
-    if (selectedApp.status === "rejected") {
-      setActionError("Abgelehnte Anträge können nicht freigegeben werden.");
-      return;
-    }
-    setShowApproveDialog(true);
-    setActionError(null);
-  }
-
-  const selectedAppActionable =
-    selectedApp && selectedApp.status !== "approved" && selectedApp.status !== "rejected";
-
-  async function loadPaymentDraft(appId: string, signatureId?: string) {
-    setPaymentLoading(true);
-    try {
-      const draft = await getPaymentReminderDraft(appId, signatureId);
-      setPaymentSubject(draft.subject);
-      setPaymentBody(draft.body);
-      setPaymentSignatures(draft.signatures);
-      setPaymentSignatureId(draft.defaultSignatureId);
-      setPaymentSignatureTexts(draft.signatureTexts);
-      setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
-      return true;
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
-      return false;
-    } finally {
-      setPaymentLoading(false);
-    }
-  }
-
-  async function openPaymentDialog() {
-    if (!selectedAppId) return;
-    setActionError(null);
-    const ok = await loadPaymentDraft(selectedAppId);
-    if (ok) setShowPaymentDialog(true);
-  }
-
-  function onPaymentSignatureChange(signatureId: string) {
-    const nextText = paymentSignatureTexts[signatureId] ?? "";
-    setPaymentBody((body) =>
-      replaceTrailingSignature(
-        body,
-        paymentActiveSignatureText,
-        nextText,
-        Object.values(paymentSignatureTexts),
-      ),
-    );
-    setPaymentActiveSignatureText(nextText);
-    setPaymentSignatureId(signatureId);
-  }
+  const appSortOptions: { key: AppSortKey; label: string }[] = [
+    { key: "created_at", label: "Eingang" },
+    { key: "last_name", label: "Name" },
+    { key: "email", label: "E-Mail" },
+    { key: "status", label: "Status" },
+  ];
 
   return (
     <div className="grid gap-4">
-      {actionError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-          {actionError}
-        </div>
-      ) : null}
-
       <Card className="border-amber-200 bg-amber-50/30">
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
@@ -306,74 +234,9 @@ export function AdminMembersWorkspace({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!selectedAppActionable || pending}
-              onClick={() => openApproveDialog()}
-              className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Mitgliedsantrag freigeben
-            </button>
-            <button
-              type="button"
-              disabled={!selectedAppActionable || pending}
-              onClick={() => void openPaymentDialog()}
-              className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
-            >
-              Zahlungserinnerung per E-Mail
-            </button>
-            <button
-              type="button"
-              disabled={!selectedAppActionable || pending}
-              onClick={() => {
-                setRejectReason("");
-                setShowRejectDialog(true);
-                setActionError(null);
-              }}
-              className="h-10 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-900 disabled:opacity-50"
-            >
-              Antrag ablehnen
-            </button>
-            <button
-              type="button"
-              disabled={!selectedAppId || pending}
-              onClick={() => {
-                if (!selectedApp) return;
-                const label = `${selectedApp.first_name} ${selectedApp.last_name}`;
-                if (
-                  !window.confirm(
-                    `Antrag von „${label}“ vollständig löschen?\n\nDatensatz, PDF, Unterschriften und ggf. Test-Benutzerkonto werden unwiderruflich entfernt.`,
-                  )
-                ) {
-                  return;
-                }
-                setActionError(null);
-                const appId = selectedApp.id;
-                startTransition(async () => {
-                  try {
-                    await deleteMembershipApplication(appId);
-                    setSelectedAppId(null);
-                    router.refresh();
-                  } catch (e) {
-                    setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
-                  }
-                });
-              }}
-              className="h-10 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 disabled:opacity-50"
-            >
-              Antrag komplett löschen
-            </button>
-            <Link
-              href={selectedAppId ? `/admin/members/applications/${selectedAppId}` : "#"}
-              className={cn(
-                "inline-flex h-10 items-center rounded-xl border bg-white px-4 text-sm font-semibold text-blue-700",
-                !selectedAppId && "pointer-events-none opacity-50",
-              )}
-            >
-              Antrag & PDF
-            </Link>
-          </div>
+          <p className="mb-3 text-xs text-slate-500">
+            Antrag anklicken öffnet den Datensatz mit Aktionen und PDF.
+          </p>
 
           {applicationsError ? (
             <div className="text-rose-700">{applicationsError}</div>
@@ -381,40 +244,46 @@ export function AdminMembersWorkspace({
             <div className="text-slate-600">Keine offenen Anträge.</div>
           ) : (
             <>
+            <div className="mb-3 flex items-center gap-2 md:hidden">
+              <label className="text-xs font-semibold text-slate-600">Sortieren</label>
+              <select
+                value={`${appSort.key}:${appSort.dir}`}
+                onChange={(e) => {
+                  const [key, dir] = e.target.value.split(":") as [AppSortKey, "asc" | "desc"];
+                  setAppSort({ key, dir });
+                }}
+                className="h-9 flex-1 rounded-lg border px-2 text-xs"
+              >
+                {appSortOptions.flatMap((o) => [
+                  <option key={`${o.key}:asc`} value={`${o.key}:asc`}>
+                    {o.label} ↑
+                  </option>,
+                  <option key={`${o.key}:desc`} value={`${o.key}:desc`}>
+                    {o.label} ↓
+                  </option>,
+                ])}
+              </select>
+            </div>
             <div className="grid gap-2 md:hidden">
               {sortedApps.map((a) => (
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => setSelectedAppId(a.id)}
-                  className={cn(
-                    "w-full rounded-xl border bg-white p-3 text-left transition",
-                    selectedAppId === a.id && "border-blue-300 bg-blue-50/60",
-                  )}
+                  onClick={() => router.push(`/admin/members/applications/${a.id}`)}
+                  className="w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50"
                 >
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      checked={selectedAppId === a.id}
-                      onChange={() => setSelectedAppId(a.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-1"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-slate-900">
-                        {a.first_name} {a.last_name}
-                      </div>
-                      <div className="mt-0.5 truncate text-xs text-slate-600">{a.email}</div>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                        <span className="text-slate-500">{formatDE(a.created_at)}</span>
-                        <Badge variant={applicationStatusVariant(a.status)}>
-                          {applicationStatusLabel(a.status)}
-                        </Badge>
-                        <span className="text-slate-500">
-                          {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
-                        </span>
-                      </div>
-                    </div>
+                  <div className="font-semibold text-slate-900">
+                    {a.first_name} {a.last_name}
+                  </div>
+                  <div className="mt-0.5 truncate text-xs text-slate-600">{a.email}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="text-slate-500">{formatDE(a.created_at)}</span>
+                    <Badge variant={applicationStatusVariant(a.status)}>
+                      {applicationStatusLabel(a.status)}
+                    </Badge>
+                    <span className="text-slate-500">
+                      {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -423,7 +292,6 @@ export function AdminMembersWorkspace({
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
-                    <th className="px-3 py-2 w-10" />
                     <th className="px-3 py-2">
                       <SortBtn
                         label="Mitgliedsnr."
@@ -470,20 +338,9 @@ export function AdminMembersWorkspace({
                   {sortedApps.map((a) => (
                     <tr
                       key={a.id}
-                      onClick={() => setSelectedAppId(a.id)}
-                      className={cn(
-                        "cursor-pointer border-b transition hover:bg-slate-50",
-                        selectedAppId === a.id && "bg-blue-50/60",
-                      )}
+                      onClick={() => router.push(`/admin/members/applications/${a.id}`)}
+                      className="cursor-pointer border-b transition hover:bg-slate-50"
                     >
-                      <td className="px-3 py-2">
-                        <input
-                          type="radio"
-                          checked={selectedAppId === a.id}
-                          onChange={() => setSelectedAppId(a.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </td>
                       <td className="px-3 py-2 tabular-nums text-slate-600">
                         {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
                       </td>
@@ -504,15 +361,6 @@ export function AdminMembersWorkspace({
             </div>
             </>
           )}
-
-          {selectedApp ? (
-            <div className="mt-4">
-              <MemberActivityTimeline
-                userId={selectedApp.user_id}
-                applicationId={selectedApp.id}
-              />
-            </div>
-          ) : null}
         </CardContent>
       </Card>
 
@@ -531,6 +379,26 @@ export function AdminMembersWorkspace({
             <div className="text-slate-600">Keine Mitglieder gefunden.</div>
           ) : (
             <>
+            <div className="mb-3 flex items-center gap-2 md:hidden">
+              <label className="text-xs font-semibold text-slate-600">Sortieren</label>
+              <select
+                value={`${memberSort.key}:${memberSort.dir}`}
+                onChange={(e) => {
+                  const [key, dir] = e.target.value.split(":") as [MemberSortKey, "asc" | "desc"];
+                  setMemberSort({ key, dir });
+                }}
+                className="h-9 flex-1 rounded-lg border px-2 text-xs"
+              >
+                {memberSortOptions.flatMap((o) => [
+                  <option key={`${o.key}:asc`} value={`${o.key}:asc`}>
+                    {o.label} ↑
+                  </option>,
+                  <option key={`${o.key}:desc`} value={`${o.key}:desc`}>
+                    {o.label} ↓
+                  </option>,
+                ])}
+              </select>
+            </div>
             <div className="grid gap-2 md:hidden">
               {sortedMembers.map((m) => (
                 <button
@@ -693,165 +561,6 @@ export function AdminMembersWorkspace({
 
         </CardContent>
       </Card>
-
-      {showApproveDialog && selectedApp ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Antrag freigeben</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              {selectedApp.first_name} {selectedApp.last_name} — Status wird auf „aktiv“ gesetzt.
-              Die nächste freie Mitgliedsnummer wird automatisch vergeben; der Vertrag-PDF wird
-              ergänzt und im Mitgliedsdatensatz hinterlegt.
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="h-10 rounded-xl border px-4 text-sm font-semibold"
-                onClick={() => setShowApproveDialog(false)}
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
-                onClick={() => {
-                  startTransition(async () => {
-                    try {
-                      await approveMembershipApplicationWithNumber(selectedApp.id);
-                    } catch (e) {
-                      setActionError(e instanceof Error ? e.message : "Freigabe fehlgeschlagen");
-                      setShowApproveDialog(false);
-                    }
-                  });
-                }}
-              >
-                Freigeben
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showRejectDialog && selectedApp ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Antrag ablehnen</h3>
-            <p className="mt-1 text-sm text-slate-600">
-              {selectedApp.first_name} {selectedApp.last_name} — Status wird auf „abgelehnt“ gesetzt
-              (z. B. keine Zahlung oder Aufnahme nicht gewünscht).
-            </p>
-            <label className="mt-4 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Grund (optional, intern)</span>
-              <textarea
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                rows={3}
-                className="rounded-xl border px-3 py-2 text-sm"
-                placeholder="z. B. Mitgliedsbeitrag nicht eingegangen"
-              />
-            </label>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                className="h-10 rounded-xl border px-4 text-sm font-semibold"
-                onClick={() => setShowRejectDialog(false)}
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                disabled={pending}
-                className="h-10 rounded-xl bg-amber-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
-                onClick={() => {
-                  startTransition(async () => {
-                    try {
-                      await rejectMembershipApplication({
-                        applicationId: selectedApp.id,
-                        reason: rejectReason,
-                      });
-                      setShowRejectDialog(false);
-                      setSelectedAppId(null);
-                      router.refresh();
-                    } catch (e) {
-                      setActionError(e instanceof Error ? e.message : "Ablehnen fehlgeschlagen");
-                      setShowRejectDialog(false);
-                    }
-                  });
-                }}
-              >
-                Ablehnen
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {showPaymentDialog && selectedAppId ? (
-        <EmailDialogShell
-          title="Zahlungserinnerung"
-          description="Vorlage unter Admin → E-Mail-Vorlagen. Signatur unter Admin → Unterschriften."
-          onClose={() => setShowPaymentDialog(false)}
-          footer={
-            <button
-              type="button"
-              disabled={pending || paymentLoading || !paymentSignatureId}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
-              onClick={() => {
-                startTransition(async () => {
-                  try {
-                    await sendPaymentReminderEmail({
-                      applicationId: selectedAppId,
-                      subject: paymentSubject,
-                      body: paymentBody,
-                      signatureId: paymentSignatureId,
-                    });
-                    setShowPaymentDialog(false);
-                    router.refresh();
-                  } catch (e) {
-                    setActionError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
-                  }
-                });
-              }}
-            >
-              Senden
-            </button>
-          }
-        >
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Signatur</span>
-            <select
-              value={paymentSignatureId}
-              disabled={paymentLoading}
-              onChange={(e) => onPaymentSignatureChange(e.target.value)}
-              className="h-11 rounded-xl border px-3 text-sm"
-            >
-              {paymentSignatures.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="mt-3 grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Betreff</span>
-            <input
-              value={paymentSubject}
-              onChange={(e) => setPaymentSubject(e.target.value)}
-              className="h-11 rounded-xl border px-3 text-sm"
-            />
-          </label>
-          <label className="mt-3 grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Nachricht</span>
-            <textarea
-              value={paymentBody}
-              onChange={(e) => setPaymentBody(e.target.value)}
-              rows={10}
-              className="rounded-xl border px-3 py-2 text-sm"
-            />
-          </label>
-        </EmailDialogShell>
-      ) : null}
     </div>
   );
 }

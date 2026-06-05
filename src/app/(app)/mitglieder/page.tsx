@@ -75,7 +75,7 @@ export default async function MitgliederPage() {
       />
       <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 lg:px-8">
         <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,360px)] lg:items-stretch">
-          <div className="flex min-h-[420px] flex-col rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm lg:min-h-[520px]">
+          <div className="relative z-0 flex min-h-[420px] flex-col rounded-2xl border border-slate-200/90 bg-white p-3 shadow-sm lg:min-h-[520px]">
             <h2 className="px-1 text-base font-semibold text-slate-900">Hier sind unsere Mitglieder her</h2>
             <p className="mt-1 px-1 text-xs text-slate-600">
               In diesen Bereichen sind unsere Mitglieder zu Hause (keine persönlichen Adressen, nur
@@ -101,7 +101,7 @@ export default async function MitgliederPage() {
               <h2 className="text-base font-semibold text-slate-900">Nächste Geburtstage</h2>
               <p className="text-xs text-slate-600">Die nächsten 10 Termine im Jahr</p>
             </div>
-            <div className="max-h-[min(520px,58vh)] overflow-y-auto overscroll-contain">
+            <div className="max-h-[13.5rem] overflow-y-auto overscroll-contain lg:max-h-[min(520px,58vh)]">
               <UpcomingBirthdays rows={birthdayRows} />
             </div>
           </aside>

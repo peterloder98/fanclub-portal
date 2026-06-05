@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { ApplicationDetailPanels } from "@/components/admin/application-detail-panels";
+import { ApplicationActionsToolbar } from "@/components/admin/application-actions-toolbar.client";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/require-admin";
@@ -101,6 +102,19 @@ export default async function AdminMembershipApplicationPage({
               Profil bearbeiten
             </Link>
           ) : null}
+        </div>
+
+        <div className="mb-6">
+          <ApplicationActionsToolbar
+            app={{
+              id: app.id,
+              first_name: app.first_name,
+              last_name: app.last_name,
+              email: app.email,
+              status: app.status,
+              user_id: app.user_id,
+            }}
+          />
         </div>
 
         <ApplicationDetailPanels app={detail} showApprovedBanner={approved} />

@@ -175,7 +175,7 @@ function ProductDetailView({
   }
 
   return (
-    <div className="space-y-4">
+    <div id="shop-product-detail" className="scroll-mt-20 space-y-4">
       <button
         type="button"
         onClick={onBack}
@@ -408,7 +408,12 @@ export function MerchandiseShop() {
     setSelectedProductId(id);
     setView("detail");
     setAddNotice(null);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      document.getElementById("shop-product-detail")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   }
 
   function placeOrder() {

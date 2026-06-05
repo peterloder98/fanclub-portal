@@ -5,9 +5,8 @@ import { ChevronDown, ExternalLink, Hotel, MapPin, Train } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
   closestHotelIndex,
-  formatWalkingRoute,
+  formatWalkDistance,
   travelInfoHasContent,
-  travelInfoSummary,
   type EventTravelInfo,
   type EventTravelPlace,
 } from "@/lib/events/travel-info";
@@ -41,7 +40,7 @@ function PlaceLine({
   showLink?: boolean;
   originAddress?: string | null;
 }) {
-  const route = formatWalkingRoute(place.distanceMeters, place.durationSeconds);
+  const dist = formatWalkDistance(place.distanceMeters);
   const routeUrl =
     originAddress && place.address
       ? googleMapsWalkingRouteUrl({
@@ -67,23 +66,20 @@ function PlaceLine({
             <span>{place.address}</span>
           </p>
         ) : null}
-        {route ? (
+        {dist && routeUrl ? (
           <p className="mt-0.5 text-[11px] font-medium text-blue-700">
-            {route}
-            {routeUrl ? (
-              <>
-                {" "}
-                <a
-                  href={routeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold hover:underline"
-                >
-                  Route ansehen
-                </a>
-              </>
-            ) : null}
+            {dist} zu Fuß ·{" "}
+            <a
+              href={routeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold hover:underline"
+            >
+              Route ansehen
+            </a>
           </p>
+        ) : dist ? (
+          <p className="mt-0.5 text-[11px] text-slate-600">{dist} zu Fuß</p>
         ) : null}
         {showLink && place.link ? (
           <a
@@ -112,7 +108,8 @@ export function EventTravelInfoBlock({
   if (!travelInfoHasContent(travel)) return null;
 
   const closestHotel = closestHotelIndex(travel.hotels);
-  const summary = travelInfoSummary(travel);
+  const previewHotel =
+    closestHotel >= 0 ? travel.hotels[closestHotel] : travel.hotels[0] ?? null;
 
   return (
     <div className="mt-2 rounded-lg border border-slate-200/90 bg-slate-50/60">
@@ -122,10 +119,17 @@ export function EventTravelInfoBlock({
         className="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left"
         aria-expanded={open}
       >
-        <span className="min-w-0 text-[11px] font-semibold text-slate-700">
+        <span className="min-w-0 flex-1 text-[11px] font-semibold text-slate-700">
           <span className="text-slate-500">Anreise & Hotel</span>
-          {!open && summary ? (
-            <span className="mt-0.5 block truncate font-normal text-slate-600">{summary}</span>
+          {!open ? (
+            <span className="mt-0.5 block space-y-0.5 font-normal text-slate-600">
+              {travel.station?.name ? (
+                <span className="block truncate">Bahnhof: {travel.station.name}</span>
+              ) : null}
+              {previewHotel?.name ? (
+                <span className="block truncate">Hotel: {previewHotel.name}</span>
+              ) : null}
+            </span>
           ) : null}
         </span>
         <ChevronDown
