@@ -555,6 +555,7 @@ export function MemberDetailPanel({
                           <span className="ml-2 text-slate-700">{e.description}</span>
                           <span className="ml-2 text-xs text-slate-500">
                             {LEDGER_CATEGORY_LABELS[e.category]} · {formatDE(e.entry_date)}
+                            {e.created_by_name ? ` · Angelegt: ${e.created_by_name}` : ""}
                           </span>
                           <span className="ml-2 inline-flex items-center gap-2">
                             {e.receipt_storage_path ? (

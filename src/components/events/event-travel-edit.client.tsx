@@ -197,7 +197,7 @@ export function EventTravelEdit({
         ) : null}
       </div>
       <p className="mt-2 text-[10px] text-slate-500">
-        Entfernung wird automatisch per Auto (Location ↔ Adresse) geschätzt.
+        Entfernung und Gehzeit werden automatisch zu Fuß geschätzt (Location ↔ Adresse).
       </p>
     </div>
   );

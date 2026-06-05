@@ -10,7 +10,7 @@ import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "@/components/events/events-map.types";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EventTravelInfoBlock } from "@/components/events/event-travel-info-block";
+import { EventTravelInfoBlock } from "@/components/events/event-travel-info-block.client";
 import { EventTravelEdit } from "@/components/events/event-travel-edit.client";
 import type { EventTravelNoteRow } from "@/lib/events/admin-notes";
 import { cn } from "@/lib/cn";

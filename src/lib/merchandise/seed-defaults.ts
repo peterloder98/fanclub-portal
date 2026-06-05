@@ -9,7 +9,6 @@ type SeedItem = {
   purchaseCents: number | null;
   hasSizes: boolean;
   placeholderLabel: string;
-  hue: number;
   variants: Array<{
     size_label: string | null;
     qty_purchased: number;
@@ -27,7 +26,6 @@ const DEFAULT_ITEMS: SeedItem[] = [
     purchaseCents: 850,
     hasSizes: false,
     placeholderLabel: "Kugelschreiber",
-    hue: 210,
     variants: [{ size_label: null, qty_purchased: 50, qty_sold: 0, qty_gifted: 12 }],
     ledgerDescription: "Kugelschreiber mit Logo",
   },
@@ -38,7 +36,6 @@ const DEFAULT_ITEMS: SeedItem[] = [
     purchaseCents: 42000,
     hasSizes: true,
     placeholderLabel: "T-Shirt",
-    hue: 16,
     variants: [
       { size_label: "S", qty_purchased: 5, qty_sold: 1, qty_gifted: 0 },
       { size_label: "M", qty_purchased: 10, qty_sold: 2, qty_gifted: 1 },
@@ -54,14 +51,18 @@ const DEFAULT_ITEMS: SeedItem[] = [
     purchaseCents: 2490,
     hasSizes: false,
     placeholderLabel: "Fanschal",
-    hue: 330,
     variants: [{ size_label: null, qty_purchased: 50, qty_sold: 18, qty_gifted: 5 }],
     ledgerDescription: "Fanschals Bestellung",
   },
 ];
 
-async function uploadPlaceholder(admin: ReturnType<typeof createSupabaseAdminClient>, slug: string, label: string, hue: number) {
-  const buf = await createMerchandisePlaceholder(label, hue);
+async function uploadPlaceholder(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  slug: string,
+  label: string,
+  seed: string,
+) {
+  const buf = await createMerchandisePlaceholder(label, seed);
   const path = `merchandise/seed-${slug}.webp`;
   await admin.storage.from(CLUB_DOCUMENTS_BUCKET).upload(path, buf, {
     upsert: true,
@@ -77,7 +78,7 @@ export async function seedDefaultMerchandise(userId: string) {
 
   for (const item of DEFAULT_ITEMS) {
     const slug = item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const imagePath = await uploadPlaceholder(admin, slug, item.placeholderLabel, item.hue);
+    const imagePath = await uploadPlaceholder(admin, slug, item.placeholderLabel, `${slug}-${Date.now()}`);
 
     let ledgerEntryId: string | null = null;
     if (item.ledgerDescription) {

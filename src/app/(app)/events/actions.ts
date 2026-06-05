@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { enrichTravelPlace } from "@/lib/events/driving-distance";
+import { enrichTravelPlace } from "@/lib/events/route-distance";
 import {
   normalizeTravelInput,
   type TravelInfoInput,

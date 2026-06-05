@@ -5,6 +5,7 @@ export type EventTravelPlace = {
   lat?: number | null;
   lng?: number | null;
   distanceMeters?: number | null;
+  durationSeconds?: number | null;
 };
 
 export type EventTravelInfo = {
@@ -38,6 +39,7 @@ function parsePlace(raw: unknown): EventTravelPlace | null {
     lat: typeof o.lat === "number" ? o.lat : null,
     lng: typeof o.lng === "number" ? o.lng : null,
     distanceMeters: typeof o.distanceMeters === "number" ? o.distanceMeters : null,
+    durationSeconds: typeof o.durationSeconds === "number" ? o.durationSeconds : null,
   };
 }
 
@@ -65,11 +67,52 @@ export function travelInfoHasContent(travel: EventTravelInfo) {
   );
 }
 
-export function formatDrivingDistance(meters: number | null | undefined) {
+export function formatWalkDistance(meters: number | null | undefined) {
   if (meters == null || !Number.isFinite(meters) || meters < 0) return null;
   if (meters < 1000) return `${Math.round(meters)} m`;
   const km = meters / 1000;
   return km < 10 ? `${km.toFixed(1).replace(".", ",")} km` : `${Math.round(km)} km`;
+}
+
+export function formatWalkDuration(seconds: number | null | undefined) {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return null;
+  const mins = Math.max(1, Math.round(seconds / 60));
+  if (mins < 60) return `ca. ${mins} Min.`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m > 0 ? `ca. ${h} Std. ${m} Min.` : `ca. ${h} Std.`;
+}
+
+export function formatWalkingRoute(
+  meters: number | null | undefined,
+  seconds: number | null | undefined,
+) {
+  const dist = formatWalkDistance(meters);
+  const dur = formatWalkDuration(seconds);
+  if (dist && dur) return `${dist} · ${dur} zu Fuß`;
+  if (dist) return `${dist} zu Fuß`;
+  return null;
+}
+
+export function closestHotelIndex(hotels: EventTravelPlace[]) {
+  let best = -1;
+  let bestDist = Number.POSITIVE_INFINITY;
+  hotels.forEach((h, i) => {
+    if (h.distanceMeters != null && h.distanceMeters < bestDist) {
+      bestDist = h.distanceMeters;
+      best = i;
+    }
+  });
+  return best;
+}
+
+export function travelInfoSummary(travel: EventTravelInfo) {
+  const parts: string[] = [];
+  if (travel.station?.name) parts.push(`Bahnhof: ${travel.station.name}`);
+  const closest = closestHotelIndex(travel.hotels);
+  if (closest >= 0) parts.push(`Hotel: ${travel.hotels[closest].name}`);
+  else if (travel.hotels[0]?.name) parts.push(`Hotel: ${travel.hotels[0].name}`);
+  return parts.join(" · ");
 }
 
 export type TravelPlaceInput = {

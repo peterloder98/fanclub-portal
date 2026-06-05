@@ -537,6 +537,7 @@ export function ClubAccountingPanel({
                     </th>
                     <th className="px-3 py-2">Mitglied</th>
                     <th className="px-3 py-2">Beleg</th>
+                    <th className="px-3 py-2">Angelegt von</th>
                     <th className="px-3 py-2" />
                   </tr>
                 </thead>
@@ -602,6 +603,9 @@ export function ClubAccountingPanel({
                             "—"
                           )}
                         </td>
+                        <td className="px-3 py-2 text-xs text-slate-500">
+                          {e.created_by_name ?? "—"}
+                        </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-col gap-1">
                             <button
@@ -655,6 +659,9 @@ export function ClubAccountingPanel({
                           ) : (
                             "—"
                           )}
+                        </td>
+                        <td className="px-3 py-2 text-xs text-slate-600">
+                          {e.created_by_name ?? "—"}
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex flex-col gap-1">

@@ -6,6 +6,8 @@ import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { signedClubDocumentUrl } from "@/lib/club/documents";
 import { seedDefaultMerchandise } from "@/lib/merchandise/seed-defaults";
+import { createMerchandisePlaceholder } from "@/lib/merchandise/placeholder-image";
+import { CLUB_DOCUMENTS_BUCKET } from "@/lib/images/specs";
 
 export type MerchandiseVariantInput = {
   size_label: string | null;
@@ -230,6 +232,27 @@ export async function listMerchandiseExpenseOptionsAction() {
     id: r.id,
     label: `${r.description} (${(r.amount_cents / 100).toFixed(2).replace(".", ",")} €, ${r.entry_date})`,
   }));
+}
+
+export async function refreshMerchandiseImagesAction() {
+  await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const { data: products, error } = await admin.from("merchandise_products").select("id,name");
+  if (error) throw new Error(error.message);
+
+  for (const p of products ?? []) {
+    const seed = `${p.id}-${Math.random().toString(36).slice(2, 8)}`;
+    const buf = await createMerchandisePlaceholder(p.name, seed);
+    const path = `merchandise/${p.id}.webp`;
+    await admin.storage.from(CLUB_DOCUMENTS_BUCKET).upload(path, buf, {
+      upsert: true,
+      contentType: "image/webp",
+    });
+    await admin.from("merchandise_products").update({ image_path: path }).eq("id", p.id);
+  }
+
+  revalidatePath("/admin/merchandise");
+  return { ok: true, count: products?.length ?? 0 };
 }
 
 export async function seedMerchandiseDefaultsAction() {
