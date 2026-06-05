@@ -67,7 +67,7 @@ describe("normalizeArtistflowEvent", () => {
 });
 
 describe("canGeocodeNormalizedEvent", () => {
-  it("requires address or postal code, not city alone", () => {
+  it("allows city-only fallback for map pins", () => {
     expect(
       canGeocodeNormalizedEvent({
         kind: "event",
@@ -76,16 +76,16 @@ describe("canGeocodeNormalizedEvent", () => {
         city: "Koblenz",
         country: "DE",
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canGeocodeNormalizedEvent({
         kind: "event",
-        address: "Rheingoldstraße 1",
-        postal_code: "56068",
-        city: "Koblenz",
+        address: null,
+        postal_code: null,
+        city: "",
         country: "DE",
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("skips tv entries", () => {

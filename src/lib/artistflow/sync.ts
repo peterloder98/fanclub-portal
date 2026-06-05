@@ -1,13 +1,17 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { geocodeWithNominatim } from "@/lib/artistflow/geocode";
 import type { ArtistflowFeedItem } from "@/lib/artistflow/normalize";
 import {
-  canGeocodeNormalizedEvent,
   normalizeArtistflowEvent,
+  type NormalizedExternalEvent,
 } from "@/lib/artistflow/normalize";
 import { formatEventCity, formatTvBroadcaster } from "@/lib/events/format";
+import {
+  eventAddressChanged,
+  geocodeAllPendingArtistflowEvents,
+} from "@/lib/artistflow/geocode-event";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type SyncResult = {
   total: number;
@@ -17,20 +21,84 @@ type SyncResult = {
   geocoding_queued: number;
 };
 
-async function fetchJson(feedUrl: string, timeoutMs = 12000) {
+const STALE_RUNNING_MS = 5 * 60 * 1000;
+const CONCURRENT_BLOCK_MS = 90 * 1000;
+
+async function fetchJson(feedUrl: string, timeoutMs = 15000) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(feedUrl, { signal: controller.signal });
+    const res = await fetch(feedUrl, {
+      signal: controller.signal,
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
     if (!res.ok) throw new Error(`Feed HTTP ${res.status}`);
     return (await res.json()) as unknown;
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("Feed-Timeout — termine.json antwortet nicht rechtzeitig");
+    }
+    throw e;
   } finally {
     clearTimeout(t);
   }
 }
 
+async function reconcileAbandonedSyncLogs(admin: SupabaseClient) {
+  const cutoff = new Date(Date.now() - STALE_RUNNING_MS).toISOString();
+  await admin
+    .from("artistflow_sync_logs")
+    .update({
+      finished_at: new Date().toISOString(),
+      error: "abgebrochen (Timeout oder Server-Neustart)",
+    })
+    .is("finished_at", null)
+    .lt("started_at", cutoff);
+}
+
+async function assertSyncNotBlocked(admin: SupabaseClient) {
+  const { data: running } = await admin
+    .from("artistflow_sync_logs")
+    .select("id, started_at")
+    .is("finished_at", null)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!running?.started_at) return;
+
+  const age = Date.now() - new Date(running.started_at).getTime();
+  if (age < CONCURRENT_BLOCK_MS) {
+    throw new Error(
+      "Ein Sync läuft gerade noch. Bitte 1–2 Minuten warten und die Seite neu laden.",
+    );
+  }
+}
+
+async function patchSyncLog(
+  admin: SupabaseClient,
+  logId: string,
+  patch: Record<string, unknown>,
+) {
+  await admin.from("artistflow_sync_logs").update(patch).eq("id", logId);
+}
+
+type NewEventNotice = {
+  eventId: string;
+  kind: NormalizedExternalEvent["kind"];
+  title: string;
+  startAt: string;
+  city: string | null;
+  country: string | null;
+  broadcaster: string | null;
+};
+
 export async function syncArtistflowEventsFromFeed(feedUrl: string) {
   const admin = createSupabaseAdminClient();
+
+  await reconcileAbandonedSyncLogs(admin);
+  await assertSyncNotBlocked(admin);
 
   const { data: logRow, error: logErr } = await admin
     .from("artistflow_sync_logs")
@@ -49,6 +117,8 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
     geocoding_queued: 0,
   };
 
+  const newEventNotices: NewEventNotice[] = [];
+
   try {
     const raw = await fetchJson(feedUrl);
     if (!Array.isArray(raw)) throw new Error("Feed is not an array");
@@ -58,10 +128,11 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
     );
     result.total = normalized.length;
 
+    await patchSyncLog(admin, logId, { total: result.total });
+
     const seenIds = new Set(normalized.map((e) => e.external_id));
 
     for (const e of normalized) {
-      // never visible if secret
       const is_visible = Boolean(e.published) && !e.secret;
 
       const { data: existing, error: exErr } = await admin
@@ -113,51 +184,45 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         result.inserted += 1;
 
         if (is_visible && e.published && insertedRow?.id && e.start_at) {
-          const dateLabel = new Date(e.start_at).toLocaleDateString("de-DE", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-          const location =
-            e.kind === "tv"
-              ? formatTvBroadcaster(e.broadcaster)
-              : formatEventCity({ city: e.city, country: e.country });
-          const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
-            /\/$/,
-            "",
-          );
-          await notifyAllActiveMembers({
-            kind: NOTIFICATION_KINDS.eventAvailable,
-            title: e.kind === "tv" ? "Neuer TV-Auftritt" : "Neues Event",
-            body: `${e.title} — ${dateLabel}${location ? `, ${location}` : ""}`,
-            linkUrl: base ? `${base}/events` : "/events",
-            linkLabel: "Zur Eventliste",
-            metadata: { event_id: insertedRow.id },
-          }).catch(console.error);
-        }
-      } else if (shouldUpdate) {
-        const { error } = await admin
-          .from("external_events")
-          .update({
+          newEventNotices.push({
+            eventId: insertedRow.id,
             kind: e.kind,
             title: e.title,
-            start_at: e.start_at,
-            timezone: e.timezone,
-            venue: e.venue,
-            address: e.address,
-            postal_code: e.postal_code,
+            startAt: e.start_at,
             city: e.city,
             country: e.country,
             broadcaster: e.broadcaster,
-            ticket_url: e.ticket_url,
-            published: e.published,
-            secret: e.secret,
-            feed_updated_at: e.feed_updated_at,
-            content_hash: e.content_hash,
-            last_seen_at: new Date().toISOString(),
-            is_visible,
-            geocoding_status: "pending",
-          })
+          });
+        }
+      } else if (shouldUpdate) {
+        const addressChanged = eventAddressChanged(existing, e.address_signature);
+        const updatePayload: Record<string, unknown> = {
+          kind: e.kind,
+          title: e.title,
+          start_at: e.start_at,
+          timezone: e.timezone,
+          venue: e.venue,
+          address: e.address,
+          postal_code: e.postal_code,
+          city: e.city,
+          country: e.country,
+          broadcaster: e.broadcaster,
+          ticket_url: e.ticket_url,
+          published: e.published,
+          secret: e.secret,
+          feed_updated_at: e.feed_updated_at,
+          content_hash: e.content_hash,
+          last_seen_at: new Date().toISOString(),
+          is_visible,
+        };
+        if (addressChanged) {
+          updatePayload.geocoding_status = "pending";
+          updatePayload.lat = null;
+          updatePayload.lng = null;
+        }
+        const { error } = await admin
+          .from("external_events")
+          .update(updatePayload)
           .eq("id", existing.id);
         if (error) throw new Error(error.message);
         result.updated += 1;
@@ -171,75 +236,8 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         }
         await admin.from("external_events").update(patch).eq("id", existing.id);
       }
-
-      // Geocoding: vollständige Adresse (address + PLZ + city + country), nicht city allein
-      if (canGeocodeNormalizedEvent(e)) {
-        const { data: cached } = await admin
-          .from("geocoding_cache")
-          .select("lat,lng,status")
-          .eq("address_signature", e.address_signature)
-          .maybeSingle();
-
-        if (cached?.status === "success" && cached.lat && cached.lng) {
-          await admin
-            .from("external_events")
-            .update({
-              lat: cached.lat,
-              lng: cached.lng,
-              geocoding_status: "success",
-              geocoded_at: new Date().toISOString(),
-            })
-            .eq("source", "artistflow")
-            .eq("external_id", e.external_id);
-        } else if (!cached) {
-          const geocoded = await geocodeWithNominatim({
-            address: e.address,
-            postal_code: e.postal_code,
-            city: (e.city ?? "").trim(),
-            country: (e.country ?? "DE").trim() || "DE",
-          });
-
-          if (geocoded.status === "success") {
-            await admin.from("geocoding_cache").upsert(
-              {
-                address_signature: e.address_signature,
-                lat: geocoded.lat,
-                lng: geocoded.lng,
-                status: "success",
-              },
-              { onConflict: "address_signature" },
-            );
-
-            await admin
-              .from("external_events")
-              .update({
-                lat: geocoded.lat,
-                lng: geocoded.lng,
-                geocoding_status: "success",
-                geocoded_at: new Date().toISOString(),
-              })
-              .eq("source", "artistflow")
-              .eq("external_id", e.external_id);
-            result.geocoding_queued += 1;
-          } else {
-            await admin.from("geocoding_cache").upsert(
-              { address_signature: e.address_signature, status: "failed" },
-              { onConflict: "address_signature" },
-            );
-            await admin
-              .from("external_events")
-              .update({
-                geocoding_status: "failed",
-                geocoded_at: new Date().toISOString(),
-              })
-              .eq("source", "artistflow")
-              .eq("external_id", e.external_id);
-          }
-        }
-      }
     }
 
-    // Soft delete: hide events not in feed
     const { data: allExisting, error: allErr } = await admin
       .from("external_events")
       .select("id,external_id,is_visible")
@@ -259,26 +257,48 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
       result.hidden += toHide.length;
     }
 
-    await admin
-      .from("artistflow_sync_logs")
-      .update({
-        finished_at: new Date().toISOString(),
-        total: result.total,
-        inserted: result.inserted,
-        updated: result.updated,
-        hidden: result.hidden,
-        geocoding_queued: result.geocoding_queued,
-      })
-      .eq("id", logId);
+    const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+      /\/$/,
+      "",
+    );
+    for (const notice of newEventNotices) {
+      const dateLabel = new Date(notice.startAt).toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const location =
+        notice.kind === "tv"
+          ? formatTvBroadcaster(notice.broadcaster)
+          : formatEventCity({ city: notice.city, country: notice.country });
+      await notifyAllActiveMembers({
+        kind: NOTIFICATION_KINDS.eventAvailable,
+        title: notice.kind === "tv" ? "Neuer TV-Auftritt" : "Neues Event",
+        body: `${notice.title} — ${dateLabel}${location ? `, ${location}` : ""}`,
+        linkUrl: base ? `${base}/events` : "/events",
+        linkLabel: "Zur Eventliste",
+        metadata: { event_id: notice.eventId },
+      }).catch(console.error);
+    }
+
+    result.geocoding_queued = await geocodeAllPendingArtistflowEvents(admin);
+
+    await patchSyncLog(admin, logId, {
+      finished_at: new Date().toISOString(),
+      total: result.total,
+      inserted: result.inserted,
+      updated: result.updated,
+      hidden: result.hidden,
+      geocoding_queued: result.geocoding_queued,
+    });
 
     return result;
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown sync error";
-    await admin
-      .from("artistflow_sync_logs")
-      .update({ finished_at: new Date().toISOString(), error: message })
-      .eq("id", logId);
+    await patchSyncLog(admin, logId, {
+      finished_at: new Date().toISOString(),
+      error: message,
+    });
     throw e;
   }
 }
-

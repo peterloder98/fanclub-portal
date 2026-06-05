@@ -65,15 +65,14 @@ export function computeHash(obj: unknown) {
 }
 
 export function canGeocodeNormalizedEvent(e: {
-  kind: EventKind;
+  kind: EventKind | string;
   address: string | null;
   postal_code: string | null;
   city: string | null;
   country: string | null;
 }): boolean {
   if (e.kind === "tv") return false;
-  if (!(e.city ?? "").trim() || !(e.country ?? "").trim()) return false;
-  return Boolean((e.address ?? "").trim() || (e.postal_code ?? "").trim());
+  return Boolean((e.city ?? "").trim());
 }
 
 export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<

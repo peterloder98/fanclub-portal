@@ -47,13 +47,47 @@ export async function createUserNotification(
   return data?.id ?? null;
 }
 
+function notificationRow(userId: string, input: Omit<CreateNotificationInput, "userId">) {
+  return {
+    user_id: userId,
+    kind: input.kind,
+    title: input.title.trim(),
+    body: input.body?.trim() || null,
+    link_url: input.linkUrl?.trim() || null,
+    link_label: input.linkLabel?.trim() || null,
+    metadata: input.metadata ?? {},
+  };
+}
+
 export async function createNotificationsForUsers(
   userIds: string[],
   input: Omit<CreateNotificationInput, "userId">,
 ) {
   const unique = [...new Set(userIds.filter(Boolean))];
-  for (const userId of unique) {
-    await createUserNotification({ ...input, userId });
+  if (!unique.length) return;
+
+  const admin = createSupabaseAdminClient();
+  const chunkSize = 200;
+  for (let i = 0; i < unique.length; i += chunkSize) {
+    const chunk = unique.slice(i, i + chunkSize);
+    const { error } = await admin
+      .from("user_notifications")
+      .insert(chunk.map((userId) => notificationRow(userId, input)));
+    if (error) {
+      if (/user_notifications|does not exist/i.test(error.message)) {
+        if (!tableMissingLogged) {
+          tableMissingLogged = true;
+          console.warn(
+            "[notifications] Tabelle user_notifications fehlt — bitte supabase/059_user_notifications.sql ausführen.",
+          );
+        }
+        return;
+      }
+      console.error("[notifications] batch insert failed:", error.message);
+      for (const userId of chunk) {
+        await createUserNotification({ ...input, userId });
+      }
+    }
   }
 }
 

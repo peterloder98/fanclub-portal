@@ -2,6 +2,17 @@ export type GeocodeResult =
   | { status: "success"; lat: number; lng: number }
   | { status: "failed" };
 
+function countryForNominatim(country: string): string {
+  const c = country.trim().toUpperCase();
+  const labels: Record<string, string> = {
+    DE: "Deutschland",
+    AT: "Österreich",
+    CH: "Schweiz",
+    NL: "Niederlande",
+  };
+  return labels[c] ?? (country.trim() || "Deutschland");
+}
+
 function buildQueries(params: {
   address?: string | null;
   postal_code?: string | null;
@@ -9,12 +20,13 @@ function buildQueries(params: {
   country: string;
 }): string[] {
   const city = params.city.trim();
-  const country = params.country.trim() || "Deutschland";
+  const country = countryForNominatim(params.country);
   const address = (params.address ?? "").trim();
   const venue = address;
   const queries = [
     [address, params.postal_code, city, country].filter(Boolean).join(", "),
     [params.postal_code, city, country].filter(Boolean).join(", "),
+    city ? `${city}, ${country}` : "",
   ];
   if (/löwenberg/i.test(city) || /löwenberg/i.test(venue)) {
     queries.unshift("Löwenberger Land, Brandenburg, Deutschland");
