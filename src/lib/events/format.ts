@@ -1,13 +1,17 @@
+import { BERLIN_TZ } from "@/lib/datetime/berlin";
+
 const dateFmt = new Intl.DateTimeFormat("de-DE", {
   weekday: "short",
   day: "2-digit",
   month: "short",
   year: "numeric",
+  timeZone: BERLIN_TZ,
 });
 
 const timeFmt = new Intl.DateTimeFormat("de-DE", {
   hour: "2-digit",
   minute: "2-digit",
+  timeZone: BERLIN_TZ,
 });
 
 /** Midnight in ISO/DB strings = date-only placeholder from Artistflow (no real start time). */
@@ -50,6 +54,7 @@ const listDateFmt = new Intl.DateTimeFormat("de-DE", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
+  timeZone: BERLIN_TZ,
 });
 
 /** Kompakt für Terminliste (wie Homepage): 09.06.2026 · 10:00 Uhr */
