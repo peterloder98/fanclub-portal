@@ -124,9 +124,9 @@ const SECTIONS: AdminHubSection[] = [
     subtitle: "Termine aus Artistflow und Karte.",
     items: [
       {
-        href: "/admin/events",
-        title: "Event-Infos (Vorstand)",
-        description: "Nächster Bahnhof, Hotel und Notizen pro Termin.",
+        href: "/events",
+        title: "Events & Reise-Infos",
+        description: "Termine ansehen — Admins bearbeiten Bahnhof/Hotel in der Eventliste.",
         icon: Train,
         iconClassName: "from-violet-600 to-fuchsia-600",
       },

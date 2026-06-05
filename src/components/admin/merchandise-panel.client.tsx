@@ -10,8 +10,10 @@ import {
 } from "@/components/ui/document-upload-field";
 import {
   deleteMerchandiseProductAction,
+  listMerchandiseExpenseOptionsAction,
   listMerchandiseProductsAction,
   saveMerchandiseProductAction,
+  seedMerchandiseDefaultsAction,
   type MerchandiseProductRow,
   type MerchandiseVariantInput,
 } from "@/app/(app)/admin/merchandise/actions";
@@ -37,13 +39,25 @@ export function MerchandisePanel() {
   const [variants, setVariants] = useState<MerchandiseVariantInput[]>([
     { size_label: null, qty_purchased: 0, qty_sold: 0, qty_gifted: 0 },
   ]);
+  const [ledgerEntryId, setLedgerEntryId] = useState<string | null>(null);
+  const [createPurchaseExpense, setCreatePurchaseExpense] = useState(false);
+  const [expenseOptions, setExpenseOptions] = useState<Array<{ id: string; label: string }>>([]);
 
   async function reload() {
     setLoading(true);
     try {
-      const res = await listMerchandiseProductsAction();
+      const [res, expenses] = await Promise.all([
+        listMerchandiseProductsAction(),
+        listMerchandiseExpenseOptionsAction().catch(() => []),
+      ]);
       setTableMissing(res.tableMissing);
       setProducts(res.products);
+      setExpenseOptions(expenses);
+      if (!res.tableMissing && res.products.length === 0) {
+        await seedMerchandiseDefaultsAction();
+        const again = await listMerchandiseProductsAction();
+        setProducts(again.products);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Laden fehlgeschlagen");
     } finally {
@@ -65,6 +79,8 @@ export function MerchandisePanel() {
     setImagePath(null);
     setImagePreviewUrl(null);
     setVariants([{ size_label: null, qty_purchased: 0, qty_sold: 0, qty_gifted: 0 }]);
+    setLedgerEntryId(null);
+    setCreatePurchaseExpense(false);
     setShowForm(false);
   }
 
@@ -79,6 +95,8 @@ export function MerchandisePanel() {
     setHasSizes(p.has_sizes);
     setImagePath(p.image_path);
     setImagePreviewUrl(p.image_url);
+    setLedgerEntryId(p.ledger_entry_id);
+    setCreatePurchaseExpense(false);
     setVariants(
       p.variants.length
         ? p.variants.map((v) => ({
@@ -104,7 +122,8 @@ export function MerchandisePanel() {
           purchaseTotalEur: purchaseTotal ? Number(purchaseTotal.replace(",", ".")) : null,
           hasSizes,
           imagePath,
-          createPurchaseExpense: !editId,
+          ledgerEntryId,
+          createPurchaseExpense: createPurchaseExpense && !ledgerEntryId,
           variants,
         });
         resetForm();
@@ -174,9 +193,41 @@ export function MerchandisePanel() {
               <input value={purchaseTotal} onChange={(e) => setPurchaseTotal(e.target.value)} type="number" step="0.01" className="h-10 rounded-xl border px-3 text-sm" />
             </label>
             <label className="flex items-center gap-2 text-sm md:col-span-2">
-              <input type="checkbox" checked={hasSizes} onChange={(e) => setHasSizes(e.target.checked)} />
+              <input type="checkbox" checked={hasSizes} onChange={(e) => {
+                const checked = e.target.checked;
+                setHasSizes(checked);
+                if (checked && !description.trim()) {
+                  setDescription("Textil-Produkt mit verschiedenen Größen");
+                }
+              }} />
               Textil mit Größen (S/M/L/…)
             </label>
+            <label className="grid gap-1 md:col-span-2">
+              <span className="text-sm font-medium">Buchung Einkauf (optional)</span>
+              <select
+                value={ledgerEntryId ?? ""}
+                onChange={(e) => {
+                  setLedgerEntryId(e.target.value || null);
+                  if (e.target.value) setCreatePurchaseExpense(false);
+                }}
+                className="h-10 rounded-xl border px-3 text-sm"
+              >
+                <option value="">— keine Zuordnung —</option>
+                {expenseOptions.map((o) => (
+                  <option key={o.id} value={o.id}>{o.label}</option>
+                ))}
+              </select>
+            </label>
+            {!ledgerEntryId && purchaseTotal ? (
+              <label className="flex items-center gap-2 text-sm md:col-span-2">
+                <input
+                  type="checkbox"
+                  checked={createPurchaseExpense}
+                  onChange={(e) => setCreatePurchaseExpense(e.target.checked)}
+                />
+                Neue Ausgabe in der Buchhaltung anlegen
+              </label>
+            ) : null}
             <div className="md:col-span-2">
               <DocumentUploadField
                 label="Produktfoto"
@@ -233,7 +284,7 @@ export function MerchandisePanel() {
               </div>
             </div>
             <div className="flex gap-2 md:col-span-2">
-              <button type="button" disabled={pending || !name.trim() || !salePrice} onClick={handleSave} className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50">
+              <button type="button" disabled={pending || !name.trim() || salePrice === ""} onClick={handleSave} className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50">
                 Speichern
               </button>
               <button type="button" onClick={resetForm} className="h-10 rounded-xl border px-4 text-sm font-semibold">
@@ -260,7 +311,9 @@ export function MerchandisePanel() {
               )}
               <CardContent className="pt-4">
                 <h3 className="font-semibold text-slate-900">{p.name}</h3>
-                <p className="mt-1 text-sm text-emerald-700">{formatEur(p.sale_price_cents)}</p>
+                <p className="mt-1 text-sm text-emerald-700">
+                  {p.sale_price_cents <= 0 ? "Geschenk (0,00 €)" : formatEur(p.sale_price_cents)}
+                </p>
                 <p className="mt-1 text-xs text-slate-600">
                   Bestand: <strong>{p.total_available}</strong> verfügbar
                 </p>

@@ -56,6 +56,12 @@ async function nominatimSearch(q: string, timeoutMs: number): Promise<GeocodeRes
   }
 }
 
+export async function geocodeAddressString(address: string): Promise<GeocodeResult> {
+  const q = address.trim();
+  if (!q) return { status: "failed" };
+  return nominatimSearch(q, 8000);
+}
+
 export async function geocodeWithNominatim(params: {
   address?: string | null;
   postal_code?: string | null;

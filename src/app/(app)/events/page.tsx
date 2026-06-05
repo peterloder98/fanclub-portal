@@ -5,7 +5,7 @@ import {
 } from "@/components/events/events-interactive-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
-import type { EventAdminNote } from "@/lib/events/admin-notes";
+import { parseTravelInfo, type EventTravelNoteRow } from "@/lib/events/travel-info";
 import { redirect } from "next/navigation";
 
 export default async function EventsPage() {
@@ -78,21 +78,22 @@ export default async function EventsPage() {
     }
   }
 
-  let adminNotesByEventId: Record<string, EventAdminNote> | undefined;
-  if (isAdmin && eventIds.length) {
+  let travelNotesByEventId: Record<string, EventTravelNoteRow> = {};
+  if (eventIds.length) {
     const { data: noteRows } = await supabase
       .from("event_admin_notes")
-      .select("event_id,next_station,next_hotel,notes,updated_at")
+      .select("event_id,travel_info,updated_at")
       .in("event_id", eventIds);
     if (noteRows?.length) {
-      adminNotesByEventId = Object.fromEntries(
+      travelNotesByEventId = Object.fromEntries(
         noteRows.map((r) => [
           r.event_id,
           {
             eventId: r.event_id,
-            nextStation: r.next_station,
-            nextHotel: r.next_hotel,
-            notes: r.notes,
+            travel: parseTravelInfo(
+              (r as { travel_info?: unknown }).travel_info ??
+                (r as { next_station?: string | null }).next_station,
+            ),
             updatedAt: r.updated_at,
           },
         ]),
@@ -123,7 +124,8 @@ export default async function EventsPage() {
             nextStartAt={nextEventWithDate?.start_at ?? null}
             nextTitle={nextEventWithDate?.title ?? null}
             participationByEventId={participationByEventId}
-            adminNotesByEventId={adminNotesByEventId}
+            travelNotesByEventId={travelNotesByEventId}
+            isAdmin={isAdmin}
           />
         </div>
       </main>

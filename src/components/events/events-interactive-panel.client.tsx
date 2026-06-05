@@ -10,8 +10,9 @@ import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "@/components/events/events-map.types";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EventAdminInfoBlock } from "@/components/events/event-admin-info-block";
-import type { EventAdminNote } from "@/lib/events/admin-notes";
+import { EventTravelInfoBlock } from "@/components/events/event-travel-info-block";
+import { EventTravelEdit } from "@/components/events/event-travel-edit.client";
+import type { EventTravelNoteRow } from "@/lib/events/admin-notes";
 import { cn } from "@/lib/cn";
 
 export type EventListRow = MapEvent & {
@@ -29,14 +30,16 @@ export function EventsInteractivePanel({
   nextStartAt,
   nextTitle,
   participationByEventId,
-  adminNotesByEventId,
+  travelNotesByEventId,
+  isAdmin,
   className,
 }: {
   events: EventListRow[];
   nextStartAt: string | null;
   nextTitle?: string | null;
   participationByEventId: Record<string, EventParticipationMeta>;
-  adminNotesByEventId?: Record<string, EventAdminNote>;
+  travelNotesByEventId?: Record<string, EventTravelNoteRow>;
+  isAdmin?: boolean;
   className?: string;
 }) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -105,8 +108,14 @@ export function EventsInteractivePanel({
                     ) : ticket.text ? (
                       <div className="mt-1.5 text-xs text-slate-700">{ticket.text}</div>
                     ) : null}
-                    {adminNotesByEventId?.[e.id] ? (
-                      <EventAdminInfoBlock note={adminNotesByEventId[e.id]} />
+                    {travelNotesByEventId?.[e.id]?.travel ? (
+                      <EventTravelInfoBlock travel={travelNotesByEventId[e.id].travel} />
+                    ) : null}
+                    {isAdmin ? (
+                      <EventTravelEdit
+                        eventId={e.id}
+                        initialTravel={travelNotesByEventId?.[e.id]?.travel}
+                      />
                     ) : null}
                     <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
                       <EventParticipationRow

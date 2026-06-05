@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { signedClubDocumentUrl } from "@/lib/club/documents";
+import { seedDefaultMerchandise } from "@/lib/merchandise/seed-defaults";
 
 export type MerchandiseVariantInput = {
   size_label: string | null;
@@ -22,6 +23,7 @@ export type MerchandiseProductRow = {
   image_path: string | null;
   image_url: string | null;
   has_sizes: boolean;
+  ledger_entry_id: string | null;
   variants: Array<{
     id: string;
     size_label: string | null;
@@ -36,11 +38,12 @@ export type MerchandiseProductRow = {
 const productSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional().default(""),
-  salePriceEur: z.coerce.number().positive(),
+  salePriceEur: z.coerce.number().min(0),
   purchaseTotalEur: z.coerce.number().min(0).optional().nullable(),
   hasSizes: z.boolean(),
   imagePath: z.string().optional().nullable(),
-  createPurchaseExpense: z.boolean().optional().default(true),
+  ledgerEntryId: z.string().uuid().optional().nullable(),
+  createPurchaseExpense: z.boolean().optional().default(false),
   variants: z.array(
     z.object({
       size_label: z.string().nullable(),
@@ -59,7 +62,7 @@ export async function listMerchandiseProductsAction(): Promise<{
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("merchandise_products")
-    .select("id,name,description,sale_price_cents,purchase_total_cents,image_path,has_sizes")
+    .select("id,name,description,sale_price_cents,purchase_total_cents,image_path,has_sizes,ledger_entry_id")
     .order("name", { ascending: true });
   if (error) {
     if (/merchandise_products|does not exist/i.test(error.message)) {
@@ -103,6 +106,7 @@ export async function listMerchandiseProductsAction(): Promise<{
         image_path: p.image_path,
         image_url: await signedClubDocumentUrl(p.image_path),
         has_sizes: p.has_sizes,
+        ledger_entry_id: (p as { ledger_entry_id?: string | null }).ledger_entry_id ?? null,
         variants: vs,
         total_available,
       };
@@ -120,6 +124,7 @@ export async function saveMerchandiseProductAction(input: {
   purchaseTotalEur?: number | null;
   hasSizes: boolean;
   imagePath?: string | null;
+  ledgerEntryId?: string | null;
   createPurchaseExpense?: boolean;
   variants: MerchandiseVariantInput[];
 }) {
@@ -141,6 +146,7 @@ export async function saveMerchandiseProductAction(input: {
         purchase_total_cents: purchaseCents,
         has_sizes: parsed.hasSizes,
         image_path: parsed.imagePath ?? null,
+        ledger_entry_id: parsed.ledgerEntryId ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", productId);
@@ -156,6 +162,7 @@ export async function saveMerchandiseProductAction(input: {
         purchase_total_cents: purchaseCents,
         has_sizes: parsed.hasSizes,
         image_path: parsed.imagePath ?? null,
+        ledger_entry_id: parsed.ledgerEntryId ?? null,
         created_by: user.id,
       })
       .select("id")
@@ -178,7 +185,7 @@ export async function saveMerchandiseProductAction(input: {
     if (vErr) throw new Error(vErr.message);
   }
 
-  if (!input.id && purchaseCents && purchaseCents > 0 && parsed.createPurchaseExpense) {
+  if (!parsed.ledgerEntryId && purchaseCents && purchaseCents > 0 && parsed.createPurchaseExpense) {
     const totalQty = parsed.variants.reduce((s, v) => s + v.qty_purchased, 0);
     const { data: ledgerRow } = await admin
       .from("club_ledger_entries")
@@ -203,6 +210,34 @@ export async function saveMerchandiseProductAction(input: {
   revalidatePath("/admin/merchandise");
   revalidatePath("/admin/accounting");
   return { ok: true, id: productId };
+}
+
+export async function listMerchandiseExpenseOptionsAction() {
+  await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("club_ledger_entries")
+    .select("id,description,amount_cents,entry_date")
+    .eq("entry_type", "expense")
+    .eq("category", "merchandise")
+    .order("entry_date", { ascending: false })
+    .limit(40);
+  if (error) {
+    if (/club_ledger_entries|does not exist/i.test(error.message)) return [];
+    throw new Error(error.message);
+  }
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    label: `${r.description} (${(r.amount_cents / 100).toFixed(2).replace(".", ",")} €, ${r.entry_date})`,
+  }));
+}
+
+export async function seedMerchandiseDefaultsAction() {
+  const { user } = await requireAdminAction();
+  const result = await seedDefaultMerchandise(user.id);
+  revalidatePath("/admin/merchandise");
+  revalidatePath("/admin/accounting");
+  return result;
 }
 
 export async function deleteMerchandiseProductAction(productId: string) {
