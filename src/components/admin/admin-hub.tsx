@@ -140,7 +140,7 @@ const SECTIONS: AdminHubSection[] = [
       {
         href: "/admin/events-sync",
         title: "Artistflow Sync",
-        description: "Import, Geocoding, Logs und manueller Sync.",
+        description: "Sync, Teilnehmer & Pins reparieren, Geocoding und Logs.",
         icon: MapPinned,
         iconClassName: "from-fuchsia-600 to-rose-600",
       },

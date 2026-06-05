@@ -3,6 +3,7 @@ import {
   EventsInteractivePanel,
   type EventParticipationMeta,
 } from "@/components/events/events-interactive-panel.client";
+import { EventsAdminToolbar } from "@/components/events/events-admin-toolbar.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { parseTravelInfo, type EventTravelNoteRow } from "@/lib/events/travel-info";
@@ -121,6 +122,8 @@ export default async function EventsPage() {
                 : error.message}
           </div>
         ) : null}
+
+        {isAdmin ? <EventsAdminToolbar /> : null}
 
         <div className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
           <EventsInteractivePanel
