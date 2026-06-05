@@ -14,7 +14,7 @@ export default async function MerchandisePage() {
 
   return (
     <div className="min-h-screen">
-      <Topbar title="Merchandise" subtitle="Fanclub-Shop — Artikel, Größen & Verfügbarkeit" />
+      <Topbar title="Merchandise" subtitle="Stöbern, Größe & Menge wählen, bewusst bestellen" />
       <main className="px-4 py-6 lg:px-8">
         <MerchandiseShop />
       </main>
