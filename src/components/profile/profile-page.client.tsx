@@ -5,14 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
+  CalendarDays,
   ChevronDown,
   History,
+  IdCard,
+  ImageIcon,
   KeyRound,
   ShieldAlert,
   UserRound,
 } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { Topbar } from "@/components/app-shell/topbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UploadDropzone } from "@/components/ui/upload-dropzone";
 import { GenderSelect } from "@/components/ui/gender-select";
@@ -27,7 +31,6 @@ import {
   isAllowedAvatarFile,
   readImageDimensions,
 } from "@/lib/avatars/constants";
-import { GENDER_OPTIONS } from "@/lib/person/gender";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { formatEur } from "@/lib/club/ledger";
 import { activityTypeLabel } from "@/lib/membership/activity-log";
@@ -63,10 +66,6 @@ function contextKindLabel(kind: string) {
   return "Beitrag";
 }
 
-function genderLabel(g: string | null) {
-  return GENDER_OPTIONS.find((o) => o.value === g)?.label ?? g ?? "—";
-}
-
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="grid gap-0.5 border-b border-slate-100 py-2.5 sm:grid-cols-[minmax(0,140px)_1fr]">
@@ -75,6 +74,12 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
+
+const fieldInputClass =
+  "h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]";
+const fieldLabelClass = "text-sm font-medium text-slate-700";
+const primaryButtonClass =
+  "h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50";
 
 function SectionHeading({
   icon: Icon,
@@ -90,7 +95,7 @@ function SectionHeading({
       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-700">
         <Icon className="h-4 w-4" aria-hidden />
       </div>
-      <div>
+      <div className="min-w-0">
         <h2 className="text-base font-semibold text-slate-900">{title}</h2>
         {description ? <p className="mt-0.5 text-sm text-slate-600">{description}</p> : null}
       </div>
@@ -98,41 +103,62 @@ function SectionHeading({
   );
 }
 
+function ProfileSection({
+  icon,
+  title,
+  description,
+  children,
+  className,
+  tone = "default",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  className?: string;
+  tone?: "default" | "warning";
+}) {
+  return (
+    <Card
+      className={cn(
+        "overflow-hidden",
+        tone === "warning" && "border-rose-200",
+        className,
+      )}
+    >
+      <CardHeader className="border-b border-slate-100 pb-4">
+        <SectionHeading icon={icon} title={title} description={description} />
+      </CardHeader>
+      <CardContent className="pt-5">{children}</CardContent>
+    </Card>
+  );
+}
+
 function WarningsSection({ warnings, warningCount }: { warnings: MyWarningRow[]; warningCount: number }) {
-  if (warnings.length === 0 && warningCount === 0) {
-    return (
-      <Card>
-        <CardHeader className="pb-3">
-          <SectionHeading
-            icon={ShieldAlert}
-            title="Verwarnungen"
-            description="Keine Verwarnungen — danke für deinen respektvollen Umgang im Club."
-          />
-        </CardHeader>
-      </Card>
-    );
-  }
+  const description =
+    warnings.length === 0 && warningCount === 0
+      ? "Keine Verwarnungen — danke für deinen respektvollen Umgang im Club."
+      : warningCount === 1
+        ? "Du hast 1 Verwarnung. Hier siehst du den Grund."
+        : `Du hast ${warningCount} Verwarnungen. Hier siehst du die Gründe.`;
 
   return (
-    <Card className="border-rose-200">
-      <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <SectionHeading
-            icon={ShieldAlert}
-            title="Verwarnungen"
-            description={
-              warningCount === 1
-                ? "Du hast 1 Verwarnung. Hier siehst du den Grund."
-                : `Du hast ${warningCount} Verwarnungen. Hier siehst du die Gründe.`
-            }
-          />
+    <ProfileSection
+      icon={ShieldAlert}
+      title="Verwarnungen"
+      description={description}
+      tone={warningCount > 0 ? "warning" : "default"}
+    >
+      {warningCount > 0 ? (
+        <div className="mb-3">
           <Badge variant="neutral" className="border-rose-200 bg-rose-50 text-rose-800">
             <AlertTriangle className="mr-1 h-3 w-3" aria-hidden />
             {warningCount}
           </Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
+      ) : null}
+      {warnings.length > 0 ? (
+      <div className="space-y-3">
         {warnings.map((w) => (
           <div
             key={w.id}
@@ -149,8 +175,9 @@ function WarningsSection({ warnings, warningCount }: { warnings: MyWarningRow[];
             </p>
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+      ) : null}
+    </ProfileSection>
   );
 }
 
@@ -158,8 +185,8 @@ function ActivityHistorySection({ rows }: { rows: MemberActivityRow[] }) {
   const [open, setOpen] = useState(true);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
+    <Card className="overflow-hidden">
+      <CardHeader className="border-b border-slate-100 pb-4">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -177,7 +204,7 @@ function ActivityHistorySection({ rows }: { rows: MemberActivityRow[] }) {
         </button>
       </CardHeader>
       {open ? (
-        <CardContent>
+        <CardContent className="pt-5">
           {rows.length === 0 ? (
             <p className="text-sm text-slate-500">Noch keine Einträge.</p>
           ) : (
@@ -257,61 +284,50 @@ function PasswordSection() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <SectionHeading
-          icon={KeyRound}
-          title="Passwort ändern"
-          description="Wähle ein sicheres Passwort mit mindestens 8 Zeichen."
-        />
-      </CardHeader>
-      <CardContent>
-        {ok ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
-            Passwort wurde erfolgreich geändert.
-          </div>
-        ) : (
-          <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Neues Passwort</span>
-              <input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                type="password"
-                autoComplete="new-password"
-                required
-                className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-              />
-            </label>
-            <label className="grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Passwort bestätigen</span>
-              <input
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                type="password"
-                autoComplete="new-password"
-                required
-                className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-              />
-            </label>
-            {error ? (
-              <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 sm:col-span-2">
-                {error}
-              </div>
-            ) : null}
-            <div className="sm:col-span-2">
-              <button
-                type="submit"
-                disabled={busy}
-                className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-              >
-                {busy ? "Speichern…" : "Passwort speichern"}
-              </button>
+    <ProfileSection
+      icon={KeyRound}
+      title="Passwort ändern"
+      description="Mindestens 8 Zeichen. Nach dem Speichern bleibst du angemeldet."
+    >
+      {ok ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+          Passwort wurde erfolgreich geändert.
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} className="grid max-w-md gap-3">
+          <label className="grid gap-1">
+            <span className={fieldLabelClass}>Neues Passwort</span>
+            <input
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              type="password"
+              autoComplete="new-password"
+              required
+              className={fieldInputClass}
+            />
+          </label>
+          <label className="grid gap-1">
+            <span className={fieldLabelClass}>Passwort bestätigen</span>
+            <input
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              type="password"
+              autoComplete="new-password"
+              required
+              className={fieldInputClass}
+            />
+          </label>
+          {error ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+              {error}
             </div>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+          ) : null}
+          <button type="submit" disabled={busy} className={cn(primaryButtonClass, "w-full sm:w-auto")}>
+            {busy ? "Speichern…" : "Passwort speichern"}
+          </button>
+        </form>
+      )}
+    </ProfileSection>
   );
 }
 
@@ -470,155 +486,159 @@ export function ProfilePageClient() {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card className="lg:col-span-2">
-              <CardHeader className="pb-3">
-                <SectionHeading
-                  icon={UserRound}
-                  title="Stammdaten"
-                  description="Diese Angaben nutzt der Club für Kommunikation und Versand."
-                />
-              </CardHeader>
-              <CardContent>
-                <form action={handleProfileSave} className="grid gap-3 md:grid-cols-2">
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Vorname</span>
-                    <input
-                      name="first_name"
-                      defaultValue={profile.first_name}
-                      required
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Nachname</span>
-                    <input
-                      name="last_name"
-                      defaultValue={profile.last_name}
-                      required
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1 md:col-span-2">
-                    <span className="text-sm font-medium text-slate-700">E-Mail</span>
-                    <input
-                      disabled
-                      value={profile.email ?? ""}
-                      className="h-11 rounded-xl border bg-slate-50 px-3 text-sm text-slate-600 outline-none"
-                    />
-                    <span className="text-xs text-slate-500">
-                      E-Mail-Änderungen bitte beim Vorstand anfragen.
-                    </span>
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Telefon</span>
-                    <input
-                      name="phone"
-                      defaultValue={profile.phone ?? ""}
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Geburtsdatum</span>
-                    <input
-                      name="birthdate"
-                      type="date"
-                      defaultValue={profile.birthdate ?? ""}
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Geschlecht</span>
-                    <GenderSelect
-                      name="gender"
-                      value={
-                        profile.gender === "m" || profile.gender === "w" || profile.gender === "d"
-                          ? profile.gender
-                          : ""
-                      }
-                    />
-                  </label>
-                  <label className="grid gap-1 md:col-span-2">
-                    <span className="text-sm font-medium text-slate-700">Straße</span>
-                    <input
-                      name="street"
-                      defaultValue={profile.street ?? ""}
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">PLZ</span>
-                    <input
-                      name="postal_code"
-                      defaultValue={profile.postal_code ?? ""}
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Ort</span>
-                    <input
-                      name="city"
-                      defaultValue={profile.city ?? ""}
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
-                  <label className="grid gap-1">
-                    <span className="text-sm font-medium text-slate-700">Land</span>
-                    <input
-                      name="country"
-                      defaultValue={profile.country ?? "DE"}
-                      className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                    />
-                  </label>
+          <div className="space-y-4">
+            <ProfileSection
+              icon={UserRound}
+              title="Stammdaten"
+              description="Diese Angaben nutzt der Club für Kommunikation und Versand."
+            >
+              <form action={handleProfileSave} className="grid gap-3 md:grid-cols-2">
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Vorname</span>
+                  <input
+                    name="first_name"
+                    defaultValue={profile.first_name}
+                    required
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Nachname</span>
+                  <input
+                    name="last_name"
+                    defaultValue={profile.last_name}
+                    required
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1 md:col-span-2">
+                  <span className={fieldLabelClass}>E-Mail</span>
+                  <input
+                    disabled
+                    value={profile.email ?? ""}
+                    className="h-11 rounded-xl border bg-slate-50 px-3 text-sm text-slate-600 outline-none"
+                  />
+                  <span className="text-xs text-slate-500">
+                    E-Mail-Änderungen bitte beim Vorstand anfragen.
+                  </span>
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Telefon</span>
+                  <input
+                    name="phone"
+                    defaultValue={profile.phone ?? ""}
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Geburtsdatum</span>
+                  <input
+                    name="birthdate"
+                    type="date"
+                    defaultValue={profile.birthdate ?? ""}
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Geschlecht</span>
+                  <GenderSelect
+                    name="gender"
+                    value={
+                      profile.gender === "m" || profile.gender === "w" || profile.gender === "d"
+                        ? profile.gender
+                        : ""
+                    }
+                  />
+                </label>
+                <label className="grid gap-1 md:col-span-2">
+                  <span className={fieldLabelClass}>Straße</span>
+                  <input
+                    name="street"
+                    defaultValue={profile.street ?? ""}
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>PLZ</span>
+                  <input
+                    name="postal_code"
+                    defaultValue={profile.postal_code ?? ""}
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Ort</span>
+                  <input
+                    name="city"
+                    defaultValue={profile.city ?? ""}
+                    className={fieldInputClass}
+                  />
+                </label>
+                <label className="grid gap-1">
+                  <span className={fieldLabelClass}>Land</span>
+                  <input
+                    name="country"
+                    defaultValue={profile.country ?? "DE"}
+                    className={fieldInputClass}
+                  />
+                </label>
 
-                  {saveOk ? (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 md:col-span-2">
-                      Stammdaten gespeichert.
-                    </div>
-                  ) : null}
-                  {saveError ? (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 md:col-span-2">
-                      {saveError}
-                    </div>
-                  ) : null}
-
-                  <div className="md:col-span-2">
-                    <button
-                      type="submit"
-                      disabled={pending}
-                      className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-                    >
-                      {pending ? "Speichern…" : "Stammdaten speichern"}
-                    </button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Profilbild</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                <UploadDropzone
-                  accept={AVATAR_ACCEPT}
-                  disabled={busyAvatar}
-                  hint="256×256 WebP"
-                  onFile={onPickFile}
-                />
-                {avatarError ? (
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-                    {avatarError}
+                {saveOk ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 md:col-span-2">
+                    Stammdaten gespeichert.
                   </div>
                 ) : null}
-              </CardContent>
-            </Card>
+                {saveError ? (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 md:col-span-2">
+                    {saveError}
+                  </div>
+                ) : null}
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Mitgliedschaft</CardTitle>
-              </CardHeader>
-              <CardContent>
+                <div className="md:col-span-2">
+                  <button type="submit" disabled={pending} className={primaryButtonClass}>
+                    {pending ? "Speichern…" : "Stammdaten speichern"}
+                  </button>
+                </div>
+              </form>
+            </ProfileSection>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              <ProfileSection
+                icon={ImageIcon}
+                title="Profilbild"
+                description="Wird in Beiträgen, Kommentaren und der Mitgliederliste angezeigt."
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                  <div className="mx-auto h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-slate-100 bg-slate-50 shadow-sm sm:mx-0">
+                    {avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="grid h-full w-full place-items-center text-lg font-bold text-slate-600">
+                        {initials}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <UploadDropzone
+                      accept={AVATAR_ACCEPT}
+                      disabled={busyAvatar}
+                      onFile={onPickFile}
+                    />
+                    {avatarError ? (
+                      <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                        {avatarError}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </ProfileSection>
+
+              <ProfileSection
+                icon={IdCard}
+                title="Mitgliedschaft"
+                description="Übersicht zu Status und Beitrag — nur zur Ansicht."
+              >
                 <dl>
                   <InfoRow label="Status" value={membershipStatusLabel(membership?.status)} />
                   <InfoRow
@@ -631,9 +651,7 @@ export function ProfilePageClient() {
                   />
                   <InfoRow
                     label="Jahresbeitrag"
-                    value={
-                      membership?.fee_cents != null ? formatEur(membership.fee_cents) : "—"
-                    }
+                    value={membership?.fee_cents != null ? formatEur(membership.fee_cents) : "—"}
                   />
                   {contribution ? (
                     <>
@@ -651,41 +669,37 @@ export function ProfilePageClient() {
                       )}
                     </>
                   ) : null}
-                  <InfoRow label="Geschlecht" value={genderLabel(profile.gender)} />
                 </dl>
-              </CardContent>
-            </Card>
+              </ProfileSection>
 
-            <PasswordSection />
+              <PasswordSection />
 
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Kalender</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <ProfileSection
+                icon={CalendarDays}
+                title="Kalender"
+                description="Wie Events in deinen Kalender übernommen werden."
+              >
                 <PreferredCalendarSettings />
-              </CardContent>
-            </Card>
+              </ProfileSection>
+            </div>
 
             <WarningsSection warnings={warnings} warningCount={profile.warning_count} />
 
             <ActivityHistorySection rows={activity} />
 
             {profile.role === "admin" ? (
-              <Card className="lg:col-span-2">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Admin · Signaturen</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-slate-600">
-                  <p>Fanclub-Signatur und deine persönliche Unterschrift bearbeitest du im Admin-Bereich.</p>
-                  <Link
-                    href="/admin/signatures"
-                    className="mt-3 inline-block font-medium text-blue-600 hover:underline"
-                  >
-                    Zu Admin · Signaturen →
-                  </Link>
-                </CardContent>
-              </Card>
+              <ProfileSection
+                icon={UserRound}
+                title="Admin · Signaturen"
+                description="Fanclub-Signatur und persönliche Unterschrift."
+              >
+                <Link
+                  href="/admin/signatures"
+                  className="inline-flex h-11 items-center rounded-xl border px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                >
+                  Zu Admin · Signaturen →
+                </Link>
+              </ProfileSection>
             ) : null}
           </div>
         </div>

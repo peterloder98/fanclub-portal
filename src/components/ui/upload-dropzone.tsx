@@ -73,7 +73,9 @@ export function UploadDropzone({
         </button>
       </div>
 
-      <p className="mt-3 text-center text-xs text-slate-500">{hint}</p>
+      {hint ? (
+        <p className="mt-3 text-center text-xs text-slate-500">{hint}</p>
+      ) : null}
     </div>
   );
 }

@@ -7,10 +7,14 @@ import {
   type PreferredCalendar,
 } from "@/lib/calendar/preferred-calendar";
 
+const selectClass =
+  "h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)] disabled:opacity-60";
+
 export function PreferredCalendarSettings() {
   const [value, setValue] = useState<PreferredCalendar>("ask");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -29,35 +33,45 @@ export function PreferredCalendarSettings() {
   async function onChange(v: PreferredCalendar) {
     setValue(v);
     setSaving(true);
+    setSaved(false);
     try {
       await fetch("/api/profile/calendar-preference", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ preference: v }),
       });
+      setSaved(true);
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <label className="block">
-      <span className="text-sm font-medium text-slate-700">Standard-Kalender für Events</span>
-      <p className="mt-0.5 text-xs text-slate-500">
-        Gilt für dein Konto auf allen Geräten. Google/Outlook öffnen sich in einem kleinen Fenster.
+    <div className="grid max-w-md gap-3">
+      <label className="grid gap-1">
+        <span className="text-sm font-medium text-slate-700">Bevorzugter Kalender</span>
+        <select
+          value={value}
+          disabled={loading || saving}
+          onChange={(e) => void onChange(e.target.value as PreferredCalendar)}
+          className={selectClass}
+        >
+          {PREFERRED_CALENDAR_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="text-xs text-slate-500">
+        {loading
+          ? "Einstellung wird geladen…"
+          : saving
+            ? "Wird gespeichert…"
+            : saved
+              ? "Einstellung gespeichert."
+              : "Änderungen werden automatisch übernommen."}
       </p>
-      <select
-        value={value}
-        disabled={loading || saving}
-        onChange={(e) => void onChange(e.target.value as PreferredCalendar)}
-        className="mt-2 w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm disabled:opacity-60"
-      >
-        {PREFERRED_CALENDAR_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-    </label>
+    </div>
   );
 }
