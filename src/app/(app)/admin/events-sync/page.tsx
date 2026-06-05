@@ -46,8 +46,24 @@ export default async function AdminEventsSyncPage() {
                   Sync starten
                 </button>
               </form>
-              <div className="mt-2 text-sm text-slate-600">
-                Feed URL kommt aus <span className="font-mono">ARTISTFLOW_FEED_URL</span>.
+              <div className="mt-3 grid gap-2 text-sm text-slate-600">
+                <p>
+                  Feed URL kommt aus <span className="font-mono">ARTISTFLOW_FEED_URL</span>{" "}
+                  (z. B. Supabase Storage <span className="font-mono">termine.json</span>).
+                </p>
+                <p>
+                  <span className="font-medium text-slate-800">Automatisch:</span> Vercel-Cron
+                  alle 2 Stunden (<span className="font-mono">/api/cron/artistflow-sync</span>)
+                  sowie Hintergrund-Sync auf Dashboard/Events, wenn der letzte Lauf älter als 2
+                  Stunden ist.
+                </p>
+                <p>
+                  <span className="font-medium text-slate-800">Voraussetzungen in Vercel:</span>{" "}
+                  <span className="font-mono">ARTISTFLOW_FEED_URL</span> und{" "}
+                  <span className="font-mono">CRON_SECRET</span> gesetzt. Auf dem Vercel-Hobby-Plan
+                  sind Cron-Jobs auf einmal täglich begrenzt — dann „Sync starten“ oder Seite neu
+                  laden (Hintergrund-Sync).
+                </p>
               </div>
             </CardContent>
           </Card>

@@ -9,8 +9,12 @@ import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-givea
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { maybeSyncArtistflowIfStale } from "@/lib/artistflow/maybe-sync-if-stale";
 
 export default async function DashboardPage() {
+  after(() => maybeSyncArtistflowIfStale());
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

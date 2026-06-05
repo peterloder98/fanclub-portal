@@ -7,8 +7,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { parseTravelInfo, type EventTravelNoteRow } from "@/lib/events/travel-info";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
+import { maybeSyncArtistflowIfStale } from "@/lib/artistflow/maybe-sync-if-stale";
 
 export default async function EventsPage() {
+  after(() => maybeSyncArtistflowIfStale());
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
