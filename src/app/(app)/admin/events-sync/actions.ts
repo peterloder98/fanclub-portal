@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { geocodeAllPendingArtistflowEvents } from "@/lib/artistflow/geocode-event";
+import { relinkOrphanedPortalEventData } from "@/lib/artistflow/relink-portal-event-data";
 import { syncArtistflowEventsFromFeed } from "@/lib/artistflow/sync";
 
 export async function runArtistflowSync() {
@@ -58,7 +59,10 @@ export async function runArtistflowGeocodeBackfill() {
     .not("city", "is", null)
     .eq("is_visible", true);
 
+  const relinked = await relinkOrphanedPortalEventData(admin);
   const geocoded = await geocodeAllPendingArtistflowEvents(admin);
-  redirect(`/admin/events-sync?ok=1&geocoded=${geocoded}`);
+  redirect(
+    `/admin/events-sync?ok=1&geocoded=${geocoded}&relinked=${relinked.participationsMoved + relinked.travelNotesMoved}`,
+  );
 }
 

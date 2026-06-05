@@ -9,6 +9,12 @@ import {
   eventAddressChanged,
   geocodeAllPendingArtistflowEvents,
 } from "@/lib/artistflow/geocode-event";
+import { eventStartChanged } from "@/lib/artistflow/legacy-external-id";
+import {
+  matchExistingExternalEvent,
+  type ExistingExternalEventRow,
+} from "@/lib/artistflow/match-existing-event";
+import { relinkOrphanedPortalEventData } from "@/lib/artistflow/relink-portal-event-data";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -17,8 +23,13 @@ type SyncResult = {
   total: number;
   inserted: number;
   updated: number;
+  skipped: number;
   hidden: number;
   geocoding_queued: number;
+  participations_reset: number;
+  merged_duplicates: number;
+  participations_relinked: number;
+  travel_notes_relinked: number;
 };
 
 const STALE_RUNNING_MS = 5 * 60 * 1000;
@@ -94,6 +105,75 @@ type NewEventNotice = {
   broadcaster: string | null;
 };
 
+async function loadExistingEventIndex(admin: SupabaseClient) {
+  const { data: events, error } = await admin
+    .from("external_events")
+    .select("id,external_id,title,start_at,city,content_hash,is_visible,address,postal_code,country,lat,lng,geocoding_status")
+    .eq("source", "artistflow");
+  if (error) throw new Error(error.message);
+
+  const eventIds = (events ?? []).map((e) => e.id);
+  const participationCount = new Map<string, number>();
+  const travelNoteIds = new Set<string>();
+
+  if (eventIds.length) {
+    const { data: parts } = await admin
+      .from("event_participations")
+      .select("event_id")
+      .in("event_id", eventIds);
+    for (const p of parts ?? []) {
+      participationCount.set(p.event_id, (participationCount.get(p.event_id) ?? 0) + 1);
+    }
+
+    const { data: notes } = await admin
+      .from("event_admin_notes")
+      .select("event_id")
+      .in("event_id", eventIds);
+    for (const n of notes ?? []) {
+      travelNoteIds.add(n.event_id);
+    }
+  }
+
+  const rows: ExistingExternalEventRow[] = (events ?? []).map((e) => ({
+    id: e.id,
+    external_id: e.external_id,
+    title: e.title,
+    start_at: e.start_at,
+    city: e.city,
+    content_hash: e.content_hash,
+    is_visible: e.is_visible,
+    participation_count: participationCount.get(e.id) ?? 0,
+    has_travel_note: travelNoteIds.has(e.id),
+  }));
+
+  return {
+    rows,
+    byId: new Map((events ?? []).map((e) => [e.id, e])),
+  };
+}
+
+function buildFeedFieldsPatch(e: NormalizedExternalEvent, is_visible: boolean) {
+  return {
+    kind: e.kind,
+    title: e.title,
+    start_at: e.start_at,
+    timezone: e.timezone,
+    venue: e.venue,
+    address: e.address,
+    postal_code: e.postal_code,
+    city: e.city,
+    country: e.country,
+    broadcaster: e.broadcaster,
+    ticket_url: e.ticket_url,
+    published: e.published,
+    secret: e.secret,
+    feed_updated_at: e.feed_updated_at,
+    content_hash: e.content_hash,
+    last_seen_at: new Date().toISOString(),
+    is_visible,
+  };
+}
+
 export async function syncArtistflowEventsFromFeed(feedUrl: string) {
   const admin = createSupabaseAdminClient();
 
@@ -113,11 +193,17 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
     total: 0,
     inserted: 0,
     updated: 0,
+    skipped: 0,
     hidden: 0,
     geocoding_queued: 0,
+    participations_reset: 0,
+    merged_duplicates: 0,
+    participations_relinked: 0,
+    travel_notes_relinked: 0,
   };
 
   const newEventNotices: NewEventNotice[] = [];
+  const matchedInternalIds = new Set<string>();
 
   try {
     const raw = await fetchJson(feedUrl);
@@ -127,63 +213,45 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
       normalizeArtistflowEvent(item as ArtistflowFeedItem),
     );
     result.total = normalized.length;
-
     await patchSyncLog(admin, logId, { total: result.total });
 
-    const seenIds = new Set(normalized.map((e) => e.external_id));
+    const { rows: existingRows, byId } = await loadExistingEventIndex(admin);
+    let rows = [...existingRows];
 
     for (const e of normalized) {
       const is_visible = Boolean(e.published) && !e.secret;
+      const existing = matchExistingExternalEvent(e, rows);
+      const existingFull = existing ? byId.get(existing.id) : null;
 
-      const { data: existing, error: exErr } = await admin
-        .from("external_events")
-        .select(
-          "id,external_id,feed_updated_at,content_hash,ticket_url,address,postal_code,city,country,lat,lng,geocoding_status",
-        )
-        .eq("source", "artistflow")
-        .eq("external_id", e.external_id)
-        .maybeSingle();
-      if (exErr) throw new Error(exErr.message);
-
-      const shouldUpdate =
-        !existing ||
-        (e.feed_updated_at &&
-          (!existing.feed_updated_at ||
-            new Date(e.feed_updated_at).getTime() >
-              new Date(existing.feed_updated_at).getTime())) ||
-        (existing && existing.content_hash !== e.content_hash);
-
-      if (!existing) {
+      if (!existing || !existingFull) {
         const { data: insertedRow, error } = await admin
           .from("external_events")
           .insert({
             source: "artistflow",
             external_id: e.external_id,
-            kind: e.kind,
-            title: e.title,
-            start_at: e.start_at,
-            timezone: e.timezone,
-            venue: e.venue,
-            address: e.address,
-            postal_code: e.postal_code,
-            city: e.city,
-            country: e.country,
-            broadcaster: e.broadcaster,
-            ticket_url: e.ticket_url,
-            published: e.published,
-            secret: e.secret,
-            feed_updated_at: e.feed_updated_at,
-            content_hash: e.content_hash,
-            last_seen_at: new Date().toISOString(),
-            is_visible,
+            ...buildFeedFieldsPatch(e, is_visible),
             geocoding_status: "pending",
           })
-          .select("id")
+          .select("id,external_id,title,start_at,city,content_hash,is_visible,address,postal_code,country,lat,lng,geocoding_status")
           .single();
         if (error) throw new Error(error.message);
+
+        rows.push({
+          id: insertedRow.id,
+          external_id: insertedRow.external_id,
+          title: insertedRow.title,
+          start_at: insertedRow.start_at,
+          city: insertedRow.city,
+          content_hash: insertedRow.content_hash,
+          is_visible: insertedRow.is_visible,
+          participation_count: 0,
+          has_travel_note: false,
+        });
+        byId.set(insertedRow.id, insertedRow);
+        matchedInternalIds.add(insertedRow.id);
         result.inserted += 1;
 
-        if (is_visible && e.published && insertedRow?.id && e.start_at) {
+        if (is_visible && e.published && insertedRow.id && e.start_at) {
           newEventNotices.push({
             eventId: insertedRow.id,
             kind: e.kind,
@@ -194,57 +262,84 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
             broadcaster: e.broadcaster,
           });
         }
-      } else if (shouldUpdate) {
-        const addressChanged = eventAddressChanged(existing, e.address_signature);
-        const updatePayload: Record<string, unknown> = {
-          kind: e.kind,
-          title: e.title,
-          start_at: e.start_at,
-          timezone: e.timezone,
-          venue: e.venue,
-          address: e.address,
-          postal_code: e.postal_code,
-          city: e.city,
-          country: e.country,
-          broadcaster: e.broadcaster,
-          ticket_url: e.ticket_url,
-          published: e.published,
-          secret: e.secret,
-          feed_updated_at: e.feed_updated_at,
-          content_hash: e.content_hash,
-          last_seen_at: new Date().toISOString(),
-          is_visible,
-        };
-        if (addressChanged) {
-          updatePayload.geocoding_status = "pending";
-          updatePayload.lat = null;
-          updatePayload.lng = null;
-        }
-        const { error } = await admin
+        continue;
+      }
+
+      matchedInternalIds.add(existing.id);
+
+      if (existing.content_hash === e.content_hash) {
+        await admin
           .from("external_events")
-          .update(updatePayload)
+          .update({
+            last_seen_at: new Date().toISOString(),
+            is_visible,
+            external_id: e.external_id,
+          })
           .eq("id", existing.id);
-        if (error) throw new Error(error.message);
-        result.updated += 1;
-      } else {
-        const patch: Record<string, unknown> = {
-          last_seen_at: new Date().toISOString(),
-          is_visible,
-        };
-        if ((existing.ticket_url ?? "") !== (e.ticket_url ?? "")) {
-          patch.ticket_url = e.ticket_url;
+        if (existing.external_id !== e.external_id) {
+          existing.external_id = e.external_id;
         }
-        await admin.from("external_events").update(patch).eq("id", existing.id);
+        existing.is_visible = is_visible;
+        result.skipped += 1;
+        continue;
+      }
+
+      const dateChanged = eventStartChanged(existingFull.start_at, e.start_at);
+      const addressChanged = eventAddressChanged(existingFull, e.address_signature);
+
+      const updatePayload: Record<string, unknown> = {
+        ...buildFeedFieldsPatch(e, is_visible),
+        external_id: e.external_id,
+      };
+      if (addressChanged) {
+        updatePayload.geocoding_status = "pending";
+        updatePayload.lat = null;
+        updatePayload.lng = null;
+      }
+
+      const { error } = await admin
+        .from("external_events")
+        .update(updatePayload)
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+
+      existing.content_hash = e.content_hash;
+      existing.external_id = e.external_id;
+      existing.is_visible = is_visible;
+      result.updated += 1;
+
+      if (dateChanged) {
+        const { error: delErr } = await admin
+          .from("event_participations")
+          .delete()
+          .eq("event_id", existing.id);
+        if (delErr) throw new Error(delErr.message);
+        existing.participation_count = 0;
+        result.participations_reset += 1;
+      }
+
+      const duplicateIds = rows
+        .filter((r) => r.id !== existing.id)
+        .filter(
+          (r) =>
+            r.title.trim().toUpperCase() === e.title.trim().toUpperCase() &&
+            (r.start_at?.slice(0, 10) ?? "") === (e.start_at?.slice(0, 10) ?? ""),
+        )
+        .map((r) => r.id);
+
+      if (duplicateIds.length) {
+        await admin
+          .from("external_events")
+          .update({ is_visible: false })
+          .in("id", duplicateIds);
+        rows = rows.map((r) =>
+          duplicateIds.includes(r.id) ? { ...r, is_visible: false } : r,
+        );
+        result.merged_duplicates += duplicateIds.length;
       }
     }
 
-    const { data: allExisting, error: allErr } = await admin
-      .from("external_events")
-      .select("id,external_id,is_visible")
-      .eq("source", "artistflow");
-    if (allErr) throw new Error(allErr.message);
-
-    const toHide = (allExisting ?? []).filter((r) => !seenIds.has(r.external_id));
+    const toHide = rows.filter((r) => r.is_visible && !matchedInternalIds.has(r.id));
     if (toHide.length) {
       const { error } = await admin
         .from("external_events")
@@ -280,6 +375,10 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         metadata: { event_id: notice.eventId },
       }).catch(console.error);
     }
+
+    const relinked = await relinkOrphanedPortalEventData(admin);
+    result.participations_relinked = relinked.participationsMoved;
+    result.travel_notes_relinked = relinked.travelNotesMoved;
 
     result.geocoding_queued = await geocodeAllPendingArtistflowEvents(admin);
 

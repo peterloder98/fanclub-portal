@@ -91,8 +91,9 @@ export default async function AdminEventsSyncPage({
                 </form>
               </div>
               <p className="mt-2 text-xs text-slate-500">
-                Pins werden einmalig pro Adresse gespeichert (Straße → PLZ+Ort → nur Ort). Bei
-                Sync ohne Adressänderung bleiben bestehende Pins erhalten.
+                Unveränderte Events werden nicht überschrieben. Teilnahmen und Reiseinfos bleiben
+                erhalten — nur bei Terminänderung werden Teilnehmer zurückgesetzt. Pins bleiben
+                ohne Adressänderung erhalten.
               </p>
               <div className="mt-3 grid gap-2 text-sm text-slate-600">
                 <p>
