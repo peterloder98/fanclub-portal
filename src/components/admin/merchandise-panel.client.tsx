@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import {
   uploadClubDocument,
 } from "@/components/ui/document-upload-field";
 import {
+  addStockReceiptAction,
   deleteMerchandiseProductAction,
   listMerchandiseExpenseOptionsAction,
   listMerchandiseProductsAction,
@@ -43,6 +45,12 @@ export function MerchandisePanel() {
   const [ledgerEntryId, setLedgerEntryId] = useState<string | null>(null);
   const [createPurchaseExpense, setCreatePurchaseExpense] = useState(false);
   const [expenseOptions, setExpenseOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [restockQty, setRestockQty] = useState("");
+  const [restockVariantId, setRestockVariantId] = useState<string | null>(null);
+  const [restockLedgerId, setRestockLedgerId] = useState<string | null>(null);
+  const [restockPurchaseEur, setRestockPurchaseEur] = useState("");
+  const [restockCreateExpense, setRestockCreateExpense] = useState(false);
+  const [restockNote, setRestockNote] = useState("");
 
   async function reload() {
     setLoading(true);
@@ -92,6 +100,12 @@ export function MerchandisePanel() {
     setVariants([{ size_label: null, qty_purchased: 0, qty_sold: 0, qty_gifted: 0 }]);
     setLedgerEntryId(null);
     setCreatePurchaseExpense(false);
+    setRestockQty("");
+    setRestockVariantId(null);
+    setRestockLedgerId(null);
+    setRestockPurchaseEur("");
+    setRestockCreateExpense(false);
+    setRestockNote("");
     setShowForm(false);
   }
 
@@ -166,7 +180,7 @@ export function MerchandisePanel() {
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {!showForm ? (
           <button
             type="button"
@@ -179,6 +193,12 @@ export function MerchandisePanel() {
             Artikel anlegen
           </button>
         ) : null}
+        <Link
+          href="/admin/merchandise/orders"
+          className="h-10 rounded-xl border px-4 text-sm font-semibold leading-10 text-slate-800"
+        >
+          Bestellungen
+        </Link>
       </div>
 
       {showForm ? (
@@ -359,6 +379,138 @@ export function MerchandisePanel() {
                 </div>
               ) : null}
             </div>
+            {editId ? (
+              <div className="md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+                <p className="text-sm font-semibold text-slate-900">Nachbestellung (Bestand erhöhen)</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Gleichen Artikel auffüllen — Rechnung/Buchung separat zuordnen, Historie wird mitgeschrieben.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {hasSizes ? (
+                    <label className="grid gap-1">
+                      <span className="text-xs font-medium">Größe</span>
+                      <select
+                        value={restockVariantId ?? ""}
+                        onChange={(e) => setRestockVariantId(e.target.value || null)}
+                        className="h-10 rounded-lg border px-2 text-sm"
+                      >
+                        <option value="">Bitte wählen</option>
+                        {(products.find((p) => p.id === editId)?.variants ?? []).map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.size_label ?? "—"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
+                  <label className="grid gap-1">
+                    <span className="text-xs font-medium">Menge</span>
+                    <input
+                      value={restockQty}
+                      onChange={(e) => setRestockQty(e.target.value)}
+                      type="number"
+                      min={1}
+                      className="h-10 rounded-lg border px-3 text-sm"
+                    />
+                  </label>
+                  <label className="grid gap-1 sm:col-span-2">
+                    <span className="text-xs font-medium">Buchung / Rechnung</span>
+                    <select
+                      value={restockLedgerId ?? ""}
+                      onChange={(e) => setRestockLedgerId(e.target.value || null)}
+                      className="h-10 rounded-lg border px-2 text-sm"
+                    >
+                      <option value="">— Keine / neue anlegen —</option>
+                      {expenseOptions.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {!restockLedgerId ? (
+                    <>
+                      <label className="grid gap-1">
+                        <span className="text-xs font-medium">Einkaufssumme (€)</span>
+                        <input
+                          value={restockPurchaseEur}
+                          onChange={(e) => setRestockPurchaseEur(e.target.value)}
+                          type="number"
+                          step="0.01"
+                          className="h-10 rounded-lg border px-3 text-sm"
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 self-end text-xs">
+                        <input
+                          type="checkbox"
+                          checked={restockCreateExpense}
+                          onChange={(e) => setRestockCreateExpense(e.target.checked)}
+                        />
+                        Als Ausgabe in Buchhaltung anlegen
+                      </label>
+                    </>
+                  ) : null}
+                  <label className="grid gap-1 sm:col-span-2">
+                    <span className="text-xs font-medium">Notiz (optional)</span>
+                    <input
+                      value={restockNote}
+                      onChange={(e) => setRestockNote(e.target.value)}
+                      className="h-10 rounded-lg border px-3 text-sm"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  disabled={pending || !restockQty || Number(restockQty) <= 0}
+                  onClick={() => {
+                    startTransition(async () => {
+                      try {
+                        await addStockReceiptAction({
+                          productId: editId,
+                          variantId: restockVariantId,
+                          qtyAdded: Number(restockQty),
+                          ledgerEntryId: restockLedgerId,
+                          purchaseTotalEur: restockPurchaseEur
+                            ? Number(restockPurchaseEur.replace(",", "."))
+                            : null,
+                          createPurchaseExpense: restockCreateExpense && !restockLedgerId,
+                          note: restockNote,
+                        });
+                        setRestockQty("");
+                        setRestockNote("");
+                        await reload();
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Nachbestellung fehlgeschlagen");
+                      }
+                    });
+                  }}
+                  className="mt-3 h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  Nachbestellung buchen
+                </button>
+                {(products.find((p) => p.id === editId)?.stock_receipts ?? []).length ? (
+                  <div className="mt-4 overflow-hidden rounded-lg border bg-white text-xs">
+                    <p className="border-b bg-slate-50 px-3 py-2 font-semibold text-slate-600">
+                      Einkaufshistorie
+                    </p>
+                    <ul className="divide-y">
+                      {(products.find((p) => p.id === editId)?.stock_receipts ?? []).map((r) => (
+                        <li key={r.id} className="flex flex-wrap justify-between gap-2 px-3 py-2">
+                          <span>
+                            +{r.qty_added}
+                            {r.size_label ? ` (${r.size_label})` : ""}
+                            {r.note ? ` — ${r.note}` : ""}
+                          </span>
+                          <span className="text-slate-500">
+                            {new Date(r.created_at).toLocaleDateString("de-DE")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div className="flex gap-2 md:col-span-2">
               <button type="button" disabled={pending || !name.trim() || salePrice === ""} onClick={handleSave} className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50">
                 Speichern
@@ -424,9 +576,9 @@ export function MerchandisePanel() {
                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800">
                       {p.total_available} verfügbar
                     </span>
-                    {p.purchase_total_cents != null ? (
+                    {p.stock_receipts.length ? (
                       <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
-                        Einkauf {formatEur(p.purchase_total_cents)}
+                        {p.stock_receipts.length} Einkäufe
                       </span>
                     ) : null}
                   </div>

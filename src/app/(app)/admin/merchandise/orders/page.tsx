@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
-import { MerchandisePanel } from "@/components/admin/merchandise-panel.client";
+import { MerchandiseOrdersPanel } from "@/components/admin/merchandise-orders-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminMerchandisePage() {
+export default async function MerchandiseOrdersPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -22,20 +22,17 @@ export default async function AdminMerchandisePage() {
 
   return (
     <div className="min-h-screen">
-      <Topbar
-        title="Merchandise"
-        subtitle="Bestand, Größen, Einkauf & Verkauf — Kugelschreiber, Fanschals & mehr"
-      />
+      <Topbar title="Merchandise-Bestellungen" subtitle="Eingegangene Bestellungen verwalten" />
       <main className="px-4 py-6 lg:px-8">
-        <AdminBackLink />
+        <AdminBackLink href="/admin/merchandise" label="Zurück zu Merchandise" />
         <div className="mt-4 flex gap-3 text-sm">
-          <span className="font-semibold text-slate-900">Artikel</span>
-          <Link href="/admin/merchandise/orders" className="font-semibold text-slate-600 hover:underline">
-            Bestellungen
+          <Link href="/admin/merchandise" className="font-semibold text-slate-600 hover:underline">
+            Artikel
           </Link>
+          <span className="font-semibold text-slate-900">Bestellungen</span>
         </div>
         <div className="mt-4">
-          <MerchandisePanel />
+          <MerchandiseOrdersPanel />
         </div>
       </main>
     </div>

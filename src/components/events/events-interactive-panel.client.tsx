@@ -109,13 +109,9 @@ export function EventsInteractivePanel({
                       <div className="mt-1.5 text-xs text-slate-700">{ticket.text}</div>
                     ) : null}
                     {travelNotesByEventId?.[e.id]?.travel ? (
-                      <EventTravelInfoBlock travel={travelNotesByEventId[e.id].travel} />
-                    ) : null}
-                    {isAdmin ? (
-                      <EventTravelEdit
-                        eventId={e.id}
-                        initialTravel={travelNotesByEventId?.[e.id]?.travel}
-                      />
+                      <div className="mt-3 border-t border-slate-100 pt-2">
+                        <EventTravelInfoBlock travel={travelNotesByEventId[e.id].travel} />
+                      </div>
                     ) : null}
                     <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
                       <EventParticipationRow
@@ -134,6 +130,15 @@ export function EventsInteractivePanel({
                         city={e.city}
                       />
                     </div>
+                    {isAdmin ? (
+                      <div className="mt-2 border-t border-dashed border-slate-200 pt-2">
+                        <EventTravelEdit
+                          eventId={e.id}
+                          initialTravel={travelNotesByEventId?.[e.id]?.travel}
+                          compact
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}

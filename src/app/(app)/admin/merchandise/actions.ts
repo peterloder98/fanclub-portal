@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { signedClubDocumentUrl } from "@/lib/club/documents";
 import { seedDefaultMerchandise } from "@/lib/merchandise/seed-defaults";
 import { createMerchandisePlaceholder } from "@/lib/merchandise/placeholder-image";
+import { variantAvailable } from "@/lib/merchandise/availability";
 import { CLUB_DOCUMENTS_BUCKET } from "@/lib/images/specs";
 
 export type MerchandiseVariantInput = {
@@ -32,9 +33,19 @@ export type MerchandiseProductRow = {
     qty_purchased: number;
     qty_sold: number;
     qty_gifted: number;
+    qty_reserved: number;
     available: number;
   }>;
   total_available: number;
+  ledger_entry_ids: string[];
+  stock_receipts: Array<{
+    id: string;
+    qty_added: number;
+    note: string | null;
+    created_at: string;
+    ledger_entry_id: string | null;
+    size_label: string | null;
+  }>;
 };
 
 const productSchema = z.object({
@@ -77,9 +88,33 @@ export async function listMerchandiseProductsAction(): Promise<{
   const { data: variants } = ids.length
     ? await admin
         .from("merchandise_variants")
-        .select("id,product_id,size_label,qty_purchased,qty_sold,qty_gifted")
+        .select("id,product_id,size_label,qty_purchased,qty_sold,qty_gifted,qty_reserved")
         .in("product_id", ids)
     : { data: [] };
+
+  const { data: ledgerLinks } = ids.length
+    ? await admin
+        .from("merchandise_product_ledger_links")
+        .select("product_id,ledger_entry_id")
+        .in("product_id", ids)
+    : { data: [] };
+  const linksByProduct = new Map<string, string[]>();
+  for (const l of ledgerLinks ?? []) {
+    const list = linksByProduct.get(l.product_id) ?? [];
+    list.push(l.ledger_entry_id);
+    linksByProduct.set(l.product_id, list);
+  }
+
+  const { data: receipts } = ids.length
+    ? await admin
+        .from("merchandise_stock_receipts")
+        .select("id,product_id,qty_added,note,created_at,ledger_entry_id,variant_id")
+        .in("product_id", ids)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+  const variantLabelById = new Map(
+    (variants ?? []).map((v) => [v.id, v.size_label]),
+  );
 
   const variantsByProduct = new Map<string, typeof variants>();
   for (const v of variants ?? []) {
@@ -96,9 +131,20 @@ export async function listMerchandiseProductsAction(): Promise<{
         qty_purchased: v.qty_purchased,
         qty_sold: v.qty_sold,
         qty_gifted: v.qty_gifted,
-        available: Math.max(0, v.qty_purchased - v.qty_sold - v.qty_gifted),
+        qty_reserved: v.qty_reserved ?? 0,
+        available: variantAvailable(v),
       }));
       const total_available = vs.reduce((s, v) => s + v.available, 0);
+      const productReceipts = (receipts ?? [])
+        .filter((r) => r.product_id === p.id)
+        .map((r) => ({
+          id: r.id,
+          qty_added: r.qty_added,
+          note: r.note,
+          created_at: r.created_at,
+          ledger_entry_id: r.ledger_entry_id,
+          size_label: r.variant_id ? variantLabelById.get(r.variant_id) ?? null : null,
+        }));
       return {
         id: p.id,
         name: p.name,
@@ -111,6 +157,8 @@ export async function listMerchandiseProductsAction(): Promise<{
         ledger_entry_id: (p as { ledger_entry_id?: string | null }).ledger_entry_id ?? null,
         variants: vs,
         total_available,
+        ledger_entry_ids: linksByProduct.get(p.id) ?? [],
+        stock_receipts: productReceipts,
       };
     }),
   );
@@ -206,7 +254,18 @@ export async function saveMerchandiseProductAction(input: {
         .from("merchandise_products")
         .update({ ledger_entry_id: ledgerRow.id })
         .eq("id", productId);
+      await admin.from("merchandise_product_ledger_links").upsert({
+        product_id: productId,
+        ledger_entry_id: ledgerRow.id,
+      });
     }
+  }
+
+  if (parsed.ledgerEntryId) {
+    await admin.from("merchandise_product_ledger_links").upsert({
+      product_id: productId,
+      ledger_entry_id: parsed.ledgerEntryId,
+    });
   }
 
   revalidatePath("/admin/merchandise");
@@ -261,6 +320,89 @@ export async function seedMerchandiseDefaultsAction() {
   revalidatePath("/admin/merchandise");
   revalidatePath("/admin/accounting");
   return result;
+}
+
+export async function addStockReceiptAction(input: {
+  productId: string;
+  variantId?: string | null;
+  qtyAdded: number;
+  ledgerEntryId?: string | null;
+  purchaseTotalEur?: number | null;
+  createPurchaseExpense?: boolean;
+  note?: string;
+}) {
+  const { user } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const qty = Math.round(input.qtyAdded);
+  if (qty <= 0) throw new Error("Menge muss größer als 0 sein.");
+
+  const { data: product } = await admin
+    .from("merchandise_products")
+    .select("id,name")
+    .eq("id", input.productId)
+    .maybeSingle();
+  if (!product) throw new Error("Artikel nicht gefunden.");
+
+  let variantId = input.variantId ?? null;
+  if (!variantId) {
+    const { data: vs } = await admin
+      .from("merchandise_variants")
+      .select("id")
+      .eq("product_id", input.productId);
+    if ((vs ?? []).length === 1) variantId = vs![0].id;
+  }
+  if (!variantId) throw new Error("Bitte Variante/Größe für die Nachbestellung wählen.");
+
+  const { data: variant } = await admin
+    .from("merchandise_variants")
+    .select("qty_purchased,size_label")
+    .eq("id", variantId)
+    .maybeSingle();
+  if (!variant) throw new Error("Variante nicht gefunden.");
+
+  let ledgerId = input.ledgerEntryId ?? null;
+  if (!ledgerId && input.createPurchaseExpense && input.purchaseTotalEur) {
+    const purchaseCents = Math.round(input.purchaseTotalEur * 100);
+    const { data: ledgerRow } = await admin
+      .from("club_ledger_entries")
+      .insert({
+        entry_type: "expense",
+        amount_cents: purchaseCents,
+        description: `Nachbestellung: ${product.name} (+${qty} Stück)`,
+        category: "merchandise",
+        entry_date: new Date().toISOString().slice(0, 10),
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+    ledgerId = ledgerRow?.id ?? null;
+  }
+
+  await admin
+    .from("merchandise_variants")
+    .update({ qty_purchased: variant.qty_purchased + qty })
+    .eq("id", variantId);
+
+  await admin.from("merchandise_stock_receipts").insert({
+    product_id: input.productId,
+    variant_id: variantId,
+    qty_added: qty,
+    ledger_entry_id: ledgerId,
+    note: input.note?.trim() || null,
+    created_by: user.id,
+  });
+
+  if (ledgerId) {
+    await admin.from("merchandise_product_ledger_links").upsert({
+      product_id: input.productId,
+      ledger_entry_id: ledgerId,
+    });
+  }
+
+  revalidatePath("/admin/merchandise");
+  revalidatePath("/admin/accounting");
+  revalidatePath("/merchandise");
+  return { ok: true };
 }
 
 export async function deleteMerchandiseProductAction(productId: string) {

@@ -15,6 +15,9 @@ export const MEMBER_ACTIVITY_TYPES = {
   memberCreated: "member_created",
   memberDeleted: "member_deleted",
   note: "note",
+  merchandiseOrderPlaced: "merchandise_order_placed",
+  merchandiseOrderShipped: "merchandise_order_shipped",
+  merchandiseOrderCancelled: "merchandise_order_cancelled",
 } as const;
 
 export type MemberActivityType =
@@ -125,6 +128,9 @@ export function activityTypeLabel(type: string) {
     member_created: "Mitglied angelegt",
     member_deleted: "Mitglied gelöscht",
     note: "Notiz",
+    merchandise_order_placed: "Merchandise bestellt",
+    merchandise_order_shipped: "Merchandise versendet",
+    merchandise_order_cancelled: "Merchandise-Bestellung storniert",
   };
   return map[type] ?? type;
 }

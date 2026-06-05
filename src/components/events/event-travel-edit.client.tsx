@@ -37,9 +37,11 @@ function toInput(travel: EventTravelInfo | undefined) {
 export function EventTravelEdit({
   eventId,
   initialTravel,
+  compact = false,
 }: {
   eventId: string;
   initialTravel?: EventTravelInfo;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -78,15 +80,25 @@ export function EventTravelEdit({
           setForm(toInput(initialTravel));
           setOpen(true);
         }}
-        className="mt-2 text-xs font-semibold text-blue-700 hover:underline"
+        className={
+          compact
+            ? "inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            : "mt-2 text-xs font-semibold text-blue-700 hover:underline"
+        }
       >
-        Reise-Infos bearbeiten
+        {compact ? "✈ Reise-Infos" : "Reise-Infos bearbeiten"}
       </button>
     );
   }
 
   return (
-    <div className="mt-2 rounded-xl border border-blue-200 bg-blue-50/40 p-3">
+    <div
+      className={
+        compact
+          ? "mt-2 w-full rounded-xl border border-blue-200 bg-blue-50/40 p-3"
+          : "mt-2 rounded-xl border border-blue-200 bg-blue-50/40 p-3"
+      }
+    >
       <p className="text-xs font-semibold text-slate-800">Reise-Infos (nur Portal, nicht Artistflow)</p>
       {error ? <p className="mt-1 text-xs text-rose-700">{error}</p> : null}
 
