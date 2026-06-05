@@ -86,7 +86,7 @@ export function EventTravelEdit({
             : "mt-2 text-xs font-semibold text-blue-700 hover:underline"
         }
       >
-        {compact ? "✈ Reise-Infos" : "Reise-Infos bearbeiten"}
+        {compact ? "Reiseinfos bearbeiten" : "Reiseinfos bearbeiten"}
       </button>
     );
   }

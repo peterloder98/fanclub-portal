@@ -12,18 +12,43 @@ import {
   type EventTravelPlace,
 } from "@/lib/events/travel-info";
 
+function googleMapsWalkingRouteUrl(input: {
+  origin: string;
+  destination: string;
+}) {
+  const origin = input.origin.trim();
+  const destination = input.destination.trim();
+  if (!origin || !destination) return null;
+  const params = new URLSearchParams({
+    api: "1",
+    origin,
+    destination,
+    travelmode: "walking",
+  });
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
 function PlaceLine({
   icon: Icon,
   place,
   badge,
   showLink,
+  originAddress,
 }: {
   icon: typeof Train;
   place: EventTravelPlace;
   badge?: string;
   showLink?: boolean;
+  originAddress?: string | null;
 }) {
   const route = formatWalkingRoute(place.distanceMeters, place.durationSeconds);
+  const routeUrl =
+    originAddress && place.address
+      ? googleMapsWalkingRouteUrl({
+          origin: originAddress,
+          destination: place.address,
+        })
+      : null;
   return (
     <div className="flex gap-2 py-1.5">
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden />
@@ -42,7 +67,24 @@ function PlaceLine({
             <span>{place.address}</span>
           </p>
         ) : null}
-        {route ? <p className="mt-0.5 text-[11px] font-medium text-blue-700">{route}</p> : null}
+        {route ? (
+          <p className="mt-0.5 text-[11px] font-medium text-blue-700">
+            {route}
+            {routeUrl ? (
+              <>
+                {" "}
+                <a
+                  href={routeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold hover:underline"
+                >
+                  Route ansehen
+                </a>
+              </>
+            ) : null}
+          </p>
+        ) : null}
         {showLink && place.link ? (
           <a
             href={place.link}
@@ -59,7 +101,13 @@ function PlaceLine({
   );
 }
 
-export function EventTravelInfoBlock({ travel }: { travel: EventTravelInfo }) {
+export function EventTravelInfoBlock({
+  travel,
+  originAddress,
+}: {
+  travel: EventTravelInfo;
+  originAddress?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   if (!travelInfoHasContent(travel)) return null;
 
@@ -92,6 +140,7 @@ export function EventTravelInfoBlock({ travel }: { travel: EventTravelInfo }) {
               icon={Train}
               place={travel.station}
               badge="Nächstgelegener Bahnhof"
+              originAddress={originAddress}
             />
           ) : null}
           {travel.hotels.map((h, i) => (
@@ -103,6 +152,7 @@ export function EventTravelInfoBlock({ travel }: { travel: EventTravelInfo }) {
                 travel.hotels.length === 1 || i === closestHotel ? "Nächstgelegenes Hotel" : undefined
               }
               showLink
+              originAddress={originAddress}
             />
           ))}
           {travel.notes ? (

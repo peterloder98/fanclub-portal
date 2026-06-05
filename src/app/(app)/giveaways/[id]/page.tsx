@@ -23,10 +23,11 @@ export default async function GiveawayDetailPage({
 
   const { data: me } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role,avatar_path,updated_at")
     .eq("id", user.id)
     .maybeSingle();
   const isAdmin = me?.role === "admin";
+  const myAvatarUrl = getAvatarPublicUrl(me?.avatar_path ?? null, me?.updated_at ?? null);
 
   const { data: g } = await supabase
     .from("giveaways")
@@ -224,6 +225,7 @@ export default async function GiveawayDetailPage({
           comments={comments}
           isAdmin={isAdmin}
           userId={user.id}
+          myAvatarUrl={myAvatarUrl}
           hasEntries={(entryCount ?? 0) > 0}
           signatures={signatures}
           yearEndAdmin={

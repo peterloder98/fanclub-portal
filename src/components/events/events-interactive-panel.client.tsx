@@ -84,16 +84,23 @@ export function EventsInteractivePanel({
                         : "rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
                     }
                   >
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold text-slate-900">
-                        {e.title}
-                      </div>
+                    <div className="relative min-w-0 pr-28">
+                      <div className="truncate text-sm font-semibold text-slate-900">{e.title}</div>
                       <div className="mt-0.5 text-xs text-slate-600">
                         <span className="font-medium text-slate-800">{date}</span>
                         {time ? <span> · {time} Uhr</span> : null}
                       </div>
                       {location ? (
                         <div className="mt-0.5 text-xs text-slate-600">{location}</div>
+                      ) : null}
+                      {isAdmin ? (
+                        <div className="absolute right-0 top-0">
+                          <EventTravelEdit
+                            eventId={e.id}
+                            initialTravel={travelNotesByEventId?.[e.id]?.travel}
+                            compact
+                          />
+                        </div>
                       ) : null}
                     </div>
                     {ticket.href ? (
@@ -110,7 +117,10 @@ export function EventsInteractivePanel({
                     ) : null}
                     {travelNotesByEventId?.[e.id]?.travel ? (
                       <div className="mt-3 border-t border-slate-100 pt-2">
-                        <EventTravelInfoBlock travel={travelNotesByEventId[e.id].travel} />
+                        <EventTravelInfoBlock
+                          travel={travelNotesByEventId[e.id].travel}
+                          originAddress={[e.address, e.postal_code, e.city].filter(Boolean).join(", ")}
+                        />
                       </div>
                     ) : null}
                     <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
@@ -130,15 +140,6 @@ export function EventsInteractivePanel({
                         city={e.city}
                       />
                     </div>
-                    {isAdmin ? (
-                      <div className="mt-2 border-t border-dashed border-slate-200 pt-2">
-                        <EventTravelEdit
-                          eventId={e.id}
-                          initialTravel={travelNotesByEventId?.[e.id]?.travel}
-                          compact
-                        />
-                      </div>
-                    ) : null}
                   </div>
                 );
               })}

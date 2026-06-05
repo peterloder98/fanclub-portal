@@ -49,6 +49,7 @@ export function GiveawayDetailClient({
   comments,
   isAdmin,
   userId,
+  myAvatarUrl,
   signatures,
   yearEndAdmin,
   hasEntries = false,
@@ -80,6 +81,7 @@ export function GiveawayDetailClient({
   }>;
   isAdmin: boolean;
   userId: string | null;
+  myAvatarUrl: string | null;
   signatures: MailSignatureOption[];
   yearEndAdmin?: ReactNode;
   /** Mindestens eine Teilnahme — Quiz-Lösungen im Admin gesperrt. */
@@ -241,7 +243,7 @@ export function GiveawayDetailClient({
         id: data.id,
         body: data.body,
         authorName: "Du",
-        authorAvatarUrl: null,
+        authorAvatarUrl: myAvatarUrl,
         createdAtLabel: new Date(data.created_at).toLocaleString("de-DE", {
           dateStyle: "short",
           timeStyle: "short",
