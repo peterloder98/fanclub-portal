@@ -2,11 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { appNav, NavList } from "@/components/app-shell/nav";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
-import { cn } from "@/lib/cn";
 
 export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
   const [open, setOpen] = useState(false);
@@ -68,15 +66,6 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
               </p>
               <ReferMembershipNavCta />
             </div>
-            <Link
-              href="/punkte"
-              onClick={() => setOpen(false)}
-              className={cn(
-                "mt-3 flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-blue-700 shadow-sm",
-              )}
-            >
-              Statuspunkte — Übersicht
-            </Link>
           </div>
         </aside>
       </div>

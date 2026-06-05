@@ -461,8 +461,8 @@ export function ProfilePageClient() {
       <main className="px-4 py-6 lg:px-8">
         <div className="mx-auto max-w-4xl space-y-4">
           <div className="rounded-2xl border bg-gradient-to-br from-slate-50 to-white p-4 sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-white bg-slate-100 shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-2 border-white bg-slate-100 shadow-sm sm:h-20 sm:w-20">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -473,9 +473,9 @@ export function ProfilePageClient() {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-xl font-bold text-slate-900">{displayName}</h1>
-                <p className="mt-0.5 text-sm text-slate-600">{profile.email ?? "—"}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <h1 className="truncate text-lg font-bold text-slate-900 sm:text-xl">{displayName}</h1>
+                <p className="mt-0.5 truncate text-sm text-slate-600">{profile.email ?? "—"}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5 sm:mt-2 sm:gap-2">
                   {profile.membership_number ? (
                     <Badge variant="neutral">Nr. {profile.membership_number}</Badge>
                   ) : null}

@@ -11,6 +11,8 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PointsBurst } from "@/components/app-shell/points-burst";
 import { usePointsTopbar } from "@/lib/points/use-points-topbar";
 import { POINTS_TARGET_ID, setPointsTargetElement } from "@/lib/points/target";
+import { Badge } from "@/components/ui/badge";
+import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 
 export function Topbar({
   title,
@@ -25,6 +27,9 @@ export function Topbar({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [initials, setInitials] = useState("U");
   const [name, setName] = useState<string>("Mitglied");
+  const [email, setEmail] = useState<string | null>(null);
+  const [membershipNumber, setMembershipNumber] = useState<string | null>(null);
+  const [membershipStatus, setMembershipStatus] = useState<string | null>(null);
   const [role, setRole] = useState<"admin" | "anni" | "member">("member");
   const [userId, setUserId] = useState<string | null>(null);
   const { points, rank, refreshPoints } = usePointsTopbar(userId);
@@ -49,16 +54,28 @@ export function Topbar({
       } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("first_name,last_name,avatar_path,role,updated_at")
-        .eq("id", user.id)
-        .maybeSingle();
+      const [{ data: profile }, { data: membership }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("first_name,last_name,avatar_path,role,updated_at,email,membership_number")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("memberships")
+          .select("status")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
       const displayName =
         profile?.first_name && profile?.last_name
           ? `${profile.first_name} ${profile.last_name}`
           : (user.email ?? "User");
       setName(displayName);
+      setEmail(profile?.email ?? user.email ?? null);
+      setMembershipNumber(profile?.membership_number ?? null);
+      setMembershipStatus(membership?.status ?? null);
       setRole((profile?.role ?? "member") as "admin" | "anni" | "member");
       const parts = displayName.trim().split(/\s+/).filter(Boolean);
       const first = parts.at(0)?.[0] ?? "U";
@@ -82,12 +99,14 @@ export function Topbar({
     >
       <MobileNavDrawer isAdmin={role === "admin"} />
       <BrandLogo className="lg:hidden" showText={false} imageClassName="h-10 w-10" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-base font-semibold text-slate-900">
+      <div className="min-w-0 flex-1" title={subtitle}>
+        <div className="truncate text-base font-semibold leading-tight text-slate-900">
           {title}
         </div>
         {subtitle ? (
-          <div className="truncate text-sm text-slate-600">{subtitle}</div>
+          <div className="hidden truncate text-sm leading-tight text-slate-600 lg:block">
+            {subtitle}
+          </div>
         ) : null}
       </div>
 
@@ -138,30 +157,47 @@ export function Topbar({
 
           <div
             className={cn(
-              "absolute right-0 top-full z-[60] w-64 pt-2 transition-opacity duration-150",
+              "absolute right-0 top-full z-[60] w-[min(18rem,calc(100vw-2rem))] pt-2 transition-opacity duration-150",
               profileOpen
                 ? "visible opacity-100"
                 : "pointer-events-none invisible opacity-0",
             )}
           >
             <div className="rounded-2xl border bg-white p-3 shadow-lg shadow-slate-900/15">
-              <div className="flex items-center gap-3">
-              <div className="h-8 w-8 overflow-hidden rounded-full border bg-slate-50">
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center bg-gradient-to-br from-blue-600 to-rose-500 text-xs font-bold text-white">
-                    {initials}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-slate-900">
-                  {name}
+              <div className="flex items-start gap-3">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border bg-slate-50">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="grid h-full w-full place-items-center bg-gradient-to-br from-blue-600 to-rose-500 text-sm font-bold text-white">
+                      {initials}
+                    </div>
+                  )}
                 </div>
-                <div className="text-xs capitalize text-slate-600">{role}</div>
-              </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold text-slate-900">{name}</div>
+                  {email ? (
+                    <div className="truncate text-xs text-slate-600">{email}</div>
+                  ) : null}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {membershipNumber ? (
+                      <Badge variant="neutral" className="text-[10px]">
+                        Nr. {membershipNumber}
+                      </Badge>
+                    ) : null}
+                    {membershipStatus ? (
+                      <Badge variant="neutral" className="text-[10px]">
+                        {membershipStatusLabel(membershipStatus)}
+                      </Badge>
+                    ) : null}
+                    {role === "admin" ? (
+                      <Badge variant="brand" className="text-[10px]">
+                        Admin
+                      </Badge>
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
               <div className="mt-3 grid gap-2">
