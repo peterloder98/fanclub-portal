@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Gift,
   Home,
+  MapPinned,
   PieChart,
   Shield,
   ShoppingBag,
@@ -32,6 +33,7 @@ export const appNav: AppNavItem[] = [
   { label: "Merchandise", href: "/merchandise", icon: ShoppingBag },
   { label: "Mitglieder", href: "/mitglieder", icon: Users },
   { label: "Statuspunkte", href: "/punkte", icon: Sparkles },
+  { label: "Artistflow Sync", href: "/admin/events-sync", icon: MapPinned, adminOnly: true },
   { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },
 ];
 

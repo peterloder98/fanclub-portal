@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBerlinDateTime } from "@/lib/datetime/berlin";
@@ -136,6 +136,31 @@ export function EventsSyncPanel({
         </div>
       ) : null}
 
+      <Card className="mb-4 border-2 border-amber-300 bg-amber-50/90 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base text-amber-950">
+            <Wrench className="h-5 w-5 shrink-0" aria-hidden />
+            Teilnehmer & Pins reparieren
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm text-amber-950">
+          <p>
+            Stellt fehlende <strong>Teilnehmer</strong>, <strong>Reiseinfos</strong> und{" "}
+            <strong>Karten-Pins</strong> wieder her, wenn sie nach einem Artistflow-Sync auf alten
+            Event-Duplikaten hängen geblieben sind.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={runRepair}
+            className="inline-flex h-12 w-full max-w-md items-center justify-center gap-2 rounded-xl border-2 border-amber-500 bg-amber-500 text-sm font-bold text-white shadow-md hover:bg-amber-600 disabled:opacity-60"
+          >
+            {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+            Jetzt reparieren
+          </button>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
@@ -155,14 +180,6 @@ export function EventsSyncPanel({
               <button
                 type="button"
                 disabled={busy}
-                onClick={runRepair}
-                className="h-10 w-full rounded-xl border border-amber-300 bg-amber-50 text-sm font-semibold text-amber-950 shadow-sm hover:bg-amber-100 disabled:opacity-60"
-              >
-                Teilnehmer & Pins reparieren
-              </button>
-              <button
-                type="button"
-                disabled={busy}
                 onClick={runGeocode}
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-60"
               >
@@ -171,8 +188,7 @@ export function EventsSyncPanel({
             </div>
             <p className="mt-2 text-xs text-slate-500">
               Unveränderte Events werden nicht überschrieben. Teilnahmen und Reiseinfos bleiben
-              erhalten — nur bei Terminänderung werden Teilnehmer zurückgesetzt. Fehlen Daten nach
-              einem Sync, einmal „Teilnehmer & Pins reparieren“ ausführen.
+              erhalten — nur bei Terminänderung werden Teilnehmer zurückgesetzt.
             </p>
             <div className="mt-3 grid gap-2 text-sm text-slate-600">
               <p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronUp, Heart, MessageCircle, SendHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -9,7 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { flyPointsFromElement } from "@/lib/points/fly";
 import { POINT_VALUES } from "@/lib/points/values";
-import { giveawayPhase } from "@/lib/giveaways/status-label";
+import {
+  canAdminDrawGiveaway,
+  giveawayPhase,
+  isGiveawayOver,
+} from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminControls } from "@/components/giveaways/giveaway-admin-controls";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
@@ -92,7 +96,11 @@ export function GiveawayDetailClient({
   eligibleEntryCount?: number | null;
 }) {
   const phase = giveawayPhase(giveaway.ends_at, giveaway.status, giveaway.is_paused);
-  const giveawayOver = phase === "ended" || phase === "drawn";
+  const giveawayOver = isGiveawayOver(
+    giveaway.ends_at,
+    giveaway.status,
+    giveaway.is_paused,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [likes, setLikes] = useState({ count: likeCount, mine: likedByMe });
@@ -107,9 +115,18 @@ export function GiveawayDetailClient({
   const [localStatus, setLocalStatus] = useState(giveaway.status);
   const [signatureId, setSignatureId] = useState(CLUB_SIGNATURE_ID);
   const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(false);
-  const [answersExpanded, setAnswersExpanded] = useState(!giveawayOver);
+  const [answersExpanded, setAnswersExpanded] = useState(false);
 
   const isYearEnd = Boolean(giveaway.is_year_end_lottery);
+  const canDrawWinners =
+    isAdmin &&
+    !isYearEnd &&
+    canAdminDrawGiveaway(giveaway.ends_at, localStatus) &&
+    localStatus !== "drawn";
+
+  useEffect(() => {
+    if (giveawayOver) setAnswersExpanded(false);
+  }, [giveawayOver, giveaway.id]);
   const canParticipate =
     !isYearEnd &&
     phase === "active" &&
@@ -271,21 +288,39 @@ export function GiveawayDetailClient({
             endsAt={giveaway.ends_at}
             paused={giveaway.is_paused}
             pausedLabel="Pausiert"
-            className="mb-2 max-w-full justify-start"
+            className="mb-2 max-w-full justify-start sm:hidden"
           />
-          <CardTitle className="text-lg">{giveaway.title}</CardTitle>
+          <div className="flex items-start justify-between gap-3">
+            <CardTitle className="min-w-0 flex-1 text-lg leading-snug">
+              {giveaway.title}
+            </CardTitle>
+            <RunningCountdownBadge
+              endsAt={giveaway.ends_at}
+              paused={giveaway.is_paused}
+              pausedLabel="Pausiert"
+              runningPrefix="Endet in"
+              inline
+              className="hidden !px-2 !py-1 !text-[11px] sm:inline-flex"
+            />
+          </div>
         </CardHeader>
         <CardContent className="grid gap-4">
           {yearEndAdmin}
           {isAdmin && !isYearEnd && eligibleEntryCount != null ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
-              <span className="font-semibold">Teilnahmen (Admin):</span>{" "}
-              {entryCount ?? 0} gesamt · {eligibleEntryCount} berechtigt
-              {localStatus !== "drawn" ? (
-                <span className="text-slate-600">
-                  {" "}
-                  — für die Auslosung zählen nur berechtigte Teilnehmer
-                </span>
+            <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-3 text-sm text-amber-950">
+              <p>
+                <span className="font-semibold">Teilnahmen:</span> {entryCount ?? 0} gesamt ·{" "}
+                {eligibleEntryCount} berechtigt zur Auslosung
+              </p>
+              {canDrawWinners ? (
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void onDraw()}
+                  className="h-11 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 disabled:opacity-60"
+                >
+                  Jetzt Gewinner ermitteln
+                </button>
               ) : null}
             </div>
           ) : null}
@@ -453,20 +488,6 @@ export function GiveawayDetailClient({
                   ) : null,
                 )}
             </div>
-          ) : null}
-
-          {isAdmin &&
-          !isYearEnd &&
-          phase === "ended" &&
-          localStatus !== "drawn" ? (
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void onDraw()}
-              className="h-11 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white"
-            >
-              Jetzt Gewinner ermitteln
-            </button>
           ) : null}
 
           {isAdmin && showWinners ? (

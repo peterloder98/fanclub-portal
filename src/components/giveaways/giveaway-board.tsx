@@ -141,16 +141,27 @@ export function GiveawayBoard({
                       <RunningCountdownBadge
                         endsAt={g.ends_at}
                         paused={g.isPaused}
-                        className="mb-2 max-w-full justify-start sm:max-w-[14rem]"
+                        className="mb-2 max-w-full justify-start sm:hidden"
                       />
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Gift className="h-4 w-4 shrink-0 text-blue-600" />
-                        <h3 className="text-sm font-semibold text-slate-900">{g.title}</h3>
-                        {g.isYearEndLottery ? (
-                          <Badge variant="brand" className="text-[10px]">
-                            Sonderverlosung
-                          </Badge>
-                        ) : null}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                          <Gift className="h-4 w-4 shrink-0 text-blue-600" />
+                          <h3 className="text-sm font-semibold leading-snug text-slate-900">
+                            {g.title}
+                          </h3>
+                          {g.isYearEndLottery ? (
+                            <Badge variant="brand" className="text-[10px]">
+                              Sonderverlosung
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <RunningCountdownBadge
+                          endsAt={g.ends_at}
+                          paused={g.isPaused}
+                          runningPrefix="Endet in"
+                          inline
+                          className="hidden !px-2 !py-1 !text-[11px] sm:inline-flex"
+                        />
                       </div>
                       {g.description ? (
                         <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>
