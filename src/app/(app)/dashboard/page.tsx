@@ -54,13 +54,22 @@ export default async function DashboardPage() {
       />
 
       <main className="px-4 py-4 pb-2 lg:px-6 lg:pb-3">
+        {/* Mobile: Nächster Auftritt ganz oben */}
+        <div className="mb-4 lg:hidden">
+          <EventsCountdown
+            compact
+            nextStartAt={nextEvent?.start_at ?? null}
+            nextTitle={nextEvent?.title ?? null}
+          />
+        </div>
         <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4">
           <section className="min-w-0">
             <PostFeed embedPollsInFeed />
           </section>
 
           <aside className="flex h-[calc(100dvh-4.5rem)] min-h-0 flex-col gap-1.5 lg:sticky lg:top-16">
-            <div className="shrink-0">
+            {/* Desktop: Countdown in rechter Spalte */}
+            <div className="hidden shrink-0 lg:block">
               <EventsCountdown
                 compact
                 nextStartAt={nextEvent?.start_at ?? null}

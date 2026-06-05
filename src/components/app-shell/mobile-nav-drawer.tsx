@@ -32,7 +32,7 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
 
   const drawer =
     open && mounted ? (
-      <div className="fixed inset-0 z-[200] lg:hidden" role="presentation">
+      <div className="fixed inset-0 z-[6000] lg:hidden" role="presentation">
         <button
           type="button"
           className="absolute inset-0 bg-slate-900/50"

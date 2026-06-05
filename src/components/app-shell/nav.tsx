@@ -38,9 +38,11 @@ export const appNav: AppNavItem[] = [
 export function NavList({
   items,
   isAdmin = true,
+  collapsed = false,
 }: {
   items: AppNavItem[];
   isAdmin?: boolean;
+  collapsed?: boolean;
 }) {
   const pathname = usePathname();
   const visible = items.filter((i) => (i.adminOnly ? isAdmin : true));
@@ -57,12 +59,14 @@ export function NavList({
           <Link
             key={item.href}
             href={item.href}
+            title={collapsed ? item.label : undefined}
             className={cn(
-              "group flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+              "group flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition lg:min-h-0 lg:py-2",
               "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600",
               active
                 ? "bg-slate-900 text-white shadow-sm shadow-slate-900/10"
                 : "text-slate-700 hover:bg-white hover:text-slate-900 hover:shadow-sm hover:shadow-slate-900/5",
+              collapsed && "justify-center px-2",
             )}
           >
             <Icon
@@ -71,7 +75,7 @@ export function NavList({
                 active ? "text-white" : "text-slate-500 group-hover:text-slate-700",
               )}
             />
-            <span className="truncate">{item.label}</span>
+            {collapsed ? null : <span className="truncate">{item.label}</span>}
           </Link>
         );
       })}
