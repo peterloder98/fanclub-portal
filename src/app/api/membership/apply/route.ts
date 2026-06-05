@@ -5,6 +5,8 @@ import {
   notifyAdminsNewMembershipApplication,
   sendApplicantConfirmationEmail,
 } from "@/lib/email/membership-notify";
+import { notifyAllAdmins } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { createMembershipDownloadToken } from "@/lib/membership/download-token";
 import { cacheApplicationPdf } from "@/lib/membership/application-pdf-service";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
@@ -269,6 +271,21 @@ export async function POST(request: Request) {
       const msg = e instanceof Error ? e.message : "Unbekannter Fehler";
       adminMailResult = { sent: false, reason: "send_failed", error: msg };
     }
+
+    const appBaseNotify = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+      /\/$/,
+      "",
+    );
+    await notifyAllAdmins({
+      kind: NOTIFICATION_KINDS.applicationSubmitted,
+      title: "Neuer Mitgliedsantrag",
+      body: `${applicantName} — Antrag eingegangen.`,
+      linkUrl: appBaseNotify
+        ? `${appBaseNotify}/admin/members/applications/${appId}`
+        : `/admin/members/applications/${appId}`,
+      linkLabel: "Antrag öffnen",
+      metadata: { application_id: appId },
+    }).catch(console.error);
 
     const emailWarning = formatMembershipEmailWarning({
       applicant: applicantMailResult ?? undefined,

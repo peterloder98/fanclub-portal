@@ -8,12 +8,12 @@ export function AdminMembersNav({
 }) {
   const items = [
     { id: "members" as const, label: "Mitglieder", href: "/admin/members" },
-    { id: "accounting" as const, label: "Mini-Buchhaltung", href: "/admin/accounting" },
+    { id: "accounting" as const, label: "Buchhaltung", href: "/admin/accounting" },
   ];
 
   return (
     <nav
-      className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] z-40 -mx-4 flex gap-2 overflow-x-auto border-b bg-[color:var(--background)] px-4 py-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:static lg:mx-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 [&::-webkit-scrollbar]:hidden"
       aria-label="Mitgliederverwaltung"
     >
       {items.map((item) => (

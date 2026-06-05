@@ -41,7 +41,7 @@ export default async function AdminAccountingPage() {
   return (
     <div className="min-h-screen">
       <Topbar
-        title="Mini-Buchhaltung"
+        title="Buchhaltung"
         subtitle="Einnahmen und Ausgaben — allgemein oder pro Mitglied im Datensatz."
       />
       <main className="px-4 py-6 lg:px-8">

@@ -26,6 +26,10 @@ import {
   getMemberContributionInfo,
   listOpenContributions,
 } from "@/lib/club/membership-contribution";
+import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
+import { createUserNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { buildLedgerCsv } from "@/lib/club/ledger-export";
 
 export async function revokeMemberWarning(warningId: string) {
   const { user, profile: adminProfile } = await requireAdminAction();
@@ -63,6 +67,16 @@ export async function revokeMemberWarning(warningId: string) {
     warning.comment_text.length > 120
       ? `${warning.comment_text.slice(0, 120)}…`
       : warning.comment_text;
+
+  const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+  await createUserNotification({
+    userId: member.id,
+    kind: NOTIFICATION_KINDS.warningRevoked,
+    title: "Verwarnung zurückgenommen",
+    body: `Eine Verwarnung wurde zurückgenommen. Verbleibend: ${newCount}.`,
+    linkUrl: base ? `${base}/profile` : "/profile",
+    linkLabel: "Mein Profil",
+  }).catch(console.error);
 
   await logMemberActivity({
     userId: member.id,
@@ -343,6 +357,19 @@ export async function addClubLedgerEntry(input: {
         .update({ activity_log_id: activityId })
         .eq("id", row.id);
     }
+
+    if (parsed.category === "membership" && parsed.entryType === "income") {
+      await syncMemberContributionDate(admin, parsed.memberId).catch(console.error);
+      await createUserNotification({
+        userId: parsed.memberId,
+        kind: NOTIFICATION_KINDS.paymentReceived,
+        title: "Zahlungseingang verzeichnet",
+        body: `Mitgliedsbeitrag ${amountLabel} wurde verbucht.`,
+        linkUrl: base ? `${base}/profile` : "/profile",
+        linkLabel: "Mein Profil",
+        metadata: { ledger_entry_id: row.id, amount_cents: amountCents },
+      }).catch(console.error);
+    }
   }
 
   revalidatePath("/admin/accounting");
@@ -457,6 +484,14 @@ export async function updateClubLedgerEntry(input: {
     }
   }
 
+  if (
+    existing.member_id &&
+    parsed.category === "membership" &&
+    parsed.entryType === "income"
+  ) {
+    await syncMemberContributionDate(admin, existing.member_id).catch(console.error);
+  }
+
   revalidatePath("/admin/accounting");
   if (existing.member_id) revalidatePath(`/admin/members/${existing.member_id}`);
   return { ok: true };
@@ -467,12 +502,16 @@ export async function deleteClubLedgerEntry(entryId: string) {
   const admin = createSupabaseAdminClient();
   const { data: row } = await admin
     .from("club_ledger_entries")
-    .select("id,member_id,description,amount_cents,entry_type")
+    .select("id,member_id,description,amount_cents,entry_type,category")
     .eq("id", entryId)
     .maybeSingle();
 
   const { error } = await admin.from("club_ledger_entries").delete().eq("id", entryId);
   if (error) throw new Error(error.message);
+
+  if (row?.member_id && row.category === "membership" && row.entry_type === "income") {
+    await syncMemberContributionDate(admin, row.member_id).catch(console.error);
+  }
 
   if (row?.member_id) {
     await logMemberActivity({
@@ -486,4 +525,11 @@ export async function deleteClubLedgerEntry(entryId: string) {
   }
   revalidatePath("/admin/accounting");
   return { ok: true };
+}
+
+export async function exportClubLedgerCsvAction() {
+  await requireAdminAction();
+  const rows = await listClubLedger({ limit: 5000 });
+  const csv = buildLedgerCsv(rows);
+  return { csv, filename: `buchhaltung-export-${new Date().toISOString().slice(0, 10)}.csv` };
 }

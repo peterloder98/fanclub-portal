@@ -12,6 +12,8 @@ import {
   logMemberActivity,
   MEMBER_ACTIVITY_TYPES,
 } from "@/lib/membership/activity-log";
+import { createUserNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 export type CommentWarningInput = {
   commentType: "post" | "poll" | "giveaway";
@@ -179,6 +181,20 @@ export async function issueCommentWarning(input: CommentWarningInput) {
         : "Beitrag";
   const commentSnippet =
     commentText.length > 160 ? `${commentText.slice(0, 160)}…` : commentText;
+
+  const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+    /\/$/,
+    "",
+  );
+  await createUserNotification({
+    userId: memberId,
+    kind: NOTIFICATION_KINDS.warningIssued,
+    title: `Verwarnung erhalten (${newCount}.)`,
+    body: `Unter „${contextTitle}" wurde eine Verwarnung ausgesprochen.`,
+    linkUrl: base ? `${base}/profile` : "/profile",
+    linkLabel: "Mein Profil",
+    metadata: { warning_id: warningRow?.id, warning_count: newCount },
+  }).catch(console.error);
 
   await logMemberActivity({
     userId: memberId,

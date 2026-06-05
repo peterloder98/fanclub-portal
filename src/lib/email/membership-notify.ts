@@ -2,7 +2,6 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { loadApplicationPdfBytes } from "@/lib/membership/application-pdf-service";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
-import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 
 function appBaseUrl() {
@@ -146,6 +145,7 @@ export async function sendApplicantConfirmationEmail(input: {
 export async function sendMemberInviteAfterApproval(input: {
   email: string;
   firstName: string;
+  membershipNumber: string;
 }) {
   const admin = createSupabaseAdminClient();
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
@@ -155,36 +155,22 @@ export async function sendMemberInviteAfterApproval(input: {
   if (linkErr) throw new Error(linkErr.message);
 
   const inviteUrl = linkData.properties.action_link;
-  const subject = "Fanclub: Zugang zur App freigeschaltet";
-  const sig = await loadDefaultMailSignature();
-  const text = [
-    `Hallo ${input.firstName},`,
-    ``,
-    `deine Mitgliedschaft wurde freigeschaltet. Du kannst dich jetzt in der Fanclub-App anmelden:`,
-    inviteUrl,
-    ``,
-    `Bitte setze über den Link dein Passwort und melde dich danach an.`,
-    ``,
-    sig.text,
-  ].join("\n");
 
-  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px"><p>Hallo ${input.firstName},</p><p>deine Mitgliedschaft wurde freigeschaltet. Du kannst dich jetzt in der Fanclub-App anmelden:</p><p><a href="${inviteUrl}">${inviteUrl}</a></p><p>Bitte setze über den Link dein Passwort und melde dich danach an.</p>${sig.htmlBlock}</body></html>`;
+  const rendered = await renderEmailFromTemplate(
+    EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome,
+    {
+      first_name: input.firstName,
+      membership_number: input.membershipNumber,
+      invite_url: inviteUrl,
+    },
+  );
 
   const result = await sendEmailViaAccount({
     to: input.email,
-    subject,
-    text,
-    html,
-    attachments: sig.imageBuffer
-      ? [
-          {
-            filename: "signatur.png",
-            content: sig.imageBuffer,
-            contentType: sig.contentType,
-            cid: sig.imageCid!,
-          },
-        ]
-      : undefined,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    attachments: rendered.signatureAttachment ? [rendered.signatureAttachment] : undefined,
   });
   return { ...result, inviteUrl };
 }

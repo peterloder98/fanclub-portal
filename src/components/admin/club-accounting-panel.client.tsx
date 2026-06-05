@@ -29,6 +29,9 @@ import {
   uploadClubDocument,
 } from "@/components/ui/document-upload-field";
 import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
+import { EmptyState } from "@/components/ui/empty-state";
+import { exportClubLedgerCsvAction } from "@/app/(app)/admin/members/detail-actions";
+import { summarizeLedgerByMonth } from "@/lib/club/ledger-export";
 
 const MONTHS = [
   "Januar",
@@ -211,6 +214,28 @@ export function ClubAccountingPanel({
   );
   const balance = incomeCents - expenseCents;
 
+  const monthlySummary = useMemo(
+    () => summarizeLedgerByMonth(entries, filterYear),
+    [entries, filterYear],
+  );
+
+  function handleExportCsv() {
+    startTransition(async () => {
+      try {
+        const { csv, filename } = await exportClubLedgerCsvAction();
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Export fehlgeschlagen");
+      }
+    });
+  }
+
   const periodLabel =
     periodMode === "all"
       ? "Gesamt"
@@ -323,8 +348,48 @@ export function ClubAccountingPanel({
             </label>
           ) : null}
           <p className="text-sm text-slate-500">{periodLabel}</p>
+          <button
+            type="button"
+            disabled={pending || entries.length === 0}
+            onClick={handleExportCsv}
+            className="ml-auto h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+          >
+            CSV-Export (Steuerberater)
+          </button>
         </CardContent>
       </Card>
+
+      {monthlySummary.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Umsatzübersicht {filterYear}</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full min-w-[28rem] text-left text-sm">
+              <thead className="border-b text-xs uppercase text-slate-500">
+                <tr>
+                  <th className="py-2 pr-3">Monat</th>
+                  <th className="py-2 pr-3">Einnahmen</th>
+                  <th className="py-2 pr-3">Ausgaben</th>
+                  <th className="py-2 pr-3">Saldo</th>
+                  <th className="py-2">Buchungen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlySummary.map((m) => (
+                  <tr key={m.label} className="border-b">
+                    <td className="py-2 pr-3 font-medium">{m.label}</td>
+                    <td className="py-2 pr-3 text-emerald-700">{formatEur(m.incomeCents)}</td>
+                    <td className="py-2 pr-3 text-rose-700">{formatEur(m.expenseCents)}</td>
+                    <td className="py-2 pr-3 font-semibold">{formatEur(m.balanceCents)}</td>
+                    <td className="py-2 tabular-nums text-slate-600">{m.entryCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
@@ -357,7 +422,7 @@ export function ClubAccountingPanel({
             <CardTitle>Offene Beiträge ({openContributions.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2 md:hidden">
+            <div className="grid gap-2 lg:hidden">
               {openContributions.map((c) => (
                 <Link
                   key={c.userId}
@@ -380,7 +445,7 @@ export function ClubAccountingPanel({
                 </Link>
               ))}
             </div>
-            <div className="hidden overflow-x-auto rounded-xl border md:block">
+            <div className="hidden overflow-x-auto rounded-xl border lg:block">
               <table className="w-full min-w-[560px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
@@ -511,11 +576,13 @@ export function ClubAccountingPanel({
           <CardTitle>Buchungen ({sortedEntries.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {sortedEntries.length === 0 ? (
+          {entries.length === 0 ? (
+            <EmptyState />
+          ) : sortedEntries.length === 0 ? (
             <p className="text-sm text-slate-500">Keine Einträge in diesem Zeitraum.</p>
           ) : (
             <>
-            <div className="grid gap-2 md:hidden">
+            <div className="grid gap-2 lg:hidden">
               {sortedEntries.map((e) =>
                 editingId === e.id ? (
                   <div key={e.id} className="rounded-xl border bg-slate-50 p-3 text-sm">
@@ -611,7 +678,7 @@ export function ClubAccountingPanel({
                         disabled={pending}
                         title="Bearbeiten"
                         onClick={() => startEdit(e)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
                       >
                         <Pencil className="h-4 w-4" aria-hidden />
                       </button>
@@ -620,7 +687,7 @@ export function ClubAccountingPanel({
                         disabled={pending}
                         title="Löschen"
                         onClick={() => handleDelete(e.id)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                       >
                         <Trash2 className="h-4 w-4" aria-hidden />
                       </button>
@@ -629,7 +696,7 @@ export function ClubAccountingPanel({
                 ),
               )}
             </div>
-            <div className="hidden overflow-x-auto rounded-xl border md:block">
+            <div className="hidden overflow-x-auto rounded-xl border lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
@@ -806,7 +873,7 @@ export function ClubAccountingPanel({
                               disabled={pending}
                               title="Bearbeiten"
                               onClick={() => startEdit(e)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
                             >
                               <Pencil className="h-4 w-4" aria-hidden />
                             </button>
@@ -815,7 +882,7 @@ export function ClubAccountingPanel({
                               disabled={pending}
                               title="Löschen"
                               onClick={() => handleDelete(e.id)}
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                             >
                               <Trash2 className="h-4 w-4" aria-hidden />
                             </button>

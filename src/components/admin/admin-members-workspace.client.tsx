@@ -10,6 +10,15 @@ import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
 import type { ContributionStatus } from "@/lib/club/membership-contribution";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
+import { EmptyState } from "@/components/ui/empty-state";
+
+const PAGE_SIZE = 30;
+
+function matchesQuery(q: string, parts: (string | null | undefined)[]) {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return true;
+  return parts.some((p) => (p ?? "").toLowerCase().includes(needle));
+}
 
 export type AdminMemberRow = {
   id: string;
@@ -123,6 +132,10 @@ export function AdminMembersWorkspace({
     key: "created_at",
     dir: "desc",
   });
+  const [memberSearch, setMemberSearch] = useState("");
+  const [appSearch, setAppSearch] = useState("");
+  const [memberPage, setMemberPage] = useState(0);
+  const [appPage, setAppPage] = useState(0);
 
   function applicationStatusLabel(status: string) {
     switch (status) {
@@ -159,7 +172,15 @@ export function AdminMembersWorkspace({
   }
 
   const sortedMembers = useMemo(() => {
-    const rows = [...members];
+    const rows = members.filter((r) =>
+      matchesQuery(memberSearch, [
+        r.first_name,
+        r.last_name,
+        r.email,
+        r.membership_number,
+        String(r.warning_count),
+      ]),
+    );
     const dir = memberSort.dir === "asc" ? 1 : -1;
     rows.sort((a, b) => {
       const pick = (r: AdminMemberRow) => {
@@ -185,10 +206,18 @@ export function AdminMembersWorkspace({
       return compareStr(pick(a), pick(b)) * dir;
     });
     return rows;
-  }, [members, memberSort]);
+  }, [members, memberSort, memberSearch]);
 
   const sortedApps = useMemo(() => {
-    const rows = [...applications];
+    const rows = applications.filter((r) =>
+      matchesQuery(appSearch, [
+        r.first_name,
+        r.last_name,
+        r.email,
+        r.membership_number,
+        applicationStatusLabel(r.status),
+      ]),
+    );
     const dir = appSort.dir === "asc" ? 1 : -1;
     rows.sort((a, b) => {
       const pick = (r: AdminApplicationRow) => {
@@ -208,7 +237,15 @@ export function AdminMembersWorkspace({
       return compareStr(pick(a), pick(b)) * dir;
     });
     return rows;
-  }, [applications, appSort]);
+  }, [applications, appSort, appSearch]);
+
+  const memberPageCount = Math.max(1, Math.ceil(sortedMembers.length / PAGE_SIZE));
+  const appPageCount = Math.max(1, Math.ceil(sortedApps.length / PAGE_SIZE));
+  const pagedMembers = sortedMembers.slice(
+    memberPage * PAGE_SIZE,
+    memberPage * PAGE_SIZE + PAGE_SIZE,
+  );
+  const pagedApps = sortedApps.slice(appPage * PAGE_SIZE, appPage * PAGE_SIZE + PAGE_SIZE);
 
   const memberSortOptions: { key: MemberSortKey; label: string }[] = [
     { key: "membership_number", label: "Mitgliedsnr." },
@@ -243,11 +280,25 @@ export function AdminMembersWorkspace({
 
           {applicationsError ? (
             <div className="text-rose-700">{applicationsError}</div>
+          ) : applications.length === 0 ? (
+            <EmptyState />
           ) : sortedApps.length === 0 ? (
-            <div className="text-slate-600">Keine offenen Anträge.</div>
+            <div className="text-slate-600">Keine Treffer für die Suche.</div>
           ) : (
             <>
-            <div className="mb-3 flex items-center gap-2 md:hidden">
+            <div className="mb-3">
+              <input
+                type="search"
+                value={appSearch}
+                onChange={(e) => {
+                  setAppSearch(e.target.value);
+                  setAppPage(0);
+                }}
+                placeholder="Suchen: Name, E-Mail, Mitgliedsnr. …"
+                className="h-10 w-full rounded-xl border px-3 text-sm"
+              />
+            </div>
+            <div className="mb-3 flex items-center gap-2 lg:hidden">
               <label className="text-xs font-semibold text-slate-600">Sortieren</label>
               <select
                 value={`${appSort.key}:${appSort.dir}`}
@@ -267,8 +318,8 @@ export function AdminMembersWorkspace({
                 ])}
               </select>
             </div>
-            <div className="grid gap-2 md:hidden">
-              {sortedApps.map((a) => (
+            <div className="grid gap-2 lg:hidden">
+              {pagedApps.map((a) => (
                 <button
                   key={a.id}
                   type="button"
@@ -291,7 +342,32 @@ export function AdminMembersWorkspace({
                 </button>
               ))}
             </div>
-            <div className="hidden overflow-x-auto rounded-xl border bg-white md:block">
+            {sortedApps.length > PAGE_SIZE ? (
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600 lg:hidden">
+                <span>
+                  Seite {appPage + 1} von {appPageCount} ({sortedApps.length} Anträge)
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={appPage === 0}
+                    onClick={() => setAppPage((p) => Math.max(0, p - 1))}
+                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                  >
+                    Zurück
+                  </button>
+                  <button
+                    type="button"
+                    disabled={appPage >= appPageCount - 1}
+                    onClick={() => setAppPage((p) => p + 1)}
+                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                  >
+                    Weiter
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <div className="hidden overflow-x-auto rounded-xl border bg-white lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
@@ -346,7 +422,7 @@ export function AdminMembersWorkspace({
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedApps.map((a) => (
+                  {pagedApps.map((a) => (
                     <tr
                       key={a.id}
                       onClick={() => router.push(`/admin/members/applications/${a.id}`)}
@@ -385,11 +461,25 @@ export function AdminMembersWorkspace({
 
           {membersError ? (
             <div className="text-rose-700">{membersError}</div>
+          ) : members.length === 0 ? (
+            <EmptyState />
           ) : sortedMembers.length === 0 ? (
-            <div className="text-slate-600">Keine Mitglieder gefunden.</div>
+            <div className="text-slate-600">Keine Treffer für die Suche.</div>
           ) : (
             <>
-            <div className="mb-3 flex items-center gap-2 md:hidden">
+            <div className="mb-3">
+              <input
+                type="search"
+                value={memberSearch}
+                onChange={(e) => {
+                  setMemberSearch(e.target.value);
+                  setMemberPage(0);
+                }}
+                placeholder="Suchen: Name, E-Mail, Mitgliedsnr. …"
+                className="h-10 w-full rounded-xl border px-3 text-sm"
+              />
+            </div>
+            <div className="mb-3 flex items-center gap-2 lg:hidden">
               <label className="text-xs font-semibold text-slate-600">Sortieren</label>
               <select
                 value={`${memberSort.key}:${memberSort.dir}`}
@@ -409,8 +499,8 @@ export function AdminMembersWorkspace({
                 ])}
               </select>
             </div>
-            <div className="grid gap-2 md:hidden">
-              {sortedMembers.map((m) => (
+            <div className="grid gap-2 lg:hidden">
+              {pagedMembers.map((m) => (
                 <button
                   key={m.id}
                   type="button"
@@ -450,7 +540,32 @@ export function AdminMembersWorkspace({
                 </button>
               ))}
             </div>
-            <div className="hidden overflow-x-auto rounded-xl border bg-white md:block">
+            {sortedMembers.length > PAGE_SIZE ? (
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600 lg:hidden">
+                <span>
+                  Seite {memberPage + 1} von {memberPageCount} ({sortedMembers.length} Mitglieder)
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={memberPage === 0}
+                    onClick={() => setMemberPage((p) => Math.max(0, p - 1))}
+                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                  >
+                    Zurück
+                  </button>
+                  <button
+                    type="button"
+                    disabled={memberPage >= memberPageCount - 1}
+                    onClick={() => setMemberPage((p) => p + 1)}
+                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                  >
+                    Weiter
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            <div className="hidden overflow-x-auto rounded-xl border bg-white lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
@@ -521,7 +636,7 @@ export function AdminMembersWorkspace({
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedMembers.map((m) => (
+                  {pagedMembers.map((m) => (
                     <tr
                       key={m.id}
                       onClick={() => router.push(`/admin/members/${m.id}`)}

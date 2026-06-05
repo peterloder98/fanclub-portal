@@ -6,6 +6,8 @@ import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
+import { createUserNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { loadSignaturePickerData } from "@/lib/email/draft-with-signatures";
@@ -104,10 +106,26 @@ async function activateApplication(
     createdBy,
   }).catch(console.error);
 
+  const baseUrl = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+    /\/$/,
+    "",
+  );
+
+  await createUserNotification({
+    userId: app.user_id,
+    kind: NOTIFICATION_KINDS.membershipApproved,
+    title: "Mitgliedschaft freigegeben",
+    body: `Willkommen im Fanclub! Deine Mitgliedsnummer ist ${assignedNumber}.`,
+    linkUrl: baseUrl ? `${baseUrl}/profile` : "/profile",
+    linkLabel: "Mein Profil",
+    metadata: { membership_number: assignedNumber, application_id: applicationId },
+  }).catch(console.error);
+
   if (app.email) {
     await sendMemberInviteAfterApproval({
       email: app.email,
       firstName: app.first_name?.trim() || "Fan",
+      membershipNumber: assignedNumber,
     }).catch((e) => {
       console.error("[membership] Freischaltungs-Mail fehlgeschlagen:", e);
     });
@@ -321,11 +339,29 @@ export async function addMemberActivityNote(input: {
   details?: string;
   linkUrl?: string;
   linkLabel?: string;
+  paymentAmountEur?: number;
+  paymentDate?: string;
 }) {
   const { user } = await requireAdminAction();
   if (!input.userId && !input.applicationId) {
     throw new Error("userId oder applicationId erforderlich.");
   }
+
+  if (input.eventType === "payment_received" && input.userId) {
+    const { addClubLedgerEntry } = await import("@/app/(app)/admin/members/detail-actions");
+    const amount = input.paymentAmountEur ?? 15;
+    const entryDate = input.paymentDate ?? new Date().toISOString().slice(0, 10);
+    await addClubLedgerEntry({
+      entryType: "income",
+      amountEur: amount,
+      description: input.title.trim() || "Mitgliedsbeitrag",
+      category: "membership",
+      memberId: input.userId,
+      entryDate,
+    });
+    return;
+  }
+
   await logMemberActivity({
     userId: input.userId,
     applicationId: input.applicationId,

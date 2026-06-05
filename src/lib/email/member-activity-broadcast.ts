@@ -11,6 +11,8 @@ import {
   listActiveMemberRecipients,
   type ActiveMemberRecipient,
 } from "@/lib/members/list-active-member-recipients";
+import { notifyAllActiveMembers } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 export type MemberBroadcastKind = "giveaway" | "poll";
 
@@ -208,9 +210,31 @@ export async function sendMemberActivityBroadcast(input: {
 }
 
 export async function notifyMembersNewGiveaway(giveawayId: string) {
+  const admin = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
+  const { data: g } = await admin.from("giveaways").select("title").eq("id", giveawayId).maybeSingle();
+  const base = appBaseUrl();
+  await notifyAllActiveMembers({
+    kind: NOTIFICATION_KINDS.giveawayAvailable,
+    title: "Neues Gewinnspiel",
+    body: g?.title ? `„${g.title}" ist jetzt verfügbar.` : "Ein neues Gewinnspiel wartet auf dich.",
+    linkUrl: base ? `${base}/giveaways/${giveawayId}` : `/giveaways/${giveawayId}`,
+    linkLabel: "Zum Gewinnspiel",
+    metadata: { giveaway_id: giveawayId },
+  }).catch(console.error);
   return sendMemberActivityBroadcast({ kind: "giveaway", entityId: giveawayId });
 }
 
 export async function notifyMembersNewPoll(pollId: string) {
+  const admin = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
+  const { data: p } = await admin.from("polls").select("title").eq("id", pollId).maybeSingle();
+  const base = appBaseUrl();
+  await notifyAllActiveMembers({
+    kind: NOTIFICATION_KINDS.pollStarted,
+    title: "Neue Umfrage",
+    body: p?.title ? `„${p.title}" — jetzt abstimmen.` : "Eine neue Umfrage ist gestartet.",
+    linkUrl: base ? `${base}/polls/${pollId}` : `/polls/${pollId}`,
+    linkLabel: "Zur Umfrage",
+    metadata: { poll_id: pollId },
+  }).catch(console.error);
   return sendMemberActivityBroadcast({ kind: "poll", entityId: pollId });
 }

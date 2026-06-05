@@ -55,7 +55,7 @@ const SECTIONS: AdminHubSection[] = [
       },
       {
         href: "/admin/accounting",
-        title: "Mini-Buchhaltung",
+        title: "Buchhaltung",
         description: "Einnahmen, Ausgaben und Zahlungen pro Mitglied.",
         icon: Wallet,
         iconClassName: "from-emerald-600 to-teal-600",

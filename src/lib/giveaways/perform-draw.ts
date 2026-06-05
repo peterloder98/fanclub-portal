@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pickGiveawayWinners } from "@/lib/giveaways/draw-winners";
 import { notifyGiveawayWinner } from "@/lib/email/giveaway-notify";
+import { createUserNotification, notifyAllAdmins } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 export async function performGiveawayDraw(
   admin: SupabaseClient,
@@ -66,6 +68,33 @@ export async function performGiveawayDraw(
       winners_drawn_at: new Date().toISOString(),
     })
     .eq("id", giveawayId);
+
+  const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+    /\/$/,
+    "",
+  );
+
+  for (const w of inserted ?? []) {
+    const prizeRow = (prizes ?? []).find((p) => p.id === w.prize_id);
+    await createUserNotification({
+      userId: w.user_id,
+      kind: NOTIFICATION_KINDS.giveawayWon,
+      title: "Gewinnspiel gewonnen!",
+      body: `Du hast bei „${g.title ?? "Gewinnspiel"}" gewonnen: ${prizeRow?.name ?? "Preis"}.`,
+      linkUrl: base ? `${base}/giveaways/${giveawayId}` : `/giveaways/${giveawayId}`,
+      linkLabel: "Details",
+      metadata: { giveaway_id: giveawayId, prize_id: w.prize_id },
+    }).catch(console.error);
+  }
+
+  await notifyAllAdmins({
+    kind: NOTIFICATION_KINDS.giveawayEnded,
+    title: "Gewinnspiel ausgelost",
+    body: `„${g.title ?? "Gewinnspiel"}“ — ${picks.length} Gewinner ermittelt.`,
+    linkUrl: base ? `${base}/giveaways/${giveawayId}` : `/giveaways/${giveawayId}`,
+    linkLabel: "Auslosung ansehen",
+    metadata: { giveaway_id: giveawayId, winner_count: picks.length },
+  }).catch(console.error);
 
   if (options?.notifyAllWinners) {
     const prizeMap = new Map((prizes ?? []).map((p) => [p.id, p]));

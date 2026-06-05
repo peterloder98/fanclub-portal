@@ -261,15 +261,13 @@ export function GiveawayDetailClient({
 
       <Card>
         <CardHeader className="pb-2">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <CardTitle className="text-lg">{giveaway.title}</CardTitle>
-            <RunningCountdownBadge
-              endsAt={giveaway.ends_at}
-              paused={giveaway.is_paused}
-              pausedLabel="Pausiert"
-              className="w-full sm:w-auto"
-            />
-          </div>
+          <RunningCountdownBadge
+            endsAt={giveaway.ends_at}
+            paused={giveaway.is_paused}
+            pausedLabel="Pausiert"
+            className="mb-2 max-w-full justify-start"
+          />
+          <CardTitle className="text-lg">{giveaway.title}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           {yearEndAdmin}

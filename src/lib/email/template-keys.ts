@@ -5,6 +5,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   membershipFormInvite: "membership_form_invite",
   giveawayEndedAdminNotify: "giveaway_ended_admin_notify",
   giveawayWinnerCongrats: "giveaway_winner_congrats",
+  membershipApprovedWelcome: "membership_approved_welcome",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -62,5 +63,12 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "prize_name", label: "Preisname" },
     { key: "admin_signature_text", label: "Admin-Signatur (Text)" },
     { key: "admin_signature_block", label: "Admin-Signatur (HTML mit Bild)" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome]: [
+    { key: "first_name", label: "Vorname" },
+    { key: "membership_number", label: "Mitgliedsnummer" },
+    { key: "invite_url", label: "Link Passwort setzen" },
+    { key: "admin_signature_text", label: "Fanclub-Signatur (Text)" },
+    { key: "admin_signature_block", label: "Fanclub-Signatur (HTML mit Bild)" },
   ],
 };

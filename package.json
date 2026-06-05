@@ -13,7 +13,8 @@
     "patch:test-addresses": "node --env-file=.env.local scripts/patch-test-member-addresses.mjs",
     "set:gender-from-names": "node --experimental-strip-types --env-file=.env.local scripts/set-profile-gender-from-names.mjs",
     "geocode:profiles": "node --env-file=.env.local scripts/backfill-profile-map-coords.mjs",
-    "add:test-members": "node --env-file=.env.local scripts/add-test-members.mjs"
+    "add:test-members": "node --env-file=.env.local scripts/add-test-members.mjs",
+    "db:migrate": "node --env-file=.env.local scripts/apply-sql-migrations.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -39,6 +40,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
+    "pg": "^8.21.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"

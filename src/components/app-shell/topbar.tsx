@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell } from "lucide-react";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
+import { NotificationBell } from "@/components/app-shell/notification-bell.client";
 import { MobileNavDrawer } from "@/components/app-shell/mobile-nav-drawer";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -76,7 +76,7 @@ export function Topbar({
     <>
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b bg-[color:var(--background)] px-4 lg:sticky lg:inset-x-auto lg:bg-[color:var(--background)]/95 lg:backdrop-blur lg:px-8",
+        "fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b bg-[color:var(--background)] px-4 pt-[env(safe-area-inset-top,0px)] lg:sticky lg:inset-x-auto lg:bg-[color:var(--background)]/95 lg:backdrop-blur lg:px-8",
         className,
       )}
     >
@@ -115,15 +115,7 @@ export function Topbar({
           </div>
         </div>
 
-        <button
-          type="button"
-          disabled
-          className="grid h-10 w-10 cursor-not-allowed place-items-center rounded-xl border bg-slate-50 shadow-sm shadow-slate-900/5 opacity-60"
-          aria-label="Benachrichtigungen (demnächst)"
-          title="Benachrichtigungen kommen demnächst"
-        >
-          <Bell className="h-4 w-4 text-slate-500" aria-hidden />
-        </button>
+        <NotificationBell />
 
         <div className="relative" ref={profileRef}>
           <button
@@ -198,7 +190,10 @@ export function Topbar({
         </div>
       </div>
     </header>
-    <div className="h-16 shrink-0 lg:hidden" aria-hidden />
+    <div
+      className="h-16 shrink-0 pt-[env(safe-area-inset-top,0px)] lg:hidden"
+      aria-hidden
+    />
     </>
   );
 }

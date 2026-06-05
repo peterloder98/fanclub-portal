@@ -2,6 +2,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { geocodeWithNominatim } from "@/lib/artistflow/geocode";
 import type { ArtistflowFeedItem } from "@/lib/artistflow/normalize";
 import { normalizeArtistflowEvent } from "@/lib/artistflow/normalize";
+import { notifyAllActiveMembers } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 type SyncResult = {
   total: number;
@@ -77,28 +79,53 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         (existing && existing.content_hash !== e.content_hash);
 
       if (!existing) {
-        const { error } = await admin.from("external_events").insert({
-          source: "artistflow",
-          external_id: e.external_id,
-          title: e.title,
-          start_at: e.start_at,
-          timezone: e.timezone,
-          venue: e.venue,
-          address: e.address,
-          postal_code: e.postal_code,
-          city: e.city,
-          country: e.country,
-          ticket_url: e.ticket_url,
-          published: e.published,
-          secret: e.secret,
-          feed_updated_at: e.feed_updated_at,
-          content_hash: e.content_hash,
-          last_seen_at: new Date().toISOString(),
-          is_visible,
-          geocoding_status: "pending",
-        });
+        const { data: insertedRow, error } = await admin
+          .from("external_events")
+          .insert({
+            source: "artistflow",
+            external_id: e.external_id,
+            title: e.title,
+            start_at: e.start_at,
+            timezone: e.timezone,
+            venue: e.venue,
+            address: e.address,
+            postal_code: e.postal_code,
+            city: e.city,
+            country: e.country,
+            ticket_url: e.ticket_url,
+            published: e.published,
+            secret: e.secret,
+            feed_updated_at: e.feed_updated_at,
+            content_hash: e.content_hash,
+            last_seen_at: new Date().toISOString(),
+            is_visible,
+            geocoding_status: "pending",
+          })
+          .select("id")
+          .single();
         if (error) throw new Error(error.message);
         result.inserted += 1;
+
+        if (is_visible && e.published && insertedRow?.id && e.start_at) {
+          const dateLabel = new Date(e.start_at).toLocaleDateString("de-DE", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const location = [e.venue, e.city].filter(Boolean).join(", ");
+          const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+            /\/$/,
+            "",
+          );
+          await notifyAllActiveMembers({
+            kind: NOTIFICATION_KINDS.eventAvailable,
+            title: "Neues Event",
+            body: `${e.title} — ${dateLabel}${location ? `, ${location}` : ""}`,
+            linkUrl: base ? `${base}/events` : "/events",
+            linkLabel: "Zur Eventliste",
+            metadata: { event_id: insertedRow.id },
+          }).catch(console.error);
+        }
       } else if (shouldUpdate) {
         const { error } = await admin
           .from("external_events")

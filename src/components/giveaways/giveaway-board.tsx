@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { giveawayPhase, giveawayPhaseLabel } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminCreate } from "@/components/giveaways/giveaway-admin-create";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export type GiveawayListItem = {
   id: string;
@@ -173,11 +174,11 @@ export function GiveawayBoard({
             })}
           </div>
         ) : (
-          <div className="rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <EmptyState>
             {tab === "active"
-              ? "Keine aktiven Gewinnspiele."
-              : "Keine beendeten Gewinnspiele."}
-          </div>
+              ? "Hier gibt es aktuell noch nichts zu sehen, aber das ändert sich schnell."
+              : "Noch keine beendeten Gewinnspiele."}
+          </EmptyState>
         )
       ) : null}
     </div>
