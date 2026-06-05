@@ -151,16 +151,10 @@ export function Topbar({
 
               <div className="mt-3 grid gap-2">
                 <Link
-                  href="/punkte"
-                  className="flex h-9 items-center justify-center rounded-xl border border-blue-100 bg-blue-50/50 text-sm font-medium text-blue-800 shadow-sm transition hover:bg-blue-50"
-                >
-                  Statuspunkte
-                </Link>
-                <Link
                   href="/profile"
                   className="flex h-9 items-center justify-center rounded-xl border bg-white text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
                 >
-                  Profil
+                  Mein Profil
                 </Link>
                 <button
                   type="button"

@@ -112,6 +112,25 @@ export async function listMemberActivity(opts: {
   }));
 }
 
+/** Aktivitätstypen, die Mitglieder in der eigenen Historie sehen dürfen. */
+export const MEMBER_VISIBLE_ACTIVITY_TYPES = new Set<string>([
+  MEMBER_ACTIVITY_TYPES.applicationSubmitted,
+  MEMBER_ACTIVITY_TYPES.applicationRejected,
+  MEMBER_ACTIVITY_TYPES.paymentReminderSent,
+  MEMBER_ACTIVITY_TYPES.membershipApproved,
+  MEMBER_ACTIVITY_TYPES.paymentReceived,
+  MEMBER_ACTIVITY_TYPES.warningIssued,
+  MEMBER_ACTIVITY_TYPES.warningRevoked,
+  MEMBER_ACTIVITY_TYPES.profileSelfUpdated,
+  MEMBER_ACTIVITY_TYPES.merchandiseOrderPlaced,
+  MEMBER_ACTIVITY_TYPES.merchandiseOrderShipped,
+  MEMBER_ACTIVITY_TYPES.merchandiseOrderCancelled,
+]);
+
+export function isMemberVisibleActivity(type: string) {
+  return MEMBER_VISIBLE_ACTIVITY_TYPES.has(type);
+}
+
 export function activityTypeLabel(type: string) {
   const map: Record<string, string> = {
     application_submitted: "Antrag eingegangen",
