@@ -6,7 +6,8 @@ import { EventsMapClient } from "@/components/events/events-map.client";
 import { EventsCountdown } from "@/components/events/events-countdown";
 import { EventParticipationRow } from "@/components/events/event-participation-row";
 import { EventCalendarButton } from "@/components/events/event-calendar-button";
-import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { Badge } from "@/components/ui/badge";
+import { formatEventStart, formatLocation, formatVenueName } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "@/components/events/events-map.types";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
@@ -16,9 +17,7 @@ import { EventTravelEdit } from "@/components/events/event-travel-edit.client";
 import type { EventTravelNoteRow } from "@/lib/events/admin-notes";
 import { cn } from "@/lib/cn";
 
-export type EventListRow = MapEvent & {
-  venue?: string | null;
-};
+export type EventListRow = MapEvent;
 
 export type EventParticipationMeta = {
   count: number;
@@ -51,7 +50,9 @@ export function EventsInteractivePanel({
             {events.map((e) => {
               const { date, time } = formatEventStart(e.start_at);
               const location = formatLocation(e);
+              const venueName = e.kind === "tv" ? null : formatVenueName(e.venue);
               const ticket = ticketDisplay(e.ticket_url);
+              const isTv = e.kind === "tv";
               const active = highlightedId === e.id;
               const part = participationByEventId[e.id] ?? {
                 count: 0,
@@ -69,14 +70,26 @@ export function EventsInteractivePanel({
                       : "overflow-hidden rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
                   }
                 >
-                  <div className="truncate text-sm font-semibold text-slate-900">{e.title}</div>
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+                      {e.title}
+                    </div>
+                    {isTv ? (
+                      <Badge variant="brand" className="shrink-0 text-[10px]">
+                        TV
+                      </Badge>
+                    ) : null}
+                  </div>
+                  {venueName ? (
+                    <div className="mt-0.5 truncate text-xs text-slate-500">{venueName}</div>
+                  ) : null}
                   <div className="mt-0.5 flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-600">
                       <span className="font-medium text-slate-800">{date}</span>
                       {time ? <span>· {time} Uhr</span> : null}
-                      {location ? <span>{location}</span> : null}
+                      {location ? <span>· {location}</span> : null}
                     </div>
-                    {isAdmin ? (
+                    {isAdmin && !isTv ? (
                       <div className="shrink-0 self-center">
                         <EventTravelEdit
                           eventId={e.id}
@@ -93,12 +106,12 @@ export function EventsInteractivePanel({
                       rel="noopener noreferrer"
                       className="mt-1.5 inline-flex text-xs font-medium text-blue-700 hover:underline"
                     >
-                      Tickets / Infos →
+                      {isTv ? "Sendung / Infos →" : "Tickets / Infos →"}
                     </a>
                   ) : ticket.text ? (
                     <div className="mt-1.5 text-xs text-slate-700">{ticket.text}</div>
                   ) : null}
-                  {travelNotesByEventId?.[e.id]?.travel ? (
+                  {travelNotesByEventId?.[e.id]?.travel && !isTv ? (
                     <div className="mt-3 border-t border-slate-100 pt-2">
                       <EventTravelInfoBlock
                         travel={travelNotesByEventId[e.id].travel}
@@ -109,13 +122,15 @@ export function EventsInteractivePanel({
                     </div>
                   ) : null}
                   <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
-                    <EventParticipationRow
-                      eventId={e.id}
-                      initialCount={part.count}
-                      initialJoined={part.joined}
-                      initialAttendees={part.attendees}
-                      inline
-                    />
+                    {!isTv ? (
+                      <EventParticipationRow
+                        eventId={e.id}
+                        initialCount={part.count}
+                        initialJoined={part.joined}
+                        initialAttendees={part.attendees}
+                        inline
+                      />
+                    ) : null}
                     <EventCalendarButton
                       title={e.title}
                       startAt={e.start_at}
@@ -123,6 +138,7 @@ export function EventsInteractivePanel({
                       address={e.address}
                       postalCode={e.postal_code}
                       city={e.city}
+                      country={e.country}
                     />
                   </div>
                 </div>

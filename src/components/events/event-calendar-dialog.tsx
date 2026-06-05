@@ -8,7 +8,7 @@ import {
   openGoogleCalendarPopup,
 } from "@/lib/calendar/open-event-calendar";
 import { buildGoogleCalendarUrl, buildOutlookWebUrl } from "@/lib/calendar/event-calendar-links";
-import { formatLocation } from "@/lib/events/format";
+import { formatCalendarLocation } from "@/lib/events/format";
 import {
   PREFERRED_CALENDAR_OPTIONS,
   normalizePreferredCalendar,
@@ -32,6 +32,7 @@ export function EventCalendarDialog({
   address,
   postalCode,
   city,
+  country,
   preferredCalendar: preferredCalendarProp,
   onPreferenceChange,
 }: {
@@ -43,17 +44,19 @@ export function EventCalendarDialog({
   address?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  country?: string | null;
   preferredCalendar?: PreferredCalendar;
   onPreferenceChange?: (pref: PreferredCalendar) => void;
 }) {
   const [storedPref, setStoredPref] = useState<PreferredCalendar>("ask");
 
   const payload = useMemo(() => {
-    const location = formatLocation({
+    const location = formatCalendarLocation({
       venue,
       address,
       postal_code: postalCode,
       city,
+      country,
     });
     return {
       title,
@@ -61,7 +64,7 @@ export function EventCalendarDialog({
       location: location ?? undefined,
       description: `Anni Perka Fanclub — ${title}`,
     };
-  }, [title, startAt, venue, address, postalCode, city]);
+  }, [title, startAt, venue, address, postalCode, city, country]);
 
   const googleUrl = useMemo(() => buildGoogleCalendarUrl(payload), [payload]);
   const outlookUrl = useMemo(() => buildOutlookWebUrl(payload), [payload]);

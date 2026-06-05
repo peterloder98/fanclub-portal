@@ -2,8 +2,11 @@ import crypto from "node:crypto";
 
 export type ArtistflowFeedItem = Record<string, unknown>;
 
+export type EventKind = "event" | "tv";
+
 export type NormalizedExternalEvent = {
   external_id: string;
+  kind: EventKind;
   title: string;
   start_at: string | null;
   timezone: string | null;
@@ -12,6 +15,7 @@ export type NormalizedExternalEvent = {
   postal_code: string | null;
   city: string | null;
   country: string | null;
+  broadcaster: string | null;
   ticket_url: string | null;
   published: boolean;
   secret: boolean;
@@ -33,35 +37,76 @@ function isHttpUrl(url: string | null) {
   return /^https?:\/\//i.test(url);
 }
 
+function parseKind(v: unknown): EventKind {
+  const raw = (asString(v) ?? "event").trim().toLowerCase();
+  return raw === "tv" ? "tv" : "event";
+}
+
+function parseCountryCode(item: ArtistflowFeedItem): string {
+  const cc = (asString(item.countryCode) ?? asString(item.country) ?? "").trim().toUpperCase();
+  return (cc || "DE").slice(0, 2);
+}
+
+function resolveLinkField(...candidates: Array<string | null>): string | null {
+  for (const c of candidates) {
+    const v = (c ?? "").trim();
+    if (!v) continue;
+    if (isHttpUrl(v)) return v;
+  }
+  for (const c of candidates) {
+    const v = (c ?? "").trim();
+    if (v) return v;
+  }
+  return null;
+}
+
 export function computeHash(obj: unknown) {
   return crypto.createHash("sha256").update(JSON.stringify(obj)).digest("hex");
 }
 
-export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<NormalizedExternalEvent, "external_id" | "content_hash" | "address_signature"> & {
+export function canGeocodeNormalizedEvent(e: {
+  kind: EventKind;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country: string | null;
+}): boolean {
+  if (e.kind === "tv") return false;
+  if (!(e.city ?? "").trim() || !(e.country ?? "").trim()) return false;
+  return Boolean((e.address ?? "").trim() || (e.postal_code ?? "").trim());
+}
+
+export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<
+  NormalizedExternalEvent,
+  "external_id" | "content_hash" | "address_signature"
+> & {
   raw_external_id: string | null;
   fallback_id_basis: string;
   content_basis: Record<string, unknown>;
   address_signature_basis: string;
 } {
-  const dateSort = asString(item.dateSort) ?? asString(item.start_at);
+  const kind = parseKind(item.kind);
+  const dateSort = asString(item.dateSort) ?? asString(item.start_at) ?? asString(item.date);
   const title = (asString(item.title) ?? "").trim();
   const city = (asString(item.city) ?? "").trim();
   const venue = (asString(item.venue) ?? "").trim() || null;
   const address = (asString(item.address) ?? "").trim() || null;
   const postal_code = (asString(item.postal_code) ?? "").trim() || null;
-  const country = ((asString(item.country) ?? "DE").trim().toUpperCase() || "DE").slice(0, 2);
+  const country = parseCountryCode(item);
   const timezone = (asString(item.timezone) ?? null)?.trim() || null;
   const updated_at = asString(item.updated_at);
+  const broadcaster = (asString(item.broadcaster) ?? "").trim() || null;
 
   const ticketHref = (asString(item.ticketHref) ?? "").trim();
   const ticketText = (asString(item.ticketText) ?? "").trim();
   const ticketUrl = (asString(item.ticketUrl) ?? asString(item.ticket_url) ?? "").trim();
-  let ticket_url: string | null = null;
-  if (isHttpUrl(ticketHref)) ticket_url = ticketHref;
-  else if (isHttpUrl(ticketUrl)) ticket_url = ticketUrl;
-  else if (ticketText) ticket_url = ticketText;
-  else if (ticketHref) ticket_url = ticketHref;
-  else if (ticketUrl) ticket_url = ticketUrl;
+  const infoUrl = (asString(item.infoUrl) ?? "").trim();
+  const infoText = (asString(item.infoText) ?? "").trim();
+
+  const ticket_url =
+    kind === "tv"
+      ? resolveLinkField(infoUrl, ticketHref, ticketUrl, infoText, ticketText)
+      : resolveLinkField(ticketHref, ticketUrl, ticketText);
 
   const published = asBool(item.published) ?? true;
   const secret = asBool(item.secret) ?? false;
@@ -74,9 +119,10 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<Normaliz
       ? `${dateSort}T00:00:00.000Z`
       : dateSort ?? null;
 
-  const fallback_id_basis = `${dateSort ?? ""}|${title}|${city}|${venue ?? ""}`;
+  const fallback_id_basis = `${kind}|${dateSort ?? ""}|${title}|${city}|${venue ?? ""}|${broadcaster ?? ""}`;
 
   const content_basis = {
+    kind,
     title,
     start_at,
     timezone,
@@ -85,18 +131,22 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<Normaliz
     postal_code,
     city,
     country,
+    broadcaster,
     ticket_url,
     published,
     secret,
   };
 
-  const address_signature_basis = `${address ?? ""}|${postal_code ?? ""}|${city}|${country}`.toLowerCase().trim();
+  const address_signature_basis = `${address ?? ""}|${postal_code ?? ""}|${city}|${country}`
+    .toLowerCase()
+    .trim();
 
   return {
     raw_external_id,
     fallback_id_basis,
     content_basis,
     address_signature_basis,
+    kind,
     title,
     start_at,
     timezone,
@@ -105,6 +155,7 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<Normaliz
     postal_code,
     city,
     country,
+    broadcaster,
     ticket_url,
     published,
     secret,
@@ -123,6 +174,7 @@ export function normalizeArtistflowEvent(item: ArtistflowFeedItem): NormalizedEx
   const address_signature = computeHash(base.address_signature_basis);
   return {
     external_id,
+    kind: base.kind,
     title: base.title,
     start_at: base.start_at,
     timezone: base.timezone,
@@ -131,6 +183,7 @@ export function normalizeArtistflowEvent(item: ArtistflowFeedItem): NormalizedEx
     postal_code: base.postal_code,
     city: base.city,
     country: base.country,
+    broadcaster: base.broadcaster,
     ticket_url: base.ticket_url,
     published: base.published,
     secret: base.secret,
@@ -139,4 +192,3 @@ export function normalizeArtistflowEvent(item: ArtistflowFeedItem): NormalizedEx
     address_signature,
   };
 }
-

@@ -50,31 +50,87 @@ export function formatEventAddress(parts: {
   address?: string | null;
   postal_code?: string | null;
   city?: string | null;
+  country?: string | null;
 }): string | null {
   const pc = (parts.postal_code ?? "").trim();
   const city = (parts.city ?? "").trim();
   const address = (parts.address ?? "").trim();
+  const country = normalizeCountryCode(parts.country);
+  const abroad = country !== "DE" ? ` (${country})` : "";
 
-  const cityLine = [pc, city].filter(Boolean).join(" ");
+  const cityPart = [pc, city].filter(Boolean).join(" ");
+  const cityLine = cityPart ? `${cityPart}${abroad}` : "";
+
   if (address && cityLine) return `${address}, ${cityLine}`;
   if (address) return address;
   if (cityLine) return cityLine;
-  if (city) return city;
   return null;
 }
 
-export function formatLocation(parts: {
-  venue?: string | null;
+function normalizeCountryCode(country?: string | null): string {
+  const c = (country ?? "").trim().toUpperCase();
+  return c || "DE";
+}
+
+/** Ort in der Terminliste: nur Stadt, bei Ausland optional „ (CH)“. */
+export function formatEventCity(parts: {
   city?: string | null;
+  country?: string | null;
+}): string | null {
+  const city = (parts.city ?? "").trim();
+  if (!city) return null;
+  const country = normalizeCountryCode(parts.country);
+  if (country !== "DE") return `${city} (${country})`;
+  return city;
+}
+
+/** Location-Name (Stadthalle, Park …) — separat von der Stadt. */
+export function formatVenueName(venue?: string | null): string | null {
+  const v = (venue ?? "").trim();
+  return v || null;
+}
+
+/** TV-Auftritt: Sender-Zeile in der Terminliste. */
+export function formatTvBroadcaster(broadcaster?: string | null): string | null {
+  const b = (broadcaster ?? "").trim();
+  return b || null;
+}
+
+/**
+ * Ort-Zeile in Listen (Events: Stadt; TV: Sender).
+ * Entspricht Artistflow: city allein, nicht venue/postal_code kombinieren.
+ */
+export function formatLocation(parts: {
+  kind?: string | null;
+  city?: string | null;
+  country?: string | null;
+  broadcaster?: string | null;
+  venue?: string | null;
   address?: string | null;
   postal_code?: string | null;
+}): string | null {
+  if (parts.kind === "tv") {
+    const sender = formatTvBroadcaster(parts.broadcaster);
+    return sender ? `TV · ${sender}` : "TV";
+  }
+  return formatEventCity({ city: parts.city, country: parts.country });
+}
+
+/** Kalender-Export: Venue + vollständige Adresse (nicht nur Stadt). */
+export function formatCalendarLocation(parts: {
+  venue?: string | null;
+  address?: string | null;
+  postal_code?: string | null;
+  city?: string | null;
+  country?: string | null;
 }): string | null {
   const addr = formatEventAddress({
     address: parts.address,
     postal_code: parts.postal_code,
     city: parts.city,
+    country: parts.country,
   });
-  const venue = (parts.venue ?? "").trim();
+  const venue = formatVenueName(parts.venue);
   if (venue && addr) return `${venue}, ${addr}`;
   if (venue) return venue;
   return addr;

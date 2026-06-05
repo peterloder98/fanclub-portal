@@ -22,7 +22,7 @@ export async function runEventParticipationReminders(admin: SupabaseClient) {
 
   const { data: events, error: eErr } = await admin
     .from("external_events")
-    .select("id,title,start_at,venue,city,address,postal_code")
+    .select("id,kind,title,start_at,venue,city,country,broadcaster,address,postal_code")
     .eq("is_visible", true)
     .gte("start_at", now.toISOString())
     .lte("start_at", horizon.toISOString());

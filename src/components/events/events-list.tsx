@@ -6,10 +6,13 @@ import { ticketDisplay } from "@/lib/events/ticket";
 
 export type ExternalEventRow = {
   id: string;
+  kind?: string | null;
   title: string;
   start_at: string | null;
   venue: string | null;
   city: string | null;
+  country?: string | null;
+  broadcaster?: string | null;
   address: string | null;
   postal_code?: string | null;
   ticket_url: string | null;

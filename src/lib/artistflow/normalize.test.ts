@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { normalizeArtistflowEvent } from "./normalize";
+import {
+  canGeocodeNormalizedEvent,
+  normalizeArtistflowEvent,
+} from "./normalize";
 
 describe("normalizeArtistflowEvent", () => {
   it("uses event_id when present", () => {
@@ -13,6 +16,7 @@ describe("normalizeArtistflowEvent", () => {
     expect(e.external_id).toBe("jobdate_abc");
     expect(e.ticket_url).toBe("https://example.com");
     expect(e.published).toBe(true);
+    expect(e.kind).toBe("event");
   });
 
   it("uses ticketText when no URL", () => {
@@ -25,6 +29,23 @@ describe("normalizeArtistflowEvent", () => {
       ticketUrl: "",
     });
     expect(e.ticket_url).toBe("Eintritt frei");
+  });
+
+  it("reads countryCode and tv fields", () => {
+    const e = normalizeArtistflowEvent({
+      event_id: "jobdate_tv1",
+      kind: "tv",
+      dateSort: "2026-06-12T20:15:00+02:00",
+      title: "ZDF-Fernsehgarten",
+      broadcaster: "ZDF",
+      infoUrl: "https://www.zdf.de/show",
+      countryCode: "",
+    });
+    expect(e.kind).toBe("tv");
+    expect(e.broadcaster).toBe("ZDF");
+    expect(e.country).toBe("DE");
+    expect(e.ticket_url).toBe("https://www.zdf.de/show");
+    expect(e.start_at).toBe("2026-06-12T20:15:00+02:00");
   });
 
   it("falls back to stable hash when event_id missing", () => {
@@ -45,3 +66,37 @@ describe("normalizeArtistflowEvent", () => {
   });
 });
 
+describe("canGeocodeNormalizedEvent", () => {
+  it("requires address or postal code, not city alone", () => {
+    expect(
+      canGeocodeNormalizedEvent({
+        kind: "event",
+        address: null,
+        postal_code: null,
+        city: "Koblenz",
+        country: "DE",
+      }),
+    ).toBe(false);
+    expect(
+      canGeocodeNormalizedEvent({
+        kind: "event",
+        address: "Rheingoldstraße 1",
+        postal_code: "56068",
+        city: "Koblenz",
+        country: "DE",
+      }),
+    ).toBe(true);
+  });
+
+  it("skips tv entries", () => {
+    expect(
+      canGeocodeNormalizedEvent({
+        kind: "tv",
+        address: "Studio",
+        postal_code: "12345",
+        city: "Mainz",
+        country: "DE",
+      }),
+    ).toBe(false);
+  });
+});

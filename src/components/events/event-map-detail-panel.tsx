@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, MapPin, X } from "lucide-react";
-import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { formatEventStart, formatLocation, formatVenueName } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "./events-map.types";
 
@@ -13,12 +13,8 @@ export function EventMapDetailPanel({
   onClose: () => void;
 }) {
   const { date, time } = formatEventStart(event.start_at);
-  const location = formatLocation({
-    venue: event.venue,
-    address: event.address,
-    postal_code: event.postal_code,
-    city: event.city,
-  });
+  const location = formatLocation(event);
+  const venueName = event.kind === "tv" ? null : formatVenueName(event.venue);
   const ticket = ticketDisplay(event.ticket_url);
 
   return (
@@ -39,6 +35,9 @@ export function EventMapDetailPanel({
             </span>
           </div>
 
+          {venueName ? (
+            <div className="text-xs text-slate-500">{venueName}</div>
+          ) : null}
           {location ? (
             <div className="flex items-start gap-1.5 text-xs text-slate-600">
               <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />

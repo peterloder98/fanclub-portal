@@ -15,7 +15,6 @@ function buildQueries(params: {
   const queries = [
     [address, params.postal_code, city, country].filter(Boolean).join(", "),
     [params.postal_code, city, country].filter(Boolean).join(", "),
-    `${city}, ${country}`,
   ];
   if (/löwenberg/i.test(city) || /löwenberg/i.test(venue)) {
     queries.unshift("Löwenberger Land, Brandenburg, Deutschland");

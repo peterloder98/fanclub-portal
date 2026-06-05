@@ -24,7 +24,7 @@ export default async function EventsPage() {
 
   const { data: events, error } = await supabase
     .from("external_events")
-    .select("id,title,start_at,venue,address,postal_code,city,ticket_url,lat,lng")
+    .select("id,kind,title,start_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false });
 
@@ -105,7 +105,7 @@ export default async function EventsPage() {
     <div className="flex min-h-screen flex-col lg:h-dvh lg:max-h-dvh lg:overflow-hidden">
       <Topbar
         title="Events"
-        subtitle="Alle wichtigen Konzerttermine von Anni"
+        subtitle="Konzerte und TV-Auftritte von Anni"
       />
       <main className="flex flex-col px-4 py-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:px-6">
         {error ? (

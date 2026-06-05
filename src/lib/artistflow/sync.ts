@@ -1,7 +1,11 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { geocodeWithNominatim } from "@/lib/artistflow/geocode";
 import type { ArtistflowFeedItem } from "@/lib/artistflow/normalize";
-import { normalizeArtistflowEvent } from "@/lib/artistflow/normalize";
+import {
+  canGeocodeNormalizedEvent,
+  normalizeArtistflowEvent,
+} from "@/lib/artistflow/normalize";
+import { formatEventCity, formatTvBroadcaster } from "@/lib/events/format";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
@@ -84,6 +88,7 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
           .insert({
             source: "artistflow",
             external_id: e.external_id,
+            kind: e.kind,
             title: e.title,
             start_at: e.start_at,
             timezone: e.timezone,
@@ -92,6 +97,7 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
             postal_code: e.postal_code,
             city: e.city,
             country: e.country,
+            broadcaster: e.broadcaster,
             ticket_url: e.ticket_url,
             published: e.published,
             secret: e.secret,
@@ -112,14 +118,17 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
             month: "2-digit",
             year: "numeric",
           });
-          const location = [e.venue, e.city].filter(Boolean).join(", ");
+          const location =
+            e.kind === "tv"
+              ? formatTvBroadcaster(e.broadcaster)
+              : formatEventCity({ city: e.city, country: e.country });
           const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
             /\/$/,
             "",
           );
           await notifyAllActiveMembers({
             kind: NOTIFICATION_KINDS.eventAvailable,
-            title: "Neues Event",
+            title: e.kind === "tv" ? "Neuer TV-Auftritt" : "Neues Event",
             body: `${e.title} — ${dateLabel}${location ? `, ${location}` : ""}`,
             linkUrl: base ? `${base}/events` : "/events",
             linkLabel: "Zur Eventliste",
@@ -130,6 +139,7 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         const { error } = await admin
           .from("external_events")
           .update({
+            kind: e.kind,
             title: e.title,
             start_at: e.start_at,
             timezone: e.timezone,
@@ -138,6 +148,7 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
             postal_code: e.postal_code,
             city: e.city,
             country: e.country,
+            broadcaster: e.broadcaster,
             ticket_url: e.ticket_url,
             published: e.published,
             secret: e.secret,
@@ -161,8 +172,8 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         await admin.from("external_events").update(patch).eq("id", existing.id);
       }
 
-      // Geocoding: allow city-only feeds (address/PLZ optional)
-      if (e.city && e.country) {
+      // Geocoding: vollständige Adresse (address + PLZ + city + country), nicht city allein
+      if (canGeocodeNormalizedEvent(e)) {
         const { data: cached } = await admin
           .from("geocoding_cache")
           .select("lat,lng,status")
@@ -181,12 +192,11 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
             .eq("source", "artistflow")
             .eq("external_id", e.external_id);
         } else if (!cached) {
-          const addressForGeocode = e.address ?? e.venue ?? null;
           const geocoded = await geocodeWithNominatim({
-            address: addressForGeocode,
+            address: e.address,
             postal_code: e.postal_code,
-            city: e.city,
-            country: e.country,
+            city: (e.city ?? "").trim(),
+            country: (e.country ?? "DE").trim() || "DE",
           });
 
           if (geocoded.status === "success") {

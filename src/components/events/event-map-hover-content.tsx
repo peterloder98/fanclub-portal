@@ -7,12 +7,7 @@ import type { MapEvent } from "./events-map.types";
 /** Kompakte Vorschau beim Hover über einen Pin */
 export function EventMapHoverContent({ event }: { event: MapEvent }) {
   const { date, time } = formatEventStart(event.start_at);
-  const location = formatLocation({
-    venue: event.venue,
-    address: event.address,
-    postal_code: event.postal_code,
-    city: event.city,
-  });
+  const location = formatLocation(event);
   const ticket = ticketDisplay(event.ticket_url);
 
   return (

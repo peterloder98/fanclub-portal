@@ -19,7 +19,7 @@ export default async function DashboardPage() {
 
   const { data: events } = await supabase
     .from("external_events")
-    .select("id,title,start_at,venue,address,postal_code,city,ticket_url,lat,lng")
+    .select("id,kind,title,start_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(50);
@@ -35,6 +35,9 @@ export default async function DashboardPage() {
     address: e.address ?? null,
     postal_code: (e as { postal_code?: string }).postal_code ?? null,
     city: e.city ?? null,
+    country: (e as { country?: string }).country ?? null,
+    broadcaster: (e as { broadcaster?: string }).broadcaster ?? null,
+    kind: (e as { kind?: string }).kind ?? "event",
     lat: e.lat ?? null,
     lng: e.lng ?? null,
   }));

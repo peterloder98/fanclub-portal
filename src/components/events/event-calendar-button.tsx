@@ -8,7 +8,7 @@ import {
   normalizePreferredCalendar,
   type PreferredCalendar,
 } from "@/lib/calendar/preferred-calendar";
-import { formatLocation } from "@/lib/events/format";
+import { formatCalendarLocation } from "@/lib/events/format";
 
 export function EventCalendarButton({
   title,
@@ -17,6 +17,7 @@ export function EventCalendarButton({
   address,
   postalCode,
   city,
+  country,
 }: {
   title: string;
   startAt: string | null;
@@ -24,6 +25,7 @@ export function EventCalendarButton({
   address?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  country?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [preference, setPreference] = useState<PreferredCalendar>("ask");
@@ -44,11 +46,12 @@ export function EventCalendarButton({
 
   const payload = useMemo(() => {
     if (!startAt) return null;
-    const location = formatLocation({
+    const location = formatCalendarLocation({
       venue,
       address,
       postal_code: postalCode,
       city,
+      country,
     });
     return {
       title,
@@ -56,7 +59,7 @@ export function EventCalendarButton({
       location: location ?? undefined,
       description: `Anni Perka Fanclub — ${title}`,
     };
-  }, [title, startAt, venue, address, postalCode, city]);
+  }, [title, startAt, venue, address, postalCode, city, country]);
 
   const handleClick = useCallback(() => {
     if (!payload) return;
@@ -93,6 +96,7 @@ export function EventCalendarButton({
         address={address}
         postalCode={postalCode}
         city={city}
+        country={country}
         preferredCalendar={preference}
         onPreferenceChange={setPreference}
       />
