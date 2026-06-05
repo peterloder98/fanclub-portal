@@ -40,8 +40,15 @@ export async function loadGiveawayListItems(
   });
 
   const countByG = new Map<string, number>();
+  const eligibleCountByG = new Map<string, number>();
   (entries ?? []).forEach((e) => {
     countByG.set(e.giveaway_id, (countByG.get(e.giveaway_id) ?? 0) + 1);
+    if (e.is_eligible) {
+      eligibleCountByG.set(
+        e.giveaway_id,
+        (eligibleCountByG.get(e.giveaway_id) ?? 0) + 1,
+      );
+    }
   });
 
   const myEntryByGiveaway = new Map<string, boolean>();
@@ -64,6 +71,7 @@ export async function loadGiveawayListItems(
     pointsYear: (g as { points_year?: number | null }).points_year ?? null,
     prizeNames: prizeNamesByG.get(g.id) ?? [],
     entryCount: countByG.get(g.id) ?? 0,
+    eligibleCount: eligibleCountByG.get(g.id) ?? 0,
     myEntered: myEntryByGiveaway.has(g.id),
     myEligible: myEntryByGiveaway.get(g.id) ?? null,
   }));

@@ -90,12 +90,7 @@ export async function geocodeAndPersistEvent(
   }
 
   if (cached?.status === "failed") {
-    await admin
-      .from("external_events")
-      .update({ geocoding_status: "failed", geocoded_at: new Date().toISOString() })
-      .eq("source", "artistflow")
-      .eq("external_id", event.external_id);
-    return "failed";
+    await admin.from("geocoding_cache").delete().eq("address_signature", address_signature);
   }
 
   const geocoded = await geocodeWithNominatim({
@@ -154,16 +149,18 @@ export async function geocodeAllPendingArtistflowEvents(
       .from("external_events")
       .select("external_id,kind,address,postal_code,city,country")
       .eq("source", "artistflow")
-      .eq("geocoding_status", "pending")
       .eq("is_visible", true)
       .neq("kind", "tv")
+      .is("lat", null)
+      .not("city", "is", null)
+      .in("geocoding_status", ["pending", "failed"])
       .limit(Math.min(10, maxEvents - geocoded));
 
     if (error || !pending?.length) break;
 
     for (const row of pending) {
       const result = await geocodeAndPersistEvent(admin, row);
-      if (result === "geocoded") geocoded += 1;
+      if (result === "geocoded" || result === "cached") geocoded += 1;
     }
     rounds += 1;
   }

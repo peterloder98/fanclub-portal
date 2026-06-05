@@ -6,7 +6,11 @@ import { Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatBerlinDateTime } from "@/lib/datetime/berlin";
-import { runArtistflowGeocodeBackfill, runArtistflowSync } from "./actions";
+import {
+  runArtistflowGeocodeBackfill,
+  runArtistflowSync,
+  runPortalEventRepair,
+} from "./actions";
 
 export type SyncLogSnapshot = {
   started_at: string;
@@ -68,7 +72,39 @@ export function EventsSyncPanel({
       if (result.ok) {
         setMessage({
           type: "ok",
-          text: `Karten-Pins aktualisiert (${result.geocoded} neu geocodiert${result.relinked ? `, ${result.relinked} verknüpft` : ""}).`,
+          text: `Karten-Pins aktualisiert (${result.geocoded} Pins${result.relinked ? `, ${result.relinked} verknüpft` : ""}).`,
+        });
+      } else {
+        setMessage({ type: "error", text: result.error });
+      }
+      router.refresh();
+    });
+  }
+
+  function runRepair() {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await runPortalEventRepair();
+      if (result.ok) {
+        const parts = [
+          result.groupsMerged
+            ? `${result.groupsMerged} Duplikat-Gruppe(n) zusammengeführt`
+            : null,
+          result.participationsMoved
+            ? `${result.participationsMoved} Teilnahme(n) wiederhergestellt`
+            : null,
+          result.travelNotesMoved
+            ? `${result.travelNotesMoved} Reiseinfo(s) wiederhergestellt`
+            : null,
+          result.pinsRestored + result.geocoded
+            ? `${result.pinsRestored + result.geocoded} Karten-Pin(s) gesetzt`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        setMessage({
+          type: "ok",
+          text: parts || "Reparatur abgeschlossen — keine Änderungen nötig.",
         });
       } else {
         setMessage({ type: "error", text: result.error });
@@ -119,6 +155,14 @@ export function EventsSyncPanel({
               <button
                 type="button"
                 disabled={busy}
+                onClick={runRepair}
+                className="h-10 w-full rounded-xl border border-amber-300 bg-amber-50 text-sm font-semibold text-amber-950 shadow-sm hover:bg-amber-100 disabled:opacity-60"
+              >
+                Teilnehmer & Pins reparieren
+              </button>
+              <button
+                type="button"
+                disabled={busy}
                 onClick={runGeocode}
                 className="h-10 w-full rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-60"
               >
@@ -127,7 +171,8 @@ export function EventsSyncPanel({
             </div>
             <p className="mt-2 text-xs text-slate-500">
               Unveränderte Events werden nicht überschrieben. Teilnahmen und Reiseinfos bleiben
-              erhalten — nur bei Terminänderung werden Teilnehmer zurückgesetzt.
+              erhalten — nur bei Terminänderung werden Teilnehmer zurückgesetzt. Fehlen Daten nach
+              einem Sync, einmal „Teilnehmer & Pins reparieren“ ausführen.
             </p>
             <div className="mt-3 grid gap-2 text-sm text-slate-600">
               <p>

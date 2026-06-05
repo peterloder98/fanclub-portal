@@ -23,6 +23,7 @@ export type GiveawayListItem = {
   isPaused: boolean;
   prizeNames: string[];
   entryCount: number;
+  eligibleCount: number;
   myEntered: boolean;
   /** null = nicht teilgenommen; false = teilgenommen, nicht qualifiziert */
   myEligible: boolean | null;
@@ -155,7 +156,10 @@ export function GiveawayBoard({
                         <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>
                       ) : null}
                       <p className="mt-2 text-xs text-slate-500">
-                        {g.prizeNames.join(" · ")} · {g.entryCount} Teilnehmer
+                        {g.prizeNames.join(" · ")} ·{" "}
+                        {isAdmin
+                          ? `${g.entryCount} Teilnahme${g.entryCount === 1 ? "" : "n"}, ${g.eligibleCount} berechtigt`
+                          : `${g.entryCount} Teilnehmer`}
                         {g.entry_mode === "quiz" ? " · Quiz" : " · Einfach"}
                       </p>
                       {g.myEntered ? (

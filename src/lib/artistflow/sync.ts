@@ -5,16 +5,13 @@ import {
   type NormalizedExternalEvent,
 } from "@/lib/artistflow/normalize";
 import { formatEventCity, formatTvBroadcaster } from "@/lib/events/format";
-import {
-  eventAddressChanged,
-  geocodeAllPendingArtistflowEvents,
-} from "@/lib/artistflow/geocode-event";
+import { eventAddressChanged } from "@/lib/artistflow/geocode-event";
 import { eventStartChanged } from "@/lib/artistflow/legacy-external-id";
 import {
   matchExistingExternalEvent,
   type ExistingExternalEventRow,
 } from "@/lib/artistflow/match-existing-event";
-import { relinkOrphanedPortalEventData } from "@/lib/artistflow/relink-portal-event-data";
+import { repairPortalEventData } from "@/lib/artistflow/repair-portal-events";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -376,11 +373,11 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
       }).catch(console.error);
     }
 
-    const relinked = await relinkOrphanedPortalEventData(admin);
-    result.participations_relinked = relinked.participationsMoved;
-    result.travel_notes_relinked = relinked.travelNotesMoved;
+    const repaired = await repairPortalEventData(admin);
+    result.participations_relinked = repaired.participationsMoved;
+    result.travel_notes_relinked = repaired.travelNotesMoved;
 
-    result.geocoding_queued = await geocodeAllPendingArtistflowEvents(admin);
+    result.geocoding_queued = repaired.geocoded + repaired.pinsRestored;
 
     await patchSyncLog(admin, logId, {
       finished_at: new Date().toISOString(),

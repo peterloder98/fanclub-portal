@@ -1,3 +1,4 @@
+import { BERLIN_TZ } from "@/lib/datetime/berlin";
 import { computeHash } from "@/lib/artistflow/normalize";
 
 /** Fallback-ID vor Einführung von kind/broadcaster im Hash. */
@@ -27,11 +28,12 @@ export function normalizeEventTitle(title: string | null | undefined) {
   return (title ?? "").trim().replace(/\s+/g, " ").toUpperCase();
 }
 
+/** Kalendertag in Europe/Berlin (für Matching von Portal- + Feed-Events). */
 export function eventCalendarDay(startAt: string | null | undefined) {
   if (!startAt) return "";
   const d = new Date(startAt);
   if (Number.isNaN(d.getTime())) return startAt.trim().slice(0, 10);
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleDateString("en-CA", { timeZone: BERLIN_TZ });
 }
 
 export function eventStartChanged(

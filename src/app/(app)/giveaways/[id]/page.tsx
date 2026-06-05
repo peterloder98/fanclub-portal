@@ -79,6 +79,16 @@ export default async function GiveawayDetailPage({
     .select("id", { count: "exact", head: true })
     .eq("giveaway_id", id);
 
+  let eligibleEntryCount: number | null = null;
+  if (isAdmin) {
+    const { count } = await supabase
+      .from("giveaway_entries")
+      .select("id", { count: "exact", head: true })
+      .eq("giveaway_id", id)
+      .eq("is_eligible", true);
+    eligibleEntryCount = count ?? 0;
+  }
+
   const initialQuizResult =
     myEntry && g.entry_mode === "quiz"
       ? await loadQuizReviewForUser(supabase, user.id, id, qIds)
@@ -227,6 +237,8 @@ export default async function GiveawayDetailPage({
           userId={user.id}
           myAvatarUrl={myAvatarUrl}
           hasEntries={(entryCount ?? 0) > 0}
+          entryCount={entryCount ?? 0}
+          eligibleEntryCount={eligibleEntryCount}
           signatures={signatures}
           yearEndAdmin={
             yearEndAdmin && g.points_year ? (

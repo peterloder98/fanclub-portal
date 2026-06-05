@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Heart, MessageCircle, SendHorizontal } from "lucide-react";
+import { ChevronDown, ChevronUp, Heart, MessageCircle, SendHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +53,8 @@ export function GiveawayDetailClient({
   signatures,
   yearEndAdmin,
   hasEntries = false,
+  entryCount = 0,
+  eligibleEntryCount = null,
 }: {
   giveaway: {
     id: string;
@@ -86,8 +88,11 @@ export function GiveawayDetailClient({
   yearEndAdmin?: ReactNode;
   /** Mindestens eine Teilnahme — Quiz-Lösungen im Admin gesperrt. */
   hasEntries?: boolean;
+  entryCount?: number;
+  eligibleEntryCount?: number | null;
 }) {
   const phase = giveawayPhase(giveaway.ends_at, giveaway.status, giveaway.is_paused);
+  const giveawayOver = phase === "ended" || phase === "drawn";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [likes, setLikes] = useState({ count: likeCount, mine: likedByMe });
@@ -102,6 +107,7 @@ export function GiveawayDetailClient({
   const [localStatus, setLocalStatus] = useState(giveaway.status);
   const [signatureId, setSignatureId] = useState(signatures[0]?.id ?? "");
   const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(false);
+  const [answersExpanded, setAnswersExpanded] = useState(!giveawayOver);
 
   const isYearEnd = Boolean(giveaway.is_year_end_lottery);
   const canParticipate =
@@ -271,6 +277,18 @@ export function GiveawayDetailClient({
         </CardHeader>
         <CardContent className="grid gap-4">
           {yearEndAdmin}
+          {isAdmin && !isYearEnd && eligibleEntryCount != null ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800">
+              <span className="font-semibold">Teilnahmen (Admin):</span>{" "}
+              {entryCount ?? 0} gesamt · {eligibleEntryCount} berechtigt
+              {localStatus !== "drawn" ? (
+                <span className="text-slate-600">
+                  {" "}
+                  — für die Auslosung zählen nur berechtigte Teilnehmer
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           {isAdmin && !isYearEnd ? (
             <GiveawayAdminControls
               giveaway={giveaway}
@@ -375,41 +393,71 @@ export function GiveawayDetailClient({
 
           {quizReview && localEntered && giveaway.entry_mode === "quiz" ? (
             <div className="grid gap-2" aria-label="Deine persönliche Teilnahme">
-              <h4 className="text-sm font-semibold text-slate-900">
-                Deine Antworten (Teilnahme — nicht bearbeitbar)
-              </h4>
-              {quizReview.map(({ q, r }) =>
-                r ? (
-                  <div key={q.id} className="rounded-lg border p-2 text-sm">
-                    <p className="font-medium text-slate-800">{q.text}</p>
-                    {q.options.map((o) => {
-                      const chosen = o.id === r.optionId;
-                      const isCorrectOption = o.id === r.correctOptionId;
-                      return (
-                        <div
-                          key={o.id}
-                          className={cn(
-                            "mt-1 rounded-md px-2 py-1",
-                            chosen && r.correct && "bg-emerald-100 text-emerald-900",
-                            chosen && !r.correct && "bg-rose-100 text-rose-900",
-                            !chosen && !r.correct && isCorrectOption && "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200",
-                          )}
-                        >
-                          {o.label}
-                          {chosen ? (r.correct ? " ✓" : " ✗") : null}
-                          {!chosen && !r.correct && isCorrectOption ? " (richtig)" : null}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : null,
-              )}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold text-slate-900">
+                  Deine Antworten
+                  {giveawayOver ? "" : " (Teilnahme — nicht bearbeitbar)"}
+                </h4>
+                {giveawayOver ? (
+                  <button
+                    type="button"
+                    onClick={() => setAnswersExpanded((v) => !v)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    {answersExpanded ? (
+                      <>
+                        Ausblenden <ChevronUp className="h-3.5 w-3.5" aria-hidden />
+                      </>
+                    ) : (
+                      <>
+                        Antworten anzeigen <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+                      </>
+                    )}
+                  </button>
+                ) : null}
+              </div>
+              {giveawayOver && !answersExpanded ? (
+                <p className="text-xs text-slate-500">
+                  Das Gewinnspiel ist beendet — deine Antworten sind nur zur Erinnerung und spielen
+                  bei der Auslosung keine Rolle mehr.
+                </p>
+              ) : null}
+              {(!giveawayOver || answersExpanded) &&
+                quizReview.map(({ q, r }) =>
+                  r ? (
+                    <div key={q.id} className="rounded-lg border p-2 text-sm">
+                      <p className="font-medium text-slate-800">{q.text}</p>
+                      {q.options.map((o) => {
+                        const chosen = o.id === r.optionId;
+                        const isCorrectOption = o.id === r.correctOptionId;
+                        return (
+                          <div
+                            key={o.id}
+                            className={cn(
+                              "mt-1 rounded-md px-2 py-1",
+                              chosen && r.correct && "bg-emerald-100 text-emerald-900",
+                              chosen && !r.correct && "bg-rose-100 text-rose-900",
+                              !chosen &&
+                                !r.correct &&
+                                isCorrectOption &&
+                                "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200",
+                            )}
+                          >
+                            {o.label}
+                            {chosen ? (r.correct ? " ✓" : " ✗") : null}
+                            {!chosen && !r.correct && isCorrectOption ? " (richtig)" : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null,
+                )}
             </div>
           ) : null}
 
           {isAdmin &&
           !isYearEnd &&
-          (phase === "ended" || phase === "drawn") &&
+          phase === "ended" &&
           localStatus !== "drawn" ? (
             <button
               type="button"

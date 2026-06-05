@@ -3,8 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { geocodeAllPendingArtistflowEvents } from "@/lib/artistflow/geocode-event";
-import { relinkOrphanedPortalEventData } from "@/lib/artistflow/relink-portal-event-data";
+import { repairPortalEventData } from "@/lib/artistflow/repair-portal-events";
 import { syncArtistflowEventsFromFeed } from "@/lib/artistflow/sync";
 import type { SyncLogSnapshot } from "./events-sync-panel.client";
 
@@ -64,23 +63,35 @@ export async function runArtistflowGeocodeBackfill(): Promise<
 
   const admin = createSupabaseAdminClient();
   try {
-    await admin
-      .from("external_events")
-      .update({ geocoding_status: "pending" })
-      .eq("source", "artistflow")
-      .neq("kind", "tv")
-      .is("lat", null)
-      .not("city", "is", null)
-      .eq("is_visible", true);
-
-    const relinked = await relinkOrphanedPortalEventData(admin);
-    const geocoded = await geocodeAllPendingArtistflowEvents(admin);
+    const repaired = await repairPortalEventData(admin);
     return {
       ok: true,
-      geocoded,
-      relinked: relinked.participationsMoved + relinked.travelNotesMoved,
+      geocoded: repaired.geocoded + repaired.pinsRestored,
+      relinked: repaired.participationsMoved + repaired.travelNotesMoved,
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "geocode_failed" };
+  }
+}
+
+export async function runPortalEventRepair(): Promise<
+  | {
+      ok: true;
+      groupsMerged: number;
+      participationsMoved: number;
+      travelNotesMoved: number;
+      geocoded: number;
+      pinsRestored: number;
+    }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+
+  const admin = createSupabaseAdminClient();
+  try {
+    const repaired = await repairPortalEventData(admin);
+    return { ok: true, ...repaired };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "repair_failed" };
   }
 }
