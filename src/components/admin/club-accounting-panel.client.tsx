@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,11 +9,30 @@ import {
   deleteClubLedgerEntry,
 } from "@/app/(app)/admin/members/detail-actions";
 import {
+  filterLedgerByPeriod,
   formatEur,
+  ledgerYearOptions,
   LEDGER_CATEGORY_LABELS,
+  sumLedgerRows,
   type ClubLedgerRow,
   type LedgerCategory,
+  type LedgerPeriodMode,
 } from "@/lib/club/ledger";
+
+const MONTHS = [
+  "Januar",
+  "Februar",
+  "März",
+  "April",
+  "Mai",
+  "Juni",
+  "Juli",
+  "August",
+  "September",
+  "Oktober",
+  "November",
+  "Dezember",
+];
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -23,25 +42,44 @@ function formatDE(date: string | null) {
 
 export function ClubAccountingPanel({
   entries,
-  incomeCents,
-  expenseCents,
   ledgerAvailable,
 }: {
   entries: ClubLedgerRow[];
-  incomeCents: number;
-  expenseCents: number;
   ledgerAvailable: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [periodMode, setPeriodMode] = useState<LedgerPeriodMode>("all");
+  const now = new Date();
+  const [filterYear, setFilterYear] = useState(now.getFullYear());
+  const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1);
   const [ledgerType, setLedgerType] = useState<"income" | "expense">("income");
   const [ledgerAmount, setLedgerAmount] = useState("");
   const [ledgerDesc, setLedgerDesc] = useState("");
   const [ledgerCategory, setLedgerCategory] = useState<LedgerCategory>("general");
-  const [ledgerDate, setLedgerDate] = useState(new Date().toISOString().slice(0, 10));
+  const [ledgerDate, setLedgerDate] = useState(now.toISOString().slice(0, 10));
 
+  const yearOptions = useMemo(() => ledgerYearOptions(entries), [entries]);
+
+  const filteredEntries = useMemo(
+    () => filterLedgerByPeriod(entries, periodMode, filterYear, filterMonth),
+    [entries, periodMode, filterYear, filterMonth],
+  );
+
+  const { incomeCents, expenseCents } = useMemo(
+    () => sumLedgerRows(filteredEntries),
+    [filteredEntries],
+  );
   const balance = incomeCents - expenseCents;
+
+  const periodLabel =
+    periodMode === "all"
+      ? "Gesamt"
+      : periodMode === "year"
+        ? `Jahr ${filterYear}`
+        : `${MONTHS[filterMonth - 1]} ${filterYear}`;
 
   function handleAdd() {
     const amount = Number(ledgerAmount.replace(",", "."));
@@ -59,6 +97,7 @@ export function ClubAccountingPanel({
         });
         setLedgerAmount("");
         setLedgerDesc("");
+        setShowAddForm(false);
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Eintrag fehlgeschlagen");
@@ -98,6 +137,56 @@ export function ClubAccountingPanel({
         </div>
       ) : null}
 
+      <Card>
+        <CardContent className="flex flex-wrap items-end gap-3 pt-5">
+          <label className="grid gap-1">
+            <span className="text-xs font-semibold text-slate-600">Zeitraum</span>
+            <select
+              value={periodMode}
+              onChange={(e) => setPeriodMode(e.target.value as LedgerPeriodMode)}
+              className="h-10 rounded-xl border px-3 text-sm"
+            >
+              <option value="all">Gesamt</option>
+              <option value="year">Pro Jahr</option>
+              <option value="month">Pro Monat</option>
+            </select>
+          </label>
+          {periodMode !== "all" ? (
+            <label className="grid gap-1">
+              <span className="text-xs font-semibold text-slate-600">Jahr</span>
+              <select
+                value={filterYear}
+                onChange={(e) => setFilterYear(Number(e.target.value))}
+                className="h-10 rounded-xl border px-3 text-sm"
+              >
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {periodMode === "month" ? (
+            <label className="grid gap-1">
+              <span className="text-xs font-semibold text-slate-600">Monat</span>
+              <select
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(Number(e.target.value))}
+                className="h-10 rounded-xl border px-3 text-sm"
+              >
+                {MONTHS.map((name, i) => (
+                  <option key={name} value={i + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <p className="text-sm text-slate-500">{periodLabel}</p>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-3 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-5">
@@ -124,70 +213,91 @@ export function ClubAccountingPanel({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Einnahme / Ausgabe eintragen (allgemein)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            <select
-              value={ledgerType}
-              onChange={(e) => setLedgerType(e.target.value as "income" | "expense")}
-              className="h-10 rounded-xl border px-3 text-sm"
-            >
-              <option value="income">Einnahme</option>
-              <option value="expense">Ausgabe</option>
-            </select>
-            <select
-              value={ledgerCategory}
-              onChange={(e) => setLedgerCategory(e.target.value as LedgerCategory)}
-              className="h-10 rounded-xl border px-3 text-sm"
-            >
-              {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={ledgerAmount}
-              onChange={(e) => setLedgerAmount(e.target.value)}
-              placeholder="Betrag (€)"
-              className="h-10 rounded-xl border px-3 text-sm"
-            />
-            <input
-              type="date"
-              value={ledgerDate}
-              onChange={(e) => setLedgerDate(e.target.value)}
-              className="h-10 rounded-xl border px-3 text-sm"
-            />
-            <input
-              value={ledgerDesc}
-              onChange={(e) => setLedgerDesc(e.target.value)}
-              placeholder="Beschreibung"
-              className="h-10 rounded-xl border px-3 text-sm sm:col-span-2"
-            />
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Neue Buchung</CardTitle>
+          {!showAddForm ? (
             <button
               type="button"
-              disabled={pending || !ledgerDesc.trim() || !ledgerAmount}
-              onClick={handleAdd}
-              className="h-10 rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
+              onClick={() => setShowAddForm(true)}
+              className="h-9 rounded-lg border bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
-              Speichern
+              Neuen Eintrag anlegen
             </button>
-          </div>
-        </CardContent>
+          ) : null}
+        </CardHeader>
+        {showAddForm ? (
+          <CardContent>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <select
+                value={ledgerType}
+                onChange={(e) => setLedgerType(e.target.value as "income" | "expense")}
+                className="h-10 rounded-xl border px-3 text-sm"
+              >
+                <option value="income">Einnahme</option>
+                <option value="expense">Ausgabe</option>
+              </select>
+              <select
+                value={ledgerCategory}
+                onChange={(e) => setLedgerCategory(e.target.value as LedgerCategory)}
+                className="h-10 rounded-xl border px-3 text-sm"
+              >
+                {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={ledgerAmount}
+                onChange={(e) => setLedgerAmount(e.target.value)}
+                placeholder="Betrag (€)"
+                className="h-10 rounded-xl border px-3 text-sm"
+              />
+              <input
+                type="date"
+                value={ledgerDate}
+                onChange={(e) => setLedgerDate(e.target.value)}
+                className="h-10 rounded-xl border px-3 text-sm"
+              />
+              <input
+                value={ledgerDesc}
+                onChange={(e) => setLedgerDesc(e.target.value)}
+                placeholder="Beschreibung"
+                className="h-10 rounded-xl border px-3 text-sm sm:col-span-2"
+              />
+              <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
+                <button
+                  type="button"
+                  disabled={pending || !ledgerDesc.trim() || !ledgerAmount}
+                  onClick={handleAdd}
+                  className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  Speichern
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setShowAddForm(false)}
+                  className="h-10 rounded-xl border px-4 text-sm font-semibold text-slate-600"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        ) : null}
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Buchungen</CardTitle>
+          <CardTitle>Buchungen ({filteredEntries.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {entries.length === 0 ? (
-            <p className="text-sm text-slate-500">Noch keine Einträge.</p>
+          {filteredEntries.length === 0 ? (
+            <p className="text-sm text-slate-500">Keine Einträge in diesem Zeitraum.</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full min-w-[640px] text-left text-sm">
@@ -203,7 +313,7 @@ export function ClubAccountingPanel({
                   </tr>
                 </thead>
                 <tbody>
-                  {entries.map((e) => (
+                  {filteredEntries.map((e) => (
                     <tr key={e.id} className="border-b">
                       <td className="px-3 py-2">{formatDE(e.entry_date)}</td>
                       <td className="px-3 py-2">

@@ -27,6 +27,7 @@ export function MemberActivityTimeline({
   const [rows, setRows] = useState<MemberActivityRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [showAddForm, setShowAddForm] = useState(false);
   const [noteType, setNoteType] = useState<"payment_received" | "warning_issued" | "note">(
     "payment_received",
   );
@@ -64,6 +65,7 @@ export function MemberActivityTimeline({
         });
         setNoteTitle("");
         setNoteDetails("");
+        setShowAddForm(false);
         reload();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Eintrag fehlgeschlagen");
@@ -75,7 +77,7 @@ export function MemberActivityTimeline({
     <div className="rounded-xl border bg-slate-50/80 p-4">
       <h4 className="text-sm font-semibold text-slate-900">Historie</h4>
       <p className="mt-0.5 text-xs text-slate-600">
-        Aufnahme, E-Mails, Zahlungen, Verwarnungen und Änderungen (erweiterbar).
+        Aufnahme, E-Mails, Zahlungen, Verwarnungen und Änderungen.
       </p>
 
       {error ? (
@@ -83,7 +85,7 @@ export function MemberActivityTimeline({
       ) : rows.length === 0 ? (
         <p className="mt-3 text-xs text-slate-500">Noch keine Einträge.</p>
       ) : (
-        <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto">
+        <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1">
           {rows.map((r) => (
             <li
               key={r.id}
@@ -120,41 +122,65 @@ export function MemberActivityTimeline({
       )}
 
       <div className="mt-4 border-t pt-3">
-        <p className="text-xs font-semibold text-slate-700">Eintrag hinzufügen</p>
-        <div className="mt-2 grid gap-2">
-          <select
-            value={noteType}
-            onChange={(e) =>
-              setNoteType(e.target.value as "payment_received" | "warning_issued" | "note")
-            }
-            className="h-9 rounded-lg border px-2 text-xs"
-          >
-            <option value="payment_received">Beitrag eingegangen</option>
-            <option value="warning_issued">Verwarnung</option>
-            <option value="note">Sonstige Notiz</option>
-          </select>
-          <input
-            value={noteTitle}
-            onChange={(e) => setNoteTitle(e.target.value)}
-            placeholder="Kurztitel, z. B. Beitrag 2026 eingegangen"
-            className="h-9 rounded-lg border px-2 text-xs"
-          />
-          <textarea
-            value={noteDetails}
-            onChange={(e) => setNoteDetails(e.target.value)}
-            placeholder="Details (optional)"
-            rows={2}
-            className="rounded-lg border px-2 py-1 text-xs"
-          />
+        {!showAddForm ? (
           <button
             type="button"
-            disabled={pending || !noteTitle.trim()}
-            onClick={addNote}
-            className="h-9 rounded-lg bg-slate-800 text-xs font-semibold text-white disabled:opacity-50"
+            onClick={() => setShowAddForm(true)}
+            className="h-9 rounded-lg border bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
           >
-            Speichern
+            Neuen Eintrag anlegen
           </button>
-        </div>
+        ) : (
+          <div className="grid gap-2">
+            <p className="text-xs font-semibold text-slate-700">Neuer Historie-Eintrag</p>
+            <select
+              value={noteType}
+              onChange={(e) =>
+                setNoteType(e.target.value as "payment_received" | "warning_issued" | "note")
+              }
+              className="h-9 rounded-lg border px-2 text-xs"
+            >
+              <option value="payment_received">Beitrag eingegangen</option>
+              <option value="warning_issued">Verwarnung</option>
+              <option value="note">Sonstige Notiz</option>
+            </select>
+            <input
+              value={noteTitle}
+              onChange={(e) => setNoteTitle(e.target.value)}
+              placeholder="Kurztitel, z. B. Beitrag 2026 eingegangen"
+              className="h-9 rounded-lg border px-2 text-xs"
+            />
+            <textarea
+              value={noteDetails}
+              onChange={(e) => setNoteDetails(e.target.value)}
+              placeholder="Details (optional)"
+              rows={2}
+              className="rounded-lg border px-2 py-1 text-xs"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={pending || !noteTitle.trim()}
+                onClick={addNote}
+                className="h-9 rounded-lg bg-slate-800 px-3 text-xs font-semibold text-white disabled:opacity-50"
+              >
+                Speichern
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => {
+                  setShowAddForm(false);
+                  setNoteTitle("");
+                  setNoteDetails("");
+                }}
+                className="h-9 rounded-lg border px-3 text-xs font-semibold text-slate-600"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

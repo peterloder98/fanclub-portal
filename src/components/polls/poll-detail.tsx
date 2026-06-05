@@ -420,7 +420,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
           <div className="grid gap-2">
             {comments.map((c) => (
               <div key={c.id} className="rounded-xl border bg-slate-50 px-3 py-2">
-                <div className="flex items-center gap-2 text-xs text-slate-600">
+                <div className="flex items-center gap-2 pr-2 text-xs text-slate-600">
                   <HoverEnlargeAvatar
                     name={c.authorName}
                     avatarUrl={c.authorAvatarUrl}
@@ -436,13 +436,15 @@ export function PollDetail({ pollId }: { pollId: string }) {
                     })}
                   </span>
                   {isAdmin ? (
-                    <CommentWarningButton
-                      commentType="poll"
-                      commentId={c.id}
-                      onRemoved={() =>
-                        setComments((list) => list.filter((x) => x.id !== c.id))
-                      }
-                    />
+                    <div className="ml-auto shrink-0">
+                      <CommentWarningButton
+                        commentType="poll"
+                        commentId={c.id}
+                        onRemoved={() =>
+                          setComments((list) => list.filter((x) => x.id !== c.id))
+                        }
+                      />
+                    </div>
                   ) : null}
                 </div>
                 <div className="mt-1 text-sm text-slate-800">{c.body}</div>

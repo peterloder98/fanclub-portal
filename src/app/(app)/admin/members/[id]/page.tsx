@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listClubLedger } from "@/lib/club/ledger";
 import { redirect } from "next/navigation";
-import Link from "next/link";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 
 export const dynamic = "force-dynamic";
 
@@ -141,12 +141,8 @@ export default async function AdminMemberDetailPage({
         subtitle={`${profile.first_name} ${profile.last_name}${profile.membership_number ? ` · Nr. ${profile.membership_number}` : ""}`}
       />
       <main className="px-4 py-6 lg:px-8">
-        <div className="mb-4">
-          <Link href="/admin/members" className="text-sm font-medium text-blue-600 hover:underline">
-            ← Zurück zur Liste
-          </Link>
-        </div>
-
+        <AdminBackLink href="/admin/members" label="← Mitgliederliste" />
+        <div className="mt-4">
         {wErr && /member_warnings|does not exist/i.test(wErr.message) ? (
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Verwarnungs-Tabelle fehlt. Bitte{" "}
@@ -161,6 +157,7 @@ export default async function AdminMemberDetailPage({
           ledgerEntries={ledgerEntries}
           ledgerAvailable={ledgerAvailable}
         />
+        </div>
       </main>
     </div>
   );

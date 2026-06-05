@@ -536,17 +536,19 @@ export function GiveawayDetailClient({
                     className="shrink-0"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 pr-2">
                       <span className="text-xs font-semibold">{c.authorName}</span>
                       <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>
                       {isAdmin ? (
-                        <CommentWarningButton
-                          commentType="giveaway"
-                          commentId={c.id}
-                          onRemoved={() =>
-                            setCommentList((list) => list.filter((x) => x.id !== c.id))
-                          }
-                        />
+                        <div className="ml-auto shrink-0">
+                          <CommentWarningButton
+                            commentType="giveaway"
+                            commentId={c.id}
+                            onRemoved={() =>
+                              setCommentList((list) => list.filter((x) => x.id !== c.id))
+                            }
+                          />
+                        </div>
                       ) : null}
                     </div>
                     <p className="text-slate-700">{c.body}</p>

@@ -1,3 +1,4 @@
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import {
@@ -22,10 +23,13 @@ export default async function AdminMemberNotifySettingsPage() {
         subtitle="E-Mails bei neuen Gewinnspielen und Umfragen (optional)"
       />
       <main className="px-4 py-6 lg:px-8">
+        <AdminBackLink />
+        <div className="mt-4">
         <MemberNotifySettingsClient
           initialGiveaway={notifyNewGiveaway}
           initialPoll={notifyNewPoll}
         />
+        </div>
       </main>
     </div>
   );

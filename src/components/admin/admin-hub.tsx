@@ -74,8 +74,8 @@ const SECTIONS: AdminHubSection[] = [
       },
       {
         href: "/admin/settings/email-templates",
-        title: "E-Mail-Vorlagen",
-        description: "Betreff und Text für System- und Club-Mails.",
+        title: "E-Mail & Geburtstagsgrüße",
+        description: "System-Mails, Geburtstagspost-Vorlagen, Platzhalter.",
         icon: Mails,
         iconClassName: "from-cyan-600 to-teal-600",
       },
@@ -114,13 +114,6 @@ const SECTIONS: AdminHubSection[] = [
     title: "Events",
     subtitle: "Termine aus Artistflow und Karte.",
     items: [
-      {
-        href: "/admin/birthday-posts",
-        title: "Geburtstagsposts",
-        description: "5 Textvorlagen, Cron 08:00, Anheften bis 23:59.",
-        icon: FileText,
-        iconClassName: "from-pink-500 to-rose-600",
-      },
       {
         href: "/admin/events-sync",
         title: "Artistflow Sync",

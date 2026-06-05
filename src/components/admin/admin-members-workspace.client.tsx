@@ -495,7 +495,6 @@ export function AdminMembersWorkspace({
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
-                    <th className="w-10 px-3 py-2" />
                     <th className="px-3 py-2">
                       <SortBtn
                         label="Mitgliedsnr."
@@ -561,7 +560,6 @@ export function AdminMembersWorkspace({
                       onClick={() => router.push(`/admin/members/${m.id}`)}
                       className="cursor-pointer border-b transition hover:bg-slate-50"
                     >
-                      <td className="px-3 py-2 text-slate-400">→</td>
                       <td className="px-3 py-2 tabular-nums font-medium text-slate-900">
                         {m.membership_number ?? "—"}
                       </td>

@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../../actions";
 
@@ -67,17 +68,7 @@ export default async function AdminMemberEditPage({
     <div className="min-h-screen">
       <Topbar title="Mitglied bearbeiten" subtitle={`${profile.first_name} ${profile.last_name}`} />
       <main className="px-4 py-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap gap-3">
-          <Link href="/admin/members" className="text-sm font-medium text-blue-600 hover:underline">
-            ← Zurück zur Liste
-          </Link>
-          <Link
-            href={`/admin/members/${id}`}
-            className="text-sm font-medium text-slate-600 hover:underline"
-          >
-            Ansicht (ohne Bearbeitung)
-          </Link>
-        </div>
+        <AdminBackLink href={`/admin/members/${id}`} label="← Mitgliedsdatensatz" />
 
         <div className="grid gap-4 xl:grid-cols-2">
           <Card>

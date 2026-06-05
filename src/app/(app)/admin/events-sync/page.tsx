@@ -1,4 +1,5 @@
 import { Topbar } from "@/components/app-shell/topbar";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -32,10 +33,7 @@ export default async function AdminEventsSyncPage() {
         subtitle="termine.json → external_events inkl. Geocoding"
       />
       <main className="px-4 py-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge variant="brand">Admin</Badge>
-          <Badge variant="neutral">Events</Badge>
-        </div>
+        <AdminBackLink />
 
         <div className="grid gap-4 xl:grid-cols-2">
           <Card>

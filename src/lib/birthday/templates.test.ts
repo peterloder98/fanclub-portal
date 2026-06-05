@@ -13,8 +13,8 @@ describe("birthdayPostBody", () => {
   it("picks stable different templates per user", () => {
     const a = birthdayPostBody("A", "w", "id-1", "2026-06-04");
     const b = birthdayPostBody("B", "w", "id-2", "2026-06-04");
-    expect(birthdayTemplateIndex("id-1", "2026-06-04")).not.toBe(
-      birthdayTemplateIndex("id-2", "2026-06-04"),
+    expect(birthdayTemplateIndex("id-1", "2026-06-04", 5)).not.toBe(
+      birthdayTemplateIndex("id-2", "2026-06-04", 5),
     );
     expect(a.body).not.toEqual(b.body);
   });

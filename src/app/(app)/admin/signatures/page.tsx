@@ -1,4 +1,5 @@
 import { Topbar } from "@/components/app-shell/topbar";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AdminSignatureSettings } from "@/components/admin/admin-signature-settings";
 import { ClubSignatureSettings } from "@/components/admin/club-signature-settings";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +25,8 @@ export default async function AdminSignaturesPage() {
         subtitle="Fanclub-Signatur und deine persönliche Unterschrift für E-Mails."
       />
       <main className="px-4 py-6 lg:px-8">
-        <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-2 lg:items-start">
+        <AdminBackLink />
+        <div className="mx-auto mt-4 grid max-w-6xl gap-6 lg:grid-cols-2 lg:items-start">
           <section className="rounded-2xl border bg-white p-5 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900">Fanclub (allgemein)</h2>
             <div className="mt-4">

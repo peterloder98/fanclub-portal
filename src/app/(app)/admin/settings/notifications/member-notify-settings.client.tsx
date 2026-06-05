@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   updateMemberNotifySettingsAction,
@@ -36,10 +35,6 @@ export function MemberNotifySettingsClient({
 
   return (
     <div className="mx-auto max-w-2xl grid gap-4">
-      <Link href="/admin" className="text-sm font-medium text-blue-600 hover:underline">
-        ← Admin
-      </Link>
-
       <Card>
         <CardHeader>
           <CardTitle>Mitglieder-Benachrichtigungen</CardTitle>

@@ -1,5 +1,5 @@
 import { Topbar } from "@/components/app-shell/topbar";
-import { Badge } from "@/components/ui/badge";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CreateMemberSection } from "@/components/admin/create-member-section";
@@ -157,11 +157,9 @@ export default async function AdminMembersPage({
         subtitle="Admin: Mitglieder anlegen, aktivieren/deaktivieren, Einladungen."
       />
       <main className="px-4 py-6 lg:px-8">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Badge variant="brand">Admin</Badge>
-          <Badge variant="neutral">Mitgliederliste</Badge>
-        </div>
+        <AdminBackLink />
 
+        <div className="mt-4">
         {invite ? (
           <Card className="mb-4">
             <CardHeader>
@@ -183,6 +181,7 @@ export default async function AdminMembersPage({
           membersError={membersError}
           applicationsError={applicationsError}
         />
+        </div>
       </main>
     </div>
   );

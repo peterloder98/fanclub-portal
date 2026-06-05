@@ -33,6 +33,42 @@ export function formatEur(cents: number) {
   return `${(cents / 100).toFixed(2).replace(".", ",")} €`;
 }
 
+export type LedgerPeriodMode = "all" | "year" | "month";
+
+export function sumLedgerRows(rows: Pick<ClubLedgerRow, "entry_type" | "amount_cents">[]) {
+  let incomeCents = 0;
+  let expenseCents = 0;
+  for (const r of rows) {
+    if (r.entry_type === "income") incomeCents += r.amount_cents;
+    else expenseCents += r.amount_cents;
+  }
+  return { incomeCents, expenseCents };
+}
+
+export function filterLedgerByPeriod(
+  rows: ClubLedgerRow[],
+  mode: LedgerPeriodMode,
+  year: number,
+  month: number,
+): ClubLedgerRow[] {
+  if (mode === "all") return rows;
+  return rows.filter((r) => {
+    const [y, m] = r.entry_date.split("-").map(Number);
+    if (mode === "year") return y === year;
+    return y === year && m === month;
+  });
+}
+
+export function ledgerYearOptions(rows: ClubLedgerRow[]): number[] {
+  const years = new Set<number>();
+  for (const r of rows) {
+    const y = Number(r.entry_date.slice(0, 4));
+    if (!Number.isNaN(y)) years.add(y);
+  }
+  if (!years.size) years.add(new Date().getFullYear());
+  return Array.from(years).sort((a, b) => b - a);
+}
+
 export async function listClubLedger(opts?: {
   memberId?: string | null;
   limit?: number;

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -49,12 +49,7 @@ export default async function AdminAuditPage() {
     <div className="min-h-screen">
       <Topbar title="Admin-Audit" subtitle="Wer hat was im Vorstand-Bereich geändert?" />
       <main className="mx-auto w-full max-w-4xl px-4 py-6 lg:px-8">
-        <Link
-          href="/admin"
-          className="mb-4 inline-flex text-sm font-medium text-blue-700 hover:underline"
-        >
-          ← Admin-Übersicht
-        </Link>
+        <AdminBackLink />
         <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
           <table className="w-full text-left text-sm">
             <thead className="border-b bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">

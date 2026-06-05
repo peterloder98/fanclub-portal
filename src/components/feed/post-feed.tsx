@@ -1372,7 +1372,7 @@ export function PostFeed({
               <div
                 className={cn(
                   "mt-2 space-y-2 border-t border-slate-100 pt-2",
-                  post.comments.length > 4 ? "max-h-40 overflow-y-auto pr-0.5" : "",
+                  post.comments.length > 4 ? "max-h-40 overflow-y-auto pr-3" : "",
                 )}
               >
                 {[...post.comments]
@@ -1400,27 +1400,7 @@ export function PostFeed({
                               {c.author}
                             </span>
                             <span className="text-[10px] text-slate-400">{c.createdAtLabel}</span>
-                            <div className="ml-auto flex items-center gap-0.5">
-                              {canWarn ? (
-                                <CommentWarningButton
-                                  commentType="post"
-                                  commentId={c.id}
-                                  onRemoved={() =>
-                                    setPosts((prev) =>
-                                      prev.map((p) =>
-                                        p.id === post.id
-                                          ? {
-                                              ...p,
-                                              comments: p.comments.filter(
-                                                (x) => x.id !== c.id,
-                                              ),
-                                            }
-                                          : p,
-                                      ),
-                                    )
-                                  }
-                                />
-                              ) : null}
+                            <div className="ml-auto flex shrink-0 items-center gap-0.5 pr-1">
                               {canEdit ? (
                                 <button
                                   type="button"
@@ -1447,6 +1427,26 @@ export function PostFeed({
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </button>
+                              ) : null}
+                              {canWarn ? (
+                                <CommentWarningButton
+                                  commentType="post"
+                                  commentId={c.id}
+                                  onRemoved={() =>
+                                    setPosts((prev) =>
+                                      prev.map((p) =>
+                                        p.id === post.id
+                                          ? {
+                                              ...p,
+                                              comments: p.comments.filter(
+                                                (x) => x.id !== c.id,
+                                              ),
+                                            }
+                                          : p,
+                                      ),
+                                    )
+                                  }
+                                />
                               ) : null}
                             </div>
                           </div>

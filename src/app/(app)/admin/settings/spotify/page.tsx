@@ -1,5 +1,5 @@
 import { Topbar } from "@/components/app-shell/topbar";
-import Link from "next/link";
+import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -13,11 +13,8 @@ export default async function AdminSpotifySettingsPage() {
         subtitle="Anleitung im Fanclub-Portal — nicht im Spotify-Dashboard"
       />
       <main className="px-4 py-6 lg:px-8">
-        <Link href="/admin" className="mb-4 inline-block text-sm font-medium text-blue-600 hover:underline">
-          ← Admin
-        </Link>
-
-        <div className="grid max-w-2xl gap-4">
+        <AdminBackLink />
+        <div className="mt-4 grid max-w-2xl gap-4">
           <Card className="border-blue-200 bg-blue-50/40">
             <CardHeader>
               <CardTitle className="text-base text-blue-950">Zwei verschiedene Orte</CardTitle>

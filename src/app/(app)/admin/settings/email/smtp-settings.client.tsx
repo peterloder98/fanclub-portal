@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,12 +61,6 @@ export function SmtpSettingsClient() {
 
   return (
     <div className="grid gap-4">
-      <Link
-        href="/admin/settings/email-templates"
-        className="text-sm font-medium text-blue-600 hover:underline"
-      >
-        E-Mail-Vorlagen bearbeiten →
-      </Link>
       {message ? (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
           {message}

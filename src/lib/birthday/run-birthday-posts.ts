@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { birthdayPostBody } from "@/lib/birthday/templates";
+import { birthdayPostBodyAsync } from "@/lib/birthday/templates";
 
 export function berlinTodayMd() {
   const parts = new Intl.DateTimeFormat("de-DE", {
@@ -51,7 +51,7 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
       .limit(1);
     if (existing?.length) continue;
 
-    const { title, body } = birthdayPostBody(
+    const { title, body } = await birthdayPostBodyAsync(
       p.first_name ?? "Fan",
       p.gender,
       p.id,

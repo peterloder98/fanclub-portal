@@ -129,6 +129,7 @@ export function MemberDetailPanel({
   const [ledgerDesc, setLedgerDesc] = useState("");
   const [ledgerCategory, setLedgerCategory] = useState<LedgerCategory>("membership");
   const [ledgerDate, setLedgerDate] = useState(new Date().toISOString().slice(0, 10));
+  const [showLedgerForm, setShowLedgerForm] = useState(false);
 
   const fullName = `${member.first_name} ${member.last_name}`;
   const feeEur = member.membership?.fee_cents
@@ -209,6 +210,7 @@ export function MemberDetailPanel({
         });
         setLedgerAmount("");
         setLedgerDesc("");
+        setShowLedgerForm(false);
         router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "Eintrag fehlgeschlagen");
@@ -416,59 +418,79 @@ export function MemberDetailPanel({
                 <p className="mb-3 text-sm text-slate-500">Noch keine Zahlungen eingetragen.</p>
               )}
 
-              <div className="rounded-xl border bg-slate-50/80 p-3">
-                <p className="text-xs font-semibold text-slate-700">Einnahme / Ausgabe eintragen</p>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  <select
-                    value={ledgerType}
-                    onChange={(e) => setLedgerType(e.target.value as "income" | "expense")}
-                    className="h-9 rounded-lg border px-2 text-xs"
-                  >
-                    <option value="income">Einnahme</option>
-                    <option value="expense">Ausgabe</option>
-                  </select>
-                  <select
-                    value={ledgerCategory}
-                    onChange={(e) => setLedgerCategory(e.target.value as LedgerCategory)}
-                    className="h-9 rounded-lg border px-2 text-xs"
-                  >
-                    {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={ledgerAmount}
-                    onChange={(e) => setLedgerAmount(e.target.value)}
-                    placeholder="Betrag (€)"
-                    className="h-9 rounded-lg border px-2 text-xs"
-                  />
-                  <input
-                    type="date"
-                    value={ledgerDate}
-                    onChange={(e) => setLedgerDate(e.target.value)}
-                    className="h-9 rounded-lg border px-2 text-xs"
-                  />
-                  <input
-                    value={ledgerDesc}
-                    onChange={(e) => setLedgerDesc(e.target.value)}
-                    placeholder="Beschreibung, z. B. Beitrag 2026"
-                    className="h-9 rounded-lg border px-2 text-xs sm:col-span-2"
-                  />
-                  <button
-                    type="button"
-                    disabled={pending || !ledgerDesc.trim() || !ledgerAmount}
-                    onClick={handleAddLedger}
-                    className="h-9 rounded-lg bg-slate-800 text-xs font-semibold text-white disabled:opacity-50 sm:col-span-2"
-                  >
-                    Speichern
-                  </button>
+              {!showLedgerForm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowLedgerForm(true)}
+                  className="h-9 rounded-lg border bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Neuen Eintrag anlegen
+                </button>
+              ) : (
+                <div className="rounded-xl border bg-slate-50/80 p-3">
+                  <p className="text-xs font-semibold text-slate-700">Einnahme / Ausgabe eintragen</p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                    <select
+                      value={ledgerType}
+                      onChange={(e) => setLedgerType(e.target.value as "income" | "expense")}
+                      className="h-9 rounded-lg border px-2 text-xs"
+                    >
+                      <option value="income">Einnahme</option>
+                      <option value="expense">Ausgabe</option>
+                    </select>
+                    <select
+                      value={ledgerCategory}
+                      onChange={(e) => setLedgerCategory(e.target.value as LedgerCategory)}
+                      className="h-9 rounded-lg border px-2 text-xs"
+                    >
+                      {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {v}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={ledgerAmount}
+                      onChange={(e) => setLedgerAmount(e.target.value)}
+                      placeholder="Betrag (€)"
+                      className="h-9 rounded-lg border px-2 text-xs"
+                    />
+                    <input
+                      type="date"
+                      value={ledgerDate}
+                      onChange={(e) => setLedgerDate(e.target.value)}
+                      className="h-9 rounded-lg border px-2 text-xs"
+                    />
+                    <input
+                      value={ledgerDesc}
+                      onChange={(e) => setLedgerDesc(e.target.value)}
+                      placeholder="Beschreibung, z. B. Beitrag 2026"
+                      className="h-9 rounded-lg border px-2 text-xs sm:col-span-2"
+                    />
+                    <div className="flex gap-2 sm:col-span-2">
+                      <button
+                        type="button"
+                        disabled={pending || !ledgerDesc.trim() || !ledgerAmount}
+                        onClick={handleAddLedger}
+                        className="h-9 rounded-lg bg-slate-800 px-3 text-xs font-semibold text-white disabled:opacity-50"
+                      >
+                        Speichern
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => setShowLedgerForm(false)}
+                        className="h-9 rounded-lg border px-3 text-xs font-semibold text-slate-600"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </CardContent>
