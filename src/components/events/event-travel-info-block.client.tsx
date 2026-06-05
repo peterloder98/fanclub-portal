@@ -155,15 +155,9 @@ export function EventTravelInfoBlock({
               badge={
                 travel.hotels.length === 1 || i === closestHotel ? "Nächstgelegenes Hotel" : undefined
               }
-              showLink
               originAddress={originAddress}
             />
           ))}
-          {travel.notes ? (
-            <p className="mt-1 whitespace-pre-wrap border-t border-slate-200/60 pt-1.5 text-[11px] text-slate-600">
-              {travel.notes}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </div>

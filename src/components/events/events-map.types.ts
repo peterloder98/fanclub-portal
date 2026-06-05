@@ -1,3 +1,5 @@
+import type { UserListEntry } from "@/components/ui/user-list-popover";
+
 export type MapEvent = {
   id: string;
   kind?: string | null;
@@ -12,4 +14,12 @@ export type MapEvent = {
   broadcaster?: string | null;
   lat: number | null;
   lng: number | null;
+};
+
+export type EventListRow = MapEvent;
+
+export type EventParticipationMeta = {
+  count: number;
+  joined: boolean;
+  attendees: UserListEntry[];
 };

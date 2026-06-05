@@ -46,6 +46,22 @@ export function formatEventStart(startAt: string | null) {
   };
 }
 
+const listDateFmt = new Intl.DateTimeFormat("de-DE", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
+/** Kompakt für Terminliste (wie Homepage): 09.06.2026 · 10:00 Uhr */
+export function formatEventListDate(startAt: string | null): string {
+  if (!startAt) return "Datum folgt";
+  const d = new Date(startAt);
+  if (Number.isNaN(d.getTime())) return "Datum folgt";
+  const date = listDateFmt.format(d);
+  const time = hasEventStartTime(startAt) ? timeFmt.format(d) : null;
+  return time ? `${date} · ${time} Uhr` : date;
+}
+
 export function formatEventAddress(parts: {
   address?: string | null;
   postal_code?: string | null;
