@@ -16,6 +16,8 @@ import {
   sendPaymentReminderEmail,
 } from "@/app/(app)/admin/members/applications/actions";
 import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
+import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
+import type { ContributionStatus } from "@/lib/club/membership-contribution";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
@@ -30,6 +32,8 @@ export type AdminMemberRow = {
   joined_at: string | null;
   warning_count: number;
   membership_status: string | null;
+  contribution_status: ContributionStatus | null;
+  contribution_open_cents: number | null;
   email: string | null;
 };
 
@@ -51,7 +55,8 @@ type MemberSortKey =
   | "birthdate"
   | "joined_at"
   | "warning_count"
-  | "membership_status";
+  | "membership_status"
+  | "contribution_status";
 type AppSortKey = "created_at" | "last_name" | "email" | "status";
 
 function formatDE(date: string | null) {
@@ -199,6 +204,8 @@ export function AdminMembersWorkspace({
             return String(r.warning_count);
           case "membership_status":
             return r.membership_status ?? "";
+          case "contribution_status":
+            return r.contribution_status ?? "";
         }
       };
       return compareStr(pick(a), pick(b)) * dir;
@@ -551,6 +558,14 @@ export function AdminMembersWorkspace({
                         onClick={() => toggleMemberSort("membership_status")}
                       />
                     </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Beitrag"
+                        active={memberSort.key === "contribution_status"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("contribution_status")}
+                      />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -583,6 +598,13 @@ export function AdminMembersWorkspace({
                           >
                             {membershipStatusLabel(m.membership_status)}
                           </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {m.contribution_status ? (
+                          <ContributionStatusBadge status={m.contribution_status} compact />
                         ) : (
                           "—"
                         )}

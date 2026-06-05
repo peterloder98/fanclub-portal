@@ -1,0 +1,301 @@
+"use client";
+
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatEur } from "@/lib/club/ledger";
+import {
+  DocumentUploadField,
+  uploadClubDocument,
+} from "@/components/ui/document-upload-field";
+import {
+  deleteMerchandiseProductAction,
+  listMerchandiseProductsAction,
+  saveMerchandiseProductAction,
+  type MerchandiseProductRow,
+  type MerchandiseVariantInput,
+} from "@/app/(app)/admin/merchandise/actions";
+
+const SIZE_PRESETS = ["S", "M", "L", "XL", "XXL"];
+
+export function MerchandisePanel() {
+  const router = useRouter();
+  const [products, setProducts] = useState<MerchandiseProductRow[]>([]);
+  const [tableMissing, setTableMissing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [salePrice, setSalePrice] = useState("");
+  const [purchaseTotal, setPurchaseTotal] = useState("");
+  const [hasSizes, setHasSizes] = useState(false);
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [variants, setVariants] = useState<MerchandiseVariantInput[]>([
+    { size_label: null, qty_purchased: 0, qty_sold: 0, qty_gifted: 0 },
+  ]);
+
+  async function reload() {
+    setLoading(true);
+    try {
+      const res = await listMerchandiseProductsAction();
+      setTableMissing(res.tableMissing);
+      setProducts(res.products);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Laden fehlgeschlagen");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  function resetForm() {
+    setEditId(null);
+    setName("");
+    setDescription("");
+    setSalePrice("");
+    setPurchaseTotal("");
+    setHasSizes(false);
+    setImagePath(null);
+    setImagePreviewUrl(null);
+    setVariants([{ size_label: null, qty_purchased: 0, qty_sold: 0, qty_gifted: 0 }]);
+    setShowForm(false);
+  }
+
+  function openEdit(p: MerchandiseProductRow) {
+    setEditId(p.id);
+    setName(p.name);
+    setDescription(p.description ?? "");
+    setSalePrice((p.sale_price_cents / 100).toFixed(2));
+    setPurchaseTotal(
+      p.purchase_total_cents != null ? (p.purchase_total_cents / 100).toFixed(2) : "",
+    );
+    setHasSizes(p.has_sizes);
+    setImagePath(p.image_path);
+    setImagePreviewUrl(p.image_url);
+    setVariants(
+      p.variants.length
+        ? p.variants.map((v) => ({
+            size_label: v.size_label,
+            qty_purchased: v.qty_purchased,
+            qty_sold: v.qty_sold,
+            qty_gifted: v.qty_gifted,
+          }))
+        : [{ size_label: null, qty_purchased: 0, qty_sold: 0, qty_gifted: 0 }],
+    );
+    setShowForm(true);
+  }
+
+  function handleSave() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await saveMerchandiseProductAction({
+          id: editId,
+          name,
+          description,
+          salePriceEur: Number(salePrice.replace(",", ".")),
+          purchaseTotalEur: purchaseTotal ? Number(purchaseTotal.replace(",", ".")) : null,
+          hasSizes,
+          imagePath,
+          createPurchaseExpense: !editId,
+          variants,
+        });
+        resetForm();
+        await reload();
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+      }
+    });
+  }
+
+  if (tableMissing) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-sm text-amber-800">
+          Merchandise-Tabelle fehlt. Bitte{" "}
+          <code className="rounded bg-amber-100 px-1">supabase/052_accounting_merchandise.sql</code>{" "}
+          ausführen.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      {error ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        {!showForm ? (
+          <button
+            type="button"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+            className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+          >
+            Artikel anlegen
+          </button>
+        ) : null}
+      </div>
+
+      {showForm ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>{editId ? "Artikel bearbeiten" : "Neuer Artikel"}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-1 md:col-span-2">
+              <span className="text-sm font-medium">Name</span>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="h-10 rounded-xl border px-3 text-sm" />
+            </label>
+            <label className="grid gap-1 md:col-span-2">
+              <span className="text-sm font-medium">Beschreibung</span>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="rounded-xl border px-3 py-2 text-sm" />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium">Verkaufspreis (€)</span>
+              <input value={salePrice} onChange={(e) => setSalePrice(e.target.value)} type="number" step="0.01" className="h-10 rounded-xl border px-3 text-sm" />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium">Einkauf gesamt (€, optional)</span>
+              <input value={purchaseTotal} onChange={(e) => setPurchaseTotal(e.target.value)} type="number" step="0.01" className="h-10 rounded-xl border px-3 text-sm" />
+            </label>
+            <label className="flex items-center gap-2 text-sm md:col-span-2">
+              <input type="checkbox" checked={hasSizes} onChange={(e) => setHasSizes(e.target.checked)} />
+              Textil mit Größen (S/M/L/…)
+            </label>
+            <div className="md:col-span-2">
+              <DocumentUploadField
+                label="Produktfoto"
+                onFileSelected={async (file) => {
+                  const path = await uploadClubDocument(file, "merchandise", editId ?? undefined);
+                  setImagePath(path);
+                  const res = await fetch(`/api/club-documents/signed?path=${encodeURIComponent(path)}`);
+                  const json = (await res.json()) as { url?: string };
+                  setImagePreviewUrl(json.url ?? null);
+                }}
+                onClear={() => {
+                  setImagePath(null);
+                  setImagePreviewUrl(null);
+                }}
+                previewUrl={imagePreviewUrl}
+              />
+            </div>
+            <div className="md:col-span-2 rounded-xl border bg-slate-50 p-3">
+              <p className="text-xs font-semibold text-slate-700">Bestand</p>
+              <div className="mt-2 space-y-2">
+                {variants.map((v, i) => (
+                  <div key={i} className="grid gap-2 sm:grid-cols-5">
+                    {hasSizes ? (
+                      <select
+                        value={v.size_label ?? ""}
+                        onChange={(e) => {
+                          const next = [...variants];
+                          next[i] = { ...v, size_label: e.target.value || null };
+                          setVariants(next);
+                        }}
+                        className="h-9 rounded-lg border px-2 text-xs"
+                      >
+                        <option value="">Größe</option>
+                        {SIZE_PRESETS.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="flex items-center text-xs text-slate-500">Einheitsgröße</span>
+                    )}
+                    <input type="number" min={0} placeholder="Gekauft" value={v.qty_purchased || ""} onChange={(e) => { const next = [...variants]; next[i] = { ...v, qty_purchased: Number(e.target.value) || 0 }; setVariants(next); }} className="h-9 rounded-lg border px-2 text-xs" />
+                    <input type="number" min={0} placeholder="Verkauft" value={v.qty_sold || ""} onChange={(e) => { const next = [...variants]; next[i] = { ...v, qty_sold: Number(e.target.value) || 0 }; setVariants(next); }} className="h-9 rounded-lg border px-2 text-xs" />
+                    <input type="number" min={0} placeholder="Verschenkt" value={v.qty_gifted || ""} onChange={(e) => { const next = [...variants]; next[i] = { ...v, qty_gifted: Number(e.target.value) || 0 }; setVariants(next); }} className="h-9 rounded-lg border px-2 text-xs" />
+                    <span className="flex items-center text-xs font-medium text-slate-700">
+                      frei: {Math.max(0, v.qty_purchased - v.qty_sold - v.qty_gifted)}
+                    </span>
+                  </div>
+                ))}
+                {hasSizes ? (
+                  <button type="button" onClick={() => setVariants([...variants, { size_label: "M", qty_purchased: 0, qty_sold: 0, qty_gifted: 0 }])} className="text-xs font-semibold text-blue-600">
+                    + Größe
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex gap-2 md:col-span-2">
+              <button type="button" disabled={pending || !name.trim() || !salePrice} onClick={handleSave} className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50">
+                Speichern
+              </button>
+              <button type="button" onClick={resetForm} className="h-10 rounded-xl border px-4 text-sm font-semibold">
+                Abbrechen
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {loading ? (
+        <p className="text-sm text-slate-600">Lade Artikel…</p>
+      ) : products.length === 0 ? (
+        <p className="text-sm text-slate-500">Noch keine Merchandise-Artikel.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {products.map((p) => (
+            <Card key={p.id} className="overflow-hidden">
+              {p.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.image_url} alt="" className="h-36 w-full object-cover bg-slate-100" />
+              ) : (
+                <div className="grid h-36 place-items-center bg-slate-100 text-xs text-slate-400">Kein Foto</div>
+              )}
+              <CardContent className="pt-4">
+                <h3 className="font-semibold text-slate-900">{p.name}</h3>
+                <p className="mt-1 text-sm text-emerald-700">{formatEur(p.sale_price_cents)}</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  Bestand: <strong>{p.total_available}</strong> verfügbar
+                </p>
+                {p.variants.length ? (
+                  <ul className="mt-2 space-y-0.5 text-xs text-slate-600">
+                    {p.variants.map((v) => (
+                      <li key={v.id}>
+                        {v.size_label ?? "—"}: {v.available} frei ({v.qty_sold} verk., {v.qty_gifted} geschenkt)
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <div className="mt-3 flex gap-2">
+                  <button type="button" onClick={() => openEdit(p)} className="text-xs font-semibold text-blue-600 hover:underline">
+                    Bearbeiten
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!window.confirm(`„${p.name}" löschen?`)) return;
+                      startTransition(async () => {
+                        await deleteMerchandiseProductAction(p.id);
+                        await reload();
+                      });
+                    }}
+                    className="text-xs font-semibold text-rose-600 hover:underline"
+                  >
+                    Löschen
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

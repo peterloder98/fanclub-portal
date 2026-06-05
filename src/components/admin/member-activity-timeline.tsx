@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   activityTypeLabel,
   type MemberActivityRow,
@@ -86,9 +87,13 @@ export function MemberActivityTimeline({
         <p className="mt-3 text-xs text-slate-500">Noch keine Einträge.</p>
       ) : (
         <ul className="mt-3 max-h-56 space-y-2 overflow-y-auto pr-1">
-          {rows.map((r) => (
+          {rows.map((r) => {
+            const ledgerId =
+              typeof r.metadata?.ledger_entry_id === "string" ? r.metadata.ledger_entry_id : null;
+            return (
             <li
               key={r.id}
+              id={`activity-${r.id}`}
               className={
                 r.event_type === "warning_issued"
                   ? "rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs"
@@ -116,8 +121,17 @@ export function MemberActivityTimeline({
                   {r.link_label ?? "Ansehen"} →
                 </a>
               ) : null}
+              {ledgerId ? (
+                <Link
+                  href={`#ledger-${ledgerId}`}
+                  className="mt-1 inline-block font-medium text-blue-600 hover:underline"
+                >
+                  Buchung ansehen →
+                </Link>
+              ) : null}
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 

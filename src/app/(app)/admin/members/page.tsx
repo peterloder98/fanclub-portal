@@ -10,6 +10,7 @@ import {
 } from "@/components/admin/admin-members-workspace.client";
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { batchMemberContributionStatus } from "@/lib/club/membership-contribution";
 
 export const dynamic = "force-dynamic";
 
@@ -82,21 +83,32 @@ export default async function AdminMembersPage({
         });
       }
 
+      const baseMembers = (profiles ?? []).map((p) => ({
+        id: p.id,
+        membership_number: p.membership_number ?? null,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        birthdate: p.birthdate ?? null,
+        joined_at: membershipByUser.get(p.id)?.start_date ?? null,
+        warning_count: Math.max(
+          (p as { warning_count?: number }).warning_count ?? 0,
+          warningsByUser.get(p.id) ?? 0,
+        ),
+        membership_status: membershipByUser.get(p.id)?.status ?? null,
+        email: p.email ?? null,
+      }));
+
+      const contribByUser = await batchMemberContributionStatus(baseMembers.map((m) => m.id));
+
       return {
-        members: (profiles ?? []).map((p) => ({
-          id: p.id,
-          membership_number: p.membership_number ?? null,
-          first_name: p.first_name,
-          last_name: p.last_name,
-          birthdate: p.birthdate ?? null,
-          joined_at: membershipByUser.get(p.id)?.start_date ?? null,
-          warning_count: Math.max(
-            (p as { warning_count?: number }).warning_count ?? 0,
-            warningsByUser.get(p.id) ?? 0,
-          ),
-          membership_status: membershipByUser.get(p.id)?.status ?? null,
-          email: p.email ?? null,
-        })),
+        members: baseMembers.map((m) => {
+          const contrib = contribByUser.get(m.id);
+          return {
+            ...m,
+            contribution_status: contrib?.status ?? null,
+            contribution_open_cents: contrib?.openCents ?? null,
+          };
+        }),
         membersError: null,
       };
     } catch (e) {

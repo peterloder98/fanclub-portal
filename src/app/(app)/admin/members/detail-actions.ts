@@ -21,6 +21,11 @@ import {
   type LedgerCategory,
   type LedgerEntryType,
 } from "@/lib/club/ledger";
+import {
+  formatContributionEmailVars,
+  getMemberContributionInfo,
+  listOpenContributions,
+} from "@/lib/club/membership-contribution";
 
 export async function revokeMemberWarning(warningId: string) {
   const { user, profile: adminProfile } = await requireAdminAction();
@@ -94,7 +99,16 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
 
   const { signatures, defaultSignatureId, signatureTexts } = await loadSignaturePickerData();
   const useSignatureId = signatureId ?? defaultSignatureId;
+  const contrib = await getMemberContributionInfo(userId);
   const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
+  const contribVars = contrib
+    ? formatContributionEmailVars(contrib)
+    : {
+        fee_eur: feeEur,
+        fee_paid_eur: "0,00 €",
+        fee_open_eur: feeEur.replace(" EUR", " €"),
+        membership_period: String(new Date().getFullYear()),
+      };
 
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
@@ -103,7 +117,10 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
       email: profile.email,
-      fee_eur: feeEur,
+      fee_eur: contribVars.fee_eur,
+      fee_paid_eur: contribVars.fee_paid_eur,
+      fee_open_eur: contribVars.fee_open_eur,
+      membership_period: contribVars.membership_period,
     },
     { signatureId: useSignatureId },
   );
@@ -142,7 +159,16 @@ export async function sendMemberPaymentReminderEmail(input: {
     .limit(1)
     .maybeSingle();
 
+  const contrib = await getMemberContributionInfo(input.userId);
   const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
+  const contribVars = contrib
+    ? formatContributionEmailVars(contrib)
+    : {
+        fee_eur: feeEur,
+        fee_paid_eur: "0,00 €",
+        fee_open_eur: feeEur.replace(" EUR", " €"),
+        membership_period: String(new Date().getFullYear()),
+      };
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
@@ -150,7 +176,10 @@ export async function sendMemberPaymentReminderEmail(input: {
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
       email: profile.email,
-      fee_eur: feeEur,
+      fee_eur: contribVars.fee_eur,
+      fee_paid_eur: contribVars.fee_paid_eur,
+      fee_open_eur: contribVars.fee_open_eur,
+      membership_period: contribVars.membership_period,
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );
@@ -194,11 +223,15 @@ export async function sendMemberPaymentReminderEmail(input: {
     userId: profile.id,
     eventType: MEMBER_ACTIVITY_TYPES.paymentReminderSent,
     title: "Zahlungserinnerung per E-Mail gesendet",
-    details: `Betreff: ${subject}`,
+    details: `Betreff: ${subject}${contrib?.openCents ? ` · Offen: ${formatEur(contrib.openCents)}` : ""}`,
     linkUrl: base ? `${base}/admin/members/${profile.id}` : null,
     linkLabel: "Mitgliedsdatensatz",
     createdBy: user.id,
-    metadata: { signature_id: input.signatureId },
+    metadata: {
+      signature_id: input.signatureId,
+      fee_open_cents: contrib?.openCents ?? null,
+      membership_period: contrib?.periodLabel ?? null,
+    },
   }).catch((e) => console.error("[activity] Zahlungserinnerung:", e));
 
   revalidatePath(`/admin/members/${profile.id}`);
@@ -215,6 +248,23 @@ const ledgerSchema = z.object({
   entryDate: z.string().min(1),
 });
 
+export async function fetchOpenContributionsAction() {
+  await requireAdminAction();
+  return listOpenContributions();
+}
+
+export async function attachReceiptToLedgerEntry(entryId: string, storagePath: string) {
+  await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("club_ledger_entries")
+    .update({ receipt_storage_path: storagePath })
+    .eq("id", entryId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/accounting");
+  return { ok: true };
+}
+
 export async function addClubLedgerEntry(input: {
   entryType: LedgerEntryType;
   amountEur: number;
@@ -222,11 +272,14 @@ export async function addClubLedgerEntry(input: {
   category: LedgerCategory;
   memberId?: string | null;
   entryDate: string;
+  receiptStoragePath?: string | null;
 }) {
   const { user } = await requireAdminAction();
   const parsed = ledgerSchema.parse(input);
   const admin = createSupabaseAdminClient();
   const amountCents = Math.round(parsed.amountEur * 100);
+
+  const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
 
   const { data: row, error } = await admin
     .from("club_ledger_entries")
@@ -238,6 +291,7 @@ export async function addClubLedgerEntry(input: {
       member_id: parsed.memberId ?? null,
       entry_date: parsed.entryDate,
       created_by: user.id,
+      receipt_storage_path: input.receiptStoragePath ?? null,
     })
     .select("id")
     .single();
@@ -257,18 +311,38 @@ export async function addClubLedgerEntry(input: {
       ? MEMBER_ACTIVITY_TYPES.ledgerIncome
       : MEMBER_ACTIVITY_TYPES.ledgerExpense;
 
-  if (parsed.memberId) {
-    await logMemberActivity({
+  if (parsed.memberId && row?.id) {
+    const activityId = await logMemberActivity({
       userId: parsed.memberId,
-      eventType,
+      eventType:
+        parsed.category === "membership" && parsed.entryType === "income"
+          ? MEMBER_ACTIVITY_TYPES.paymentReceived
+          : eventType,
       title:
         parsed.entryType === "income"
           ? `Einnahme: ${amountLabel}`
           : `Ausgabe: ${amountLabel}`,
-      details: `${label}: ${parsed.description.trim()}`,
+      details: `${label}: ${parsed.description.trim()}${input.receiptStoragePath ? " · Beleg hinterlegt" : ""}`,
+      linkUrl: base ? `${base}/admin/accounting` : null,
+      linkLabel: "Buchhaltung",
       createdBy: user.id,
-      metadata: { ledger_entry_id: row?.id ?? null, amount_cents: amountCents },
-    }).catch((e) => console.error("[ledger] activity log:", e));
+      metadata: {
+        ledger_entry_id: row.id,
+        amount_cents: amountCents,
+        category: parsed.category,
+        receipt_storage_path: input.receiptStoragePath ?? null,
+      },
+    }).catch((e) => {
+      console.error("[ledger] activity log:", e);
+      return null;
+    });
+
+    if (activityId) {
+      await admin
+        .from("club_ledger_entries")
+        .update({ activity_log_id: activityId })
+        .eq("id", row.id);
+    }
   }
 
   revalidatePath("/admin/accounting");
@@ -279,6 +353,113 @@ export async function addClubLedgerEntry(input: {
 export async function fetchClubLedger(memberId?: string | null) {
   await requireAdminAction();
   return listClubLedger({ memberId, limit: memberId ? 50 : 200 });
+}
+
+const ledgerUpdateSchema = ledgerSchema.extend({
+  entryId: z.string().uuid(),
+});
+
+export async function updateClubLedgerEntry(input: {
+  entryId: string;
+  entryType: LedgerEntryType;
+  amountEur: number;
+  description: string;
+  category: LedgerCategory;
+  entryDate: string;
+  memberId?: string | null;
+  receiptStoragePath?: string | null;
+}) {
+  const { user } = await requireAdminAction();
+  const parsed = ledgerUpdateSchema.parse(input);
+  const admin = createSupabaseAdminClient();
+  const amountCents = Math.round(parsed.amountEur * 100);
+
+  const { data: existing, error: loadErr } = await admin
+    .from("club_ledger_entries")
+    .select("id,member_id,activity_log_id,amount_cents,entry_date,entry_type,category")
+    .eq("id", parsed.entryId)
+    .maybeSingle();
+  if (loadErr) throw new Error(loadErr.message);
+  if (!existing) throw new Error("Eintrag nicht gefunden.");
+
+  const { error } = await admin
+    .from("club_ledger_entries")
+    .update({
+      entry_type: parsed.entryType,
+      amount_cents: amountCents,
+      description: parsed.description.trim(),
+      category: parsed.category,
+      entry_date: parsed.entryDate,
+      member_id: parsed.memberId ?? existing.member_id,
+      receipt_storage_path: input.receiptStoragePath ?? undefined,
+    })
+    .eq("id", parsed.entryId);
+  if (error) throw new Error(error.message);
+
+  const label = LEDGER_CATEGORY_LABELS[parsed.category];
+  const amountLabel = formatEur(amountCents);
+  const eventType =
+    parsed.entryType === "income"
+      ? MEMBER_ACTIVITY_TYPES.ledgerIncome
+      : MEMBER_ACTIVITY_TYPES.ledgerExpense;
+
+  if (existing.activity_log_id) {
+    const title =
+      parsed.entryType === "income"
+        ? `Einnahme: ${amountLabel}`
+        : `Ausgabe: ${amountLabel}`;
+    const details = `${label}: ${parsed.description.trim()}${
+      input.receiptStoragePath ? " · Beleg hinterlegt" : ""
+    }`;
+    await admin
+      .from("member_activity_log")
+      .update({
+        event_type:
+          parsed.category === "membership" && parsed.entryType === "income"
+            ? MEMBER_ACTIVITY_TYPES.paymentReceived
+            : eventType,
+        title,
+        details,
+        metadata: {
+          ledger_entry_id: parsed.entryId,
+          amount_cents: amountCents,
+          category: parsed.category,
+        },
+      })
+      .eq("id", existing.activity_log_id)
+      .then(({ error: actErr }) => {
+        if (actErr) console.error("[ledger] activity sync:", actErr);
+      });
+  } else if (existing.member_id) {
+    const activityId = await logMemberActivity({
+      userId: existing.member_id,
+      eventType:
+        parsed.category === "membership" && parsed.entryType === "income"
+          ? MEMBER_ACTIVITY_TYPES.paymentReceived
+          : eventType,
+      title:
+        parsed.entryType === "income"
+          ? `Einnahme: ${amountLabel}`
+          : `Ausgabe: ${amountLabel}`,
+      details: `${label}: ${parsed.description.trim()} (bearbeitet)`,
+      createdBy: user.id,
+      metadata: {
+        ledger_entry_id: parsed.entryId,
+        amount_cents: amountCents,
+        category: parsed.category,
+      },
+    }).catch(() => null);
+    if (activityId) {
+      await admin
+        .from("club_ledger_entries")
+        .update({ activity_log_id: activityId })
+        .eq("id", parsed.entryId);
+    }
+  }
+
+  revalidatePath("/admin/accounting");
+  if (existing.member_id) revalidatePath(`/admin/members/${existing.member_id}`);
+  return { ok: true };
 }
 
 export async function deleteClubLedgerEntry(entryId: string) {

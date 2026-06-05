@@ -7,6 +7,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listClubLedger } from "@/lib/club/ledger";
+import { getMemberContributionInfo } from "@/lib/club/membership-contribution";
 import { redirect } from "next/navigation";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 
@@ -106,6 +107,8 @@ export default async function AdminMemberDetailPage({
     }
   }
 
+  const contribution = await getMemberContributionInfo(id).catch(() => null);
+
   const member: MemberDetailData = {
     id: profile.id,
     membership_number: profile.membership_number,
@@ -156,6 +159,7 @@ export default async function AdminMemberDetailPage({
           warnings={warnings}
           ledgerEntries={ledgerEntries}
           ledgerAvailable={ledgerAvailable}
+          contribution={contribution}
         />
         </div>
       </main>

@@ -12,6 +12,7 @@ import { deleteMember } from "@/app/(app)/admin/members/actions";
 import {
   addClubLedgerEntry,
   deleteClubLedgerEntry,
+  updateClubLedgerEntry,
   getMemberPaymentReminderDraft,
   revokeMemberWarning,
   sendMemberPaymentReminderEmail,
@@ -26,6 +27,13 @@ import {
   type LedgerCategory,
 } from "@/lib/club/ledger";
 import type { MailSignatureOption } from "@/lib/email/signatures";
+import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
+import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
+import { ReceiptLink } from "@/components/admin/receipt-link";
+import {
+  DocumentUploadField,
+  uploadClubDocument,
+} from "@/components/ui/document-upload-field";
 
 export type MemberWarningRow = {
   id: string;
@@ -106,11 +114,13 @@ export function MemberDetailPanel({
   warnings,
   ledgerEntries,
   ledgerAvailable,
+  contribution,
 }: {
   member: MemberDetailData;
   warnings: MemberWarningRow[];
   ledgerEntries: ClubLedgerRow[];
   ledgerAvailable: boolean;
+  contribution: MemberContributionInfo | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -130,6 +140,13 @@ export function MemberDetailPanel({
   const [ledgerCategory, setLedgerCategory] = useState<LedgerCategory>("membership");
   const [ledgerDate, setLedgerDate] = useState(new Date().toISOString().slice(0, 10));
   const [showLedgerForm, setShowLedgerForm] = useState(false);
+  const [ledgerReceiptPath, setLedgerReceiptPath] = useState<string | null>(null);
+  const [editingLedgerId, setEditingLedgerId] = useState<string | null>(null);
+  const [editLedgerAmount, setEditLedgerAmount] = useState("");
+  const [editLedgerDesc, setEditLedgerDesc] = useState("");
+  const [editLedgerDate, setEditLedgerDate] = useState("");
+  const [editLedgerType, setEditLedgerType] = useState<"income" | "expense">("income");
+  const [editLedgerCategory, setEditLedgerCategory] = useState<LedgerCategory>("membership");
 
   const fullName = `${member.first_name} ${member.last_name}`;
   const feeEur = member.membership?.fee_cents
@@ -207,9 +224,11 @@ export function MemberDetailPanel({
           category: ledgerCategory,
           memberId: member.id,
           entryDate: ledgerDate,
+          receiptStoragePath: ledgerReceiptPath,
         });
         setLedgerAmount("");
         setLedgerDesc("");
+        setLedgerReceiptPath(null);
         setShowLedgerForm(false);
         router.refresh();
       } catch (e) {
@@ -226,6 +245,53 @@ export function MemberDetailPanel({
         router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+      }
+    });
+  }
+
+  function startEditLedger(e: ClubLedgerRow) {
+    setEditingLedgerId(e.id);
+    setEditLedgerType(e.entry_type);
+    setEditLedgerAmount((e.amount_cents / 100).toFixed(2));
+    setEditLedgerDesc(e.description);
+    setEditLedgerCategory(e.category);
+    setEditLedgerDate(e.entry_date);
+  }
+
+  function handleUpdateLedger(original: ClubLedgerRow) {
+    const amount = Number(editLedgerAmount.replace(",", "."));
+    if (!editLedgerDesc.trim() || !amount || amount <= 0) return;
+    const amountChanged = Math.round(amount * 100) !== original.amount_cents;
+    const dateChanged = editLedgerDate !== original.entry_date;
+    if (amountChanged || dateChanged) {
+      const parts: string[] = [];
+      if (amountChanged) {
+        parts.push(
+          `Betrag von ${formatEur(original.amount_cents)} auf ${formatEur(Math.round(amount * 100))}`,
+        );
+      }
+      if (dateChanged) {
+        parts.push(`Datum von ${formatDE(original.entry_date)} auf ${formatDE(editLedgerDate)}`);
+      }
+      if (!window.confirm(`${parts.join(" und ")} ändern — wirklich speichern?`)) return;
+    }
+    setActionError(null);
+    startTransition(async () => {
+      try {
+        await updateClubLedgerEntry({
+          entryId: original.id,
+          entryType: editLedgerType,
+          amountEur: amount,
+          description: editLedgerDesc.trim(),
+          category: editLedgerCategory,
+          entryDate: editLedgerDate,
+          memberId: member.id,
+          receiptStoragePath: original.receipt_storage_path,
+        });
+        setEditingLedgerId(null);
+        router.refresh();
+      } catch (e) {
+        setActionError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
       }
     });
   }
@@ -310,6 +376,25 @@ export function MemberDetailPanel({
               <InfoRow label="Beitrittsdatum" value={formatDE(member.membership?.start_date ?? null)} />
               <InfoRow label="Ende" value={formatDE(member.membership?.end_date ?? null)} />
               <InfoRow label="Jahresbeitrag" value={`${feeEur} €`} />
+              <InfoRow
+                label="Beitragsstatus"
+                value={
+                  contribution ? (
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      <ContributionStatusBadge status={contribution.status} />
+                      {contribution.status !== "paid" ? (
+                        <span className="text-xs text-slate-600">
+                          Offen: {formatEur(contribution.openCents)} · Periode {contribution.periodLabel}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-600">Periode {contribution.periodLabel}</span>
+                      )}
+                    </span>
+                  ) : (
+                    "—"
+                  )
+                }
+              />
               <InfoRow label="Beitragsdatum" value={formatDE(member.contribution_date)} />
             </dl>
             {member.application_id ? (
@@ -382,37 +467,130 @@ export function MemberDetailPanel({
             <>
               {ledgerEntries.length > 0 ? (
                 <ul className="mb-4 space-y-2">
-                  {ledgerEntries.map((e) => (
-                    <li
-                      key={e.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-sm"
-                    >
-                      <div>
-                        <span
-                          className={
-                            e.entry_type === "income"
-                              ? "font-semibold text-emerald-700"
-                              : "font-semibold text-rose-700"
-                          }
-                        >
-                          {e.entry_type === "income" ? "+" : "−"}
-                          {formatEur(e.amount_cents)}
-                        </span>
-                        <span className="ml-2 text-slate-700">{e.description}</span>
-                        <span className="ml-2 text-xs text-slate-500">
-                          {LEDGER_CATEGORY_LABELS[e.category]} · {formatDE(e.entry_date)}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => handleDeleteLedger(e.id)}
-                        className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                  {ledgerEntries.map((e) =>
+                    editingLedgerId === e.id ? (
+                      <li
+                        key={e.id}
+                        id={`ledger-${e.id}`}
+                        className="rounded-lg border bg-slate-50 px-3 py-3 text-sm"
                       >
-                        Löschen
-                      </button>
-                    </li>
-                  ))}
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <select
+                            value={editLedgerType}
+                            onChange={(ev) => setEditLedgerType(ev.target.value as "income" | "expense")}
+                            className="h-9 rounded-lg border px-2 text-xs"
+                          >
+                            <option value="income">Einnahme</option>
+                            <option value="expense">Ausgabe</option>
+                          </select>
+                          <select
+                            value={editLedgerCategory}
+                            onChange={(ev) =>
+                              setEditLedgerCategory(ev.target.value as LedgerCategory)
+                            }
+                            className="h-9 rounded-lg border px-2 text-xs"
+                          >
+                            {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editLedgerAmount}
+                            onChange={(ev) => setEditLedgerAmount(ev.target.value)}
+                            className="h-9 rounded-lg border px-2 text-xs"
+                          />
+                          <input
+                            type="date"
+                            value={editLedgerDate}
+                            onChange={(ev) => setEditLedgerDate(ev.target.value)}
+                            className="h-9 rounded-lg border px-2 text-xs"
+                          />
+                          <input
+                            value={editLedgerDesc}
+                            onChange={(ev) => setEditLedgerDesc(ev.target.value)}
+                            className="h-9 rounded-lg border px-2 text-xs sm:col-span-2"
+                          />
+                        </div>
+                        <div className="mt-2 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={pending || !editLedgerDesc.trim() || !editLedgerAmount}
+                            onClick={() => handleUpdateLedger(e)}
+                            className="text-xs font-semibold text-emerald-700 hover:underline disabled:opacity-50"
+                          >
+                            Speichern
+                          </button>
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => setEditingLedgerId(null)}
+                            className="text-xs font-semibold text-slate-600 hover:underline disabled:opacity-50"
+                          >
+                            Abbrechen
+                          </button>
+                        </div>
+                      </li>
+                    ) : (
+                      <li
+                        key={e.id}
+                        id={`ledger-${e.id}`}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-sm"
+                      >
+                        <div>
+                          <span
+                            className={
+                              e.entry_type === "income"
+                                ? "font-semibold text-emerald-700"
+                                : "font-semibold text-rose-700"
+                            }
+                          >
+                            {e.entry_type === "income" ? "+" : "−"}
+                            {formatEur(e.amount_cents)}
+                          </span>
+                          <span className="ml-2 text-slate-700">{e.description}</span>
+                          <span className="ml-2 text-xs text-slate-500">
+                            {LEDGER_CATEGORY_LABELS[e.category]} · {formatDE(e.entry_date)}
+                          </span>
+                          <span className="ml-2 inline-flex items-center gap-2">
+                            {e.receipt_storage_path ? (
+                              <ReceiptLink path={e.receipt_storage_path} />
+                            ) : null}
+                            {e.activity_log_id ? (
+                              <a
+                                href={`#activity-${e.activity_log_id}`}
+                                className="text-xs font-medium text-blue-600 hover:underline"
+                              >
+                                Historie →
+                              </a>
+                            ) : null}
+                          </span>
+                        </div>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => startEditLedger(e)}
+                            className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                          >
+                            Bearbeiten
+                          </button>
+                          <button
+                            type="button"
+                            disabled={pending}
+                            onClick={() => handleDeleteLedger(e.id)}
+                            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                          >
+                            Löschen
+                          </button>
+                        </div>
+                      </li>
+                    ),
+                  )}
                 </ul>
               ) : (
                 <p className="mb-3 text-sm text-slate-500">Noch keine Zahlungen eingetragen.</p>
@@ -470,6 +648,17 @@ export function MemberDetailPanel({
                       placeholder="Beschreibung, z. B. Beitrag 2026"
                       className="h-9 rounded-lg border px-2 text-xs sm:col-span-2"
                     />
+                    <div className="sm:col-span-2">
+                      <DocumentUploadField
+                        label="Beleg (optional)"
+                        disabled={pending}
+                        onFileSelected={async (file) => {
+                          const path = await uploadClubDocument(file, "receipt", member.id);
+                          setLedgerReceiptPath(path);
+                        }}
+                        onClear={() => setLedgerReceiptPath(null)}
+                      />
+                    </div>
                     <div className="flex gap-2 sm:col-span-2">
                       <button
                         type="button"
@@ -496,7 +685,9 @@ export function MemberDetailPanel({
         </CardContent>
       </Card>
 
-      <MemberActivityTimeline userId={member.id} applicationId={null} />
+      <div id="member-activity">
+        <MemberActivityTimeline userId={member.id} applicationId={null} />
+      </div>
 
       {showPaymentDialog ? (
         <EmailDialogShell

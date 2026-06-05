@@ -7,12 +7,14 @@ import {
   Mail,
   Mails,
   MapPinned,
+  Train,
   Music2,
   PenLine,
   ScrollText,
   Shield,
   Users,
   Wallet,
+  ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -57,6 +59,13 @@ const SECTIONS: AdminHubSection[] = [
         description: "Einnahmen, Ausgaben und Zahlungen pro Mitglied.",
         icon: Wallet,
         iconClassName: "from-emerald-600 to-teal-600",
+      },
+      {
+        href: "/admin/merchandise",
+        title: "Merchandise",
+        description: "Fanschals, Kugelschreiber — Bestand, Größen, Fotos.",
+        icon: ShoppingBag,
+        iconClassName: "from-orange-500 to-amber-600",
       },
     ],
   },
@@ -114,6 +123,13 @@ const SECTIONS: AdminHubSection[] = [
     title: "Events",
     subtitle: "Termine aus Artistflow und Karte.",
     items: [
+      {
+        href: "/admin/events",
+        title: "Event-Infos (Vorstand)",
+        description: "Nächster Bahnhof, Hotel und Notizen pro Termin.",
+        icon: Train,
+        iconClassName: "from-violet-600 to-fuchsia-600",
+      },
       {
         href: "/admin/events-sync",
         title: "Artistflow Sync",

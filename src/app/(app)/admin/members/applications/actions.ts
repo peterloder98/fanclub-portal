@@ -21,6 +21,10 @@ import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
 import { awardMembershipReferralCompletionPoints } from "@/lib/points/award-membership-referral-completed";
 import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
 import { storeApprovedMemberContractPdf } from "@/lib/membership/application-pdf-service";
+import {
+  formatContributionEmailVars,
+  getMemberContributionInfo,
+} from "@/lib/club/membership-contribution";
 
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -159,6 +163,15 @@ export async function getPaymentReminderDraft(
   const useSignatureId = signatureId ?? defaultSignatureId;
 
   const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
+  const contrib = app.user_id ? await getMemberContributionInfo(app.user_id) : null;
+  const contribVars = contrib
+    ? formatContributionEmailVars(contrib)
+    : {
+        fee_eur: feeEur.replace(" EUR", " €"),
+        fee_paid_eur: "0,00 €",
+        fee_open_eur: feeEur.replace(" EUR", " €"),
+        membership_period: String(new Date().getFullYear()),
+      };
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
@@ -166,7 +179,10 @@ export async function getPaymentReminderDraft(
       last_name: app.last_name?.trim() || "",
       applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
       email: app.email,
-      fee_eur: feeEur,
+      fee_eur: contribVars.fee_eur,
+      fee_paid_eur: contribVars.fee_paid_eur,
+      fee_open_eur: contribVars.fee_open_eur,
+      membership_period: contribVars.membership_period,
     },
     { signatureId: useSignatureId },
   );
@@ -198,6 +214,15 @@ export async function sendPaymentReminderEmail(input: {
   if (!app?.email) throw new Error("E-Mail des Antragstellers fehlt.");
 
   const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
+  const contrib = app.user_id ? await getMemberContributionInfo(app.user_id) : null;
+  const contribVars = contrib
+    ? formatContributionEmailVars(contrib)
+    : {
+        fee_eur: feeEur.replace(" EUR", " €"),
+        fee_paid_eur: "0,00 €",
+        fee_open_eur: feeEur.replace(" EUR", " €"),
+        membership_period: String(new Date().getFullYear()),
+      };
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
@@ -205,7 +230,10 @@ export async function sendPaymentReminderEmail(input: {
       last_name: app.last_name?.trim() || "",
       applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
       email: app.email,
-      fee_eur: feeEur,
+      fee_eur: contribVars.fee_eur,
+      fee_paid_eur: contribVars.fee_paid_eur,
+      fee_open_eur: contribVars.fee_open_eur,
+      membership_period: contribVars.membership_period,
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );

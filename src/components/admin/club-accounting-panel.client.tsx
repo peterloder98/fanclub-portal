@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   addClubLedgerEntry,
   deleteClubLedgerEntry,
+  updateClubLedgerEntry,
 } from "@/app/(app)/admin/members/detail-actions";
+import { cn } from "@/lib/cn";
 import {
   filterLedgerByPeriod,
   formatEur,
@@ -18,6 +20,13 @@ import {
   type LedgerCategory,
   type LedgerPeriodMode,
 } from "@/lib/club/ledger";
+import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
+import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
+import { ReceiptLink } from "@/components/admin/receipt-link";
+import {
+  DocumentUploadField,
+  uploadClubDocument,
+} from "@/components/ui/document-upload-field";
 
 const MONTHS = [
   "Januar",
@@ -34,17 +43,51 @@ const MONTHS = [
   "Dezember",
 ];
 
+type LedgerSortKey = "entry_date" | "entry_type" | "amount_cents" | "category" | "description";
+
 function formatDE(date: string | null) {
   if (!date) return "—";
   const [y, m, d] = date.split("-");
   return `${d}.${m}.${y}`;
 }
 
+function compareStr(a: string, b: string) {
+  return a.localeCompare(b, "de", { numeric: true, sensitivity: "base" });
+}
+
+function SortBtn({
+  label,
+  active,
+  dir,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  dir: "asc" | "desc";
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-slate-900",
+        active && "text-blue-700",
+      )}
+    >
+      {label}
+      {active ? <span className="text-[10px]">{dir === "asc" ? "▲" : "▼"}</span> : null}
+    </button>
+  );
+}
+
 export function ClubAccountingPanel({
   entries,
+  openContributions,
   ledgerAvailable,
 }: {
   entries: ClubLedgerRow[];
+  openContributions: MemberContributionInfo[];
   ledgerAvailable: boolean;
 }) {
   const router = useRouter();
@@ -60,6 +103,17 @@ export function ClubAccountingPanel({
   const [ledgerDesc, setLedgerDesc] = useState("");
   const [ledgerCategory, setLedgerCategory] = useState<LedgerCategory>("general");
   const [ledgerDate, setLedgerDate] = useState(now.toISOString().slice(0, 10));
+  const [receiptPath, setReceiptPath] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ key: LedgerSortKey; dir: "asc" | "desc" }>({
+    key: "entry_date",
+    dir: "desc",
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editType, setEditType] = useState<"income" | "expense">("income");
+  const [editAmount, setEditAmount] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editCategory, setEditCategory] = useState<LedgerCategory>("general");
+  const [editDate, setEditDate] = useState("");
 
   const yearOptions = useMemo(() => ledgerYearOptions(entries), [entries]);
 
@@ -67,6 +121,87 @@ export function ClubAccountingPanel({
     () => filterLedgerByPeriod(entries, periodMode, filterYear, filterMonth),
     [entries, periodMode, filterYear, filterMonth],
   );
+
+  const sortedEntries = useMemo(() => {
+    const rows = [...filteredEntries];
+    const dirMul = sort.dir === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      const pick = (r: ClubLedgerRow) => {
+        switch (sort.key) {
+          case "entry_date":
+            return r.entry_date;
+          case "entry_type":
+            return r.entry_type;
+          case "amount_cents":
+            return String(r.amount_cents);
+          case "category":
+            return r.category;
+          case "description":
+            return r.description;
+        }
+      };
+      return compareStr(pick(a), pick(b)) * dirMul;
+    });
+    return rows;
+  }, [filteredEntries, sort]);
+
+  function toggleSort(key: LedgerSortKey) {
+    setSort((prev) =>
+      prev.key === key ? { key, dir: prev.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" },
+    );
+  }
+
+  function startEdit(row: ClubLedgerRow) {
+    setEditingId(row.id);
+    setEditType(row.entry_type);
+    setEditAmount((row.amount_cents / 100).toFixed(2));
+    setEditDesc(row.description);
+    setEditCategory(row.category);
+    setEditDate(row.entry_date);
+    setError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  function handleUpdate(original: ClubLedgerRow) {
+    const amount = Number(editAmount.replace(",", "."));
+    if (!editDesc.trim() || !amount || amount <= 0) return;
+    const amountChanged = Math.round(amount * 100) !== original.amount_cents;
+    const dateChanged = editDate !== original.entry_date;
+    if (amountChanged || dateChanged) {
+      const parts: string[] = [];
+      if (amountChanged) {
+        parts.push(
+          `Betrag von ${formatEur(original.amount_cents)} auf ${formatEur(Math.round(amount * 100))}`,
+        );
+      }
+      if (dateChanged) {
+        parts.push(`Datum von ${formatDE(original.entry_date)} auf ${formatDE(editDate)}`);
+      }
+      if (!window.confirm(`${parts.join(" und ")} ändern — wirklich speichern?`)) return;
+    }
+    setError(null);
+    startTransition(async () => {
+      try {
+        await updateClubLedgerEntry({
+          entryId: original.id,
+          entryType: editType,
+          amountEur: amount,
+          description: editDesc.trim(),
+          category: editCategory,
+          entryDate: editDate,
+          memberId: original.member_id,
+          receiptStoragePath: original.receipt_storage_path,
+        });
+        setEditingId(null);
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+      }
+    });
+  }
 
   const { incomeCents, expenseCents } = useMemo(
     () => sumLedgerRows(filteredEntries),
@@ -94,9 +229,11 @@ export function ClubAccountingPanel({
           category: ledgerCategory,
           memberId: null,
           entryDate: ledgerDate,
+          receiptStoragePath: receiptPath,
         });
         setLedgerAmount("");
         setLedgerDesc("");
+        setReceiptPath(null);
         setShowAddForm(false);
         router.refresh();
       } catch (e) {
@@ -212,6 +349,50 @@ export function ClubAccountingPanel({
         </Card>
       </div>
 
+      {openContributions.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Offene Beiträge ({openContributions.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
+                  <tr>
+                    <th className="px-3 py-2">Mitglied</th>
+                    <th className="px-3 py-2">Periode</th>
+                    <th className="px-3 py-2">Offen</th>
+                    <th className="px-3 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {openContributions.map((c) => (
+                    <tr key={c.userId} className="border-b">
+                      <td className="px-3 py-2">
+                        <Link
+                          href={`/admin/members/${c.userId}`}
+                          className="font-medium text-blue-600 hover:underline"
+                        >
+                          {c.lastName}, {c.firstName}
+                          {c.membershipNumber ? ` (Nr. ${c.membershipNumber})` : ""}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-2 text-slate-600">{c.periodLabel}</td>
+                      <td className="px-3 py-2 font-semibold tabular-nums text-amber-800">
+                        {formatEur(c.openCents)}
+                      </td>
+                      <td className="px-3 py-2">
+                        <ContributionStatusBadge status={c.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Neue Buchung</CardTitle>
@@ -268,6 +449,17 @@ export function ClubAccountingPanel({
                 placeholder="Beschreibung"
                 className="h-10 rounded-xl border px-3 text-sm sm:col-span-2"
               />
+              <div className="sm:col-span-2 lg:col-span-3">
+                <DocumentUploadField
+                  label="Beleg (optional)"
+                  disabled={pending}
+                  onFileSelected={async (file) => {
+                    const path = await uploadClubDocument(file, "receipt");
+                    setReceiptPath(path);
+                  }}
+                  onClear={() => setReceiptPath(null)}
+                />
+              </div>
               <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
                 <button
                   type="button"
@@ -293,64 +485,200 @@ export function ClubAccountingPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Buchungen ({filteredEntries.length})</CardTitle>
+          <CardTitle>Buchungen ({sortedEntries.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredEntries.length === 0 ? (
+          {sortedEntries.length === 0 ? (
             <p className="text-sm text-slate-500">Keine Einträge in diesem Zeitraum.</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
-                    <th className="px-3 py-2">Datum</th>
-                    <th className="px-3 py-2">Art</th>
-                    <th className="px-3 py-2">Betrag</th>
-                    <th className="px-3 py-2">Kategorie</th>
-                    <th className="px-3 py-2">Beschreibung</th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Datum"
+                        active={sort.key === "entry_date"}
+                        dir={sort.dir}
+                        onClick={() => toggleSort("entry_date")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Art"
+                        active={sort.key === "entry_type"}
+                        dir={sort.dir}
+                        onClick={() => toggleSort("entry_type")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Betrag"
+                        active={sort.key === "amount_cents"}
+                        dir={sort.dir}
+                        onClick={() => toggleSort("amount_cents")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Kategorie"
+                        active={sort.key === "category"}
+                        dir={sort.dir}
+                        onClick={() => toggleSort("category")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Beschreibung"
+                        active={sort.key === "description"}
+                        dir={sort.dir}
+                        onClick={() => toggleSort("description")}
+                      />
+                    </th>
                     <th className="px-3 py-2">Mitglied</th>
+                    <th className="px-3 py-2">Beleg</th>
                     <th className="px-3 py-2" />
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEntries.map((e) => (
-                    <tr key={e.id} className="border-b">
-                      <td className="px-3 py-2">{formatDE(e.entry_date)}</td>
-                      <td className="px-3 py-2">
-                        {e.entry_type === "income" ? "Einnahme" : "Ausgabe"}
-                      </td>
-                      <td
-                        className={`px-3 py-2 font-semibold tabular-nums ${e.entry_type === "income" ? "text-emerald-700" : "text-rose-700"}`}
-                      >
-                        {e.entry_type === "income" ? "+" : "−"}
-                        {formatEur(e.amount_cents)}
-                      </td>
-                      <td className="px-3 py-2">{LEDGER_CATEGORY_LABELS[e.category]}</td>
-                      <td className="px-3 py-2">{e.description}</td>
-                      <td className="px-3 py-2">
-                        {e.member_id ? (
-                          <Link
-                            href={`/admin/members/${e.member_id}`}
-                            className="font-medium text-blue-600 hover:underline"
+                  {sortedEntries.map((e) =>
+                    editingId === e.id ? (
+                      <tr key={e.id} id={`ledger-${e.id}`} className="border-b bg-slate-50/80">
+                        <td className="px-3 py-2">
+                          <input
+                            type="date"
+                            value={editDate}
+                            onChange={(ev) => setEditDate(ev.target.value)}
+                            className="h-9 w-full min-w-[8.5rem] rounded-lg border px-2 text-xs"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={editType}
+                            onChange={(ev) => setEditType(ev.target.value as "income" | "expense")}
+                            className="h-9 w-full rounded-lg border px-2 text-xs"
                           >
-                            {e.member_name ?? "Mitglied"}
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() => handleDelete(e.id)}
-                          className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                            <option value="income">Einnahme</option>
+                            <option value="expense">Ausgabe</option>
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editAmount}
+                            onChange={(ev) => setEditAmount(ev.target.value)}
+                            className="h-9 w-full min-w-[5rem] rounded-lg border px-2 text-xs"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={editCategory}
+                            onChange={(ev) => setEditCategory(ev.target.value as LedgerCategory)}
+                            className="h-9 w-full rounded-lg border px-2 text-xs"
+                          >
+                            {Object.entries(LEDGER_CATEGORY_LABELS).map(([k, v]) => (
+                              <option key={k} value={k}>
+                                {v}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            value={editDesc}
+                            onChange={(ev) => setEditDesc(ev.target.value)}
+                            className="h-9 w-full min-w-[8rem] rounded-lg border px-2 text-xs"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-slate-600">
+                          {e.member_name ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
+                          {e.receipt_storage_path ? (
+                            <ReceiptLink path={e.receipt_storage_path} />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-col gap-1">
+                            <button
+                              type="button"
+                              disabled={pending || !editDesc.trim() || !editAmount}
+                              onClick={() => handleUpdate(e)}
+                              className="text-xs font-medium text-emerald-700 hover:underline disabled:opacity-50"
+                            >
+                              Speichern
+                            </button>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={cancelEdit}
+                              className="text-xs font-medium text-slate-600 hover:underline disabled:opacity-50"
+                            >
+                              Abbrechen
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={e.id} id={`ledger-${e.id}`} className="border-b">
+                        <td className="px-3 py-2">{formatDE(e.entry_date)}</td>
+                        <td className="px-3 py-2">
+                          {e.entry_type === "income" ? "Einnahme" : "Ausgabe"}
+                        </td>
+                        <td
+                          className={`px-3 py-2 font-semibold tabular-nums ${e.entry_type === "income" ? "text-emerald-700" : "text-rose-700"}`}
                         >
-                          Löschen
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          {e.entry_type === "income" ? "+" : "−"}
+                          {formatEur(e.amount_cents)}
+                        </td>
+                        <td className="px-3 py-2">{LEDGER_CATEGORY_LABELS[e.category]}</td>
+                        <td className="px-3 py-2">{e.description}</td>
+                        <td className="px-3 py-2">
+                          {e.member_id ? (
+                            <Link
+                              href={`/admin/members/${e.member_id}`}
+                              className="font-medium text-blue-600 hover:underline"
+                            >
+                              {e.member_name ?? "Mitglied"}
+                            </Link>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          {e.receipt_storage_path ? (
+                            <ReceiptLink path={e.receipt_storage_path} />
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex flex-col gap-1">
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => startEdit(e)}
+                              className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                            >
+                              Bearbeiten
+                            </button>
+                            <button
+                              type="button"
+                              disabled={pending}
+                              onClick={() => handleDelete(e.id)}
+                              className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>

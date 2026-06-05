@@ -19,6 +19,8 @@ export type ClubLedgerRow = {
   entry_date: string;
   created_at: string;
   created_by_name: string | null;
+  receipt_storage_path: string | null;
+  activity_log_id: string | null;
 };
 
 export const LEDGER_CATEGORY_LABELS: Record<LedgerCategory, string> = {
@@ -77,7 +79,7 @@ export async function listClubLedger(opts?: {
   let q = admin
     .from("club_ledger_entries")
     .select(
-      "id,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by",
+      "id,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id",
     )
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -126,6 +128,8 @@ export async function listClubLedger(opts?: {
     entry_date: r.entry_date,
     created_at: r.created_at,
     created_by_name: r.created_by ? (nameById.get(r.created_by) ?? null) : null,
+    receipt_storage_path: (r as { receipt_storage_path?: string | null }).receipt_storage_path ?? null,
+    activity_log_id: (r as { activity_log_id?: string | null }).activity_log_id ?? null,
   }));
 }
 

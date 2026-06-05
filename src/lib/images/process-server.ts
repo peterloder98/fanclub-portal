@@ -2,8 +2,11 @@ import sharp from "sharp";
 import {
   AVATAR_MAX_BYTES,
   AVATAR_STORAGE_PX,
+  DOCUMENT_MAX_SIDE_PX,
+  MERCHANDISE_IMAGE_MAX_BYTES,
   POST_MEDIA_MAX_BYTES,
   POST_MEDIA_MAX_SIDE_PX,
+  RECEIPT_MAX_BYTES,
 } from "@/lib/images/specs";
 
 async function toBuffer(input: Blob | Buffer): Promise<Buffer> {
@@ -76,5 +79,27 @@ export async function processPostMediaForStorage(input: Blob | Buffer): Promise<
     startQuality: 68,
     minQuality: 48,
     shrinkSides: [POST_MEDIA_MAX_SIDE_PX, 560, 420],
+  });
+}
+
+/** Beleg-Scan/Foto — gut lesbar, typisch unter 80 KB. */
+export async function processReceiptForStorage(input: Blob | Buffer): Promise<Buffer> {
+  const buf = await toBuffer(input);
+  const base = sharp(buf, { failOn: "none" }).rotate();
+  return encodeWebpUnderBudget(base, RECEIPT_MAX_BYTES, {
+    startQuality: 72,
+    minQuality: 50,
+    shrinkSides: [DOCUMENT_MAX_SIDE_PX, 960, 720],
+  });
+}
+
+/** Merchandise-Produktfoto. */
+export async function processMerchandiseImageForStorage(input: Blob | Buffer): Promise<Buffer> {
+  const buf = await toBuffer(input);
+  const base = sharp(buf, { failOn: "none" }).rotate();
+  return encodeWebpUnderBudget(base, MERCHANDISE_IMAGE_MAX_BYTES, {
+    startQuality: 70,
+    minQuality: 48,
+    shrinkSides: [DOCUMENT_MAX_SIDE_PX, 800, 600],
   });
 }

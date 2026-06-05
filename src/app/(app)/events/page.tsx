@@ -5,6 +5,7 @@ import {
 } from "@/components/events/events-interactive-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import type { EventAdminNote } from "@/lib/events/admin-notes";
 import { redirect } from "next/navigation";
 
 export default async function EventsPage() {
@@ -13,6 +14,13 @@ export default async function EventsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const isAdmin = profile?.role === "admin";
 
   const { data: events, error } = await supabase
     .from("external_events")
@@ -70,6 +78,28 @@ export default async function EventsPage() {
     }
   }
 
+  let adminNotesByEventId: Record<string, EventAdminNote> | undefined;
+  if (isAdmin && eventIds.length) {
+    const { data: noteRows } = await supabase
+      .from("event_admin_notes")
+      .select("event_id,next_station,next_hotel,notes,updated_at")
+      .in("event_id", eventIds);
+    if (noteRows?.length) {
+      adminNotesByEventId = Object.fromEntries(
+        noteRows.map((r) => [
+          r.event_id,
+          {
+            eventId: r.event_id,
+            nextStation: r.next_station,
+            nextHotel: r.next_hotel,
+            notes: r.notes,
+            updatedAt: r.updated_at,
+          },
+        ]),
+      );
+    }
+  }
+
   return (
     <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
       <Topbar
@@ -93,6 +123,7 @@ export default async function EventsPage() {
             nextStartAt={nextEventWithDate?.start_at ?? null}
             nextTitle={nextEventWithDate?.title ?? null}
             participationByEventId={participationByEventId}
+            adminNotesByEventId={adminNotesByEventId}
           />
         </div>
       </main>

@@ -32,20 +32,25 @@ export type LogMemberActivityInput = {
   metadata?: Record<string, unknown>;
 };
 
-export async function logMemberActivity(input: LogMemberActivityInput) {
+export async function logMemberActivity(input: LogMemberActivityInput): Promise<string | null> {
   const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("member_activity_log").insert({
-    user_id: input.userId ?? null,
-    application_id: input.applicationId ?? null,
-    event_type: input.eventType,
-    title: input.title,
-    details: input.details ?? null,
-    link_url: input.linkUrl ?? null,
-    link_label: input.linkLabel ?? null,
-    created_by: input.createdBy ?? null,
-    metadata: input.metadata ?? {},
-  });
+  const { data, error } = await admin
+    .from("member_activity_log")
+    .insert({
+      user_id: input.userId ?? null,
+      application_id: input.applicationId ?? null,
+      event_type: input.eventType,
+      title: input.title,
+      details: input.details ?? null,
+      link_url: input.linkUrl ?? null,
+      link_label: input.linkLabel ?? null,
+      created_by: input.createdBy ?? null,
+      metadata: input.metadata ?? {},
+    })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
+  return data?.id ?? null;
 }
 
 export type MemberActivityRow = {
@@ -57,6 +62,7 @@ export type MemberActivityRow = {
   link_label: string | null;
   created_at: string;
   created_by_name: string | null;
+  metadata: Record<string, unknown>;
 };
 
 export async function listMemberActivity(opts: {
@@ -67,7 +73,7 @@ export async function listMemberActivity(opts: {
   const admin = createSupabaseAdminClient();
   let q = admin
     .from("member_activity_log")
-    .select("id,event_type,title,details,link_url,link_label,created_at,created_by")
+    .select("id,event_type,title,details,link_url,link_label,created_at,created_by,metadata")
     .order("created_at", { ascending: false })
     .limit(opts.limit ?? 50);
 
@@ -99,6 +105,7 @@ export async function listMemberActivity(opts: {
     link_label: r.link_label,
     created_at: r.created_at,
     created_by_name: r.created_by ? (nameById.get(r.created_by) ?? null) : null,
+    metadata: (r.metadata as Record<string, unknown>) ?? {},
   }));
 }
 

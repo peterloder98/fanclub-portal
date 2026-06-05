@@ -3,6 +3,7 @@ import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { ClubAccountingPanel } from "@/components/admin/club-accounting-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listClubLedger } from "@/lib/club/ledger";
+import { listOpenContributions } from "@/lib/club/membership-contribution";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -21,10 +22,12 @@ export default async function AdminAccountingPage() {
   if (me?.role !== "admin") redirect("/dashboard");
 
   let entries: Awaited<ReturnType<typeof listClubLedger>> = [];
+  let openContributions: Awaited<ReturnType<typeof listOpenContributions>> = [];
   let ledgerAvailable = true;
 
   try {
     entries = await listClubLedger({ limit: 500 });
+    openContributions = await listOpenContributions();
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/club_ledger_entries|does not exist/i.test(msg)) {
@@ -43,7 +46,11 @@ export default async function AdminAccountingPage() {
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
         <div className="mt-4">
-          <ClubAccountingPanel entries={entries} ledgerAvailable={ledgerAvailable} />
+          <ClubAccountingPanel
+            entries={entries}
+            openContributions={openContributions}
+            ledgerAvailable={ledgerAvailable}
+          />
         </div>
       </main>
     </div>
