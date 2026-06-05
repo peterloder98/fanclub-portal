@@ -27,8 +27,10 @@ export default async function AdminAccountingPage() {
   let ledgerAvailable = true;
 
   try {
-    entries = await listClubLedger({ limit: 500 });
-    openContributions = await listOpenContributions();
+    [entries, openContributions] = await Promise.all([
+      listClubLedger({ limit: 500 }),
+      listOpenContributions(),
+    ]);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/club_ledger_entries|does not exist/i.test(msg)) {

@@ -2,7 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { loadApplicationPdfBytes } from "@/lib/membership/application-pdf-service";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
-import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { sendEmailWithLog } from "@/lib/email/send-log";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -79,12 +79,14 @@ export async function notifyAdminsNewMembershipApplication(input: {
       ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
     ];
 
-    const result = await sendEmailViaAccount({
+    const result = await sendEmailWithLog({
       to: adm.email!.trim(),
       subject: rendered.subject,
       text: rendered.text,
       html: rendered.html,
       attachments: attachments.length ? attachments : undefined,
+      templateKey: EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
+      context: { application_id: input.applicationId },
     });
 
     if (result.ok) sentCount += 1;
@@ -133,12 +135,14 @@ export async function sendApplicantConfirmationEmail(input: {
     ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
   ];
 
-  return sendEmailViaAccount({
+  return sendEmailWithLog({
     to: input.email,
     subject: rendered.subject,
     text: rendered.text,
     html: rendered.html,
     attachments,
+    templateKey: EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,
+    context: { application_id: input.applicationId },
   });
 }
 
@@ -165,12 +169,14 @@ export async function sendMemberInviteAfterApproval(input: {
     },
   );
 
-  const result = await sendEmailViaAccount({
+  const result = await sendEmailWithLog({
     to: input.email,
     subject: rendered.subject,
     text: rendered.text,
     html: rendered.html,
     attachments: rendered.signatureAttachment ? [rendered.signatureAttachment] : undefined,
+    templateKey: EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome,
+    context: { membership_number: input.membershipNumber },
   });
   return { ...result, inviteUrl };
 }

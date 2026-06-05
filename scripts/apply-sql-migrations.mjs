@@ -32,6 +32,8 @@ const MIGRATION_FILES = [
   "058_member_warnings_self_select.sql",
   "059_user_notifications.sql",
   "060_membership_approved_template.sql",
+  "061_email_send_log.sql",
+  "062_ledger_perf_indexes.sql",
 ];
 
 async function runWithPg(sql, label) {

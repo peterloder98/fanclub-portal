@@ -17,6 +17,11 @@ export type MemberContributionInfo = {
   periodLabel: string;
 };
 
+export type ContributionStatusBrief = {
+  status: ContributionStatus;
+  openCents: number;
+};
+
 const GRACE_DAYS = 90;
 
 function isoDate(d: Date) {
@@ -66,6 +71,56 @@ export function deriveContributionStatus(
   return daysSinceStart > GRACE_DAYS ? "overdue" : "open";
 }
 
+type MembershipPaymentRow = { member_id: string; amount_cents: number; entry_date: string };
+
+async function loadMembershipPaymentsForUsers(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  userIds: string[],
+): Promise<Map<string, MembershipPaymentRow[]>> {
+  const map = new Map<string, MembershipPaymentRow[]>();
+  if (!userIds.length) return map;
+
+  const CHUNK = 200;
+  for (let i = 0; i < userIds.length; i += CHUNK) {
+    const chunk = userIds.slice(i, i + CHUNK);
+    const { data, error } = await admin
+      .from("club_ledger_entries")
+      .select("member_id,amount_cents,entry_date")
+      .in("member_id", chunk)
+      .eq("entry_type", "income")
+      .eq("category", "membership");
+    if (error) {
+      if (/club_ledger_entries|does not exist/i.test(error.message)) return map;
+      throw new Error(error.message);
+    }
+    for (const row of data ?? []) {
+      if (!row.member_id) continue;
+      if (!map.has(row.member_id)) map.set(row.member_id, []);
+      map.get(row.member_id)!.push(row as MembershipPaymentRow);
+    }
+  }
+  return map;
+}
+
+function computeContributionFromPayments(
+  userId: string,
+  startDate: string,
+  feeCents: number,
+  paymentsByMember: Map<string, MembershipPaymentRow[]>,
+  ref = new Date(),
+): ContributionStatusBrief {
+  const period = currentMembershipPeriod(startDate, ref);
+  const payments = paymentsByMember.get(userId) ?? [];
+  const paidCents = payments
+    .filter((p) => p.entry_date >= period.start && p.entry_date <= period.end)
+    .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+  const openCents = Math.max(0, feeCents - paidCents);
+  return {
+    status: deriveContributionStatus(feeCents, paidCents, period.start, ref),
+    openCents,
+  };
+}
+
 export async function getMemberContributionInfo(
   userId: string,
 ): Promise<MemberContributionInfo | null> {
@@ -90,19 +145,17 @@ export async function getMemberContributionInfo(
 
   const feeCents = membership.fee_cents ?? 1500;
   const period = currentMembershipPeriod(membership.start_date);
-
-  const { data: payments } = await admin
-    .from("club_ledger_entries")
-    .select("amount_cents")
-    .eq("member_id", userId)
-    .eq("entry_type", "income")
-    .eq("category", "membership")
-    .gte("entry_date", period.start)
-    .lte("entry_date", period.end);
-
-  const paidCents = (payments ?? []).reduce((s, r) => s + (r.amount_cents ?? 0), 0);
-  const openCents = Math.max(0, feeCents - paidCents);
-  const status = deriveContributionStatus(feeCents, paidCents, period.start);
+  const paymentsByMember = await loadMembershipPaymentsForUsers(admin, [userId]);
+  const brief = computeContributionFromPayments(
+    userId,
+    membership.start_date,
+    feeCents,
+    paymentsByMember,
+  );
+  const payments = paymentsByMember.get(userId) ?? [];
+  const paidCents = payments
+    .filter((p) => p.entry_date >= period.start && p.entry_date <= period.end)
+    .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
 
   return {
     userId: profile.id,
@@ -111,50 +164,107 @@ export async function getMemberContributionInfo(
     membershipNumber: profile.membership_number,
     feeCents,
     paidCents,
-    openCents,
-    status,
+    openCents: brief.openCents,
+    status: brief.status,
     periodStart: period.start,
     periodEnd: period.end,
     periodLabel: period.label,
   };
 }
 
+/** Batch: 2–3 DB-Abfragen statt N×Einzelabfragen (skaliert bis ~500+ Mitglieder). */
 export async function batchMemberContributionStatus(
   userIds: string[],
-): Promise<Map<string, MemberContributionInfo | null>> {
-  const map = new Map<string, MemberContributionInfo | null>();
-  await Promise.all(
-    userIds.map(async (id) => {
-      map.set(id, await getMemberContributionInfo(id));
-    }),
-  );
+): Promise<Map<string, ContributionStatusBrief | null>> {
+  const map = new Map<string, ContributionStatusBrief | null>();
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (!ids.length) return map;
+  ids.forEach((id) => map.set(id, null));
+
+  const admin = createSupabaseAdminClient();
+  const { data: memberships, error: mErr } = await admin
+    .from("memberships")
+    .select("user_id,start_date,fee_cents")
+    .in("user_id", ids)
+    .eq("status", "active");
+  if (mErr) throw new Error(mErr.message);
+  if (!memberships?.length) return map;
+
+  const activeIds = memberships.map((m) => m.user_id);
+  const paymentsByMember = await loadMembershipPaymentsForUsers(admin, activeIds);
+  const now = new Date();
+
+  for (const m of memberships) {
+    if (!m.start_date) continue;
+    map.set(
+      m.user_id,
+      computeContributionFromPayments(
+        m.user_id,
+        m.start_date,
+        m.fee_cents ?? 1500,
+        paymentsByMember,
+        now,
+      ),
+    );
+  }
   return map;
 }
 
 export async function listOpenContributions(): Promise<MemberContributionInfo[]> {
   const admin = createSupabaseAdminClient();
-  const { data: memberships } = await admin
+  const { data: memberships, error: mErr } = await admin
     .from("memberships")
     .select("user_id,start_date,fee_cents")
     .eq("status", "active");
+  if (mErr) throw new Error(mErr.message);
 
   const userIds = (memberships ?? []).map((m) => m.user_id);
   if (!userIds.length) return [];
 
-  const { data: profiles } = await admin
+  const { data: profiles, error: pErr } = await admin
     .from("profiles")
     .select("id,first_name,last_name,membership_number")
     .in("id", userIds)
     .not("membership_number", "is", null);
+  if (pErr) throw new Error(pErr.message);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const paymentsByMember = await loadMembershipPaymentsForUsers(admin, userIds);
+  const now = new Date();
   const results: MemberContributionInfo[] = [];
 
   for (const m of memberships ?? []) {
     const p = profileById.get(m.user_id);
     if (!p || !m.start_date) continue;
-    const info = await getMemberContributionInfo(m.user_id);
-    if (info && info.status !== "paid") results.push(info);
+    const feeCents = m.fee_cents ?? 1500;
+    const period = currentMembershipPeriod(m.start_date, now);
+    const brief = computeContributionFromPayments(
+      m.user_id,
+      m.start_date,
+      feeCents,
+      paymentsByMember,
+      now,
+    );
+    if (brief.status === "paid") continue;
+
+    const payments = paymentsByMember.get(m.user_id) ?? [];
+    const paidCents = payments
+      .filter((row) => row.entry_date >= period.start && row.entry_date <= period.end)
+      .reduce((s, row) => s + (row.amount_cents ?? 0), 0);
+
+    results.push({
+      userId: p.id,
+      firstName: p.first_name,
+      lastName: p.last_name,
+      membershipNumber: p.membership_number,
+      feeCents,
+      paidCents,
+      openCents: brief.openCents,
+      status: brief.status,
+      periodStart: period.start,
+      periodEnd: period.end,
+      periodLabel: period.label,
+    });
   }
 
   results.sort((a, b) => {

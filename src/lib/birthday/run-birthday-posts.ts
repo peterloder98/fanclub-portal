@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { birthdayPostBodyAsync } from "@/lib/birthday/templates";
+import { createUserNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 export function berlinTodayMd() {
   const parts = new Intl.DateTimeFormat("de-DE", {
@@ -57,18 +59,37 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
       p.id,
       todayIso,
     );
-    const { error } = await admin.from("posts").insert({
-      author_id: null,
-      author_role: "anni",
-      title,
-      body,
-      status: "approved",
-      is_birthday: true,
-      birthday_date: todayIso,
-      birthday_user_id: p.id,
-      last_activity_at: new Date().toISOString(),
-    });
-    if (!error) created += 1;
+    const { data: inserted, error } = await admin
+      .from("posts")
+      .insert({
+        author_id: null,
+        author_role: "anni",
+        title,
+        body,
+        status: "approved",
+        is_birthday: true,
+        birthday_date: todayIso,
+        birthday_user_id: p.id,
+        last_activity_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (!error && inserted?.id) {
+      created += 1;
+      const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+        /\/$/,
+        "",
+      );
+      await createUserNotification({
+        userId: p.id,
+        kind: NOTIFICATION_KINDS.birthdayPost,
+        title: "Alles Gute zum Geburtstag!",
+        body: "Im Feed wartet deine Geburtstagsgratulation von Anni.",
+        linkUrl: base ? `${base}/dashboard#post-${inserted.id}` : `/dashboard#post-${inserted.id}`,
+        linkLabel: "Zum Post",
+        metadata: { post_id: inserted.id, dedupe_key: `birthday:${todayIso}` },
+      }).catch(console.error);
+    }
   }
 
   return { created, reason: "ok" as const };

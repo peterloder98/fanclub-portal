@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { POINT_VALUES } from "@/lib/points/values";
+import { notifyRankUpIfChanged, sumUserPointsThisYear } from "@/lib/points/rank-notify";
 
 export type PostCommentPointsResult = {
   ok: boolean;
@@ -55,6 +56,7 @@ export async function awardPostCommentPoints(
     return { ok: true, points, reason, changed: false };
   }
 
+  const pointsBefore = await sumUserPointsThisYear(userId);
   const { error } = await admin.from("points_transactions").insert({
     user_id: userId,
     points,
@@ -66,6 +68,8 @@ export async function awardPostCommentPoints(
   if (error) {
     return { ok: false, points, reason, changed: false, error: error.message };
   }
+
+  await notifyRankUpIfChanged(userId, pointsBefore, pointsBefore + points).catch(console.error);
 
   return { ok: true, points, reason, changed: true };
 }

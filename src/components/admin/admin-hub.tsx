@@ -102,6 +102,13 @@ const SECTIONS: AdminHubSection[] = [
         icon: Bell,
         iconClassName: "from-rose-500 to-pink-600",
       },
+      {
+        href: "/admin/settings/email-log",
+        title: "E-Mail-Historie",
+        description: "Gesendet, fehlgeschlagen — erneut senden.",
+        icon: Mail,
+        iconClassName: "from-violet-600 to-purple-600",
+      },
     ],
   },
   {

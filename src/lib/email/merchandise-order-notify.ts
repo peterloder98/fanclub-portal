@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
-import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { sendEmailWithLog } from "@/lib/email/send-log";
+import { notifyAllAdmins } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -53,13 +55,24 @@ ${orderUrl}
 
 Deine Anni Perka Fanclub App`;
 
+  await notifyAllAdmins({
+    kind: NOTIFICATION_KINDS.merchandiseOrderAdmin,
+    title: "Neue Merchandise-Bestellung",
+    body: `${input.buyerFirstName} ${input.buyerLastName} — ${input.items.length} Position(en).`,
+    linkUrl: orderUrl,
+    linkLabel: "Bestellung öffnen",
+    metadata: { order_id: input.orderId },
+  }).catch(console.error);
+
   let sent = 0;
   for (const adm of recipients) {
-    const result = await sendEmailViaAccount({
+    const result = await sendEmailWithLog({
       to: adm.email!,
       subject,
       text,
       html: text.replace(/\n/g, "<br>"),
+      templateKey: "merchandise_order_admin",
+      context: { order_id: input.orderId },
     });
     if (result.ok) sent++;
   }

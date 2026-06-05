@@ -6,6 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { variantAvailable } from "@/lib/merchandise/availability";
 import { notifyAdminsMerchandiseOrder } from "@/lib/email/merchandise-order-notify";
+import { createUserNotification } from "@/lib/notifications/create";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
 
 const cartLineSchema = z.object({
@@ -173,6 +175,20 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
       lineTotalCents: r.line_total_cents,
     })),
   }).catch((e) => console.error("[merchandise] admin mail:", e));
+
+  const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+    /\/$/,
+    "",
+  );
+  await createUserNotification({
+    userId: user.id,
+    kind: NOTIFICATION_KINDS.merchandiseOrderConfirmed,
+    title: "Bestellung eingegangen",
+    body: `Deine Merchandise-Bestellung (${(totalCents / 100).toFixed(2).replace(".", ",")} €) wurde bestätigt.`,
+    linkUrl: base ? `${base}/merchandise` : "/merchandise",
+    linkLabel: "Zum Shop",
+    metadata: { order_id: order!.id },
+  }).catch(console.error);
 
   revalidatePath("/merchandise");
   revalidatePath("/admin/merchandise");

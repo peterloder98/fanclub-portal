@@ -41,22 +41,24 @@ export default async function AdminMembersPage({
         ? inviteParam[0] ?? null
         : null;
 
-  const { members, membersError } = await (async (): Promise<{
+  async function loadMembers(): Promise<{
     members: AdminMemberRow[];
     membersError: string | null;
-  }> => {
+  }> {
     try {
       const admin = createSupabaseAdminClient();
-      const { data: memberships, error: mErr } = await admin
-        .from("memberships")
-        .select("user_id,status,start_date")
-        .order("end_date", { ascending: false });
+      const [{ data: memberships, error: mErr }, { data: profiles, error: pErr }] =
+        await Promise.all([
+          admin
+            .from("memberships")
+            .select("user_id,status,start_date")
+            .order("end_date", { ascending: false }),
+          admin
+            .from("profiles")
+            .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
+            .order("membership_number", { ascending: true, nullsFirst: false }),
+        ]);
       if (mErr) return { members: [], membersError: mErr.message };
-
-      const { data: profiles, error: pErr } = await admin
-        .from("profiles")
-        .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
-        .order("membership_number", { ascending: true, nullsFirst: false });
       if (pErr) return { members: [], membersError: pErr.message };
 
       const membershipByUser = new Map<string, { status: string; start_date: string | null }>();
@@ -69,21 +71,6 @@ export default async function AdminMembersPage({
         }
       });
 
-      const { data: warningRows, error: wErr } = await admin
-        .from("member_warnings")
-        .select("member_id");
-      const warningsByUser = new Map<string, number>();
-      if (wErr) {
-        if (!/member_warnings|does not exist/i.test(wErr.message)) {
-          return { members: [], membersError: wErr.message };
-        }
-      } else {
-        (warningRows ?? []).forEach((w) => {
-          const mid = w.member_id as string;
-          warningsByUser.set(mid, (warningsByUser.get(mid) ?? 0) + 1);
-        });
-      }
-
       const baseMembers = (profiles ?? []).map((p) => ({
         id: p.id,
         membership_number: p.membership_number ?? null,
@@ -91,10 +78,7 @@ export default async function AdminMembersPage({
         last_name: p.last_name,
         birthdate: p.birthdate ?? null,
         joined_at: membershipByUser.get(p.id)?.start_date ?? null,
-        warning_count: Math.max(
-          (p as { warning_count?: number }).warning_count ?? 0,
-          warningsByUser.get(p.id) ?? 0,
-        ),
+        warning_count: (p as { warning_count?: number }).warning_count ?? 0,
         membership_status: membershipByUser.get(p.id)?.status ?? null,
         email: p.email ?? null,
       }));
@@ -118,12 +102,12 @@ export default async function AdminMembersPage({
         membersError: e instanceof Error ? e.message : "Fehler beim Laden",
       };
     }
-  })();
+  }
 
-  const { applications, applicationsError } = await (async (): Promise<{
+  async function loadApplications(): Promise<{
     applications: AdminApplicationRow[];
     applicationsError: string | null;
-  }> => {
+  }> {
     try {
       const admin = createSupabaseAdminClient();
       const { data, error } = await admin
@@ -161,7 +145,12 @@ export default async function AdminMembersPage({
         applicationsError: e instanceof Error ? e.message : "Anträge konnten nicht geladen werden",
       };
     }
-  })();
+  }
+
+  const [{ members, membersError }, { applications, applicationsError }] = await Promise.all([
+    loadMembers(),
+    loadApplications(),
+  ]);
 
   return (
     <div className="min-h-screen">

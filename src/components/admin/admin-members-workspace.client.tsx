@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,6 +124,8 @@ export function AdminMembersWorkspace({
   applicationsError: string | null;
 }) {
   const router = useRouter();
+  const [navPending, startNav] = useTransition();
+  const [navTarget, setNavTarget] = useState<string | null>(null);
   const [memberSort, setMemberSort] = useState<{ key: MemberSortKey; dir: "asc" | "desc" }>({
     key: "membership_number",
     dir: "asc",
@@ -256,6 +258,13 @@ export function AdminMembersWorkspace({
     { key: "contribution_status", label: "Beitrag" },
   ];
 
+  function openRecord(href: string) {
+    setNavTarget(href);
+    startNav(() => {
+      router.push(href);
+    });
+  }
+
   const appSortOptions: { key: AppSortKey; label: string }[] = [
     { key: "created_at", label: "Eingang" },
     { key: "last_name", label: "Nachname" },
@@ -323,8 +332,8 @@ export function AdminMembersWorkspace({
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => router.push(`/admin/members/applications/${a.id}`)}
-                  className="w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50"
+                  onClick={() => openRecord(`/admin/members/applications/${a.id}`)}
+                  className={`w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50 ${navPending && navTarget === `/admin/members/applications/${a.id}` ? "opacity-60" : ""}`}
                 >
                   <div className="font-semibold text-slate-900">
                     {a.last_name}, {a.first_name}
@@ -425,8 +434,8 @@ export function AdminMembersWorkspace({
                   {pagedApps.map((a) => (
                     <tr
                       key={a.id}
-                      onClick={() => router.push(`/admin/members/applications/${a.id}`)}
-                      className="cursor-pointer border-b transition hover:bg-slate-50"
+                      onClick={() => openRecord(`/admin/members/applications/${a.id}`)}
+                      className={`cursor-pointer border-b transition hover:bg-slate-50 ${navPending && navTarget === `/admin/members/applications/${a.id}` ? "opacity-60" : ""}`}
                     >
                       <td className="px-3 py-2 tabular-nums text-slate-600">
                         {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
@@ -504,8 +513,8 @@ export function AdminMembersWorkspace({
                 <button
                   key={m.id}
                   type="button"
-                  onClick={() => router.push(`/admin/members/${m.id}`)}
-                  className="w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50"
+                  onClick={() => openRecord(`/admin/members/${m.id}`)}
+                  className={`w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50 ${navPending && navTarget === `/admin/members/${m.id}` ? "opacity-60" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -639,8 +648,8 @@ export function AdminMembersWorkspace({
                   {pagedMembers.map((m) => (
                     <tr
                       key={m.id}
-                      onClick={() => router.push(`/admin/members/${m.id}`)}
-                      className="cursor-pointer border-b transition hover:bg-slate-50"
+                      onClick={() => openRecord(`/admin/members/${m.id}`)}
+                      className={`cursor-pointer border-b transition hover:bg-slate-50 ${navPending && navTarget === `/admin/members/${m.id}` ? "opacity-60" : ""}`}
                     >
                       <td className="px-3 py-2 tabular-nums font-medium text-slate-900">
                         {m.membership_number ?? "—"}

@@ -1,4 +1,4 @@
--- Mini-Buchhaltung: Einnahmen & Ausgaben (optional einem Mitglied zugeordnet)
+-- Buchhaltung: Einnahmen & Ausgaben (optional einem Mitglied zugeordnet)
 
 create table if not exists public.club_ledger_entries (
   id uuid primary key default gen_random_uuid(),
