@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { ApplicationDetailPanels } from "@/components/admin/application-detail-panels";
 import { ApplicationActionsToolbar } from "@/components/admin/application-actions-toolbar.client";
+import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/require-admin";
@@ -118,6 +119,10 @@ export default async function AdminMembershipApplicationPage({
         </div>
 
         <ApplicationDetailPanels app={detail} showApprovedBanner={approved} />
+
+        <div id="application-activity" className="mt-6">
+          <MemberActivityTimeline userId={app.user_id} applicationId={app.id} />
+        </div>
       </main>
     </div>
   );

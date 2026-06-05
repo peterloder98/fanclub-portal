@@ -82,7 +82,7 @@ export function EventTravelEdit({
         }}
         className={
           compact
-            ? "inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            ? "inline-flex h-7 items-center rounded-md border border-slate-200 bg-white px-2 text-[10px] font-semibold leading-none text-slate-700 shadow-sm hover:bg-slate-50"
             : "mt-2 text-xs font-semibold text-blue-700 hover:underline"
         }
       >

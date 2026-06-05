@@ -45,7 +45,7 @@ type MemberSortKey =
   | "warning_count"
   | "membership_status"
   | "contribution_status";
-type AppSortKey = "created_at" | "last_name" | "email" | "status";
+type AppSortKey = "created_at" | "first_name" | "last_name" | "email" | "status";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -195,8 +195,10 @@ export function AdminMembersWorkspace({
         switch (appSort.key) {
           case "created_at":
             return r.created_at;
+          case "first_name":
+            return r.first_name;
           case "last_name":
-            return `${r.last_name} ${r.first_name}`;
+            return r.last_name;
           case "email":
             return r.email;
           case "status":
@@ -219,7 +221,8 @@ export function AdminMembersWorkspace({
 
   const appSortOptions: { key: AppSortKey; label: string }[] = [
     { key: "created_at", label: "Eingang" },
-    { key: "last_name", label: "Name" },
+    { key: "last_name", label: "Nachname" },
+    { key: "first_name", label: "Vorname" },
     { key: "email", label: "E-Mail" },
     { key: "status", label: "Status" },
   ];
@@ -273,7 +276,7 @@ export function AdminMembersWorkspace({
                   className="w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50"
                 >
                   <div className="font-semibold text-slate-900">
-                    {a.first_name} {a.last_name}
+                    {a.last_name}, {a.first_name}
                   </div>
                   <div className="mt-0.5 truncate text-xs text-slate-600">{a.email}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
@@ -302,7 +305,15 @@ export function AdminMembersWorkspace({
                     </th>
                     <th className="px-3 py-2">
                       <SortBtn
-                        label="Name"
+                        label="Vorname"
+                        active={appSort.key === "first_name"}
+                        dir={appSort.dir}
+                        onClick={() => toggleAppSort("first_name")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Nachname"
                         active={appSort.key === "last_name"}
                         dir={appSort.dir}
                         onClick={() => toggleAppSort("last_name")}
@@ -344,9 +355,8 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2 tabular-nums text-slate-600">
                         {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
                       </td>
-                      <td className="px-3 py-2 font-medium text-slate-900">
-                        {a.first_name} {a.last_name}
-                      </td>
+                      <td className="px-3 py-2">{a.first_name}</td>
+                      <td className="px-3 py-2 font-medium text-slate-900">{a.last_name}</td>
                       <td className="px-3 py-2 text-slate-600">{a.email}</td>
                       <td className="px-3 py-2">{formatDE(a.created_at)}</td>
                       <td className="px-3 py-2">

@@ -135,41 +135,37 @@ export function GiveawayBoard({
               return (
                 <Link key={g.id} href={`/giveaways/${g.id}`} className="block">
                   <Card className="transition hover:shadow-md">
-                    <CardContent className="flex flex-wrap items-start justify-between gap-3 p-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Gift className="h-4 w-4 text-blue-600" />
-                          <h3 className="text-sm font-semibold text-slate-900">{g.title}</h3>
-                          {g.isYearEndLottery ? (
-                            <Badge variant="brand" className="text-[10px]">
-                              Sonderverlosung
-                            </Badge>
-                          ) : null}
-                        </div>
-                        {g.description ? (
-                          <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>
-                        ) : null}
-                        <p className="mt-2 text-xs text-slate-500">
-                          {g.prizeNames.join(" · ")} · {g.entryCount} Teilnehmer
-                          {g.entry_mode === "quiz" ? " · Quiz" : " · Einfach"}
-                        </p>
-                        {g.myEntered ? (
-                          g.myEligible === false && !g.isYearEndLottery ? (
-                            <p className="mt-1 text-xs font-medium text-rose-700">
-                              Leider hat es diesmal nicht geklappt
-                            </p>
-                          ) : (
-                            <p className="mt-1 text-xs font-medium text-emerald-700">Du bist dabei</p>
-                          )
+                    <CardContent className="p-4">
+                      <RunningCountdownBadge
+                        endsAt={g.ends_at}
+                        paused={g.isPaused}
+                        className="mb-2 max-w-full justify-start sm:max-w-[14rem]"
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Gift className="h-4 w-4 shrink-0 text-blue-600" />
+                        <h3 className="text-sm font-semibold text-slate-900">{g.title}</h3>
+                        {g.isYearEndLottery ? (
+                          <Badge variant="brand" className="text-[10px]">
+                            Sonderverlosung
+                          </Badge>
                         ) : null}
                       </div>
-                      <div className="flex shrink-0 flex-col items-end gap-2">
-                        <RunningCountdownBadge
-                          endsAt={g.ends_at}
-                          paused={g.isPaused}
-                          className="max-w-[11rem] justify-end"
-                        />
-                      </div>
+                      {g.description ? (
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>
+                      ) : null}
+                      <p className="mt-2 text-xs text-slate-500">
+                        {g.prizeNames.join(" · ")} · {g.entryCount} Teilnehmer
+                        {g.entry_mode === "quiz" ? " · Quiz" : " · Einfach"}
+                      </p>
+                      {g.myEntered ? (
+                        g.myEligible === false && !g.isYearEndLottery ? (
+                          <p className="mt-1 text-xs font-medium text-rose-700">
+                            Leider hat es diesmal nicht geklappt
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs font-medium text-emerald-700">Du bist dabei</p>
+                        )
+                      ) : null}
                     </CardContent>
                   </Card>
                 </Link>

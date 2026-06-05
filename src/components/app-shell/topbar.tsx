@@ -73,9 +73,10 @@ export function Topbar({
   }, [supabase, refreshPoints]);
 
   return (
+    <>
     <header
       className={cn(
-        "sticky top-0 z-50 flex h-16 items-center gap-3 border-b bg-[color:var(--background)]/95 px-4 backdrop-blur lg:px-8",
+        "fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b bg-[color:var(--background)] px-4 lg:sticky lg:inset-x-auto lg:bg-[color:var(--background)]/95 lg:backdrop-blur lg:px-8",
         className,
       )}
     >
@@ -197,5 +198,7 @@ export function Topbar({
         </div>
       </div>
     </header>
+    <div className="h-16 shrink-0 lg:hidden" aria-hidden />
+    </>
   );
 }

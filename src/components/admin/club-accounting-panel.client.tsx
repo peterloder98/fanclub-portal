@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   addClubLedgerEntry,
@@ -601,25 +602,27 @@ export function ClubAccountingPanel({
                         {e.member_name ?? "Mitglied"}
                       </Link>
                     ) : null}
-                    <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                       {e.receipt_storage_path ? (
                         <ReceiptLink path={e.receipt_storage_path} />
                       ) : null}
                       <button
                         type="button"
                         disabled={pending}
+                        title="Bearbeiten"
                         onClick={() => startEdit(e)}
-                        className="font-medium text-blue-600 hover:underline disabled:opacity-50"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
                       >
-                        Bearbeiten
+                        <Pencil className="h-4 w-4" aria-hidden />
                       </button>
                       <button
                         type="button"
                         disabled={pending}
+                        title="Löschen"
                         onClick={() => handleDelete(e.id)}
-                        className="font-medium text-rose-600 hover:underline disabled:opacity-50"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                       >
-                        Löschen
+                        <Trash2 className="h-4 w-4" aria-hidden />
                       </button>
                     </div>
                   </div>
@@ -797,22 +800,24 @@ export function ClubAccountingPanel({
                           {e.created_by_name ?? "—"}
                         </td>
                         <td className="px-3 py-2">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
                               disabled={pending}
+                              title="Bearbeiten"
                               onClick={() => startEdit(e)}
-                              className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
                             >
-                              Bearbeiten
+                              <Pencil className="h-4 w-4" aria-hidden />
                             </button>
                             <button
                               type="button"
                               disabled={pending}
+                              title="Löschen"
                               onClick={() => handleDelete(e.id)}
-                              className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
                             >
-                              Löschen
+                              <Trash2 className="h-4 w-4" aria-hidden />
                             </button>
                           </div>
                         </td>

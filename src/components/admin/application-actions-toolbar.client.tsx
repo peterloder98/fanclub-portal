@@ -10,7 +10,6 @@ import {
   sendPaymentReminderEmail,
 } from "@/app/(app)/admin/members/applications/actions";
 import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
-import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 
@@ -152,8 +151,6 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
           Löschen
         </button>
       </div>
-
-      <MemberActivityTimeline userId={app.user_id} applicationId={app.id} />
 
       {showApproveDialog ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
