@@ -21,7 +21,7 @@ import {
   sendGiveawayWinnerEmail,
   type QuizParticipationResult,
 } from "@/app/(app)/giveaways/actions";
-import type { MailSignatureOption } from "@/lib/email/signatures";
+import { CLUB_SIGNATURE_ID, type MailSignatureOption } from "@/lib/email/signatures";
 
 type Question = {
   id: string;
@@ -105,7 +105,7 @@ export function GiveawayDetailClient({
   const [localEntered, setLocalEntered] = useState(myEntry);
   const [localWinners, setLocalWinners] = useState(winners);
   const [localStatus, setLocalStatus] = useState(giveaway.status);
-  const [signatureId, setSignatureId] = useState(signatures[0]?.id ?? "");
+  const [signatureId, setSignatureId] = useState(CLUB_SIGNATURE_ID);
   const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(false);
   const [answersExpanded, setAnswersExpanded] = useState(!giveawayOver);
 

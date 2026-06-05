@@ -8,12 +8,9 @@ import { cn } from "@/lib/cn";
 import { BirthdayTemplatesPanel } from "@/components/admin/birthday-templates-panel.client";
 import { TEMPLATE_PLACEHOLDERS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import {
-  loadDefaultMailSignatureSettingsAction,
   loadEmailTemplatesAction,
-  saveDefaultMailSignatureIdAction,
   saveEmailTemplateAction,
 } from "./actions";
-import type { MailSignatureOption } from "@/lib/email/signatures";
 
 type TemplateRow = {
   key: string;
@@ -37,10 +34,6 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [signatures, setSignatures] = useState<MailSignatureOption[]>([]);
-  const [defaultSignatureId, setDefaultSignatureId] = useState("");
-  const [signatureBusy, setSignatureBusy] = useState(false);
-
   const reload = useCallback(async () => {
     setLoading(true);
     try {
@@ -57,14 +50,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
 
   useEffect(() => {
     void (async () => {
-      const [rows, sigSettings] = await Promise.all([
-        reload(),
-        loadDefaultMailSignatureSettingsAction().catch(() => null),
-      ]);
-      if (sigSettings) {
-        setSignatures(sigSettings.signatures);
-        setDefaultSignatureId(sigSettings.defaultSignatureId);
-      }
+      const rows = await reload();
       if (rows.length) selectTemplate(rows[0]);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,43 +119,22 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Standard-Signatur für E-Mails</CardTitle>
+              <CardTitle className="text-base">Signatur in Vorlagen</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-              <label className="grid gap-1">
-                <span className="text-sm text-slate-600">
-                  Wird über <code className="text-xs">{`{{admin_signature_text}}`}</code> eingefügt.
-                </span>
-                <select
-                  value={defaultSignatureId}
-                  disabled={signatureBusy || signatures.length === 0}
-                  onChange={(e) => setDefaultSignatureId(e.target.value)}
-                  className="mt-1 h-11 rounded-xl border bg-white px-3 text-sm"
-                >
-                  {signatures.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                disabled={signatureBusy || !defaultSignatureId}
-                onClick={() => {
-                  setSignatureBusy(true);
-                  setError(null);
-                  void saveDefaultMailSignatureIdAction(defaultSignatureId)
-                    .then(() => setMessage("Standard-Signatur gespeichert."))
-                    .catch((e) =>
-                      setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen"),
-                    )
-                    .finally(() => setSignatureBusy(false));
-                }}
-                className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+            <CardContent className="text-sm text-slate-600">
+              <p>
+                Vorlagen und automatische System-E-Mails nutzen immer die allgemeine{" "}
+                <span className="font-medium text-slate-800">Fanclub-Signatur</span> über{" "}
+                <code className="text-xs">{`{{admin_signature_text}}`}</code>. Persönliche
+                Admin-Unterschriften können nur beim manuellen Versand einzelner E-Mails gewählt
+                werden.
+              </p>
+              <Link
+                href="/admin/signatures"
+                className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline"
               >
-                {signatureBusy ? "Speichern…" : "Signatur speichern"}
-              </button>
+                Fanclub-Signatur bearbeiten →
+              </Link>
             </CardContent>
           </Card>
 

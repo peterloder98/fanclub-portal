@@ -6,7 +6,7 @@ import {
   confirmYearEndGiveawayAction,
   removeYearEndGiveawayPrize,
 } from "@/app/(app)/giveaways/actions";
-import type { MailSignatureOption } from "@/lib/email/signatures";
+import { CLUB_SIGNATURE_ID, type MailSignatureOption } from "@/lib/email/signatures";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { YEAR_END_TIE_BREAK_SUMMARY } from "@/lib/giveaways/year-end-ranking";
 
@@ -38,7 +38,7 @@ export function YearEndGiveawayAdmin({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prizeDraft, setPrizeDraft] = useState("");
-  const [signatureId, setSignatureId] = useState(signatures[0]?.id ?? "");
+  const [signatureId, setSignatureId] = useState(CLUB_SIGNATURE_ID);
 
   async function onAddPrize() {
     const name = prizeDraft.trim();

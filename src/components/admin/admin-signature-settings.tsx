@@ -97,7 +97,10 @@ export function AdminSignatureSettings() {
 
   return (
     <div className="grid gap-4">
-      <p className="text-sm text-slate-600">Deine persönliche Signatur für E-Mails, die du als Admin versendest.</p>
+      <p className="text-sm text-slate-600">
+        Optional: deine persönliche Signatur für E-Mails, die du manuell versendest. Standard ist
+        immer die allgemeine Fanclub-Signatur — nicht automatisch für andere Admins.
+      </p>
 
       <label className="grid gap-1">
         <span className="text-sm font-medium text-slate-700">Signatur-Text (persönlich)</span>

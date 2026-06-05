@@ -8,7 +8,7 @@ import {
   getDefaultMailSignatureId,
   setDefaultMailSignatureId,
 } from "@/lib/email/default-mail-signature";
-import { listMailSignatureOptions } from "@/lib/email/signatures";
+import { CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 
 export async function loadEmailTemplatesAction() {
   await requireAdmin();
@@ -49,20 +49,13 @@ export async function saveEmailTemplateAction(formData: FormData) {
 
 export async function loadDefaultMailSignatureSettingsAction() {
   await requireAdmin();
-  const signatures = await listMailSignatureOptions();
   const defaultSignatureId = await getDefaultMailSignatureId();
-  return { signatures, defaultSignatureId };
+  return { defaultSignatureId };
 }
 
-export async function saveDefaultMailSignatureIdAction(signatureId: string) {
+export async function saveDefaultMailSignatureIdAction() {
   await requireAdmin();
-  const trimmed = signatureId.trim();
-  if (!trimmed) throw new Error("Bitte eine Signatur auswählen.");
-  const options = await listMailSignatureOptions();
-  if (!options.some((s) => s.id === trimmed)) {
-    throw new Error("Unbekannte Signatur.");
-  }
-  await setDefaultMailSignatureId(trimmed);
+  await setDefaultMailSignatureId(CLUB_SIGNATURE_ID);
   revalidatePath("/admin/settings/email-templates");
 }
 
