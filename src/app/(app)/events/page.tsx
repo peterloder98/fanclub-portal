@@ -102,12 +102,12 @@ export default async function EventsPage() {
   }
 
   return (
-    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
+    <div className="flex min-h-screen flex-col lg:h-dvh lg:max-h-dvh lg:overflow-hidden">
       <Topbar
         title="Events"
         subtitle="Alle wichtigen Konzerttermine von Anni"
       />
-      <main className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3 lg:px-6">
+      <main className="flex flex-col px-4 py-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:px-6">
         {error ? (
           <div className="mb-3 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("external_events")
@@ -118,7 +118,7 @@ export default async function EventsPage() {
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
           <EventsInteractivePanel
             events={(events ?? []) as never[]}
             nextStartAt={nextEventWithDate?.start_at ?? null}

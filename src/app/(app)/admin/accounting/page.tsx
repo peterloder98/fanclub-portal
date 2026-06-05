@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { AdminMembersNav } from "@/components/admin/admin-members-nav";
 import { ClubAccountingPanel } from "@/components/admin/club-accounting-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listClubLedger } from "@/lib/club/ledger";
@@ -45,6 +46,9 @@ export default async function AdminAccountingPage() {
       />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
+        <div className="mt-4">
+          <AdminMembersNav active="accounting" />
+        </div>
         <div className="mt-4">
           <ClubAccountingPanel
             entries={entries}

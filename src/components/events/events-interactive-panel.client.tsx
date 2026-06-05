@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown, Map } from "lucide-react";
 import { EventsMapClient } from "@/components/events/events-map.client";
 import { EventsCountdown } from "@/components/events/events-countdown";
 import { EventParticipationRow } from "@/components/events/event-participation-row";
@@ -43,18 +44,9 @@ export function EventsInteractivePanel({
   className?: string;
 }) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const [mapOpen, setMapOpen] = useState(false);
 
-  const list = (
-    <Card className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl">
-      <CardHeader className="shrink-0 border-b border-slate-100 pb-2 pt-4">
-        <CardTitle className="text-base">Alle Termine</CardTitle>
-      </CardHeader>
-      <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
-        <div
-          className="h-full overflow-y-auto overscroll-contain px-3 py-3"
-          role="region"
-          aria-label="Eventliste"
-        >
+  const eventItems = (
           <div className="grid gap-2">
             {events.map((e) => {
               const { date, time } = formatEventStart(e.start_at);
@@ -73,11 +65,11 @@ export function EventsInteractivePanel({
                   onMouseLeave={() => setHighlightedId(null)}
                   className={
                     active
-                      ? "rounded-xl border-2 border-blue-400 bg-blue-50/50 px-3 py-2.5 shadow-sm transition"
-                      : "rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
+                      ? "overflow-hidden rounded-xl border-2 border-blue-400 bg-blue-50/50 px-3 py-2.5 shadow-sm transition"
+                      : "overflow-hidden rounded-xl border bg-white px-3 py-2.5 shadow-sm shadow-slate-900/5 transition hover:border-slate-300"
                   }
                 >
-                  <div className="relative min-w-0 sm:pr-28">
+                  <div className="relative min-w-0 max-w-full sm:pr-28">
                     <div className="truncate text-sm font-semibold text-slate-900">{e.title}</div>
                     <div className="mt-0.5 text-xs text-slate-600">
                       <span className="font-medium text-slate-800">{date}</span>
@@ -139,35 +131,67 @@ export function EventsInteractivePanel({
               );
             })}
           </div>
+  );
+
+  const list = (
+    <Card className="rounded-2xl lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
+      <CardHeader className="shrink-0 border-b border-slate-100 pb-2 pt-4">
+        <CardTitle className="text-base">Alle Termine</CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+        <div
+          className="px-3 py-3 lg:h-full lg:overflow-y-auto lg:overscroll-contain"
+          role="region"
+          aria-label="Eventliste"
+        >
+          {eventItems}
         </div>
       </CardContent>
     </Card>
   );
 
+  const mapInner = (
+    <div className="h-[200px] w-full lg:h-full lg:min-h-[180px]">
+      <EventsMapClient
+        events={events}
+        highlightedEventId={highlightedId}
+        minHeight={180}
+        mapVariant="events"
+        fillHeight
+        onEventSelect={(id) => setHighlightedId(id)}
+      />
+    </div>
+  );
+
   const map = (
     <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-      <CardContent className="min-h-0 flex-1 p-2">
-        <div className="h-full min-h-[180px] w-full">
-          <EventsMapClient
-            events={events}
-            highlightedEventId={highlightedId}
-            minHeight={180}
-            mapVariant="events"
-            fillHeight
-            onEventSelect={(id) => setHighlightedId(id)}
-          />
-        </div>
-      </CardContent>
+      <CardContent className="min-h-0 flex-1 p-2">{mapInner}</CardContent>
     </Card>
   );
 
   return (
     <>
-      {/* Mobile: Countdown → Liste (4 sichtbar, Rest scroll) → Karte */}
-      <div className={cn("flex h-full min-h-0 flex-col gap-3 lg:hidden", className)}>
+      {/* Mobile: Countdown → volle Liste (Seite scrollt) → Karte optional */}
+      <div className={cn("flex flex-col gap-3 lg:hidden", className)}>
         <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-        <div className="min-h-0 max-h-[min(48dvh,420px)]">{list}</div>
-        <div className="min-h-[220px] flex-1">{map}</div>
+        {list}
+        <Card className="rounded-2xl">
+          <button
+            type="button"
+            onClick={() => setMapOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Map className="h-4 w-4 text-blue-600" aria-hidden />
+              Karte {mapOpen ? "ausblenden" : "anzeigen"}
+            </span>
+            <ChevronDown
+              className={cn("h-5 w-5 shrink-0 text-slate-500 transition", mapOpen && "rotate-180")}
+              aria-hidden
+            />
+          </button>
+          {mapOpen ? <div className="border-t p-2">{mapInner}</div> : null}
+        </Card>
       </div>
 
       {/* Desktop: Liste links, Countdown+Karte rechts */}

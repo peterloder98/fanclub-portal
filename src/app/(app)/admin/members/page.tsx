@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { AdminMembersNav } from "@/components/admin/admin-members-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CreateMemberSection } from "@/components/admin/create-member-section";
@@ -170,6 +171,9 @@ export default async function AdminMembersPage({
       />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
+        <div className="mt-4">
+          <AdminMembersNav active="members" />
+        </div>
 
         <div className="mt-4">
         {invite ? (

@@ -380,7 +380,46 @@ export function AdminMembersWorkspace({
           ) : sortedApps.length === 0 ? (
             <div className="text-slate-600">Keine offenen Anträge.</div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border bg-white">
+            <>
+            <div className="grid gap-2 md:hidden">
+              {sortedApps.map((a) => (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => setSelectedAppId(a.id)}
+                  className={cn(
+                    "w-full rounded-xl border bg-white p-3 text-left transition",
+                    selectedAppId === a.id && "border-blue-300 bg-blue-50/60",
+                  )}
+                >
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="radio"
+                      checked={selectedAppId === a.id}
+                      onChange={() => setSelectedAppId(a.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-1"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-slate-900">
+                        {a.first_name} {a.last_name}
+                      </div>
+                      <div className="mt-0.5 truncate text-xs text-slate-600">{a.email}</div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                        <span className="text-slate-500">{formatDE(a.created_at)}</span>
+                        <Badge variant={applicationStatusVariant(a.status)}>
+                          {applicationStatusLabel(a.status)}
+                        </Badge>
+                        <span className="text-slate-500">
+                          {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto rounded-xl border bg-white md:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
@@ -463,6 +502,7 @@ export function AdminMembersWorkspace({
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
           {selectedApp ? (
@@ -481,24 +521,58 @@ export function AdminMembersWorkspace({
           <CardTitle>Mitgliederliste</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <p className="text-xs text-slate-500">
-              Zeile anklicken öffnet den Mitgliedsdatensatz.
-            </p>
-            <Link
-              href="/admin/accounting"
-              className="ml-auto h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              Mini-Buchhaltung
-            </Link>
-          </div>
+          <p className="mb-3 text-xs text-slate-500">
+            Zeile oder Karte anklicken öffnet den Mitgliedsdatensatz.
+          </p>
 
           {membersError ? (
             <div className="text-rose-700">{membersError}</div>
           ) : sortedMembers.length === 0 ? (
             <div className="text-slate-600">Keine Mitglieder gefunden.</div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border bg-white">
+            <>
+            <div className="grid gap-2 md:hidden">
+              {sortedMembers.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => router.push(`/admin/members/${m.id}`)}
+                  className="w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold text-slate-900">
+                        {m.first_name} {m.last_name}
+                      </div>
+                      <div className="mt-0.5 text-xs text-slate-500">
+                        Nr. {m.membership_number ?? "—"}
+                      </div>
+                    </div>
+                    <WarningCountBadge count={m.warning_count} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    {m.membership_status ? (
+                      <Badge
+                        variant={
+                          m.membership_status === "active"
+                            ? "success"
+                            : m.membership_status === "applied"
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {membershipStatusLabel(m.membership_status)}
+                      </Badge>
+                    ) : null}
+                    {m.contribution_status ? (
+                      <ContributionStatusBadge status={m.contribution_status} />
+                    ) : null}
+                    <span className="text-slate-500">Beitritt {formatDE(m.joined_at)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto rounded-xl border bg-white md:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
@@ -614,6 +688,7 @@ export function AdminMembersWorkspace({
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
         </CardContent>

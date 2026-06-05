@@ -93,7 +93,73 @@ export function SmtpSettingsClient() {
               <code className="text-xs">.env.local</code> und lade die Seite neu.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="grid gap-3 md:hidden">
+              {accounts.map((a) => (
+                <div key={a.id} className="rounded-xl border bg-white p-3 text-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold text-slate-900">{a.email}</p>
+                      <p className="mt-0.5 text-xs text-slate-600">
+                        {a.server}:{a.port}
+                      </p>
+                      {a.display_name ? (
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{a.display_name}</p>
+                      ) : null}
+                    </div>
+                    {a.is_default ? <Badge variant="brand">Standard</Badge> : null}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="rounded-lg border px-2.5 py-1.5 text-xs font-medium"
+                      onClick={() => setEditing(a)}
+                    >
+                      Bearbeiten
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="rounded-lg border px-2.5 py-1.5 text-xs font-medium"
+                      onClick={() => void onTest(a.id)}
+                    >
+                      Test
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="rounded-lg border px-2.5 py-1.5 text-xs font-medium"
+                      onClick={() => void onTest(a.id, true)}
+                    >
+                      Test-Mail
+                    </button>
+                    {!a.is_default ? (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="rounded-lg border px-2.5 py-1.5 text-xs font-medium"
+                        onClick={() => void setDefaultSmtpAccountAction(a.id).then(() => reload())}
+                      >
+                        Standard
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={busy || accounts.length <= 1}
+                      className="rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-medium text-rose-700"
+                      onClick={() => {
+                        if (!confirm("SMTP-Konto wirklich löschen?")) return;
+                        void deleteSmtpAccountAction(a.id).then(() => reload());
+                      }}
+                    >
+                      Löschen
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead>
                   <tr className="border-b text-slate-600">
@@ -171,6 +237,7 @@ export function SmtpSettingsClient() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -355,7 +355,30 @@ export function ClubAccountingPanel({
             <CardTitle>Offene Beiträge ({openContributions.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto rounded-xl border">
+            <div className="grid gap-2 md:hidden">
+              {openContributions.map((c) => (
+                <Link
+                  key={c.userId}
+                  href={`/admin/members/${c.userId}`}
+                  className="block rounded-xl border bg-white p-3 transition hover:border-slate-300 hover:bg-slate-50"
+                >
+                  <div className="font-semibold text-slate-900">
+                    {c.lastName}, {c.firstName}
+                    {c.membershipNumber ? (
+                      <span className="ml-1 text-xs font-normal text-slate-500">
+                        Nr. {c.membershipNumber}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                    <ContributionStatusBadge status={c.status} />
+                    <span className="font-semibold text-amber-800">{formatEur(c.openCents)} offen</span>
+                    <span className="text-slate-500">{c.periodLabel}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="hidden overflow-x-auto rounded-xl border md:block">
               <table className="w-full min-w-[560px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
@@ -491,7 +514,110 @@ export function ClubAccountingPanel({
           {sortedEntries.length === 0 ? (
             <p className="text-sm text-slate-500">Keine Einträge in diesem Zeitraum.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border">
+            <>
+            <div className="grid gap-2 md:hidden">
+              {sortedEntries.map((e) =>
+                editingId === e.id ? (
+                  <div key={e.id} className="rounded-xl border bg-slate-50 p-3 text-sm">
+                    <div className="grid gap-2">
+                      <select
+                        value={editType}
+                        onChange={(ev) => setEditType(ev.target.value as "income" | "expense")}
+                        className="h-10 rounded-xl border px-3 text-sm"
+                      >
+                        <option value="income">Einnahme</option>
+                        <option value="expense">Ausgabe</option>
+                      </select>
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(ev) => setEditDate(ev.target.value)}
+                        className="h-10 rounded-xl border px-3 text-sm"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editAmount}
+                        onChange={(ev) => setEditAmount(ev.target.value)}
+                        className="h-10 rounded-xl border px-3 text-sm"
+                      />
+                      <input
+                        value={editDesc}
+                        onChange={(ev) => setEditDesc(ev.target.value)}
+                        placeholder="Beschreibung"
+                        className="h-10 rounded-xl border px-3 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={pending || !editDesc.trim() || !editAmount}
+                          onClick={() => handleUpdate(e)}
+                          className="text-sm font-semibold text-emerald-700 disabled:opacity-50"
+                        >
+                          Speichern
+                        </button>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={cancelEdit}
+                          className="text-sm font-semibold text-slate-600 disabled:opacity-50"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div key={e.id} className="rounded-xl border bg-white p-3 text-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-slate-900">{e.description}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {formatDE(e.entry_date)} · {LEDGER_CATEGORY_LABELS[e.category]}
+                        </p>
+                      </div>
+                      <p
+                        className={`shrink-0 font-bold tabular-nums ${e.entry_type === "income" ? "text-emerald-700" : "text-rose-700"}`}
+                      >
+                        {e.entry_type === "income" ? "+" : "−"}
+                        {formatEur(e.amount_cents)}
+                      </p>
+                    </div>
+                    {e.member_id ? (
+                      <Link
+                        href={`/admin/members/${e.member_id}`}
+                        className="mt-2 inline-block text-xs font-medium text-blue-600 hover:underline"
+                      >
+                        {e.member_name ?? "Mitglied"}
+                      </Link>
+                    ) : null}
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs">
+                      {e.receipt_storage_path ? (
+                        <ReceiptLink path={e.receipt_storage_path} />
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => startEdit(e)}
+                        className="font-medium text-blue-600 hover:underline disabled:opacity-50"
+                      >
+                        Bearbeiten
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => handleDelete(e.id)}
+                        className="font-medium text-rose-600 hover:underline disabled:opacity-50"
+                      >
+                        Löschen
+                      </button>
+                    </div>
+                  </div>
+                ),
+              )}
+            </div>
+            <div className="hidden overflow-x-auto rounded-xl border md:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
@@ -689,6 +815,7 @@ export function ClubAccountingPanel({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
