@@ -11,7 +11,6 @@ import { profileToUserListEntry } from "@/lib/profiles/display";
 import { optimizePostImage } from "@/lib/posts/optimize-image";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
 import { flyPointsFromElement } from "@/lib/points/fly";
-import { emitPointsGain } from "@/lib/points/events";
 import { POINT_VALUES } from "@/lib/points/values";
 import {
   deltaAfterCommentDelete,
@@ -548,10 +547,13 @@ export function PostFeed({
     );
   }
 
-  function addComment(postId: string) {
+  function addComment(postId: string, fromEl?: HTMLElement | null) {
     const text = (draftByPostId[postId] ?? "").trim();
     if (!text) return;
     if (!me) return;
+    const flyFrom =
+      fromEl ?? commentInputRefs.current[postId] ?? null;
+    const flyRect = flyFrom?.getBoundingClientRect() ?? null;
     setDraftByPostId((d) => ({ ...d, [postId]: "" }));
     const nowLabel = new Date().toLocaleString("de-DE", {
       dateStyle: "short",
@@ -654,9 +656,7 @@ export function PostFeed({
         }
 
         if (uiDelta > 0) {
-          const input = commentInputRefs.current[postId];
-          flyPointsFromElement({ fromEl: input ?? null, delta: uiDelta });
-          emitPointsGain(uiDelta);
+          flyPointsFromElement({ fromRect: flyRect, delta: uiDelta });
         }
       } catch {
         // ignore for now
@@ -957,9 +957,14 @@ export function PostFeed({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [composerExpanded, composerHasContent, dragActive]);
 
-  async function deleteComment(postId: string, commentId: string) {
+  async function deleteComment(
+    postId: string,
+    commentId: string,
+    fromEl?: HTMLElement | null,
+  ) {
     if (!me) return;
     if (!window.confirm("Kommentar löschen?")) return;
+    const flyRect = fromEl?.getBoundingClientRect() ?? null;
     const post = posts.find((p) => p.id === postId);
     const comment = post?.comments.find((c) => c.id === commentId);
     const isOwn = comment?.authorId === me.id;
@@ -1011,8 +1016,7 @@ export function PostFeed({
       }
 
       if (uiDelta < 0) {
-        flyPointsFromElement({ fromEl: null, delta: uiDelta });
-        emitPointsGain(uiDelta);
+        flyPointsFromElement({ fromRect: flyRect, delta: uiDelta });
       }
     } catch {
       // ignore
@@ -1347,7 +1351,7 @@ export function PostFeed({
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      addComment(post.id);
+                      addComment(post.id, e.currentTarget);
                     }
                   }}
                   placeholder="Kommentieren…"
@@ -1355,7 +1359,7 @@ export function PostFeed({
                 />
                 <button
                   type="button"
-                  onClick={() => addComment(post.id)}
+                  onClick={(e) => addComment(post.id, e.currentTarget)}
                   className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-900 text-white hover:bg-slate-800"
                   aria-label="Kommentar senden"
                 >
@@ -1434,7 +1438,9 @@ export function PostFeed({
                               {canDelete ? (
                                 <button
                                   type="button"
-                                  onClick={() => void deleteComment(post.id, c.id)}
+                                  onClick={(e) =>
+                                    void deleteComment(post.id, c.id, e.currentTarget)
+                                  }
                                   className="grid h-6 w-6 place-items-center rounded text-rose-600 hover:bg-rose-50"
                                   title="Löschen"
                                   aria-label="Löschen"

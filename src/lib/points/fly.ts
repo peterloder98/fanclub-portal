@@ -36,16 +36,19 @@ function spawnPopAt(x: number, y: number, positive: boolean) {
   }
 }
 
+type FlyRect = { left: number; top: number; width: number; height: number };
+
 export function flyPointsFromElement(params: {
-  fromEl: HTMLElement | null;
+  fromEl?: HTMLElement | null;
+  fromRect?: FlyRect | DOMRect | null;
   delta: number;
 }) {
   if (typeof window === "undefined") return;
-  const { fromEl, delta } = params;
+  const { fromEl, fromRect, delta } = params;
   if (!delta) return;
 
   const target = getPointsTargetElement();
-  const from = fromEl?.getBoundingClientRect();
+  const from = fromRect ?? fromEl?.getBoundingClientRect();
   if (!from) {
     emitPointsDelta(delta);
     return;

@@ -233,6 +233,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
 
   revalidatePath("/dashboard");
   revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/polls");
   revalidatePath("/giveaways");
 

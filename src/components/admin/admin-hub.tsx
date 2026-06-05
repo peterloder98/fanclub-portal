@@ -12,6 +12,7 @@ import {
   ScrollText,
   Shield,
   Users,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -49,6 +50,13 @@ const SECTIONS: AdminHubSection[] = [
         description: "Öffentlicher Link, E-Mail-Versand an Interessenten.",
         icon: FileText,
         iconClassName: "from-violet-600 to-purple-600",
+      },
+      {
+        href: "/admin/accounting",
+        title: "Mini-Buchhaltung",
+        description: "Einnahmen, Ausgaben und Zahlungen pro Mitglied.",
+        icon: Wallet,
+        iconClassName: "from-emerald-600 to-teal-600",
       },
     ],
   },

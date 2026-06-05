@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
-import { deleteMember } from "@/app/(app)/admin/members/actions";
 import {
   approveMembershipApplicationWithNumber,
   deleteMembershipApplication,
@@ -124,7 +123,6 @@ export function AdminMembersWorkspace({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
   const [memberSort, setMemberSort] = useState<{ key: MemberSortKey; dir: "asc" | "desc" }>({
     key: "membership_number",
@@ -231,22 +229,6 @@ export function AdminMembersWorkspace({
 
   const selectedApp = sortedApps.find((a) => a.id === selectedAppId) ?? null;
 
-  function handleDeleteMember() {
-    if (!selectedMemberId) return;
-    const row = members.find((m) => m.id === selectedMemberId);
-    const label = row ? `${row.first_name} ${row.last_name}` : "dieses Mitglied";
-    if (!window.confirm(`Mitglied „${label}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.`)) {
-      return;
-    }
-    setActionError(null);
-    startTransition(async () => {
-      try {
-        await deleteMember(selectedMemberId);
-      } catch (e) {
-        setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
-      }
-    });
-  }
 
   function openApproveDialog() {
     if (!selectedApp) return;
@@ -492,23 +474,16 @@ export function AdminMembersWorkspace({
           <CardTitle>Mitgliederliste</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={!selectedMemberId || pending}
-              onClick={() => selectedMemberId && router.push(`/admin/members/${selectedMemberId}`)}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p className="text-xs text-slate-500">
+              Zeile anklicken öffnet den Mitgliedsdatensatz.
+            </p>
+            <Link
+              href="/admin/accounting"
+              className="ml-auto h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              Bearbeiten
-            </button>
-            <button
-              type="button"
-              disabled={!selectedMemberId || pending}
-              onClick={handleDeleteMember}
-              className="h-10 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 disabled:opacity-50"
-            >
-              Löschen
-            </button>
+              Mini-Buchhaltung
+            </Link>
           </div>
 
           {membersError ? (
@@ -583,20 +558,10 @@ export function AdminMembersWorkspace({
                   {sortedMembers.map((m) => (
                     <tr
                       key={m.id}
-                      onClick={() => setSelectedMemberId(m.id)}
-                      className={cn(
-                        "cursor-pointer border-b transition hover:bg-slate-50",
-                        selectedMemberId === m.id && "bg-blue-50/60",
-                      )}
+                      onClick={() => router.push(`/admin/members/${m.id}`)}
+                      className="cursor-pointer border-b transition hover:bg-slate-50"
                     >
-                      <td className="px-3 py-2">
-                        <input
-                          type="radio"
-                          checked={selectedMemberId === m.id}
-                          onChange={() => setSelectedMemberId(m.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </td>
+                      <td className="px-3 py-2 text-slate-400">→</td>
                       <td className="px-3 py-2 tabular-nums font-medium text-slate-900">
                         {m.membership_number ?? "—"}
                       </td>
@@ -631,11 +596,6 @@ export function AdminMembersWorkspace({
             </div>
           )}
 
-          {selectedMemberId ? (
-            <div className="mt-4">
-              <MemberActivityTimeline userId={selectedMemberId} applicationId={null} />
-            </div>
-          ) : null}
         </CardContent>
       </Card>
 

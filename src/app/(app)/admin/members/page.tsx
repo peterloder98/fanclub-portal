@@ -11,6 +11,8 @@ import {
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminMembersPage({
   searchParams,
 }: {
@@ -65,12 +67,20 @@ export default async function AdminMembersPage({
         }
       });
 
-      const { data: warningRows } = await admin.from("member_warnings").select("member_id");
+      const { data: warningRows, error: wErr } = await admin
+        .from("member_warnings")
+        .select("member_id");
       const warningsByUser = new Map<string, number>();
-      (warningRows ?? []).forEach((w) => {
-        const id = w.member_id as string;
-        warningsByUser.set(id, (warningsByUser.get(id) ?? 0) + 1);
-      });
+      if (wErr) {
+        if (!/member_warnings|does not exist/i.test(wErr.message)) {
+          return { members: [], membersError: wErr.message };
+        }
+      } else {
+        (warningRows ?? []).forEach((w) => {
+          const mid = w.member_id as string;
+          warningsByUser.set(mid, (warningsByUser.get(mid) ?? 0) + 1);
+        });
+      }
 
       return {
         members: (profiles ?? []).map((p) => ({
