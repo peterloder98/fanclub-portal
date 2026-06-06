@@ -14,7 +14,8 @@ import {
 } from "@/lib/notifications/actions";
 import { presentNotification } from "@/lib/notifications/present";
 
-const PANEL_Z = 10_000;
+/** Über Profil-Dropdown (9999) und Karten/Maps */
+const PANEL_Z = 10_050;
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -28,13 +29,13 @@ export function NotificationBell() {
   const panelRef = useRef<HTMLDivElement>(null);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-  const updatePanelPos = useCallback(() => {
+  const measurePanelPos = useCallback(() => {
     const el = bellRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
     const width = Math.min(384, window.innerWidth - 16);
     const right = Math.max(8, window.innerWidth - r.right);
-    setPanelPos({ top: r.bottom + 4, right, width });
+    setPanelPos({ top: r.bottom + 6, right, width });
   }, []);
 
   function load() {
@@ -47,6 +48,17 @@ export function NotificationBell() {
       } catch {
         setAvailable(false);
       }
+    });
+  }
+
+  function toggleOpen() {
+    setOpen((wasOpen) => {
+      const next = !wasOpen;
+      if (next) {
+        measurePanelPos();
+        load();
+      }
+      return next;
     });
   }
 
@@ -98,31 +110,39 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
-    updatePanelPos();
-    const onReposition = () => updatePanelPos();
+    measurePanelPos();
+    const onReposition = () => measurePanelPos();
     window.addEventListener("scroll", onReposition, true);
     window.addEventListener("resize", onReposition);
     return () => {
       window.removeEventListener("scroll", onReposition, true);
       window.removeEventListener("resize", onReposition);
     };
-  }, [open, updatePanelPos]);
+  }, [open, measurePanelPos]);
 
   useEffect(() => {
     if (!open) return;
-    function onDoc(e: MouseEvent) {
+
+    function onEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+
+    function onPointerDown(e: PointerEvent) {
       const target = e.target as Node;
       if (bellRef.current?.contains(target)) return;
       if (panelRef.current?.contains(target)) return;
       setOpen(false);
     }
-    // Nach dem Öffnen-Klick registrieren — mousedown schloss das Panel vor Link-Klicks.
+
+    document.addEventListener("keydown", onEscape);
     const timer = window.setTimeout(() => {
-      document.addEventListener("click", onDoc, true);
+      document.addEventListener("pointerdown", onPointerDown);
     }, 0);
+
     return () => {
       window.clearTimeout(timer);
-      document.removeEventListener("click", onDoc, true);
+      document.removeEventListener("keydown", onEscape);
+      document.removeEventListener("pointerdown", onPointerDown);
     };
   }, [open]);
 
@@ -131,10 +151,7 @@ export function NotificationBell() {
   const panel = (
     <div
       ref={panelRef}
-      className={cn(
-        "fixed pt-0 transition-opacity duration-150",
-        open ? "visible opacity-100 pointer-events-auto" : "pointer-events-none invisible opacity-0",
-      )}
+      className="fixed pt-0"
       style={{
         zIndex: PANEL_Z,
         top: panelPos.top,
@@ -143,7 +160,8 @@ export function NotificationBell() {
       }}
       role="dialog"
       aria-label="Benachrichtigungen"
-      aria-hidden={!open}
+      aria-modal="false"
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <div className="overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-900/15">
         <div className="flex items-center justify-between border-b px-3 py-2.5">
@@ -188,19 +206,14 @@ export function NotificationBell() {
 
   return (
     <>
-      <div ref={bellRef}>
+      <div ref={bellRef} className="relative z-[1]">
         <button
           type="button"
-          onClick={() => {
-            setOpen((v) => {
-              const next = !v;
-              if (next) {
-                load();
-                requestAnimationFrame(() => updatePanelPos());
-              }
-              return next;
-            });
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleOpen();
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="relative grid h-11 w-11 place-items-center rounded-xl border bg-white shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
           aria-label="Benachrichtigungen"
           aria-haspopup="dialog"
@@ -214,7 +227,7 @@ export function NotificationBell() {
           ) : null}
         </button>
       </div>
-      {portalReady ? createPortal(panel, document.body) : null}
+      {portalReady && open ? createPortal(panel, document.body) : null}
     </>
   );
 }
@@ -274,8 +287,8 @@ function NotificationListItem({
       <li className="border-b last:border-b-0">
         <Link
           href={p.href}
-          onClick={(e) => {
-            e.stopPropagation();
+          className="block"
+          onClick={() => {
             onNavigate();
             onRead();
           }}
