@@ -37,7 +37,6 @@ export function TopbarChrome() {
   const [portalReady, setPortalReady] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 288 });
   const profileRef = useRef<HTMLDivElement>(null);
-  const bellAnchorRef = useRef<HTMLDivElement>(null);
   const profileOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeNotificationsRef = useRef<(() => void) | null>(null);
@@ -46,12 +45,9 @@ export function TopbarChrome() {
     const el = profileRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const bellRight = bellAnchorRef.current?.getBoundingClientRect().right ?? 0;
-    const minLeft = bellRight > 0 ? bellRight + 8 : 8;
-    const maxWidth = Math.max(200, r.right - minLeft);
-    const width = Math.min(288, maxWidth, window.innerWidth - 16);
+    const width = Math.min(288, window.innerWidth - 16);
     let left = r.right - width;
-    left = Math.max(minLeft, Math.min(left, window.innerWidth - width - 8));
+    left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
     setMenuPos({ top: r.bottom - 4, left, width });
   }, []);
 
@@ -192,7 +188,7 @@ export function TopbarChrome() {
             </div>
           </div>
 
-          <div ref={bellAnchorRef} className="relative shrink-0">
+          <div className="relative shrink-0">
             <NotificationBell
               onOpenChange={(open) => {
                 setNotificationsOpen(open);

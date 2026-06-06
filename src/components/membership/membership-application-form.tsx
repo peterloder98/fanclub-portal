@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { HeartHandshake } from "lucide-react";
 import { SignaturePad } from "@/components/profile/signature-pad";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,6 @@ import {
 } from "@/lib/membership/referral-link";
 import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
-import { normalizeGender } from "@/lib/person/gender";
 import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
 
 const MEMBERSHIP_FEE_EUR = 15;
@@ -111,18 +110,14 @@ export function MembershipApplicationForm() {
 
   const mobileFull = formatFullPhone(mobileDial, mobileNumber);
 
-  const displayName = useMemo(
-    () => `${form.first_name} ${form.last_name}`.trim(),
-    [form.first_name, form.last_name],
-  );
-
-  const contractPreview = useMemo(
-    () => (
-      <div className="space-y-4 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 p-5 text-sm leading-relaxed text-slate-800">
-        <p>
-          Hiermit beantrage ich, <LiveValue value={displayName} placeholder="Vorname Nachname" />,
-          die Mitgliedschaft im offiziellen Anni-Perka-Fanclub e.&nbsp;V.
-        </p>
+  const contractPreview = (
+    <div className="space-y-4 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 p-5 text-sm leading-relaxed text-slate-800">
+      <p>
+        Hiermit beantrage ich,{" "}
+        <LiveValue value={form.first_name.trim()} placeholder="Vorname" />{" "}
+        <LiveValue value={form.last_name.trim()} placeholder="Nachname" />, die Mitgliedschaft im
+        offiziellen Anni-Perka-Fanclub e.&nbsp;V.
+      </p>
         <p>
           Der Jahresbeitrag beträgt <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> und wird gemäß
           Satzung erhoben. Die <strong>Mitgliedsnummer</strong> wird nach Freigabe durch den Vorstand
@@ -134,13 +129,11 @@ export function MembershipApplicationForm() {
           gelesen zu haben, sie als Vertragsbestandteil anzuerkennen und die Angaben in diesem Antrag
           als vollständig und wahrheitsgemäß zu erklären.
         </p>
-        <p>
-          Meine Handynummer für die Mitgliederverwaltung:{" "}
-          <LiveValue value={mobileFull} placeholder="aus dem Formular oben" />
-        </p>
-      </div>
-    ),
-    [displayName, mobileFull],
+      <p>
+        Meine Handynummer für die Mitgliederverwaltung:{" "}
+        <LiveValue value={mobileFull} placeholder="aus dem Formular oben" />
+      </p>
+    </div>
   );
 
   async function submit() {
@@ -166,7 +159,9 @@ export function MembershipApplicationForm() {
       return;
     }
     if (!form.birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate)) {
-      setError("Bitte ein vollständiges Geburtsdatum (TT.MM.JJJJ) eingeben.");
+      setError(
+        "Bitte ein gültiges Geburtsdatum eingeben: Tag max. 31, Monat max. 12, Jahr mit 19 oder 20 am Anfang.",
+      );
       return;
     }
     if (!form.gender || !["m", "w", "d"].includes(form.gender)) {
@@ -568,23 +563,19 @@ export function MembershipApplicationForm() {
                 Zwecke im Zusammenhang mit dem Fanclub gestattet. Jede weitergehende Nutzung bedarf
                 der vorherigen schriftlichen Zustimmung des Rechteinhabers.
               </p>
-              <p className="mt-2 text-xs text-slate-500">
-                Mit deiner Unterschrift bestätigst du, diesen Hinweis zur Kenntnis genommen zu haben.
-              </p>
+              <label className="mt-3 flex items-start gap-3 text-sm text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={form.media_consent}
+                  onChange={(e) => setForm((f) => ({ ...f, media_consent: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border"
+                />
+                <span>
+                  Optional: Fotos/Beiträge im Fanclub-Portal und bei Events dürfen veröffentlicht
+                  werden.
+                </span>
+              </label>
             </div>
-
-            <label className="flex items-start gap-3 rounded-xl border bg-white px-4 py-3 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={form.media_consent}
-                onChange={(e) => setForm((f) => ({ ...f, media_consent: e.target.checked }))}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border"
-              />
-              <span>
-                Optional: Fotos/Beiträge im Fanclub-Portal und bei Events dürfen veröffentlicht
-                werden.
-              </span>
-            </label>
           </div>
         </CardContent>
       </Card>
