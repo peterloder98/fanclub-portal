@@ -440,7 +440,10 @@ export function MerchandiseShop() {
   }
 
   function placeOrder() {
-    if (!paymentMethod) {
+    if (
+      !paymentMethod ||
+      !["bank_transfer", "paypal", "stripe"].includes(paymentMethod)
+    ) {
       setError("Bitte Zahlungsart wählen.");
       return;
     }
@@ -461,7 +464,7 @@ export function MerchandiseShop() {
           buyerStreet: street,
           buyerPostalCode: postalCode,
           buyerCity: city,
-          paymentMethod,
+          paymentMethod: paymentMethod as "bank_transfer" | "paypal" | "stripe",
         });
         updateCart([]);
         setPaymentResult(res.payment);
@@ -765,11 +768,7 @@ export function MerchandiseShop() {
                       ? "Mit PayPal bezahlen (Testmodus)"
                       : paymentMethod === "stripe"
                         ? "Mit Stripe bezahlen (Testmodus)"
-                        : paymentMethod === "apple_pay"
-                          ? "Mit Apple Pay bezahlen (Testmodus)"
-                          : paymentMethod === "amazon_pay"
-                            ? "Mit Amazon Pay bezahlen (Testmodus)"
-                            : "Jetzt bestellen"}
+                        : "Jetzt bestellen"}
                 </button>
               </CardContent>
             </Card>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatEur } from "@/lib/club/ledger";
@@ -25,8 +25,10 @@ const FILTERS: Array<{ id: PaymentStatus | "all"; label: string }> = [
 
 export function PaymentsAdminPanel({
   initialPayments,
+  highlightPaymentId = null,
 }: {
   initialPayments: AdminPaymentRow[];
+  highlightPaymentId?: string | null;
 }) {
   const [payments, setPayments] = useState(initialPayments);
   const [filter, setFilter] = useState<PaymentStatus | "all">("open");
@@ -43,6 +45,16 @@ export function PaymentsAdminPanel({
   }, [payments, filter]);
 
   const selected = payments.find((p) => p.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!highlightPaymentId) return;
+    const row = payments.find((p) => p.id === highlightPaymentId);
+    if (!row) return;
+    setFilter("all");
+    setSelectedId(highlightPaymentId);
+    setNote(row.admin_note ?? "");
+    setReceiptRef(row.receipt_reference ?? "");
+  }, [highlightPaymentId, payments]);
 
   function reload(status: PaymentStatus | "all" = filter) {
     startTransition(async () => {

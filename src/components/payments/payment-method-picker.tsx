@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, CreditCard, ShoppingBag, Smartphone } from "lucide-react";
+import { Building2, CreditCard } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
 import type { PaymentMethod, PaymentSettingsRow } from "@/lib/payments/types";
@@ -17,19 +17,13 @@ function PayPalIcon({ className }: { className?: string }) {
   );
 }
 
-const ICONS: Record<PaymentMethod, ReactNode> = {
+const ICONS: Partial<Record<PaymentMethod, ReactNode>> = {
   bank_transfer: <Building2 className="h-5 w-5" />,
   paypal: <PayPalIcon className="h-5 w-5" />,
   stripe: <CreditCard className="h-5 w-5" />,
-  apple_pay: <Smartphone className="h-5 w-5" />,
-  amazon_pay: <ShoppingBag className="h-5 w-5" />,
 };
 
 const WALLET_TEST_INFO: Partial<Record<PaymentMethod, string>> = {
-  apple_pay:
-    "Apple Pay ist vorbereitet, läuft aber im Testmodus: Es öffnet sich kein echtes Apple-Pay-Fenster. Die Zahlung wird simuliert und der Vorstand bestätigt sie manuell. Live-Betrieb braucht Merchant-ID + Safari auf einem Apple-Gerät.",
-  amazon_pay:
-    "Amazon Pay ist vorbereitet, läuft aber im Testmodus: Es öffnet sich kein echtes Amazon-Pay-Fenster. Die Zahlung wird simuliert und der Vorstand bestätigt sie manuell.",
   paypal:
     "PayPal ist im Testmodus — es öffnet sich kein echtes PayPal-Login. Die Zahlung wird simuliert.",
   stripe:
@@ -76,7 +70,7 @@ export function PaymentMethodPicker({
               )}
             >
               <div className="flex items-center gap-2 text-slate-800">
-                <span className="text-fc-navy">{ICONS[m.provider]}</span>
+                <span className="text-fc-navy">{ICONS[m.provider] ?? <CreditCard className="h-5 w-5" />}</span>
                 <span className="text-sm font-semibold">{PAYMENT_METHOD_LABELS[m.provider]}</span>
               </div>
               {testHint ? (

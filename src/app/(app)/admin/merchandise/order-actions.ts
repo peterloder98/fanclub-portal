@@ -7,8 +7,13 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
+import { confirmPaymentManually } from "@/lib/payments/payment-service";
 import type { PaymentMethod, PaymentStatus } from "@/lib/payments/types";
 import { awardShopOrderStars, revokeShopOrderStars } from "@/lib/shop/order-stars";
+
+function isPaymentSettled(status: PaymentStatus | null | undefined) {
+  return status === "paid";
+}
 
 export type MerchandiseOrderRow = {
   id: string;
@@ -23,6 +28,10 @@ export type MerchandiseOrderRow = {
   total_cents: number;
   created_at: string;
   item_count: number;
+  payment_id: string | null;
+  payment_method_label: string | null;
+  payment_status_label: string | null;
+  payment_settled: boolean;
 };
 
 export type MerchandiseOrderDetail = MerchandiseOrderRow & {
@@ -52,34 +61,102 @@ export type MerchandiseOrderDetail = MerchandiseOrderRow & {
   payment_method: PaymentMethod | null;
   payment_method_label: string | null;
   payment_status_label: string | null;
+  payment_db_status: PaymentStatus | null;
   internal_reference: string | null;
 };
+
+async function loadPaymentMeta(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  paymentId: string | null,
+) {
+  if (!paymentId) {
+    return {
+      paymentMethod: null as PaymentMethod | null,
+      paymentStatus: null as PaymentStatus | null,
+      internalReference: null as string | null,
+    };
+  }
+  const { data: payment } = await admin
+    .from("payments")
+    .select("payment_method,payment_status,internal_reference")
+    .eq("id", paymentId)
+    .maybeSingle();
+  if (!payment) {
+    return {
+      paymentMethod: null,
+      paymentStatus: null,
+      internalReference: null,
+    };
+  }
+  return {
+    paymentMethod: payment.payment_method as PaymentMethod,
+    paymentStatus: payment.payment_status as PaymentStatus,
+    internalReference: payment.internal_reference,
+  };
+}
 
 export async function listMerchandiseOrdersAction(): Promise<MerchandiseOrderRow[]> {
   await requireAdminAction();
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("merchandise_orders")
-    .select("id,status,buyer_first_name,buyer_last_name,buyer_email,buyer_phone,buyer_street,buyer_postal_code,buyer_city,total_cents,created_at,merchandise_order_items(id)")
+    .select(
+      "id,status,buyer_first_name,buyer_last_name,buyer_email,buyer_phone,buyer_street,buyer_postal_code,buyer_city,total_cents,created_at,payment_id,payment_status,merchandise_order_items(id)",
+    )
     .order("created_at", { ascending: false });
   if (error) {
     if (/merchandise_orders|does not exist/i.test(error.message)) return [];
     throw new Error(error.message);
   }
-  return (data ?? []).map((o) => ({
-    id: o.id,
-    status: o.status,
-    buyer_first_name: o.buyer_first_name,
-    buyer_last_name: o.buyer_last_name,
-    buyer_email: o.buyer_email,
-    buyer_phone: o.buyer_phone,
-    buyer_street: o.buyer_street,
-    buyer_postal_code: o.buyer_postal_code,
-    buyer_city: o.buyer_city,
-    total_cents: o.total_cents,
-    created_at: o.created_at,
-    item_count: (o.merchandise_order_items as { id: string }[] | null)?.length ?? 0,
-  }));
+
+  const paymentIds = [
+    ...new Set(
+      (data ?? [])
+        .map((o) => (o as { payment_id?: string | null }).payment_id)
+        .filter(Boolean) as string[],
+    ),
+  ];
+  const paymentById = new Map<
+    string,
+    { method: PaymentMethod; status: PaymentStatus; reference: string }
+  >();
+  if (paymentIds.length) {
+    const { data: payments } = await admin
+      .from("payments")
+      .select("id,payment_method,payment_status,internal_reference")
+      .in("id", paymentIds);
+    for (const p of payments ?? []) {
+      paymentById.set(p.id, {
+        method: p.payment_method as PaymentMethod,
+        status: p.payment_status as PaymentStatus,
+        reference: p.internal_reference,
+      });
+    }
+  }
+
+  return (data ?? []).map((o) => {
+    const paymentId = (o as { payment_id?: string | null }).payment_id ?? null;
+    const pay = paymentId ? paymentById.get(paymentId) : null;
+    const paymentStatus = pay?.status ?? null;
+    return {
+      id: o.id,
+      status: o.status,
+      buyer_first_name: o.buyer_first_name,
+      buyer_last_name: o.buyer_last_name,
+      buyer_email: o.buyer_email,
+      buyer_phone: o.buyer_phone,
+      buyer_street: o.buyer_street,
+      buyer_postal_code: o.buyer_postal_code,
+      buyer_city: o.buyer_city,
+      total_cents: o.total_cents,
+      created_at: o.created_at,
+      item_count: (o.merchandise_order_items as { id: string }[] | null)?.length ?? 0,
+      payment_id: paymentId,
+      payment_method_label: pay ? PAYMENT_METHOD_LABELS[pay.method] : null,
+      payment_status_label: paymentStatus ? PAYMENT_STATUS_LABELS[paymentStatus] : null,
+      payment_settled: isPaymentSettled(paymentStatus),
+    };
+  });
 }
 
 export async function getMerchandiseOrderAction(orderId: string): Promise<MerchandiseOrderDetail | null> {
@@ -116,22 +193,10 @@ export async function getMerchandiseOrderAction(orderId: string): Promise<Mercha
   );
 
   const paymentId = (order as { payment_id?: string | null }).payment_id ?? null;
-  let paymentMethod: PaymentMethod | null = null;
-  let paymentStatus: PaymentStatus | null = null;
-  let internalReference: string | null = null;
-
-  if (paymentId) {
-    const { data: payment } = await admin
-      .from("payments")
-      .select("payment_method,payment_status,internal_reference")
-      .eq("id", paymentId)
-      .maybeSingle();
-    if (payment) {
-      paymentMethod = payment.payment_method as PaymentMethod;
-      paymentStatus = payment.payment_status as PaymentStatus;
-      internalReference = payment.internal_reference;
-    }
-  }
+  const { paymentMethod, paymentStatus, internalReference } = await loadPaymentMeta(
+    admin,
+    paymentId,
+  );
 
   return {
     id: order.id,
@@ -165,8 +230,50 @@ export async function getMerchandiseOrderAction(orderId: string): Promise<Mercha
     payment_method: paymentMethod,
     payment_method_label: paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : null,
     payment_status_label: paymentStatus ? PAYMENT_STATUS_LABELS[paymentStatus] : null,
+    payment_db_status: paymentStatus,
+    payment_settled: isPaymentSettled(paymentStatus),
     internal_reference: internalReference,
   };
+}
+
+export async function confirmOrderPaymentAction(input: { orderId: string; note?: string }) {
+  const { user } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+
+  const { data: order, error } = await admin
+    .from("merchandise_orders")
+    .select("id,payment_id,status")
+    .eq("id", input.orderId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!order) throw new Error("Bestellung nicht gefunden.");
+  if (!order.payment_id) throw new Error("Keine Zahlung mit dieser Bestellung verknüpft.");
+
+  const { paymentStatus, paymentMethod } = await loadPaymentMeta(admin, order.payment_id);
+  if (isPaymentSettled(paymentStatus)) {
+    throw new Error("Zahlung ist bereits als bezahlt verbucht.");
+  }
+
+  await confirmPaymentManually({
+    paymentId: order.payment_id,
+    adminUserId: user.id,
+    note: input.note?.trim(),
+  });
+
+  const methodLabel = paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : "Zahlung";
+  await admin.from("merchandise_order_events").insert({
+    order_id: input.orderId,
+    event_type: "payment_confirmed",
+    title: "Zahlung verbucht",
+    details: methodLabel,
+    created_by: user.id,
+  });
+
+  revalidatePath("/admin/merchandise");
+  revalidatePath(`/admin/merchandise/orders/${input.orderId}`);
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/accounting");
+  return { ok: true };
 }
 
 const statusSchema = z.enum(["shipped", "cancelled"]);
@@ -187,6 +294,22 @@ export async function updateMerchandiseOrderStatusAction(input: {
   if (oErr) throw new Error(oErr.message);
   if (!order) throw new Error("Bestellung nicht gefunden.");
   if (order.status !== "pending") throw new Error("Nur offene Bestellungen können geändert werden.");
+
+  if (parsed === "shipped") {
+    const { data: orderPay } = await admin
+      .from("merchandise_orders")
+      .select("payment_id")
+      .eq("id", input.orderId)
+      .maybeSingle();
+    if (orderPay?.payment_id) {
+      const { paymentStatus } = await loadPaymentMeta(admin, orderPay.payment_id);
+      if (!isPaymentSettled(paymentStatus)) {
+        throw new Error(
+          "Versand erst nach Zahlungsbestätigung möglich. Bitte zuerst die Zahlung verbuchen.",
+        );
+      }
+    }
+  }
 
   const { data: items } = await admin
     .from("merchandise_order_items")

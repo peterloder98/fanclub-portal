@@ -13,8 +13,6 @@ function payButtonLabel(method: PaymentMethod | null, pending: boolean) {
   if (!method) return "Zahlung anlegen";
   if (method === "paypal") return "Mit PayPal bezahlen (Testmodus)";
   if (method === "stripe") return "Mit Stripe bezahlen (Testmodus)";
-  if (method === "apple_pay") return "Mit Apple Pay bezahlen (Testmodus)";
-  if (method === "amazon_pay") return "Mit Amazon Pay bezahlen (Testmodus)";
   return "Zahlung per Überweisung anlegen";
 }
 

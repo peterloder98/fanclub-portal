@@ -8,7 +8,12 @@ import { listAdminPaymentsAction } from "@/app/(app)/admin/payments/actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPaymentsPage() {
+export default async function AdminPaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ payment?: string }>;
+}) {
+  const { payment: highlightPaymentId } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -42,7 +47,10 @@ export default async function AdminPaymentsPage() {
             Zahlungssystem noch nicht eingerichtet — Migration 076 in Supabase ausführen.
           </p>
         ) : (
-          <PaymentsAdminPanel initialPayments={payments} />
+          <PaymentsAdminPanel
+            initialPayments={payments}
+            highlightPaymentId={highlightPaymentId ?? null}
+          />
         )}
       </main>
     </>

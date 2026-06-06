@@ -97,13 +97,7 @@ export async function listAdminPaymentsAction(filter?: {
   }));
 }
 
-const methodSchema = z.enum([
-  "bank_transfer",
-  "paypal",
-  "stripe",
-  "apple_pay",
-  "amazon_pay",
-]);
+const methodSchema = z.enum(["bank_transfer", "paypal", "stripe", "apple_pay", "amazon_pay"]);
 
 export async function confirmPaymentAction(input: {
   paymentId: string;
@@ -120,6 +114,7 @@ export async function confirmPaymentAction(input: {
   revalidatePath("/admin/payments");
   revalidatePath("/admin/accounting");
   revalidatePath("/admin/merchandise");
+  revalidatePath("/admin/merchandise/orders");
   revalidatePath("/profile");
   return { ok: true };
 }
