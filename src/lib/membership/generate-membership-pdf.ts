@@ -4,7 +4,9 @@ import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf
 import {
   MEMBERSHIP_PDF_TEMPLATE_PATH,
   membershipPdfCoordinates,
+  type PdfSignatureCoord,
 } from "@/lib/membership/membershipPdfCoordinates";
+import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 
 export type MembershipApplicationPdfData = {
   id: string;
@@ -96,9 +98,39 @@ function drawCheckbox(page: PDFPage, font: PDFFont, checked: boolean, coord: { x
   });
 }
 
+async function drawSignature(
+  doc: PDFDocument,
+  page: PDFPage,
+  signaturePng: Uint8Array,
+  box: PdfSignatureCoord,
+) {
+  try {
+    const img = await doc.embedPng(signaturePng);
+    const scale = Math.min(box.width / img.width, box.height / img.height);
+    const width = img.width * scale;
+    const height = img.height * scale;
+    page.drawImage(img, {
+      x: box.x + (box.width - width) / 2,
+      y: box.y + (box.height - height) / 2,
+      width,
+      height,
+    });
+  } catch (e) {
+    console.warn("[pdf] Signatur konnte nicht eingebettet werden:", e);
+  }
+}
+
 async function loadTemplateBytes() {
   const templatePath = path.join(process.cwd(), MEMBERSHIP_PDF_TEMPLATE_PATH);
   return readFile(templatePath);
+}
+
+function shouldDrawMembershipNumber(value?: string | null) {
+  const trimmed = value?.trim();
+  if (!trimmed) return false;
+  if (trimmed === MEMBERSHIP_NUMBER_PENDING_LABEL) return false;
+  if (/wird.*vergeben/i.test(trimmed)) return false;
+  return true;
 }
 
 /**
@@ -121,10 +153,14 @@ export async function generateMembershipPdf(
   const page2 = pages[1];
   const coords = membershipPdfCoordinates;
 
-  const membershipNumber =
-    applicationData.membership_number?.trim() || "wird vergeben";
+  if (shouldDrawMembershipNumber(applicationData.membership_number)) {
+    drawFieldText(page1, font, applicationData.membership_number!.trim(), {
+      x: 200,
+      y: 634,
+      fontSize: 10,
+    });
+  }
 
-  drawFieldText(page1, font, membershipNumber, coords.page1.membershipNumber);
   drawFieldText(
     page1,
     font,
@@ -149,6 +185,9 @@ export async function generateMembershipPdf(
     drawFieldText(page1, font, applicationData.facebook, coords.page1.facebook);
   }
 
+  const signedLine = `${applicationData.signed_at_place}, ${formatDE(applicationData.signed_at_date)}`;
+  drawFieldText(page1, font, signedLine, coords.page1.signedPlaceDate);
+
   const startDate = applicationData.membership_start_date
     ? formatDE(applicationData.membership_start_date)
     : formatDE(applicationData.signed_at_date);
@@ -161,25 +200,11 @@ export async function generateMembershipPdf(
     drawFieldText(page2, font, formatWhatsappMobile(applicationData), coords.page2.whatsappMobile);
   }
 
-  const signedLine = `${applicationData.signed_at_place}, ${formatDE(applicationData.signed_at_date)}`;
   drawFieldText(page2, font, signedLine, coords.page2.signedPlaceDate);
 
   if (signaturePng?.length) {
-    try {
-      const img = await doc.embedPng(signaturePng);
-      const box = coords.page2.signature;
-      const scale = Math.min(box.width / img.width, box.height / img.height);
-      const width = img.width * scale;
-      const height = img.height * scale;
-      page2.drawImage(img, {
-        x: box.x + (box.width - width) / 2,
-        y: box.y + (box.height - height) / 2,
-        width,
-        height,
-      });
-    } catch (e) {
-      console.warn("[pdf] Signatur konnte nicht eingebettet werden:", e);
-    }
+    await drawSignature(doc, page1, signaturePng, coords.page1.signature);
+    await drawSignature(doc, page2, signaturePng, coords.page2.signature);
   }
 
   return doc.save();
