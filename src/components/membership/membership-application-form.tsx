@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { HeartHandshake } from "lucide-react";
 import { SignaturePad } from "@/components/profile/signature-pad";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelect } from "@/components/ui/country-select";
 import { PostalCodeInput } from "@/components/ui/postal-code-input";
 import {
@@ -23,6 +23,27 @@ import { normalizeGender } from "@/lib/person/gender";
 import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
 
 const MEMBERSHIP_FEE_EUR = 15;
+const SATZUNG_PDF = "/documents/satzung.pdf";
+
+function SatzungDownloadLink({ children }: { children: ReactNode }) {
+  return (
+    <a
+      href={SATZUNG_PDF}
+      download="Satzung-Anni-Perka-Fanclub.pdf"
+      className="font-semibold text-fc-blue underline decoration-fc-blue/30 underline-offset-2 hover:decoration-fc-blue"
+    >
+      {children}
+    </a>
+  );
+}
+
+function LiveValue({ value, placeholder }: { value: string; placeholder: string }) {
+  return value ? (
+    <strong className="font-semibold text-fc-navy">{value}</strong>
+  ) : (
+    <span className="italic text-slate-400">{placeholder}</span>
+  );
+}
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -89,50 +110,37 @@ export function MembershipApplicationForm() {
   const mobileFull = formatFullPhone(mobileDial, mobileNumber);
   const whatsappFull = formatFullPhone(whatsappDial, whatsappNumber);
 
-  const contractPreview = useMemo(() => {
-    const name = `${form.first_name} ${form.last_name}`.trim() || "…";
-    return (
-      <div className="prose prose-sm max-w-none text-slate-800">
+  const displayName = useMemo(
+    () => `${form.first_name} ${form.last_name}`.trim(),
+    [form.first_name, form.last_name],
+  );
+
+  const contractPreview = useMemo(
+    () => (
+      <div className="space-y-4 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50/80 p-5 text-sm leading-relaxed text-slate-800">
         <p>
-          Hiermit beantrage ich, <strong>{name}</strong>, die Mitgliedschaft im offiziellen
-          Anni-Perka-Fanclub e. V.
+          Hiermit beantrage ich, <LiveValue value={displayName} placeholder="Vorname Nachname" />,
+          die Mitgliedschaft im offiziellen Anni-Perka-Fanclub e.&nbsp;V.
         </p>
         <p>
-          Der Jahresbeitrag beträgt <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> und wird gemäß
-          Satzung erhoben.
-        </p>
-        <p>
-          <strong>Mitgliedsnummer:</strong> Wird nach Freigabe vergeben.
+          Der Jahresbeitrag beträgt <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> und wird gemäß
+          Satzung erhoben. Die <strong>Mitgliedsnummer</strong> wird nach Freigabe durch den Vorstand
+          vergeben.
         </p>
         <p>
           Ich bestätige, die{" "}
-          <Link href="/documents/satzung.pdf" target="_blank" className="text-fc-blue hover:underline">
-            Satzung (Anlage, Seiten 3–4 des Antragsformulars)
-          </Link>{" "}
-          vollständig gelesen zu haben, sie als Vertragsbestandteil anzuerkennen und die Angaben in
-          diesem Antrag als vollständig und wahrheitsgemäß zu erklären.
+          <SatzungDownloadLink>Satzung des Anni Perka Fanclubs</SatzungDownloadLink> vollständig
+          gelesen zu haben, sie als Vertragsbestandteil anzuerkennen und die Angaben in diesem Antrag
+          als vollständig und wahrheitsgemäß zu erklären.
         </p>
         <p>
           Meine Handynummer für die Mitgliederverwaltung:{" "}
-          <strong>{mobileFull || "…"}</strong>
-        </p>
-        <p className="rounded-xl border bg-slate-50 px-3 py-2 text-slate-700">
-          <strong>WhatsApp-Gruppe:</strong>{" "}
-          {form.whatsapp_opt_in
-            ? `Ich möchte in die WhatsApp-Gruppe des Fanclubs aufgenommen werden (Nummer: ${whatsappFull || "…"}).`
-            : "Ich möchte nicht in die WhatsApp-Gruppe aufgenommen werden."}
-        </p>
-        <p className="text-slate-600">
-          Mit meiner Unterschrift unten bestätige ich den gesamten Antrag inklusive Satzung,
-          Datenschutz und – sofern gewählt – WhatsApp-Aufnahme. Ort/Datum:{" "}
-          {form.signed_at_place || "…"},{" "}
-          {form.signed_at_date
-            ? new Date(form.signed_at_date).toLocaleDateString("de-DE")
-            : "…"}
+          <LiveValue value={mobileFull} placeholder="aus dem Formular oben" />
         </p>
       </div>
-    );
-  }, [form, mobileFull, whatsappFull]);
+    ),
+    [displayName, mobileFull],
+  );
 
   async function submit() {
     setError(null);
@@ -267,14 +275,40 @@ export function MembershipApplicationForm() {
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-2xl border bg-fc-ice px-4 py-3 text-sm text-blue-950">
-        <strong>Hinweis:</strong> Seiten 1–2 des PDF-Antrags füllst du hier online aus. Die Satzung
-        (PDF-Seiten 3–4) ist als{" "}
-        <Link href="/documents/satzung.pdf" target="_blank" className="font-medium underline">
-          separate Anlage
-        </Link>{" "}
-        verpflichtend zu lesen und anzuerkennen. Jahresbeitrag:{" "}
-        <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong>.
+      <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-fc-ice via-white to-white shadow-sm">
+        <div className="border-b border-fc-sky/20 bg-fc-navy/5 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
+              <HeartHandshake className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <h2 className="text-lg font-bold text-fc-navy">Schön, dass du hier bist!</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Toll, dass du die Mitgliedschaft im Anni Perka Fanclub unterstützen möchtest.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3 px-5 py-4 text-sm leading-relaxed text-slate-700">
+          <p>
+            Fülle das Formular Schritt für Schritt aus, lies die{" "}
+            <SatzungDownloadLink>Satzung des Anni Perka Fanclubs</SatzungDownloadLink> und bestätige
+            deine Angaben. Mit deiner digitalen Unterschrift wird dein Antrag verbindlich.
+          </p>
+          <p>
+            Danach kannst du dein unterzeichnetes Antrags-PDF inkl. Satzung herunterladen und den
+            Jahresbeitrag von <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> direkt per
+            Zahlungsanbieter oder per eigener Überweisung begleichen.
+          </p>
+          <p>
+            Nach Bestätigung durch den Vorstand wirst du in der Anni Perka Fanclub App freigeschaltet
+            und – wenn du möchtest – in die WhatsApp-Gruppe des Fanclubs aufgenommen.
+          </p>
+          <p className="rounded-xl border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-amber-950">
+            <strong>Jahresbeitrag: {MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> — bitte alle
+            notwendigen Felder ausfüllen und bestätigen.
+          </p>
+        </div>
       </div>
 
       <Card>
@@ -391,13 +425,22 @@ export function MembershipApplicationForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Antrag / Vertrag (Vorschau)</CardTitle>
+          <CardTitle className="text-base">Antrag & Bestätigungen</CardTitle>
+          <CardDescription>
+            Vorschau deines Antragstextes — Name und Handynummer werden live aus deinen Angaben
+            übernommen.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="grid gap-5">
           {contractPreview}
 
-          <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/60 p-4">
-            <label className="flex items-start gap-2 text-sm text-slate-800">
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Bestätigungen
+            </p>
+
+          <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/50 p-4">
+            <label className="flex items-start gap-3 text-sm text-slate-800">
               <input
                 type="checkbox"
                 checked={form.whatsapp_opt_in}
@@ -409,7 +452,7 @@ export function MembershipApplicationForm() {
                     setWhatsappNumber(mobileNumber);
                   }
                 }}
-                className="mt-1 h-4 w-4 rounded border"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border"
               />
               <span>
                 Ich möchte in die WhatsApp-Gruppe des Fanclubs aufgenommen werden und bestätige
@@ -439,41 +482,40 @@ export function MembershipApplicationForm() {
             ) : null}
           </div>
 
-          <label className="flex items-start gap-2 text-sm text-slate-700">
+          <label className="flex items-start gap-3 rounded-xl border bg-white px-3 py-3 text-sm text-slate-700">
             <input
               type="checkbox"
               checked={form.statute_accepted}
               onChange={(e) => setForm((f) => ({ ...f, statute_accepted: e.target.checked }))}
-              className="mt-1 h-4 w-4 rounded border"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
             />
             <span>
               Ich habe die{" "}
-              <Link href="/documents/satzung.pdf" target="_blank" className="text-fc-blue hover:underline">
-                Satzung (Anlage)
-              </Link>{" "}
+              <SatzungDownloadLink>Satzung des Anni Perka Fanclubs</SatzungDownloadLink>{" "}
               vollständig gelesen und akzeptiere sie als Vertragsbestandteil. *
             </span>
           </label>
-          <label className="flex items-start gap-2 text-sm text-slate-700">
+          <label className="flex items-start gap-3 rounded-xl border bg-white px-3 py-3 text-sm text-slate-700">
             <input
               type="checkbox"
               checked={form.privacy_accepted}
               onChange={(e) => setForm((f) => ({ ...f, privacy_accepted: e.target.checked }))}
-              className="mt-1 h-4 w-4 rounded border"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
             />
             <span>Ich willige in die Verarbeitung meiner Daten zum Zweck der Mitgliedschaft ein. *</span>
           </label>
-          <label className="flex items-start gap-2 text-sm text-slate-700">
+          <label className="flex items-start gap-3 rounded-xl border bg-white px-3 py-3 text-sm text-slate-700">
             <input
               type="checkbox"
               checked={form.media_consent}
               onChange={(e) => setForm((f) => ({ ...f, media_consent: e.target.checked }))}
-              className="mt-1 h-4 w-4 rounded border"
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
             />
             <span>
               Optional: Fotos/Beiträge im Fanclub-Portal und bei Events dürfen veröffentlicht werden.
             </span>
           </label>
+          </div>
         </CardContent>
       </Card>
 
