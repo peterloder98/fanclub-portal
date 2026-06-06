@@ -116,8 +116,14 @@ export function NotificationBell() {
       if (panelRef.current?.contains(target)) return;
       setOpen(false);
     }
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    // Nach dem Öffnen-Klick registrieren — mousedown schloss das Panel vor Link-Klicks.
+    const timer = window.setTimeout(() => {
+      document.addEventListener("click", onDoc, true);
+    }, 0);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("click", onDoc, true);
+    };
   }, [open]);
 
   if (!available) return null;
@@ -127,7 +133,7 @@ export function NotificationBell() {
       ref={panelRef}
       className={cn(
         "fixed pt-0 transition-opacity duration-150",
-        open ? "visible opacity-100" : "pointer-events-none invisible opacity-0",
+        open ? "visible opacity-100 pointer-events-auto" : "pointer-events-none invisible opacity-0",
       )}
       style={{
         zIndex: PANEL_Z,
@@ -208,7 +214,7 @@ export function NotificationBell() {
           ) : null}
         </button>
       </div>
-      {portalReady && open ? createPortal(panel, document.body) : null}
+      {portalReady ? createPortal(panel, document.body) : null}
     </>
   );
 }
@@ -266,7 +272,14 @@ function NotificationListItem({
   if (p.href) {
     return (
       <li className="border-b last:border-b-0">
-        <Link href={p.href} onClick={() => { onNavigate(); onRead(); }}>
+        <Link
+          href={p.href}
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate();
+            onRead();
+          }}
+        >
           {inner}
         </Link>
       </li>

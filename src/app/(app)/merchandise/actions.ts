@@ -9,8 +9,10 @@ import { notifyAdminsMerchandiseOrder } from "@/lib/email/merchandise-order-noti
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
+import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
 import { createPaymentWithAccounting } from "@/lib/payments/payment-service";
 import type { PaymentMethod } from "@/lib/payments/types";
+import { quoteShopShipping } from "@/lib/shop/shipping";
 
 const paymentMethodSchema = z.enum([
   "bank_transfer",
@@ -116,31 +118,53 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
     };
   });
 
-  const totalCents = lineRows.reduce((s, r) => s + r.line_total_cents, 0);
+  const subtotalCents = lineRows.reduce((s, r) => s + r.line_total_cents, 0);
+  const buyerCountry = parsed.buyerCountry?.trim() || "DE";
+  const shippingQuote = quoteShopShipping(subtotalCents, buyerCountry);
+  const totalCents = shippingQuote.totalCents;
 
+  const orderInsert: Record<string, unknown> = {
+    user_id: user.id,
+    status: "pending",
+    buyer_first_name: parsed.buyerFirstName.trim(),
+    buyer_last_name: parsed.buyerLastName.trim(),
+    buyer_email: parsed.buyerEmail.trim(),
+    buyer_phone: parsed.buyerPhone?.trim() || null,
+    buyer_street: parsed.buyerStreet.trim(),
+    buyer_postal_code: parsed.buyerPostalCode.trim(),
+    buyer_city: parsed.buyerCity.trim(),
+    buyer_country: buyerCountry,
+    subtotal_cents: subtotalCents,
+    shipping_cents: shippingQuote.shippingCents,
+    total_cents: totalCents,
+  };
+
+  let orderId: string;
   const { data: order, error: oErr } = await admin
     .from("merchandise_orders")
-    .insert({
-      user_id: user.id,
-      status: "pending",
-      buyer_first_name: parsed.buyerFirstName.trim(),
-      buyer_last_name: parsed.buyerLastName.trim(),
-      buyer_email: parsed.buyerEmail.trim(),
-      buyer_phone: parsed.buyerPhone?.trim() || null,
-      buyer_street: parsed.buyerStreet.trim(),
-      buyer_postal_code: parsed.buyerPostalCode.trim(),
-      buyer_city: parsed.buyerCity.trim(),
-      buyer_country: parsed.buyerCountry?.trim() || "DE",
-      total_cents: totalCents,
-    })
+    .insert(orderInsert)
     .select("id")
     .single();
-  if (oErr) throw new Error(oErr.message);
+
+  if (oErr && /subtotal_cents|shipping_cents|does not exist/i.test(oErr.message)) {
+    const { subtotal_cents: _s, shipping_cents: _sh, ...legacy } = orderInsert;
+    const { data: legacyOrder, error: legacyErr } = await admin
+      .from("merchandise_orders")
+      .insert(legacy)
+      .select("id")
+      .single();
+    if (legacyErr) throw new Error(legacyErr.message);
+    orderId = legacyOrder!.id as string;
+  } else if (oErr) {
+    throw new Error(oErr.message);
+  } else {
+    orderId = order!.id as string;
+  }
 
   const { error: iErr } = await admin.from("merchandise_order_items").insert(
     lineRows.map(({ _variantId: _v, _qty: _q, ...row }) => ({
       ...row,
-      order_id: order!.id,
+      order_id: orderId,
     })),
   );
   if (iErr) throw new Error(iErr.message);
@@ -157,10 +181,10 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
   }
 
   await admin.from("merchandise_order_events").insert({
-    order_id: order!.id,
+    order_id: orderId,
     event_type: "order_placed",
     title: "Bestellung eingegangen",
-    details: `${lineRows.length} Position(en), ${(totalCents / 100).toFixed(2)} €`,
+    details: `${lineRows.length} Position(en), ${(totalCents / 100).toFixed(2)} € inkl. Versand`,
     created_by: user.id,
   });
 
@@ -172,13 +196,19 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
     linkUrl: `/merchandise`,
     linkLabel: "Shop",
     createdBy: user.id,
-    metadata: { order_id: order!.id },
+    metadata: { order_id: orderId },
   }).catch(() => {});
 
+  const paymentMethod = parsed.paymentMethod as PaymentMethod;
+
   await notifyAdminsMerchandiseOrder({
-    orderId: order!.id,
+    orderId,
     buyerFirstName: parsed.buyerFirstName,
     buyerLastName: parsed.buyerLastName,
+    paymentMethod,
+    subtotalCents,
+    shippingCents: shippingQuote.shippingCents,
+    totalCents,
     items: lineRows.map((r) => ({
       qty: r.qty,
       productName: r.product_name,
@@ -191,23 +221,23 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
     /\/$/,
     "",
   );
+  const paymentLabel = PAYMENT_METHOD_LABELS[paymentMethod];
+
   await createUserNotification({
     userId: user.id,
     kind: NOTIFICATION_KINDS.merchandiseOrderConfirmed,
     title: "Bestellung eingegangen",
-    body: `Deine Merchandise-Bestellung (${(totalCents / 100).toFixed(2).replace(".", ",")} €) wurde bestätigt.`,
+    body: `Deine Merchandise-Bestellung (${(totalCents / 100).toFixed(2).replace(".", ",")} €) — Zahlungsart: ${paymentLabel}.`,
     linkUrl: base ? `${base}/merchandise` : "/merchandise",
     linkLabel: "Zum Shop",
-    metadata: { order_id: order!.id },
+    metadata: { order_id: orderId, payment_method: paymentMethod },
   }).catch(console.error);
-
-  const paymentMethod = parsed.paymentMethod as PaymentMethod;
   const paymentResult = await createPaymentWithAccounting({
     userId: user.id,
     amountCents: totalCents,
     paymentType: "shop_order",
     paymentMethod,
-    orderId: order!.id,
+    orderId: orderId,
     description: `Merchandise-Bestellung`,
   });
 
@@ -215,5 +245,5 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
   revalidatePath("/admin/merchandise");
   revalidatePath("/admin/payments");
   revalidatePath("/admin/accounting");
-  return { ok: true, orderId: order!.id, payment: paymentResult };
+  return { ok: true, orderId: orderId, payment: paymentResult };
 }

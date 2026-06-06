@@ -24,7 +24,10 @@ import {
 import { listPaymentMethodsAction } from "@/app/(app)/payments/actions";
 import { PaymentMethodPicker } from "@/components/payments/payment-method-picker";
 import { PaymentConfirmation } from "@/components/payments/payment-confirmation";
+import { CartTotals } from "@/components/merchandise/cart-totals";
 import { stockBadge, stockBadgeLabel } from "@/lib/merchandise/stock-label";
+import { quoteShopShipping, shopShippingPolicyShort } from "@/lib/shop/shipping";
+import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
 import type { PaymentCheckoutResult, PaymentMethod, PaymentSettingsRow } from "@/lib/payments/types";
 
 type CartLine = {
@@ -327,9 +330,7 @@ function ProductDetailView({
               </p>
             ) : null}
 
-            <p className="mt-4 text-xs text-slate-500">
-              Versand und Zahlung werden nach der Bestellung mit dem Vorstand abgestimmt.
-            </p>
+            <p className="mt-4 text-xs text-slate-500">{shopShippingPolicyShort("DE")}</p>
           </div>
         </div>
       </div>
@@ -404,9 +405,13 @@ export function MerchandiseShop() {
     return () => clearTimeout(t);
   }, [addNotice]);
 
-  const cartTotal = useMemo(
+  const cartSubtotal = useMemo(
     () => cart.reduce((s, l) => s + l.unitPriceCents * l.qty, 0),
     [cart],
+  );
+  const cartTotal = useMemo(
+    () => quoteShopShipping(cartSubtotal, "DE").totalCents,
+    [cartSubtotal],
   );
   const cartCount = useMemo(() => cart.reduce((s, l) => s + l.qty, 0), [cart]);
 
@@ -460,10 +465,13 @@ export function MerchandiseShop() {
         });
         updateCart([]);
         setPaymentResult(res.payment);
+        const methodLabel = PAYMENT_METHOD_LABELS[res.payment.paymentMethod];
         setPaymentMethod(null);
         setView("catalog");
         setSelectedProductId(null);
-        setSuccess("Bestellung eingegangen — Zahlung offen. Der Vorstand prüft die Zahlung manuell.");
+        setSuccess(
+          `Bestellung eingegangen (${methodLabel}) — Zahlung offen. Der Vorstand prüft die Zahlung manuell.`,
+        );
         const shop = await listShopProductsAction();
         setProducts(shop.products);
         router.refresh();
@@ -495,8 +503,8 @@ export function MerchandiseShop() {
               Merchandise entdecken & bestellen
             </h1>
             <p className="mt-2 text-sm text-slate-300">
-              Schau dir Artikel in Ruhe an, wähle Größe und Menge — Zahlung per Überweisung, PayPal
-              oder Stripe (Testmodus). Der Vorstand bestätigt Zahlungen manuell.
+              Artikel in den Warenkorb, Versandkosten und Zahlungsart im Checkout wählen.{" "}
+              {shopShippingPolicyShort("DE")}.
             </p>
           </div>
           <button
@@ -531,7 +539,7 @@ export function MerchandiseShop() {
         </div>
       ) : null}
       {paymentResult ? (
-        <PaymentConfirmation result={paymentResult} />
+        <PaymentConfirmation result={paymentResult} variant="shop_order" />
       ) : null}
       {addNotice ? (
         <div className="flex items-center gap-2 rounded-xl border border-fc-sky/30 bg-fc-ice px-4 py-3 text-sm text-blue-900">
@@ -648,11 +656,7 @@ export function MerchandiseShop() {
                       ))}
                     </ul>
                     <div className="border-t pt-4">
-                      <div className="flex justify-between text-base font-bold text-slate-900">
-                        <span>Gesamt</span>
-                        <span>{formatEur(cartTotal)}</span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">zzgl. Versand nach Absprache</p>
+                      <CartTotals subtotalCents={cartSubtotal} country="DE" compact />
                     </div>
                   </>
                 )}

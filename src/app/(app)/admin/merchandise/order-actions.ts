@@ -6,6 +6,8 @@ import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
+import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
+import type { PaymentMethod, PaymentStatus } from "@/lib/payments/types";
 import { awardShopOrderStars, revokeShopOrderStars } from "@/lib/shop/order-stars";
 
 export type MerchandiseOrderRow = {
@@ -25,6 +27,8 @@ export type MerchandiseOrderRow = {
 
 export type MerchandiseOrderDetail = MerchandiseOrderRow & {
   buyer_country: string;
+  subtotal_cents: number | null;
+  shipping_cents: number;
   shipped_at: string | null;
   cancelled_at: string | null;
   items: Array<{
@@ -43,6 +47,12 @@ export type MerchandiseOrderDetail = MerchandiseOrderRow & {
     created_at: string;
     created_by_name: string | null;
   }>;
+  payment_id: string | null;
+  payment_status: string | null;
+  payment_method: PaymentMethod | null;
+  payment_method_label: string | null;
+  payment_status_label: string | null;
+  internal_reference: string | null;
 };
 
 export async function listMerchandiseOrdersAction(): Promise<MerchandiseOrderRow[]> {
@@ -105,6 +115,24 @@ export async function getMerchandiseOrderAction(orderId: string): Promise<Mercha
     ]),
   );
 
+  const paymentId = (order as { payment_id?: string | null }).payment_id ?? null;
+  let paymentMethod: PaymentMethod | null = null;
+  let paymentStatus: PaymentStatus | null = null;
+  let internalReference: string | null = null;
+
+  if (paymentId) {
+    const { data: payment } = await admin
+      .from("payments")
+      .select("payment_method,payment_status,internal_reference")
+      .eq("id", paymentId)
+      .maybeSingle();
+    if (payment) {
+      paymentMethod = payment.payment_method as PaymentMethod;
+      paymentStatus = payment.payment_status as PaymentStatus;
+      internalReference = payment.internal_reference;
+    }
+  }
+
   return {
     id: order.id,
     status: order.status,
@@ -116,6 +144,8 @@ export async function getMerchandiseOrderAction(orderId: string): Promise<Mercha
     buyer_postal_code: order.buyer_postal_code,
     buyer_city: order.buyer_city,
     buyer_country: order.buyer_country,
+    subtotal_cents: (order as { subtotal_cents?: number | null }).subtotal_cents ?? null,
+    shipping_cents: (order as { shipping_cents?: number }).shipping_cents ?? 0,
     total_cents: order.total_cents,
     created_at: order.created_at,
     shipped_at: order.shipped_at,
@@ -130,6 +160,12 @@ export async function getMerchandiseOrderAction(orderId: string): Promise<Mercha
       created_at: e.created_at,
       created_by_name: e.created_by ? nameById.get(e.created_by) ?? null : null,
     })),
+    payment_id: paymentId,
+    payment_status: (order as { payment_status?: string | null }).payment_status ?? null,
+    payment_method: paymentMethod,
+    payment_method_label: paymentMethod ? PAYMENT_METHOD_LABELS[paymentMethod] : null,
+    payment_status_label: paymentStatus ? PAYMENT_STATUS_LABELS[paymentStatus] : null,
+    internal_reference: internalReference,
   };
 }
 

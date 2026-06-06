@@ -5,15 +5,26 @@ import { formatEur } from "@/lib/club/ledger";
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
 import type { PaymentCheckoutResult } from "@/lib/payments/types";
 
-export function PaymentConfirmation({ result }: { result: PaymentCheckoutResult }) {
+export function PaymentConfirmation({
+  result,
+  variant = "default",
+}: {
+  result: PaymentCheckoutResult;
+  variant?: "default" | "shop_order";
+}) {
+  const isShop = variant === "shop_order";
   return (
     <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
       <div className="flex items-start gap-2">
         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
         <div>
-          <h3 className="font-bold text-emerald-950">Zahlung angelegt — Status offen</h3>
+          <h3 className="font-bold text-emerald-950">
+            {isShop ? "Bestellung bestätigt" : "Zahlung angelegt — Status offen"}
+          </h3>
           <p className="mt-1 text-sm text-emerald-900">
-            Der Vorstand prüft die Zahlung manuell. Erst nach Bestätigung gilt sie als bezahlt.
+            {isShop
+              ? `Deine Bestellung ist eingegangen. Gewählte Zahlungsart: ${PAYMENT_METHOD_LABELS[result.paymentMethod]}. Der Vorstand prüft die Zahlung manuell — erst danach gilt sie als bezahlt.`
+              : "Der Vorstand prüft die Zahlung manuell. Erst nach Bestätigung gilt sie als bezahlt."}
           </p>
         </div>
       </div>

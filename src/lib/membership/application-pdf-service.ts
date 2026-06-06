@@ -1,5 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { buildFullMembershipPdf, type MembershipApplicationPdfData } from "@/lib/membership/pdf";
+import {
+  generateMembershipPdf,
+  type MembershipApplicationPdfData,
+} from "@/lib/membership/generate-membership-pdf";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 
 const BUCKET = "membership-signatures";
@@ -47,19 +50,15 @@ async function buildPdfForApplication(
     mobile_number: row.mobile_number,
     email: row.email,
     membership_start_date: row.membership_start_date,
-    account_holder: row.account_holder,
-    iban: row.iban,
-    bic: row.bic,
     whatsapp_opt_in: row.whatsapp_opt_in,
+    privacy_accepted: row.privacy_accepted,
     whatsapp_dial_code: row.whatsapp_dial_code,
     whatsapp_number: row.whatsapp_number,
-    fee_cents: row.fee_cents,
     signed_at_place: row.signed_at_place,
     signed_at_date: row.signed_at_date,
-    created_at: row.created_at,
   };
 
-  return buildFullMembershipPdf(data, signaturePng);
+  return generateMembershipPdf(data, signaturePng);
 }
 
 /** Generate once and store in Supabase Storage for fast preview. */

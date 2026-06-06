@@ -34,6 +34,7 @@ export function PaymentsAdminPanel({
   const [note, setNote] = useState("");
   const [receiptRef, setReceiptRef] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
@@ -59,20 +60,25 @@ export function PaymentsAdminPanel({
     setSelectedId(p.id);
     setNote(p.admin_note ?? "");
     setReceiptRef(p.receipt_reference ?? "");
+    setSuccess(null);
   }
 
   function confirm() {
     if (!selected) return;
+    const confirmed = selected;
     startTransition(async () => {
       try {
         await confirmPaymentAction({
-          paymentId: selected.id,
+          paymentId: confirmed.id,
           note,
           receiptReference: receiptRef,
         });
         reload();
         setSelectedId(null);
         setError(null);
+        setSuccess(
+          `${formatEur(confirmed.amount_cents)} als bezahlt markiert (${confirmed.payment_method_label}, ${confirmed.payment_type_label}).`,
+        );
       } catch (e) {
         setError(e instanceof Error ? e.message : "Bestätigung fehlgeschlagen");
       }
@@ -144,6 +150,11 @@ export function PaymentsAdminPanel({
       {error ? (
         <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
+        </p>
+      ) : null}
+      {success ? (
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          {success}
         </p>
       ) : null}
 

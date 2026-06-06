@@ -45,9 +45,6 @@ export function MembershipApplicationForm() {
     country: DEFAULT_COUNTRY.name,
     email: "",
     membership_start_date: "",
-    account_holder: "",
-    iban: "",
-    bic: "",
     signed_at_place: "",
     signed_at_date: new Date().toISOString().slice(0, 10),
     privacy_accepted: false,
@@ -373,11 +370,12 @@ export function MembershipApplicationForm() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Mitgliedschaft & Bankverbindung (optional)</CardTitle>
+          <CardTitle>Mitgliedschaft</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <p className="sm:col-span-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-800">
-            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> (fest)
+            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> (fest, Zahlung nach Antragstellung
+            in der App)
           </p>
           <label className="grid gap-1 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">Gewünschter Beginn</span>
@@ -385,30 +383,6 @@ export function MembershipApplicationForm() {
               type="date"
               value={form.membership_start_date}
               onChange={(e) => setForm((f) => ({ ...f, membership_start_date: e.target.value }))}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-            />
-          </label>
-          <label className="grid gap-1 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Kontoinhaber</span>
-            <input
-              value={form.account_holder}
-              onChange={(e) => setForm((f) => ({ ...f, account_holder: e.target.value }))}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-slate-700">IBAN</span>
-            <input
-              value={form.iban}
-              onChange={(e) => setForm((f) => ({ ...f, iban: e.target.value }))}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-slate-700">BIC</span>
-            <input
-              value={form.bic}
-              onChange={(e) => setForm((f) => ({ ...f, bic: e.target.value }))}
               className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
             />
           </label>

@@ -25,6 +25,17 @@ const ICONS: Record<PaymentMethod, ReactNode> = {
   amazon_pay: <ShoppingBag className="h-5 w-5" />,
 };
 
+const WALLET_TEST_INFO: Partial<Record<PaymentMethod, string>> = {
+  apple_pay:
+    "Apple Pay ist vorbereitet, läuft aber im Testmodus: Es öffnet sich kein echtes Apple-Pay-Fenster. Die Zahlung wird simuliert und der Vorstand bestätigt sie manuell. Live-Betrieb braucht Merchant-ID + Safari auf einem Apple-Gerät.",
+  amazon_pay:
+    "Amazon Pay ist vorbereitet, läuft aber im Testmodus: Es öffnet sich kein echtes Amazon-Pay-Fenster. Die Zahlung wird simuliert und der Vorstand bestätigt sie manuell.",
+  paypal:
+    "PayPal ist im Testmodus — es öffnet sich kein echtes PayPal-Login. Die Zahlung wird simuliert.",
+  stripe:
+    "Stripe ist im Testmodus — es öffnet sich kein echtes Kartenformular. Die Zahlung wird simuliert.",
+};
+
 export function PaymentMethodPicker({
   methods,
   value,
@@ -36,6 +47,10 @@ export function PaymentMethodPicker({
   onChange: (method: PaymentMethod) => void;
   disabled?: boolean;
 }) {
+  const selected = methods.find((m) => m.provider === value);
+  const walletInfo =
+    selected && selected.is_test_mode ? WALLET_TEST_INFO[selected.provider] : null;
+
   return (
     <div className="grid gap-2">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Zahlungsart</p>
@@ -71,6 +86,11 @@ export function PaymentMethodPicker({
           );
         })}
       </div>
+      {walletInfo ? (
+        <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs leading-relaxed text-sky-900">
+          {walletInfo}
+        </p>
+      ) : null}
     </div>
   );
 }

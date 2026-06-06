@@ -120,6 +120,31 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
           </div>
         </div>
         <div className="rounded-xl border bg-white p-4 text-sm">
+          <h2 className="text-xs font-semibold uppercase text-slate-500">Zahlung</h2>
+          {order.payment_method_label ? (
+            <dl className="mt-2 grid gap-1.5">
+              <div className="flex justify-between gap-2">
+                <dt className="text-slate-500">Zahlungsart</dt>
+                <dd className="font-semibold text-fc-navy">{order.payment_method_label}</dd>
+              </div>
+              {order.payment_status_label ? (
+                <div className="flex justify-between gap-2">
+                  <dt className="text-slate-500">Zahlungsstatus</dt>
+                  <dd className="font-medium">{order.payment_status_label}</dd>
+                </div>
+              ) : null}
+              {order.internal_reference ? (
+                <div>
+                  <dt className="text-slate-500">Verwendungszweck</dt>
+                  <dd className="font-mono text-xs font-semibold">{order.internal_reference}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : (
+            <p className="mt-2 text-slate-600">Keine Zahlungsdaten hinterlegt.</p>
+          )}
+        </div>
+        <div className="rounded-xl border bg-white p-4 text-sm md:col-span-2">
           <h2 className="text-xs font-semibold uppercase text-slate-500">Positionen</h2>
           <ul className="mt-2 space-y-1">
             {order.items.map((i) => (
@@ -132,9 +157,26 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
               </li>
             ))}
           </ul>
-          <p className="mt-3 border-t pt-2 font-bold text-fc-navy">
-            Gesamt: {formatEur(order.total_cents)}
-          </p>
+          <div className="mt-3 space-y-1 border-t pt-2 text-sm">
+            {order.subtotal_cents != null && order.subtotal_cents !== order.total_cents ? (
+              <>
+                <div className="flex justify-between text-slate-600">
+                  <span>Zwischensumme</span>
+                  <span className="tabular-nums">{formatEur(order.subtotal_cents)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Versand</span>
+                  <span className="tabular-nums">
+                    {order.shipping_cents > 0 ? formatEur(order.shipping_cents) : "kostenlos"}
+                  </span>
+                </div>
+              </>
+            ) : null}
+            <p className="flex justify-between font-bold text-fc-navy">
+              <span>Gesamt</span>
+              <span className="tabular-nums">{formatEur(order.total_cents)}</span>
+            </p>
+          </div>
         </div>
       </div>
 

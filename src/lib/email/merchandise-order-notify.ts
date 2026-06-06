@@ -3,6 +3,8 @@ import { formatEur } from "@/lib/club/ledger";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { notifyAllAdmins } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
+import type { PaymentMethod } from "@/lib/payments/types";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -12,6 +14,10 @@ export async function notifyAdminsMerchandiseOrder(input: {
   orderId: string;
   buyerFirstName: string;
   buyerLastName: string;
+  paymentMethod?: PaymentMethod;
+  subtotalCents?: number;
+  shippingCents?: number;
+  totalCents?: number;
   items: Array<{
     qty: number;
     productName: string;
@@ -44,11 +50,30 @@ export async function notifyAdminsMerchandiseOrder(input: {
     })
     .join("\n");
 
+  const subtotal =
+    input.subtotalCents ??
+    input.items.reduce((s, i) => s + i.lineTotalCents, 0);
+  const shipping = input.shippingCents ?? 0;
+  const total = input.totalCents ?? subtotal + shipping;
+  const shippingLine =
+    shipping > 0
+      ? `Versand: ${formatEur(shipping)}`
+      : "Versand: kostenlos";
+
+  const paymentLabel = input.paymentMethod
+    ? PAYMENT_METHOD_LABELS[input.paymentMethod]
+    : null;
+
   const subject = `Neue Bestellung durch ${input.buyerFirstName} ${input.buyerLastName}`;
   const text = `Liebe Admins,
 
 soeben ging eine Bestellung von ${input.buyerFirstName} ${input.buyerLastName} ein:
 ${lines}
+
+Zwischensumme: ${formatEur(subtotal)}
+${shippingLine}
+Gesamt: ${formatEur(total)}
+${paymentLabel ? `Zahlungsart: ${paymentLabel}` : ""}
 
 Bitte schau dir hier die Bestellung an und leite alle weiteren Schritte dafür ein:
 ${orderUrl}
@@ -58,7 +83,7 @@ Deine Anni Perka Fanclub App`;
   await notifyAllAdmins({
     kind: NOTIFICATION_KINDS.merchandiseOrderAdmin,
     title: "Neue Merchandise-Bestellung",
-    body: `${input.buyerFirstName} ${input.buyerLastName} — ${input.items.length} Position(en).`,
+    body: `${input.buyerFirstName} ${input.buyerLastName} — ${input.items.length} Position(en)${paymentLabel ? `, ${paymentLabel}` : ""}.`,
     linkUrl: orderUrl,
     linkLabel: "Bestellung öffnen",
     metadata: { order_id: input.orderId },
