@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Bell, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -13,14 +14,28 @@ import {
 } from "@/lib/notifications/actions";
 import { presentNotification } from "@/lib/notifications/present";
 
+const PANEL_Z = 10_000;
+
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<UserNotificationRow[]>([]);
   const [unread, setUnread] = useState(0);
   const [available, setAvailable] = useState(true);
   const [pending, startTransition] = useTransition();
-  const ref = useRef<HTMLDivElement>(null);
+  const [portalReady, setPortalReady] = useState(false);
+  const [panelPos, setPanelPos] = useState({ top: 0, right: 0, width: 384 });
+  const bellRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+
+  const updatePanelPos = useCallback(() => {
+    const el = bellRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const width = Math.min(384, window.innerWidth - 16);
+    const right = Math.max(8, window.innerWidth - r.right);
+    setPanelPos({ top: r.bottom + 4, right, width });
+  }, []);
 
   function load() {
     startTransition(async () => {
@@ -34,6 +49,8 @@ export function NotificationBell() {
       }
     });
   }
+
+  useEffect(() => setPortalReady(true), []);
 
   useEffect(() => {
     load();
@@ -81,8 +98,23 @@ export function NotificationBell() {
 
   useEffect(() => {
     if (!open) return;
+    updatePanelPos();
+    const onReposition = () => updatePanelPos();
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    return () => {
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+    };
+  }, [open, updatePanelPos]);
+
+  useEffect(() => {
+    if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (bellRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -90,73 +122,94 @@ export function NotificationBell() {
 
   if (!available) return null;
 
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => {
-          setOpen((v) => !v);
-          if (!open) load();
-        }}
-        className="relative grid h-11 w-11 place-items-center rounded-xl border bg-white shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
-        aria-label="Benachrichtigungen"
-        aria-haspopup="true"
-        aria-expanded={open}
-      >
-        <Bell className="h-4 w-4 text-slate-600" aria-hidden />
-        {unread > 0 ? (
-          <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
-            {unread > 99 ? "99+" : unread}
-          </span>
-        ) : null}
-      </button>
-
-      <div
-        className={cn(
-          "absolute right-0 top-full z-[60] w-[min(24rem,calc(100vw-2rem))] pt-2 transition-opacity duration-150",
-          open ? "visible opacity-100" : "pointer-events-none invisible opacity-0",
-        )}
-      >
-        <div className="overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-900/15">
-          <div className="flex items-center justify-between border-b px-3 py-2.5">
-            <span className="text-sm font-semibold text-fc-navy">Benachrichtigungen</span>
-            {unread > 0 ? (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => {
-                  startTransition(async () => {
-                    await markAllNotificationsRead();
-                    load();
-                  });
-                }}
-                className="text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
-              >
-                Alle gelesen
-              </button>
-            ) : null}
-          </div>
-          <ul className="max-h-[min(28rem,55dvh)] overflow-y-auto">
-            {items.length === 0 ? (
-              <li className="px-3 py-8 text-center text-xs text-slate-500">
-                Keine Benachrichtigungen.
-              </li>
-            ) : (
-              items.map((n) => (
-                <NotificationListItem
-                  key={n.id}
-                  n={n}
-                  onNavigate={() => setOpen(false)}
-                  onRead={() => {
-                    if (!n.read_at) void markNotificationRead(n.id).then(load);
-                  }}
-                />
-              ))
-            )}
-          </ul>
+  const panel = (
+    <div
+      ref={panelRef}
+      className={cn(
+        "fixed pt-0 transition-opacity duration-150",
+        open ? "visible opacity-100" : "pointer-events-none invisible opacity-0",
+      )}
+      style={{
+        zIndex: PANEL_Z,
+        top: panelPos.top,
+        right: panelPos.right,
+        width: panelPos.width,
+      }}
+      role="dialog"
+      aria-label="Benachrichtigungen"
+      aria-hidden={!open}
+    >
+      <div className="overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-900/15">
+        <div className="flex items-center justify-between border-b px-3 py-2.5">
+          <span className="text-sm font-semibold text-fc-navy">Benachrichtigungen</span>
+          {unread > 0 ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                startTransition(async () => {
+                  await markAllNotificationsRead();
+                  load();
+                });
+              }}
+              className="text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
+            >
+              Alle gelesen
+            </button>
+          ) : null}
         </div>
+        <ul className="max-h-[min(28rem,55dvh)] overflow-y-auto">
+          {items.length === 0 ? (
+            <li className="px-3 py-8 text-center text-xs text-slate-500">
+              Keine Benachrichtigungen.
+            </li>
+          ) : (
+            items.map((n) => (
+              <NotificationListItem
+                key={n.id}
+                n={n}
+                onNavigate={() => setOpen(false)}
+                onRead={() => {
+                  if (!n.read_at) void markNotificationRead(n.id).then(load);
+                }}
+              />
+            ))
+          )}
+        </ul>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      <div ref={bellRef}>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen((v) => {
+              const next = !v;
+              if (next) {
+                load();
+                requestAnimationFrame(() => updatePanelPos());
+              }
+              return next;
+            });
+          }}
+          className="relative grid h-11 w-11 place-items-center rounded-xl border bg-white shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+          aria-label="Benachrichtigungen"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+        >
+          <Bell className="h-4 w-4 text-slate-600" aria-hidden />
+          {unread > 0 ? (
+            <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          ) : null}
+        </button>
+      </div>
+      {portalReady && open ? createPortal(panel, document.body) : null}
+    </>
   );
 }
 
