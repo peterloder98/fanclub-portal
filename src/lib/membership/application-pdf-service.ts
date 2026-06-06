@@ -4,6 +4,7 @@ import {
   type MembershipApplicationPdfData,
 } from "@/lib/membership/generate-membership-pdf";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
+import { cropSignaturePng } from "@/lib/images/crop-signature-png";
 
 const BUCKET = "membership-signatures";
 
@@ -30,7 +31,9 @@ async function buildPdfForApplication(
       .from(BUCKET)
       .download(row.signature_applicant_path);
     if (!dlErr && file) {
-      signaturePng = new Uint8Array(await file.arrayBuffer());
+      const raw = Buffer.from(await file.arrayBuffer());
+      const cropped = await cropSignaturePng(raw);
+      signaturePng = new Uint8Array(cropped);
     }
   }
 

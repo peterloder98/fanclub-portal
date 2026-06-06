@@ -8,6 +8,7 @@ import { approveMembershipApplication } from "@/app/(app)/admin/members/applicat
 import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
 import { PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
+import { genderDisplayLabel } from "@/lib/person/gender";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -37,9 +38,6 @@ export type ApplicationDetailData = {
   mobile_number: string | null;
   email: string;
   membership_start_date: string | null;
-  account_holder: string | null;
-  iban: string | null;
-  bic: string | null;
   whatsapp_opt_in: boolean;
   whatsapp_dial_code: string | null;
   whatsapp_number: string | null;
@@ -154,7 +152,7 @@ export function ApplicationDetailPanels({
           <Field label="Vorname" value={app.first_name} />
           <Field label="Nachname" value={app.last_name} />
           <Field label="Geburtsdatum" value={formatDE(app.birthdate)} />
-          <Field label="Geschlecht" value={app.gender ?? "—"} />
+          <Field label="Geschlecht" value={genderDisplayLabel(app.gender)} />
           <Field label="Straße" value={app.street} />
           <Field label="PLZ" value={app.postal_code} />
           <Field label="Ort" value={app.city} />
@@ -187,9 +185,6 @@ export function ApplicationDetailPanels({
             label="Mitgliedschaft ab"
             value={formatDE(app.membership_start_date)}
           />
-          <Field label="Kontoinhaber" value={app.account_holder ?? "—"} />
-          <Field label="IBAN" value={app.iban ?? "—"} />
-          <Field label="BIC" value={app.bic ?? "—"} />
           <Field label="Foto/Film Einwilligung" value={app.media_consent ? "Ja" : "Nein"} />
           <Field
             label="Unterschrift"

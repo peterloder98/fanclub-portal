@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
+import { cropSignatureCanvas } from "@/lib/images/crop-signature-canvas";
 
 export function SignaturePad({
   disabled,
@@ -96,11 +97,15 @@ export function SignaturePad({
   async function save() {
     const c = canvasRef.current;
     if (!c) return;
-    await new Promise<void>((resolve) => c.toBlob(async (b) => {
-      if (!b) return resolve();
-      await onSave(b);
-      resolve();
-    }, "image/png"));
+    const cropped = cropSignatureCanvas(c);
+    const exportCanvas = cropped ?? c;
+    await new Promise<void>((resolve) =>
+      exportCanvas.toBlob(async (b) => {
+        if (!b) return resolve();
+        await onSave(b);
+        resolve();
+      }, "image/png"),
+    );
   }
 
   return (

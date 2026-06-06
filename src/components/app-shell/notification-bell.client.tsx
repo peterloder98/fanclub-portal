@@ -1,21 +1,22 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bell, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import type { UserNotificationRow } from "@/lib/notifications/actions";
 import {
-  fetchMyNotifications,
-  markAllNotificationsRead,
-  markNotificationRead,
-  type UserNotificationRow,
-} from "@/lib/notifications/actions";
+  fetchNotificationsForUser,
+  markAllNotificationsReadClient,
+  markNotificationReadClient,
+} from "@/lib/notifications/client";
 import { presentNotification } from "@/lib/notifications/present";
 
-/** Über Profil-Dropdown, Maps und restliche Chrome — Glocke + Panel als ein Portalfixed-Block */
-const PORTAL_Z = 10_200;
+const PANEL_Z = 10_200;
+const OUTSIDE_LISTEN_DELAY_MS = 120;
 
 type NotificationBellProps = {
   onOpenChange?: (open: boolean) => void;
@@ -23,55 +24,63 @@ type NotificationBellProps = {
 };
 
 export function NotificationBell({ onOpenChange, onRegisterClose }: NotificationBellProps) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<UserNotificationRow[]>([]);
   const [unread, setUnread] = useState(0);
-  const [available, setAvailable] = useState(true);
-  const [pending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [portalReady, setPortalReady] = useState(false);
-  const [anchor, setAnchor] = useState({ top: 0, left: 0, width: 44, height: 44 });
-  const [panelWidth, setPanelWidth] = useState(384);
-  const placeholderRef = useRef<HTMLDivElement>(null);
-  const portalRootRef = useRef<HTMLDivElement>(null);
+  const [panelPos, setPanelPos] = useState({ top: 0, left: 0, width: 384 });
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const openRef = useRef(false);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
-  const close = useCallback(() => setOpen(false), []);
-
-  const syncAnchor = useCallback(() => {
-    const el = placeholderRef.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
-    setPanelWidth(Math.min(384, window.innerWidth - 16));
+  const close = useCallback(() => {
+    openRef.current = false;
+    setOpen(false);
   }, []);
 
-  function load() {
-    startTransition(async () => {
-      try {
-        const data = await fetchMyNotifications(40);
-        setItems(data.items);
-        setUnread(data.unreadCount);
-        setAvailable(data.available);
-      } catch {
-        /* Glocke sichtbar lassen */
-      }
-    });
-  }
+  const syncPanelPos = useCallback(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const width = Math.min(384, window.innerWidth - 16);
+    let left = r.right - width;
+    left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+    setPanelPos({ top: r.bottom + 6, left, width });
+  }, []);
 
-  function toggleOpen() {
-    setOpen((wasOpen) => {
-      const next = !wasOpen;
-      if (next) {
-        syncAnchor();
-        load();
-      }
-      return next;
-    });
-  }
+  const load = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchNotificationsForUser(supabase, 40);
+      setItems(data.items);
+      setUnread(data.unreadCount);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Benachrichtigungen konnten nicht geladen werden.");
+    } finally {
+      setLoading(false);
+    }
+  }, [supabase]);
+
+  const toggleOpen = useCallback(() => {
+    if (openRef.current) {
+      close();
+      return;
+    }
+    openRef.current = true;
+    setOpen(true);
+    syncPanelPos();
+    void load();
+  }, [close, load, syncPanelPos]);
 
   useEffect(() => setPortalReady(true), []);
 
   useEffect(() => {
+    openRef.current = open;
     onOpenChange?.(open);
   }, [open, onOpenChange]);
 
@@ -81,17 +90,21 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
   }, [close, onRegisterClose]);
 
   useEffect(() => {
-    load();
-    const id = window.setInterval(load, 30_000);
+    close();
+  }, [pathname, close]);
+
+  useEffect(() => {
+    void load();
+    const id = window.setInterval(() => void load(), 30_000);
     const onVisible = () => {
-      if (document.visibilityState === "visible") load();
+      if (document.visibilityState === "visible") void load();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -108,12 +121,12 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
+            event: "*",
             schema: "public",
             table: "user_notifications",
             filter: `user_id=eq.${user.id}`,
           },
-          () => load(),
+          () => void load(),
         )
         .subscribe();
     })();
@@ -122,18 +135,20 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
       cancelled = true;
       if (channel) void supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, [supabase, load]);
 
   useEffect(() => {
-    syncAnchor();
-    const onReposition = () => syncAnchor();
+    if (!open) return;
+
+    syncPanelPos();
+    const onReposition = () => syncPanelPos();
     window.addEventListener("scroll", onReposition, true);
     window.addEventListener("resize", onReposition);
     return () => {
       window.removeEventListener("scroll", onReposition, true);
       window.removeEventListener("resize", onReposition);
     };
-  }, [syncAnchor]);
+  }, [open, syncPanelPos]);
 
   useEffect(() => {
     if (!open) return;
@@ -142,61 +157,39 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
       if (e.key === "Escape") close();
     }
 
-    function onDocumentClick(e: MouseEvent) {
-      const target = e.target as Node;
-      if (portalRootRef.current?.contains(target)) return;
-      close();
-    }
+    let removeOutside: (() => void) | null = null;
+    const timer = window.setTimeout(() => {
+      function onOutside(e: MouseEvent) {
+        if (!openRef.current) return;
+        const target = e.target as Node;
+        if (anchorRef.current?.contains(target)) return;
+        if (panelRef.current?.contains(target)) return;
+        close();
+      }
+      document.addEventListener("mousedown", onOutside);
+      removeOutside = () => document.removeEventListener("mousedown", onOutside);
+    }, OUTSIDE_LISTEN_DELAY_MS);
 
     document.addEventListener("keydown", onEscape);
-    const timer = window.setTimeout(() => {
-      document.addEventListener("click", onDocumentClick);
-    }, 0);
 
     return () => {
       window.clearTimeout(timer);
+      removeOutside?.();
       document.removeEventListener("keydown", onEscape);
-      document.removeEventListener("click", onDocumentClick);
     };
   }, [open, close]);
 
-  if (!available) return null;
-
-  const portaledUi =
-    portalReady &&
-    createPortal(
-      <div
-        ref={portalRootRef}
-        className="fixed"
-        style={{
-          zIndex: PORTAL_Z,
-          top: anchor.top,
-          left: anchor.left,
-          width: anchor.width,
-        }}
-      >
-        <button
-          type="button"
-          onClick={toggleOpen}
-          className="relative grid h-11 w-11 place-items-center rounded-xl border bg-white shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
-          aria-label="Benachrichtigungen"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-        >
-          <Bell className="h-4 w-4 text-slate-600" aria-hidden />
-          {unread > 0 ? (
-            <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
-              {unread > 99 ? "99+" : unread}
-            </span>
-          ) : null}
-        </button>
-
-        {open ? (
+  const panel =
+    open && portalReady
+      ? createPortal(
           <div
-            className="absolute right-0 pt-1.5"
+            ref={panelRef}
+            className="fixed pt-0"
             style={{
-              top: anchor.height,
-              width: panelWidth,
+              zIndex: PANEL_Z,
+              top: panelPos.top,
+              left: panelPos.left,
+              width: panelPos.width,
             }}
             role="dialog"
             aria-label="Benachrichtigungen"
@@ -207,12 +200,12 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
                 {unread > 0 ? (
                   <button
                     type="button"
-                    disabled={pending}
+                    disabled={loading}
                     onClick={() => {
-                      startTransition(async () => {
-                        await markAllNotificationsRead();
-                        load();
-                      });
+                      void (async () => {
+                        await markAllNotificationsReadClient(supabase);
+                        await load();
+                      })();
                     }}
                     className="text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
                   >
@@ -221,7 +214,11 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
                 ) : null}
               </div>
               <ul className="max-h-[min(28rem,55dvh)] overflow-y-auto overscroll-contain">
-                {items.length === 0 ? (
+                {loadError ? (
+                  <li className="px-3 py-6 text-center text-xs text-rose-600">{loadError}</li>
+                ) : loading && items.length === 0 ? (
+                  <li className="px-3 py-8 text-center text-xs text-slate-500">Wird geladen…</li>
+                ) : items.length === 0 ? (
                   <li className="px-3 py-8 text-center text-xs text-slate-500">
                     Keine Benachrichtigungen.
                   </li>
@@ -232,24 +229,43 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
                       n={n}
                       onNavigate={close}
                       onRead={() => {
-                        if (!n.read_at) void markNotificationRead(n.id).then(load);
+                        if (!n.read_at) {
+                          void (async () => {
+                            await markNotificationReadClient(supabase, n.id);
+                            await load();
+                          })();
+                        }
                       }}
                     />
                   ))
                 )}
               </ul>
             </div>
-          </div>
-        ) : null}
-      </div>,
-      document.body,
-    );
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
-    <>
-      <div ref={placeholderRef} className="h-11 w-11 shrink-0" aria-hidden />
-      {portaledUi}
-    </>
+    <div ref={anchorRef} className="relative h-11 w-11 shrink-0" style={{ zIndex: PANEL_Z }}>
+      <button
+        type="button"
+        onMouseDown={(e) => e.stopPropagation()}
+        onClick={toggleOpen}
+        className="relative grid h-11 w-11 place-items-center rounded-xl border bg-white shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+        aria-label="Benachrichtigungen"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+      >
+        <Bell className="h-4 w-4 text-slate-600" aria-hidden />
+        {unread > 0 ? (
+          <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-bold text-white">
+            {unread > 99 ? "99+" : unread}
+          </span>
+        ) : null}
+      </button>
+      {panel}
+    </div>
   );
 }
 

@@ -23,7 +23,8 @@ export function HoverEnlargeAvatar({
   className?: string;
   children?: ReactNode;
 }) {
-  const anchorRef = useRef<HTMLSpanElement>(null);
+  const hoverRef = useRef<HTMLSpanElement>(null);
+  const avatarRef = useRef<HTMLSpanElement>(null);
   const previewRef = useRef<HTMLSpanElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [open, setOpen] = useState(false);
@@ -39,7 +40,7 @@ export function HoverEnlargeAvatar({
   }, []);
 
   const updatePosition = useCallback(() => {
-    const el = anchorRef.current;
+    const el = avatarRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const left = Math.max(
@@ -63,12 +64,24 @@ export function HoverEnlargeAvatar({
 
   useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
 
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    const onReposition = () => updatePosition();
+    window.addEventListener("scroll", onReposition, true);
+    window.addEventListener("resize", onReposition);
+    return () => {
+      window.removeEventListener("scroll", onReposition, true);
+      window.removeEventListener("resize", onReposition);
+    };
+  }, [open, updatePosition]);
+
   const preview = open ? (
     <span
       ref={previewRef}
       role="tooltip"
       style={{ top: coords.top, left: coords.left, width: enlarged }}
-      className="fixed z-[250] flex flex-col items-center"
+      className="fixed z-[250] flex flex-col items-center pointer-events-auto"
       onMouseEnter={showPreview}
       onMouseLeave={scheduleHide}
     >
@@ -93,12 +106,14 @@ export function HoverEnlargeAvatar({
 
   return (
     <span
-      ref={anchorRef}
+      ref={hoverRef}
       className={cn("inline-flex items-center gap-1.5", className)}
       onMouseEnter={showPreview}
       onMouseLeave={scheduleHide}
     >
-      <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
+      <span ref={avatarRef} className="inline-flex shrink-0">
+        <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
+      </span>
       {children ? <span className="min-w-0">{children}</span> : null}
       {typeof document !== "undefined" && preview
         ? createPortal(preview, document.body)

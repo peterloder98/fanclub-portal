@@ -1,8 +1,6 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
-
 export type UserNotificationRow = {
   id: string;
   kind: string;
@@ -24,7 +22,7 @@ export async function fetchMyNotifications(limit = 30): Promise<{
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { items: [], unreadCount: 0, available: false };
+  if (!user) return { items: [], unreadCount: 0, available: true };
 
   const { data: items, error } = await supabase
     .from("user_notifications")
@@ -34,7 +32,7 @@ export async function fetchMyNotifications(limit = 30): Promise<{
     .limit(limit);
 
   if (error) {
-    if (/user_notifications|does not exist/i.test(error.message)) {
+    if (/does not exist|relation.*not found/i.test(error.message)) {
       return { items: [], unreadCount: 0, available: false };
     }
     throw new Error(error.message);
@@ -70,7 +68,6 @@ export async function markNotificationRead(notificationId: string) {
     .eq("id", notificationId)
     .eq("user_id", user.id);
 
-  revalidatePath("/", "layout");
 }
 
 export async function markAllNotificationsRead() {
@@ -86,5 +83,4 @@ export async function markAllNotificationsRead() {
     .eq("user_id", user.id)
     .is("read_at", null);
 
-  revalidatePath("/", "layout");
 }

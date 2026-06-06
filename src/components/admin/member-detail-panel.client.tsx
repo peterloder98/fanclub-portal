@@ -20,7 +20,7 @@ import {
 } from "@/app/(app)/admin/members/detail-actions";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
-import { GENDER_OPTIONS } from "@/lib/person/gender";
+import { genderDisplayLabel } from "@/lib/person/gender";
 import {
   formatEur,
   formatLedgerEntryNumber,
@@ -90,10 +90,6 @@ function formatWhen(iso: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
-}
-
-function genderLabel(g: string | null) {
-  return GENDER_OPTIONS.find((o) => o.value === g)?.label ?? g ?? "—";
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -351,7 +347,7 @@ export function MemberDetailPanel({
               <InfoRow label="Benutzername" value={member.username ?? "—"} />
               <InfoRow label="Telefon" value={member.phone ?? "—"} />
               <InfoRow label="Geburtsdatum" value={formatDE(member.birthdate)} />
-              <InfoRow label="Geschlecht" value={genderLabel(member.gender)} />
+              <InfoRow label="Geschlecht" value={genderDisplayLabel(member.gender)} />
               <InfoRow
                 label="Adresse"
                 value={

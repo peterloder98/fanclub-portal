@@ -28,3 +28,9 @@ export function isValidGenderInput(raw: string): boolean {
   return ["m", "w", "d", "männlich", "weiblich", "divers"].includes(raw.trim().toLowerCase()) ||
     GENDER_OPTIONS.some((o) => o.value === raw.trim().toLowerCase());
 }
+
+/** Anzeige in Admin & Mitgliedsdaten (nicht m/w/d). */
+export function genderDisplayLabel(raw: string | null | undefined): string {
+  const g = normalizeGender(raw);
+  return GENDER_OPTIONS.find((o) => o.value === g)?.label ?? "—";
+}

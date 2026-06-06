@@ -18,6 +18,7 @@ import {
 import { formatMembershipEmailWarning } from "@/lib/smtp/email-warning";
 import { resolveMembershipReferrer } from "@/lib/membership/resolve-referrer";
 import { notifyReferrerApplicationSubmitted } from "@/lib/email/referrer-application-submitted";
+import { cropSignaturePng } from "@/lib/images/crop-signature-png";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
 const postalCode = z.string().regex(/^\d{5}$/, "PLZ muss genau 5 Ziffern haben");
@@ -40,9 +41,6 @@ const schema = z
     mobile_number: digitsOnly.min(5),
     email: z.string().email(),
     membership_start_date: z.string().optional(),
-    account_holder: z.string().optional(),
-    iban: z.string().optional(),
-    bic: z.string().optional(),
     privacy_accepted: z.literal(true),
     statute_accepted: z.literal(true),
     media_consent: z.boolean().optional(),
@@ -124,11 +122,12 @@ export async function POST(request: Request) {
       console.warn("[smtp] Vorbereitung übersprungen:", e);
     });
     const applicantBuf = dataUrlToBuffer(input.signature_applicant);
+    const croppedSignature = await cropSignaturePng(applicantBuf.buffer);
     const applicantPath = `${appId}/applicant.png`;
     const { error: up1 } = await admin.storage
       .from("membership-signatures")
-      .upload(applicantPath, applicantBuf.buffer, {
-        contentType: applicantBuf.contentType,
+      .upload(applicantPath, croppedSignature, {
+        contentType: "image/png",
         upsert: true,
       });
     if (up1) {
@@ -184,9 +183,6 @@ export async function POST(request: Request) {
       mobile_number: input.mobile_number.trim(),
       email: emailNorm,
       membership_start_date: input.membership_start_date || null,
-      account_holder: input.account_holder?.trim() || null,
-      iban: input.iban?.trim() || null,
-      bic: input.bic?.trim() || null,
       privacy_accepted: true,
       statute_accepted: true,
       media_consent: Boolean(input.media_consent),

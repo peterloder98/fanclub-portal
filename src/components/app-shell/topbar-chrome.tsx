@@ -65,6 +65,15 @@ export function TopbarChrome() {
     };
   }, [profileOpen, updateMenuPos]);
 
+  const handleNotificationsOpenChange = useCallback((open: boolean) => {
+    setNotificationsOpen(open);
+    if (open) setProfileOpen(false);
+  }, []);
+
+  const handleRegisterNotificationClose = useCallback((fn: (() => void) | null) => {
+    closeNotificationsRef.current = fn;
+  }, []);
+
   function closeNotifications() {
     closeNotificationsRef.current?.();
   }
@@ -189,13 +198,8 @@ export function TopbarChrome() {
 
           <div className="relative shrink-0">
             <NotificationBell
-              onOpenChange={(open) => {
-                setNotificationsOpen(open);
-                if (open) setProfileOpen(false);
-              }}
-              onRegisterClose={(fn) => {
-                closeNotificationsRef.current = fn;
-              }}
+              onOpenChange={handleNotificationsOpenChange}
+              onRegisterClose={handleRegisterNotificationClose}
             />
           </div>
 

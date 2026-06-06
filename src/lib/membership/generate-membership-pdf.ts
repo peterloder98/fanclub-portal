@@ -110,8 +110,8 @@ async function drawSignature(
     const width = img.width * scale;
     const height = img.height * scale;
     page.drawImage(img, {
-      x: box.x + (box.width - width) / 2,
-      y: box.y + (box.height - height) / 2,
+      x: box.x,
+      y: box.y,
       width,
       height,
     });
@@ -156,7 +156,7 @@ export async function generateMembershipPdf(
   if (shouldDrawMembershipNumber(applicationData.membership_number)) {
     drawFieldText(page1, font, applicationData.membership_number!.trim(), {
       x: 200,
-      y: 634,
+      y: 756,
       fontSize: 10,
     });
   }
