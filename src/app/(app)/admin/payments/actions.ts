@@ -22,6 +22,7 @@ export type AdminPaymentRow = {
   member_name: string;
   order_id: string | null;
   membership_id: string | null;
+  application_id: string | null;
   amount_cents: number;
   payment_type: string;
   payment_type_label: string;
@@ -46,7 +47,7 @@ export async function listAdminPaymentsAction(filter?: {
   let q = admin
     .from("payments")
     .select(
-      "id,user_id,order_id,membership_id,amount_cents,payment_type,payment_method,payment_status,internal_reference,provider_reference,admin_note,receipt_reference,created_at,paid_at",
+      "id,user_id,order_id,membership_id,application_id,amount_cents,payment_type,payment_method,payment_status,internal_reference,provider_reference,admin_note,receipt_reference,created_at,paid_at",
     )
     .order("created_at", { ascending: false })
     .limit(300);
@@ -77,6 +78,7 @@ export async function listAdminPaymentsAction(filter?: {
     member_name: nameById.get(p.user_id) ?? "—",
     order_id: p.order_id,
     membership_id: p.membership_id,
+    application_id: (p as { application_id?: string | null }).application_id ?? null,
     amount_cents: p.amount_cents,
     payment_type: p.payment_type,
     payment_type_label: PAYMENT_TYPE_LABELS[p.payment_type as keyof typeof PAYMENT_TYPE_LABELS] ?? p.payment_type,
@@ -95,7 +97,13 @@ export async function listAdminPaymentsAction(filter?: {
   }));
 }
 
-const methodSchema = z.enum(["bank_transfer", "paypal", "stripe"]);
+const methodSchema = z.enum([
+  "bank_transfer",
+  "paypal",
+  "stripe",
+  "apple_pay",
+  "amazon_pay",
+]);
 
 export async function confirmPaymentAction(input: {
   paymentId: string;

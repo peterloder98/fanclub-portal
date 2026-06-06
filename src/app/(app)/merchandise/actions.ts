@@ -12,7 +12,13 @@ import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activ
 import { createPaymentWithAccounting } from "@/lib/payments/payment-service";
 import type { PaymentMethod } from "@/lib/payments/types";
 
-const paymentMethodSchema = z.enum(["bank_transfer", "paypal", "stripe"]);
+const paymentMethodSchema = z.enum([
+  "bank_transfer",
+  "paypal",
+  "stripe",
+  "apple_pay",
+  "amazon_pay",
+]);
 
 const cartLineSchema = z.object({
   productId: z.string().uuid(),

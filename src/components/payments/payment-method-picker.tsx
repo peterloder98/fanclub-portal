@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Building2, CreditCard } from "lucide-react";
+import { Building2, CreditCard, ShoppingBag, Smartphone } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
 import type { PaymentMethod, PaymentSettingsRow } from "@/lib/payments/types";
@@ -21,6 +21,8 @@ const ICONS: Record<PaymentMethod, ReactNode> = {
   bank_transfer: <Building2 className="h-5 w-5" />,
   paypal: <PayPalIcon className="h-5 w-5" />,
   stripe: <CreditCard className="h-5 w-5" />,
+  apple_pay: <Smartphone className="h-5 w-5" />,
+  amazon_pay: <ShoppingBag className="h-5 w-5" />,
 };
 
 export function PaymentMethodPicker({
@@ -37,7 +39,7 @@ export function PaymentMethodPicker({
   return (
     <div className="grid gap-2">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Zahlungsart</p>
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {methods.map((m) => {
           const selected = value === m.provider;
           const testHint =

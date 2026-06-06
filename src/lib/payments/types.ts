@@ -1,4 +1,9 @@
-export type PaymentMethod = "bank_transfer" | "paypal" | "stripe";
+export type PaymentMethod =
+  | "bank_transfer"
+  | "paypal"
+  | "stripe"
+  | "apple_pay"
+  | "amazon_pay";
 
 export type PaymentType = "shop_order" | "membership_fee" | "other";
 
@@ -53,6 +58,7 @@ export type PaymentRow = {
 export type PaymentCheckoutResult = {
   paymentId: string;
   orderId?: string;
+  applicationId?: string;
   internalReference: string;
   amountCents: number;
   paymentMethod: PaymentMethod;

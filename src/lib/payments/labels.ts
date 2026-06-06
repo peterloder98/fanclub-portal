@@ -4,6 +4,8 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   bank_transfer: "Banküberweisung",
   paypal: "PayPal",
   stripe: "Stripe",
+  apple_pay: "Apple Pay",
+  amazon_pay: "Amazon Pay",
 };
 
 export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {

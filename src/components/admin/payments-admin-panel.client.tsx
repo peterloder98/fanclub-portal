@@ -232,6 +232,19 @@ export function PaymentsAdminPanel({
                     <dd className="font-mono text-xs">{selected.order_id.slice(0, 8)}…</dd>
                   </div>
                 ) : null}
+                {selected.application_id ? (
+                  <div>
+                    <dt className="text-xs text-slate-500">Mitgliedsantrag</dt>
+                    <dd>
+                      <a
+                        href={`/admin/members/applications/${selected.application_id}`}
+                        className="font-mono text-xs text-fc-blue hover:underline"
+                      >
+                        Antrag öffnen →
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
 
               <label className="grid gap-1">

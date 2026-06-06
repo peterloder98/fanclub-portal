@@ -4,8 +4,7 @@ import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
 import { awardShopOrderStars } from "@/lib/shop/order-stars";
 import { createOpenAccountingEntry, confirmAccountingEntry, cancelAccountingEntry } from "@/lib/payments/accounting-service";
 import { prepareBankTransferCheckout } from "@/lib/payments/bank-transfer-service";
-import { preparePayPalCheckout } from "@/lib/payments/paypal-service";
-import { prepareStripeCheckout } from "@/lib/payments/stripe-service";
+import { prepareWalletCheckout } from "@/lib/payments/wallet-service";
 import { nextInternalReference } from "@/lib/payments/reference";
 import { listEnabledPaymentMethods } from "@/lib/payments/config";
 import type {
@@ -48,6 +47,7 @@ export async function createPaymentWithAccounting(input: {
   paymentMethod: PaymentMethod;
   orderId?: string | null;
   membershipId?: string | null;
+  applicationId?: string | null;
   description: string;
 }): Promise<PaymentCheckoutResult> {
   const admin = createSupabaseAdminClient();
@@ -66,6 +66,7 @@ export async function createPaymentWithAccounting(input: {
       user_id: input.userId,
       order_id: input.orderId ?? null,
       membership_id: input.membershipId ?? null,
+      application_id: input.applicationId ?? null,
       amount_cents: input.amountCents,
       currency: "EUR",
       payment_type: input.paymentType,
@@ -105,15 +106,18 @@ export async function createPaymentWithAccounting(input: {
       amountCents: input.amountCents,
       orderId: input.orderId ?? undefined,
     });
-  } else if (input.paymentMethod === "paypal") {
-    const sim = await preparePayPalCheckout({ paymentId, internalReference, amountCents: input.amountCents });
-    providerExtras = sim;
-    await admin
-      .from("payments")
-      .update({ provider_reference: sim.simulatedProviderReference })
-      .eq("id", paymentId);
-  } else if (input.paymentMethod === "stripe") {
-    const sim = await prepareStripeCheckout({ paymentId, internalReference, amountCents: input.amountCents });
+  } else if (
+    input.paymentMethod === "paypal" ||
+    input.paymentMethod === "stripe" ||
+    input.paymentMethod === "apple_pay" ||
+    input.paymentMethod === "amazon_pay"
+  ) {
+    const sim = await prepareWalletCheckout({
+      provider: input.paymentMethod,
+      paymentId,
+      internalReference,
+      amountCents: input.amountCents,
+    });
     providerExtras = sim;
     await admin
       .from("payments")
@@ -124,6 +128,7 @@ export async function createPaymentWithAccounting(input: {
   return {
     paymentId,
     orderId: input.orderId ?? undefined,
+    applicationId: input.applicationId ?? undefined,
     internalReference,
     amountCents: input.amountCents,
     paymentMethod: input.paymentMethod,

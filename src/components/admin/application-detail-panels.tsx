@@ -3,8 +3,11 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { approveMembershipApplication } from "@/app/(app)/admin/members/applications/actions";
 import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
+import { PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
+import type { PaymentStatus } from "@/lib/payments/types";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -47,6 +50,10 @@ export type ApplicationDetailData = {
   created_at: string;
   membership_status: string | null;
   membership_status_label: string;
+  payment_status: PaymentStatus | null;
+  payment_status_label: string | null;
+  payment_reference: string | null;
+  payment_method_label: string | null;
 };
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -65,6 +72,7 @@ export function ApplicationDetailPanels({
   app: ApplicationDetailData;
   showApprovedBanner?: boolean;
 }) {
+  const paymentPaid = app.payment_status === "paid";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,6 +91,46 @@ export function ApplicationDetailPanels({
       {error ? (
         <div className="xl:col-span-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
+        </div>
+      ) : null}
+
+      {canApprove ? (
+        <div
+          className={`xl:col-span-2 rounded-xl border px-3 py-3 text-sm ${
+            paymentPaid
+              ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+              : app.payment_status
+                ? "border-amber-200 bg-amber-50 text-amber-950"
+                : "border-slate-200 bg-slate-50 text-slate-800"
+          }`}
+        >
+          <p className="font-semibold">Zahlung Mitgliedsbeitrag</p>
+          {app.payment_status ? (
+            <p className="mt-1">
+              Status: <strong>{app.payment_status_label}</strong>
+              {app.payment_method_label ? ` · ${app.payment_method_label}` : null}
+              {app.payment_reference ? (
+                <>
+                  {" "}
+                  · Verwendungszweck:{" "}
+                  <span className="font-mono text-xs">{app.payment_reference}</span>
+                </>
+              ) : null}
+            </p>
+          ) : (
+            <p className="mt-1">Noch keine Online-Zahlung angelegt.</p>
+          )}
+          {!paymentPaid ? (
+            <p className="mt-2 text-xs">
+              Bitte Zahlung unter{" "}
+              <Link href="/admin/payments" className="font-semibold text-fc-blue hover:underline">
+                Admin → Zahlungen
+              </Link>{" "}
+              manuell bestätigen, bevor die Mitgliedschaft freigeschaltet wird.
+            </p>
+          ) : (
+            <p className="mt-2 text-xs">Zahlung bestätigt — Mitgliedschaft kann freigeschaltet werden.</p>
+          )}
         </div>
       ) : null}
 
@@ -167,7 +215,8 @@ export function ApplicationDetailPanels({
                 {busy ? "Wird freigeschaltet…" : "Mitgliedschaft aktiv freischalten"}
               </button>
               <p className="mt-2 text-xs text-slate-500">
-                Setzt Status auf aktiv und sendet die Einladungs-E-Mail mit App-Link.
+                Setzt Status auf aktiv und sendet die Einladungs-E-Mail mit App-Link. Empfohlen erst
+                nach bestätigter Zahlung.
               </p>
             </form>
           ) : null}

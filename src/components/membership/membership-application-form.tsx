@@ -20,6 +20,7 @@ import {
 import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { normalizeGender } from "@/lib/person/gender";
+import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
 
 const MEMBERSHIP_FEE_EUR = 15;
 
@@ -67,6 +68,9 @@ export function MembershipApplicationForm() {
   const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
+  const [applicationId, setApplicationId] = useState<string | null>(null);
+  const [paymentToken, setPaymentToken] = useState<string | null>(null);
+  const [feeCents, setFeeCents] = useState(MEMBERSHIP_FEE_EUR * 100);
 
   useEffect(() => {
     if (!form.whatsapp_opt_in || whatsappTouched) return;
@@ -193,17 +197,23 @@ export function MembershipApplicationForm() {
       });
       const json = (await res.json()) as {
         ok?: boolean;
+        id?: string;
         error?: string;
         pdfDownloadUrl?: string;
         applicantName?: string;
         emailWarning?: string | null;
+        paymentToken?: string;
+        feeCents?: number;
       };
       if (!res.ok || !json.ok) {
         throw new Error(typeof json.error === "string" ? json.error : "Antrag fehlgeschlagen");
       }
+      setApplicationId(json.id ?? null);
       setPdfDownloadUrl(json.pdfDownloadUrl ?? null);
       setDoneName(json.applicantName ?? null);
       setEmailWarning(json.emailWarning ?? null);
+      setPaymentToken(json.paymentToken ?? null);
+      setFeeCents(json.feeCents ?? MEMBERSHIP_FEE_EUR * 100);
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Antrag fehlgeschlagen");
@@ -213,36 +223,48 @@ export function MembershipApplicationForm() {
   }
 
   if (done) {
+    const firstName = doneName?.split(" ")[0] ?? null;
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Antrag eingegangen</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-slate-700">
-          <p>
-            Vielen Dank{doneName ? `, ${doneName.split(" ")[0]}` : ""}! Dein Antrag ist bei uns
-            eingegangen. Du erhältst in Kürze eine Bestätigungs-E-Mail mit deinem Antrag und der
-            Satzung als PDF-Anhang. Der Vorstand wurde ebenfalls benachrichtigt.
-          </p>
-          {emailWarning ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
-              Hinweis: {emailWarning}
+      <div className="grid gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Antrag eingegangen</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 text-sm text-slate-700">
+            <p>
+              Vielen Dank{firstName ? `, ${firstName}` : ""}! Dein Antrag ist bei uns eingegangen.
+              Du erhältst in Kürze eine Bestätigungs-E-Mail mit deinem Antrag und der Satzung als
+              PDF-Anhang. Der Vorstand wurde ebenfalls benachrichtigt.
             </p>
-          ) : null}
-          {pdfDownloadUrl ? (
-            <a
-              href={pdfDownloadUrl}
-              download
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-fc-navy text-sm font-semibold text-white"
-            >
-              Antrag inkl. Satzung als PDF herunterladen
-            </a>
-          ) : null}
-          <p className="text-xs text-slate-500">
-            Falls keine E-Mail ankommt, prüfe den Spam-Ordner oder lade das PDF hier herunter.
-          </p>
-        </CardContent>
-      </Card>
+            {emailWarning ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900">
+                Hinweis: {emailWarning}
+              </p>
+            ) : null}
+            {pdfDownloadUrl ? (
+              <a
+                href={pdfDownloadUrl}
+                download
+                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-fc-navy bg-white text-sm font-semibold text-fc-navy"
+              >
+                Antrag inkl. Satzung als PDF herunterladen
+              </a>
+            ) : null}
+            <p className="text-xs text-slate-500">
+              Falls keine E-Mail ankommt, prüfe den Spam-Ordner oder lade das PDF hier herunter.
+            </p>
+          </CardContent>
+        </Card>
+
+        {applicationId && paymentToken ? (
+          <ApplicationPaymentCheckout
+            applicationId={applicationId}
+            paymentToken={paymentToken}
+            feeCents={feeCents}
+            applicantFirstName={firstName}
+          />
+        ) : null}
+      </div>
     );
   }
 

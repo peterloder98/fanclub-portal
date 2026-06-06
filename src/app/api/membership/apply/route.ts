@@ -314,6 +314,8 @@ export async function POST(request: Request) {
       pdfDownloadUrl,
       applicantName,
       emailWarning,
+      paymentToken: downloadToken,
+      feeCents: 1500,
     });
   } catch (e) {
     return NextResponse.json({ error: formatApiError(e) }, { status: 500 });

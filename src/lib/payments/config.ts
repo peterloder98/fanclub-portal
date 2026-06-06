@@ -49,6 +49,18 @@ function fallbackMethods(): PaymentSettingsRow[] {
       is_test_mode: true,
       public_config_json: {},
     },
+    {
+      provider: "apple_pay",
+      is_enabled: true,
+      is_test_mode: true,
+      public_config_json: {},
+    },
+    {
+      provider: "amazon_pay",
+      is_enabled: true,
+      is_test_mode: true,
+      public_config_json: {},
+    },
   ];
 }
 

@@ -4,6 +4,8 @@ import { ApplicationDetailPanels } from "@/components/admin/application-detail-p
 import { ApplicationActionsToolbar } from "@/components/admin/application-actions-toolbar.client";
 import { MemberActivityTimeline } from "@/components/admin/member-activity-timeline";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
+import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
+import type { PaymentMethod, PaymentStatus } from "@/lib/payments/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { redirect } from "next/navigation";
@@ -51,6 +53,27 @@ export default async function AdminMembershipApplicationPage({
     membershipStatus = m?.status ?? null;
   }
 
+  let paymentStatus: PaymentStatus | null = null;
+  let paymentReference: string | null = null;
+  let paymentMethodLabel: string | null = null;
+  try {
+    const { data: payment } = await admin
+      .from("payments")
+      .select("payment_status,internal_reference,payment_method")
+      .eq("application_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (payment) {
+      paymentStatus = payment.payment_status as PaymentStatus;
+      paymentReference = payment.internal_reference;
+      paymentMethodLabel =
+        PAYMENT_METHOD_LABELS[payment.payment_method as PaymentMethod] ?? payment.payment_method;
+    }
+  } catch {
+    /* payments table optional until migration */
+  }
+
   const detail = {
     id: app.id,
     status: app.status,
@@ -82,6 +105,10 @@ export default async function AdminMembershipApplicationPage({
     created_at: app.created_at,
     membership_status: membershipStatus,
     membership_status_label: membershipStatusLabel(membershipStatus),
+    payment_status: paymentStatus,
+    payment_status_label: paymentStatus ? PAYMENT_STATUS_LABELS[paymentStatus] : null,
+    payment_reference: paymentReference,
+    payment_method_label: paymentMethodLabel,
   };
 
   return (

@@ -761,7 +761,11 @@ export function MerchandiseShop() {
                       ? "Mit PayPal bezahlen (Testmodus)"
                       : paymentMethod === "stripe"
                         ? "Mit Stripe bezahlen (Testmodus)"
-                        : "Jetzt bestellen"}
+                        : paymentMethod === "apple_pay"
+                          ? "Mit Apple Pay bezahlen (Testmodus)"
+                          : paymentMethod === "amazon_pay"
+                            ? "Mit Amazon Pay bezahlen (Testmodus)"
+                            : "Jetzt bestellen"}
                 </button>
               </CardContent>
             </Card>
