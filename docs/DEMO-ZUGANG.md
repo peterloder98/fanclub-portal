@@ -77,7 +77,7 @@ Aus lokaler `.env.local` (nicht committen) und Supabase → **Settings → API**
    SMTP_SEED_ENCRYPTION=SSL
    SMTP_SEED_EMAIL=...
    SMTP_SEED_PASSWORD=...
-   SMTP_SEED_DISPLAY_NAME=Anni Perka
+   SMTP_SEED_DISPLAY_NAME=Anni Perka Fanclub
    SMTP_SEED_IS_DEFAULT=true
    ARTISTFLOW_FEED_URL=...     # falls Events
    CRON_SECRET=...             # empfohlen auf Production

@@ -299,7 +299,14 @@ export function SmtpSettingsClient() {
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-medium">Anzeigename</span>
-                <input name="display_name" defaultValue={editing === "new" ? "" : editing.display_name ?? ""} className="h-11 rounded-xl border px-3 text-sm" />
+                <input
+                  name="display_name"
+                  defaultValue={
+                    editing === "new" ? "Anni Perka Fanclub" : editing.display_name ?? "Anni Perka Fanclub"
+                  }
+                  placeholder="Anni Perka Fanclub"
+                  className="h-11 rounded-xl border px-3 text-sm"
+                />
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-medium">Antwortadresse</span>

@@ -1,3 +1,4 @@
+import { DEFAULT_MAIL_DISPLAY_NAME } from "@/lib/smtp/display-name";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { decryptSmtpPassword, encryptSmtpPassword } from "@/lib/smtp/crypto";
 import { formatSmtpError } from "@/lib/smtp/errors";
@@ -275,7 +276,8 @@ export async function seedSmtpFromEnvIfEmpty() {
     encryption,
     email,
     password,
-    display_name: process.env.SMTP_SEED_DISPLAY_NAME?.trim() || null,
+    display_name:
+      process.env.SMTP_SEED_DISPLAY_NAME?.trim() || DEFAULT_MAIL_DISPLAY_NAME,
     reply_to: process.env.SMTP_SEED_REPLY_TO?.trim() || email,
     is_default: process.env.SMTP_SEED_IS_DEFAULT !== "false",
     artistflow_id: process.env.SMTP_SEED_ARTISTFLOW_ID?.trim() || null,

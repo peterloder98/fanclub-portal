@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { resolveMailDisplayName } from "@/lib/smtp/display-name";
 import type { SmtpEncryption } from "@/lib/smtp/types";
 
 export function createTransportFromCredentials(input: {
@@ -26,8 +27,5 @@ export function createTransportFromCredentials(input: {
 }
 
 export function formatFromHeader(email: string, displayName?: string | null) {
-  if (displayName?.trim()) {
-    return `${displayName.trim()} <${email}>`;
-  }
-  return email;
+  return `${resolveMailDisplayName(displayName)} <${email}>`;
 }
