@@ -23,7 +23,7 @@ export function ReceiptLink({ path, label = "Beleg" }: { path: string; label?: s
       type="button"
       disabled={busy}
       onClick={() => void open()}
-      className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+      className="inline-flex items-center gap-1 text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
     >
       <FileImage className="h-3.5 w-3.5" aria-hidden />
       {busy ? "Lädt…" : label}

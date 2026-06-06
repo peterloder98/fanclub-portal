@@ -37,6 +37,9 @@ export function PollHeaderMeta({
 }) {
   const showBadges = allowMultiple;
   const showParticipants = participantCount !== undefined;
+  const countdownClass = cn(
+    compact ? "!px-1.5 !py-0.5 !text-[10px]" : "!px-2 !py-1 !text-[11px]",
+  );
 
   return (
     <header
@@ -46,11 +49,21 @@ export function PollHeaderMeta({
         className,
       )}
     >
+      <div className="mb-1.5 lg:hidden">
+        <RunningCountdownBadge
+          endsAt={endsAt}
+          endedLabel="Beendet"
+          runningPrefix="Endet in"
+          inline
+          className={cn(countdownClass, "w-full max-w-none justify-start")}
+        />
+      </div>
+
       <div className="flex gap-2.5">
         {icon ? (
           <div
             className={cn(
-              "grid shrink-0 place-items-center rounded-lg bg-blue-100 text-blue-600",
+              "grid shrink-0 place-items-center rounded-lg bg-fc-ice text-fc-blue",
               compact ? "h-8 w-8" : "h-9 w-9",
             )}
           >
@@ -69,7 +82,7 @@ export function PollHeaderMeta({
               >
                 {question}
               </h3>
-              {(showBadges || showParticipants) ? (
+              {showBadges || showParticipants ? (
                 <div
                   className={cn(
                     "mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5",
@@ -100,15 +113,13 @@ export function PollHeaderMeta({
                 </div>
               ) : null}
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-0.5">
+            <div className="hidden shrink-0 flex-col items-end gap-0.5 lg:flex">
               <RunningCountdownBadge
                 endsAt={endsAt}
                 endedLabel="Beendet"
                 runningPrefix="Endet in"
                 inline
-                className={cn(
-                  compact ? "!px-1.5 !py-0.5 !text-[10px]" : "!px-2 !py-1 !text-[11px]",
-                )}
+                className={countdownClass}
               />
               {hasVoted && !ended ? (
                 <span
@@ -122,6 +133,11 @@ export function PollHeaderMeta({
               ) : null}
             </div>
           </div>
+          {hasVoted && !ended ? (
+            <span className="mt-1 inline-block text-xs font-semibold text-emerald-700 lg:hidden">
+              Du hast teilgenommen
+            </span>
+          ) : null}
         </div>
       </div>
     </header>

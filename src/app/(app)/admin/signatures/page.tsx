@@ -28,13 +28,13 @@ export default async function AdminSignaturesPage() {
         <AdminBackLink />
         <div className="mx-auto mt-4 grid max-w-6xl gap-6 lg:grid-cols-2 lg:items-start">
           <section className="rounded-2xl border bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">Fanclub (allgemein)</h2>
+            <h2 className="text-lg font-semibold text-fc-navy">Fanclub (allgemein)</h2>
             <div className="mt-4">
               <ClubSignatureSettings />
             </div>
           </section>
           <section className="rounded-2xl border bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900">Deine Unterschrift</h2>
+            <h2 className="text-lg font-semibold text-fc-navy">Deine Unterschrift</h2>
             <div className="mt-4">
               <AdminSignatureSettings />
             </div>

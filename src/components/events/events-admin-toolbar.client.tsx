@@ -3,36 +3,20 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Loader2, Wrench } from "lucide-react";
-import { runPortalEventRepair } from "@/app/(app)/admin/events-sync/actions";
+import { runRestoreEventsFromFeed } from "@/app/(app)/admin/events-sync/actions";
 
 export function EventsAdminToolbar() {
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function runRepair() {
+  function runRestore() {
     setMessage(null);
     startTransition(async () => {
-      const result = await runPortalEventRepair();
+      const result = await runRestoreEventsFromFeed();
       if (result.ok) {
-        const parts = [
-          result.groupsMerged
-            ? `${result.groupsMerged} Duplikat-Gruppe(n) zusammengeführt`
-            : null,
-          result.participationsMoved
-            ? `${result.participationsMoved} Teilnahme(n) wiederhergestellt`
-            : null,
-          result.travelNotesMoved
-            ? `${result.travelNotesMoved} Reiseinfo(s) wiederhergestellt`
-            : null,
-          result.pinsRestored + result.geocoded
-            ? `${result.pinsRestored + result.geocoded} Karten-Pin(s) gesetzt`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(", ");
         setMessage({
           type: "ok",
-          text: parts || "Reparatur abgeschlossen — keine Änderungen nötig.",
+          text: `${result.restored} von ${result.feedTotal} Events wieder sichtbar.`,
         });
       } else {
         setMessage({ type: "error", text: result.error });
@@ -50,11 +34,11 @@ export function EventsAdminToolbar() {
         <button
           type="button"
           disabled={pending}
-          onClick={() => runRepair()}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-400 bg-white px-3 text-xs font-semibold text-amber-950 shadow-sm hover:bg-amber-100 disabled:opacity-60"
+          onClick={() => runRestore()}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-emerald-500 bg-emerald-600 px-3 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
         >
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
-          Teilnehmer & Pins reparieren
+          Events wiederherstellen
         </button>
         <Link
           href="/admin/events-sync"
@@ -64,7 +48,8 @@ export function EventsAdminToolbar() {
         </Link>
       </div>
       <p className="mt-2 text-xs text-amber-900/80">
-        Wenn nach einem Sync Teilnehmer, Reiseinfos oder Karten-Pins fehlen: Reparatur ausführen.
+        Wenn Events fehlen: „Events wiederherstellen“. Für fehlende Teilnehmer oder Pins: Artistflow
+        Sync öffnen.
       </p>
       {message ? (
         <p

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Heart, MessageCircle, Pencil, SendHorizontal, Trash2, X } from "lucide-react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Heart, MessageCircle, Pencil, Reply, SendHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,8 +60,63 @@ type FeedPost = {
     createdAt: string;
     createdAtLabel: string;
     text: string;
+    parentCommentId: string | null;
+    replyToUserId: string | null;
+    replyToName: string | null;
   }>;
 };
+
+type ReplyingTo = {
+  postId: string;
+  commentId: string;
+  userId: string;
+  userName: string;
+};
+
+type FeedComment = FeedPost["comments"][number];
+
+function organizePostComments(comments: FeedComment[]) {
+  const childrenByParent = new Map<string, FeedComment[]>();
+  const roots: FeedComment[] = [];
+
+  for (const c of comments) {
+    if (c.parentCommentId) {
+      const list = childrenByParent.get(c.parentCommentId) ?? [];
+      list.push(c);
+      childrenByParent.set(c.parentCommentId, list);
+    } else {
+      roots.push(c);
+    }
+  }
+
+  roots.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  for (const list of childrenByParent.values()) {
+    list.sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    );
+  }
+
+  return { roots, childrenByParent };
+}
+
+function CommentBody({ text, replyToName }: { text: string; replyToName: string | null }) {
+  if (!replyToName) {
+    return <p className="text-xs leading-snug text-slate-700">{text}</p>;
+  }
+  const prefix = `@${replyToName}`;
+  if (!text.startsWith(prefix)) {
+    return <p className="text-xs leading-snug text-slate-700">{text}</p>;
+  }
+  const rest = text.slice(prefix.length).trimStart();
+  return (
+    <p className="text-xs leading-snug text-slate-700">
+      <span className="font-semibold text-fc-blue">{prefix}</span>
+      {rest ? ` ${rest}` : null}
+    </p>
+  );
+}
 
 type FeedItem =
   | { kind: "post"; id: string; activityAt: string; post: FeedPost }
@@ -68,11 +124,14 @@ type FeedItem =
 
 const initial: FeedPost[] = [];
 
-export function PostFeed({
+function PostFeedInner({
   embedPollsInFeed = false,
 }: {
   embedPollsInFeed?: boolean;
 }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [focusPostId, setFocusPostId] = useState<string | null>(null);
   const [posts, setPosts] = useState<FeedPost[]>(initial);
   const [draftByPostId, setDraftByPostId] = useState<Record<string, string>>(
     {},
@@ -90,6 +149,34 @@ export function PostFeed({
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const commentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
+
+  useEffect(() => {
+    if (pathname !== "/dashboard") {
+      setFocusPostId(null);
+      return;
+    }
+    let postId = searchParams.get("post");
+    if (!postId && typeof window !== "undefined") {
+      const hash = window.location.hash;
+      if (hash.startsWith("#post-")) postId = hash.slice(6);
+    }
+    setFocusPostId(postId);
+  }, [pathname, searchParams]);
+
+  useEffect(() => {
+    if (!focusPostId || !posts.some((p) => p.id === focusPostId)) return;
+    const el = document.getElementById(`feed-post-${focusPostId}`);
+    if (!el) return;
+    const scrollTimer = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+    const clearTimer = window.setTimeout(() => setFocusPostId(null), 5000);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [focusPostId, posts]);
   const pollCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const pendingScrollPollIdRef = useRef<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -274,14 +361,25 @@ export function PostFeed({
 
         const { data: commentsData, error: commentsErr } = await supabase
           .from("post_comments")
-          .select("id,post_id,author_id,body,created_at")
+          .select("id,post_id,author_id,body,created_at,parent_comment_id,reply_to_user_id")
           .in("post_id", postIds.length ? postIds : ["00000000-0000-0000-0000-000000000000"])
           .order("created_at", { ascending: true });
         if (commentsErr) throw commentsErr;
 
+        const replyToIds = Array.from(
+          new Set(
+            (commentsData ?? [])
+              .map((c) => c.reply_to_user_id as string | null)
+              .filter(Boolean),
+          ),
+        ) as string[];
+
         // Map author names for comments
         const authorIds = Array.from(
-          new Set((commentsData ?? []).map((c) => c.author_id)),
+          new Set([
+            ...(commentsData ?? []).map((c) => c.author_id),
+            ...replyToIds,
+          ]),
         );
         const { data: authorProfiles, error: authorsErr } = await supabase
           .from("profiles")
@@ -341,6 +439,9 @@ export function PostFeed({
         (commentsData ?? []).forEach((c) => {
           if (!commentsByPost.has(c.post_id)) commentsByPost.set(c.post_id, []);
           const author = authorMap.get(c.author_id);
+          const replyTo = c.reply_to_user_id
+            ? authorMap.get(c.reply_to_user_id as string)
+            : null;
           commentsByPost.get(c.post_id)!.push({
             id: c.id,
             authorId: c.author_id,
@@ -352,6 +453,9 @@ export function PostFeed({
               timeStyle: "short",
             }),
             text: c.body,
+            parentCommentId: (c.parent_comment_id as string | null) ?? null,
+            replyToUserId: (c.reply_to_user_id as string | null) ?? null,
+            replyToName: replyTo?.name ?? null,
           });
           if (c.created_at) {
             const prev = latestCommentByPost.get(c.post_id);
@@ -547,14 +651,31 @@ export function PostFeed({
     );
   }
 
+  function startReply(postId: string, comment: FeedPost["comments"][number]) {
+    setReplyingTo({
+      postId,
+      commentId: comment.id,
+      userId: comment.authorId,
+      userName: comment.author,
+    });
+    setDraftByPostId((d) => ({
+      ...d,
+      [postId]: `@${comment.author} `,
+    }));
+    requestAnimationFrame(() => commentInputRefs.current[postId]?.focus());
+  }
+
   function addComment(postId: string, fromEl?: HTMLElement | null) {
     const text = (draftByPostId[postId] ?? "").trim();
     if (!text) return;
     if (!me) return;
+    const replyCtx =
+      replyingTo?.postId === postId ? replyingTo : null;
     const flyFrom =
       fromEl ?? commentInputRefs.current[postId] ?? null;
     const flyRect = flyFrom?.getBoundingClientRect() ?? null;
     setDraftByPostId((d) => ({ ...d, [postId]: "" }));
+    setReplyingTo((r) => (r?.postId === postId ? null : r));
     const nowLabel = new Date().toLocaleString("de-DE", {
       dateStyle: "short",
       timeStyle: "short",
@@ -579,6 +700,9 @@ export function PostFeed({
               createdAt: new Date().toISOString(),
               createdAtLabel: nowLabel,
               text,
+              parentCommentId: replyCtx?.commentId ?? null,
+              replyToUserId: replyCtx?.userId ?? null,
+              replyToName: replyCtx?.userName ?? null,
             },
           ],
         };
@@ -595,13 +719,19 @@ export function PostFeed({
           isBirthday,
         );
 
+        const insertRow: Record<string, unknown> = {
+          post_id: postId,
+          author_id: me.id,
+          body: text,
+        };
+        if (replyCtx) {
+          insertRow.parent_comment_id = replyCtx.commentId;
+          insertRow.reply_to_user_id = replyCtx.userId;
+        }
+
         const { data: inserted, error } = await supabase
           .from("post_comments")
-          .insert({
-            post_id: postId,
-            author_id: me.id,
-            body: text,
-          })
+          .insert(insertRow)
           .select("id")
           .single();
 
@@ -630,6 +760,28 @@ export function PostFeed({
                   },
             ),
           );
+
+          const post = posts.find((p) => p.id === postId);
+          if (replyCtx) {
+            void fetch("/api/comments/notify-reply", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                parentCommentId: replyCtx.commentId,
+                postId,
+                replyPreview: text,
+              }),
+            }).catch(() => {});
+          } else if (post?.authorId && post.authorId !== me.id) {
+            void fetch("/api/comments/notify-post", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                postId,
+                commentPreview: text,
+              }),
+            }).catch(() => {});
+          }
         }
 
         let afterTxn = await fetchPostCommentPointsTxn(
@@ -1058,8 +1210,8 @@ export function PostFeed({
                 className={cn(
                   "w-full resize-none rounded-2xl border px-3 py-2.5 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400",
                   composerExpanded
-                    ? "min-h-[88px] border-blue-200/80 bg-white shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
-                    : "min-h-[40px] border-slate-200/90 bg-white/90 focus:border-blue-200 focus:ring-2 focus:ring-blue-500/10",
+                    ? "min-h-[88px] border-fc-sky/30/80 bg-white shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
+                    : "min-h-[40px] border-slate-200/90 bg-white/90 focus:border-fc-sky/30 focus:ring-2 focus:ring-blue-500/10",
                 )}
               />
 
@@ -1087,8 +1239,8 @@ export function PostFeed({
                     className={cn(
                       "rounded-xl border border-dashed px-3 py-2.5 transition",
                       dragActive
-                        ? "border-blue-400 bg-blue-50/70"
-                        : "border-blue-200/60 bg-gradient-to-r from-white/90 to-sky-50/50",
+                        ? "border-blue-400 bg-fc-ice/70"
+                        : "border-fc-sky/30/60 bg-gradient-to-r from-white/90 to-sky-50/50",
                     )}
                   >
                     <div className="flex flex-wrap items-center gap-2">
@@ -1105,7 +1257,7 @@ export function PostFeed({
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/50"
+                        className="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50"
                       >
                         Foto auswählen
                       </button>
@@ -1190,7 +1342,14 @@ export function PostFeed({
         (() => {
           const post = item.post;
           return (
-        <Card key={post.id} className="overflow-hidden rounded-xl">
+        <Card
+          key={post.id}
+          id={`feed-post-${post.id}`}
+          className={cn(
+            "overflow-hidden rounded-xl scroll-mt-24 transition-shadow duration-500",
+            focusPostId === post.id && "ring-2 ring-fc-blue shadow-md shadow-fc-sky/20",
+          )}
+        >
           <div className="px-3 py-2.5">
             <div className="flex items-center gap-2">
               <HoverEnlargeAvatar
@@ -1240,7 +1399,7 @@ export function PostFeed({
                   <button
                     type="button"
                     onClick={() => void saveEdit(post.id)}
-                    className="h-8 rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white"
+                    className="h-8 rounded-lg bg-fc-navy px-3 text-xs font-semibold text-white"
                   >
                     Speichern
                   </button>
@@ -1354,13 +1513,30 @@ export function PostFeed({
                       addComment(post.id, e.currentTarget);
                     }
                   }}
-                  placeholder="Kommentieren…"
+                  placeholder={
+                    replyingTo?.postId === post.id
+                      ? `Antwort an @${replyingTo.userName}…`
+                      : "Kommentieren…"
+                  }
                   className="h-7 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                 />
+                {replyingTo?.postId === post.id ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplyingTo(null);
+                      setDraftByPostId((d) => ({ ...d, [post.id]: "" }));
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border text-slate-500 hover:bg-slate-50"
+                    aria-label="Antwort abbrechen"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={(e) => addComment(post.id, e.currentTarget)}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-900 text-white hover:bg-slate-800"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-fc-navy text-white hover:bg-fc-blue"
                   aria-label="Kommentar senden"
                 >
                   <SendHorizontal className="h-3.5 w-3.5" />
@@ -1375,117 +1551,145 @@ export function PostFeed({
                   post.comments.length > 4 ? "max-h-40 overflow-y-auto pr-3" : "",
                 )}
               >
-                {[...post.comments]
-                  .slice()
-                  .sort(
-                    (a, b) =>
-                      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-                  )
-                  .map((c) => {
+                {(() => {
+                  const { roots, childrenByParent } = organizePostComments(post.comments);
+
+                  function renderCommentNode(c: FeedComment, isReply: boolean) {
                     const canEdit = me?.id === c.authorId;
                     const canDelete =
                       me && (me.id === c.authorId || me.role === "admin");
                     const canWarn = me?.role === "admin";
+                    const replies = childrenByParent.get(c.id) ?? [];
+
                     return (
-                      <div key={c.id} className="flex gap-2">
-                        <HoverEnlargeAvatar
-                          name={c.author}
-                          avatarUrl={c.authorAvatarUrl}
-                          size="xs"
-                          className="shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-semibold text-slate-700">
-                              {c.author}
-                            </span>
-                            <span className="text-[10px] text-slate-400">{c.createdAtLabel}</span>
-                            <div className="ml-auto flex shrink-0 items-center gap-0.5 pr-1">
-                              {canEdit ? (
+                      <div key={c.id} className={isReply ? undefined : "space-y-1"}>
+                        <div
+                          className={cn(
+                            "flex gap-2",
+                            isReply &&
+                              "rounded-lg border border-fc-sky/25 bg-fc-ice/50 px-2 py-1.5",
+                          )}
+                        >
+                          <HoverEnlargeAvatar
+                            name={c.author}
+                            avatarUrl={c.authorAvatarUrl}
+                            size="xs"
+                            className="shrink-0"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] font-semibold text-slate-700">
+                                {c.author}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                {c.createdAtLabel}
+                              </span>
+                              <div className="ml-auto flex shrink-0 items-center gap-0.5 pr-1">
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setEditingCommentId(c.id);
-                                    setEditCommentText(c.text);
-                                  }}
+                                  onClick={() => startReply(post.id, c)}
                                   className="grid h-6 w-6 place-items-center rounded text-slate-500 hover:bg-slate-100"
-                                  title="Bearbeiten"
-                                  aria-label="Bearbeiten"
+                                  title="Antworten"
+                                  aria-label="Antworten"
                                 >
-                                  <Pencil className="h-3 w-3" />
+                                  <Reply className="h-3 w-3" />
                                 </button>
-                              ) : null}
-                              {canDelete ? (
-                                <button
-                                  type="button"
-                                  onClick={(e) =>
-                                    void deleteComment(post.id, c.id, e.currentTarget)
-                                  }
-                                  className="grid h-6 w-6 place-items-center rounded text-rose-600 hover:bg-rose-50"
-                                  title="Löschen"
-                                  aria-label="Löschen"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
-                              ) : null}
-                              {canWarn ? (
-                                <CommentWarningButton
-                                  commentType="post"
-                                  commentId={c.id}
-                                  onRemoved={() =>
-                                    setPosts((prev) =>
-                                      prev.map((p) =>
-                                        p.id === post.id
-                                          ? {
-                                              ...p,
-                                              comments: p.comments.filter(
-                                                (x) => x.id !== c.id,
-                                              ),
-                                            }
-                                          : p,
-                                      ),
-                                    )
-                                  }
-                                />
-                              ) : null}
-                            </div>
-                          </div>
-                          {editingCommentId === c.id ? (
-                            <div className="mt-1 grid gap-1.5">
-                              <textarea
-                                value={editCommentText}
-                                onChange={(e) => setEditCommentText(e.target.value)}
-                                rows={2}
-                                className="w-full rounded-md border px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
-                              />
-                              <div className="flex gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => void saveCommentEdit(post.id, c.id)}
-                                  className="h-7 rounded-md bg-slate-900 px-2.5 text-[11px] font-semibold text-white"
-                                >
-                                  Speichern
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setEditingCommentId(null);
-                                    setEditCommentText("");
-                                  }}
-                                  className="grid h-7 w-7 place-items-center rounded-md border"
-                                  aria-label="Abbrechen"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                </button>
+                                {canEdit ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingCommentId(c.id);
+                                      setEditCommentText(c.text);
+                                    }}
+                                    className="grid h-6 w-6 place-items-center rounded text-slate-500 hover:bg-slate-100"
+                                    title="Bearbeiten"
+                                    aria-label="Bearbeiten"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                ) : null}
+                                {canDelete ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) =>
+                                      void deleteComment(post.id, c.id, e.currentTarget)
+                                    }
+                                    className="grid h-6 w-6 place-items-center rounded text-rose-600 hover:bg-rose-50"
+                                    title="Löschen"
+                                    aria-label="Löschen"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                ) : null}
+                                {canWarn ? (
+                                  <CommentWarningButton
+                                    commentType="post"
+                                    commentId={c.id}
+                                    onRemoved={() =>
+                                      setPosts((prev) =>
+                                        prev.map((p) =>
+                                          p.id === post.id
+                                            ? {
+                                                ...p,
+                                                comments: p.comments.filter(
+                                                  (x) => x.id !== c.id,
+                                                ),
+                                              }
+                                            : p,
+                                        ),
+                                      )
+                                    }
+                                  />
+                                ) : null}
                               </div>
                             </div>
-                          ) : (
-                            <p className="text-xs leading-snug text-slate-700">{c.text}</p>
-                          )}
+                            {editingCommentId === c.id ? (
+                              <div className="mt-1 grid gap-1.5">
+                                <textarea
+                                  value={editCommentText}
+                                  onChange={(e) => setEditCommentText(e.target.value)}
+                                  rows={2}
+                                  className="w-full rounded-md border px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                                />
+                                <div className="flex gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => void saveCommentEdit(post.id, c.id)}
+                                    className="h-7 rounded-md bg-fc-navy px-2.5 text-[11px] font-semibold text-white"
+                                  >
+                                    Speichern
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingCommentId(null);
+                                      setEditCommentText("");
+                                    }}
+                                    className="grid h-7 w-7 place-items-center rounded-md border"
+                                    aria-label="Abbrechen"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <CommentBody text={c.text} replyToName={c.replyToName} />
+                            )}
+                          </div>
                         </div>
+                        {replies.length > 0 ? (
+                          <div className="ml-7 mt-1 space-y-1.5 border-l-2 border-fc-sky/40 pl-3">
+                            {replies.map((reply) => renderCommentNode(reply, true))}
+                          </div>
+                        ) : null}
                       </div>
                     );
-                  })}
+                  }
+
+                  return roots.map((root) => (
+                    <div key={root.id}>{renderCommentNode(root, false)}</div>
+                  ));
+                })()}
               </div>
             ) : null}
           </div>
@@ -1497,3 +1701,10 @@ export function PostFeed({
   );
 }
 
+export function PostFeed(props: { embedPollsInFeed?: boolean }) {
+  return (
+    <Suspense fallback={<div className="py-6 text-center text-sm text-slate-500">Feed lädt…</div>}>
+      <PostFeedInner {...props} />
+    </Suspense>
+  );
+}

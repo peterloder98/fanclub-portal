@@ -8,7 +8,7 @@ export function AdminBackLink({
   label?: string;
 }) {
   return (
-    <Link href={href} className="text-sm font-medium text-blue-600 hover:underline">
+    <Link href={href} className="text-sm font-medium text-fc-blue hover:underline">
       {label}
     </Link>
   );

@@ -220,7 +220,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
 
   return (
     <div className="grid gap-4">
-      <Link href="/votings" className="text-sm font-medium text-blue-600 hover:underline">
+      <Link href="/votings" className="text-sm font-medium text-fc-blue hover:underline">
         ← Alle Votings
       </Link>
 
@@ -253,13 +253,13 @@ export function VotingDetail({ votingId }: { votingId: string }) {
                 onClick={() => toggleOption(o.id)}
                 className={cn(
                   "relative w-full overflow-hidden rounded-xl border text-left transition",
-                  picked && !hasVoted ? "border-blue-400 bg-blue-50" : "bg-white hover:bg-slate-50",
+                  picked && !hasVoted ? "border-blue-400 bg-fc-ice" : "bg-white hover:bg-slate-50",
                   (ended || hasVoted) && "cursor-default",
                 )}
               >
                 {showResults ? (
                   <div
-                    className="absolute inset-y-0 left-0 bg-blue-50/90 transition-all duration-500"
+                    className="absolute inset-y-0 left-0 bg-fc-ice/90 transition-all duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 ) : null}
@@ -280,7 +280,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
               type="button"
               disabled={submitting || selected.size === 0}
               onClick={() => void submitVote()}
-              className="mt-2 h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-60"
+              className="mt-2 h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white disabled:opacity-60"
             >
               {submitting ? "Speichere…" : "Stimme abgeben"}
             </button>
@@ -309,7 +309,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
             <button
               type="button"
               onClick={() => void addComment()}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+              className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
             >
               Senden
             </button>

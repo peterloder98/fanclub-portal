@@ -95,15 +95,24 @@ export async function notifyAllActiveMembers(
   input: Omit<CreateNotificationInput, "userId">,
 ) {
   const admin = createSupabaseAdminClient();
-  const { data: memberships, error } = await admin
-    .from("memberships")
-    .select("user_id")
-    .eq("status", "active");
-  if (error) {
-    console.error("[notifications] active members:", error.message);
+  const [{ data: memberships, error: memErr }, { data: admins, error: adminErr }] =
+    await Promise.all([
+      admin.from("memberships").select("user_id").eq("status", "active"),
+      admin.from("profiles").select("id").eq("role", "admin"),
+    ]);
+  if (memErr) {
+    console.error("[notifications] active members:", memErr.message);
     return;
   }
-  const userIds = (memberships ?? []).map((m) => m.user_id).filter(Boolean) as string[];
+  if (adminErr) {
+    console.error("[notifications] admins:", adminErr.message);
+  }
+  const userIds = [
+    ...new Set([
+      ...((memberships ?? []).map((m) => m.user_id).filter(Boolean) as string[]),
+      ...((admins ?? []).map((a) => a.id).filter(Boolean) as string[]),
+    ]),
+  ];
   await createNotificationsForUsers(userIds, input);
 }
 

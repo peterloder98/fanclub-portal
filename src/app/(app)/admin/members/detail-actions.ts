@@ -26,6 +26,10 @@ import {
   getMemberContributionInfo,
   listOpenContributions,
 } from "@/lib/club/membership-contribution";
+import {
+  listOpenMeetingCharges,
+  markMeetingChargePaid,
+} from "@/lib/club/meeting-charges";
 import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
@@ -267,6 +271,11 @@ export async function fetchOpenContributionsAction() {
   return listOpenContributions();
 }
 
+export async function fetchOpenMeetingChargesAction() {
+  await requireAdminAction();
+  return listOpenMeetingCharges();
+}
+
 export async function attachReceiptToLedgerEntry(entryId: string, storagePath: string) {
   await requireAdminAction();
   const admin = createSupabaseAdminClient();
@@ -287,6 +296,7 @@ export async function addClubLedgerEntry(input: {
   memberId?: string | null;
   entryDate: string;
   receiptStoragePath?: string | null;
+  meetingId?: string | null;
 }) {
   const { user } = await requireAdminAction();
   const parsed = ledgerSchema.parse(input);
@@ -307,7 +317,7 @@ export async function addClubLedgerEntry(input: {
       created_by: user.id,
       receipt_storage_path: input.receiptStoragePath ?? null,
     })
-    .select("id")
+    .select("id,entry_number")
     .single();
   if (error) {
     if (/club_ledger_entries|does not exist/i.test(error.message)) {
@@ -317,6 +327,8 @@ export async function addClubLedgerEntry(input: {
     }
     throw new Error(error.message);
   }
+
+  const entryNumber = (row as { entry_number?: string | null } | null)?.entry_number ?? null;
 
   const label = LEDGER_CATEGORY_LABELS[parsed.category];
   const amountLabel = formatEur(amountCents);
@@ -342,6 +354,7 @@ export async function addClubLedgerEntry(input: {
       createdBy: user.id,
       metadata: {
         ledger_entry_id: row.id,
+        entry_number: entryNumber,
         amount_cents: amountCents,
         category: parsed.category,
         receipt_storage_path: input.receiptStoragePath ?? null,
@@ -367,7 +380,35 @@ export async function addClubLedgerEntry(input: {
         body: `Mitgliedsbeitrag ${amountLabel} wurde verbucht.`,
         linkUrl: base ? `${base}/profile` : "/profile",
         linkLabel: "Mein Profil",
-        metadata: { ledger_entry_id: row.id, amount_cents: amountCents },
+        metadata: {
+          ledger_entry_id: row.id,
+          entry_number: entryNumber,
+          amount_cents: amountCents,
+        },
+      }).catch(console.error);
+    }
+
+    if (
+      input.meetingId &&
+      parsed.entryType === "income" &&
+      parsed.category === "event" &&
+      row?.id
+    ) {
+      await markMeetingChargePaid(admin, input.meetingId, parsed.memberId, row.id).catch(
+        console.error,
+      );
+      await createUserNotification({
+        userId: parsed.memberId,
+        kind: NOTIFICATION_KINDS.paymentReceived,
+        title: "Zahlung Fanclub-Treffen verbucht",
+        body: `${parsed.description.trim()} — ${amountLabel}`,
+        linkUrl: base ? `${base}/treffen/${input.meetingId}` : `/treffen/${input.meetingId}`,
+        linkLabel: "Zum Treffen",
+        metadata: {
+          ledger_entry_id: row.id,
+          entry_number: entryNumber,
+          meeting_id: input.meetingId,
+        },
       }).catch(console.error);
     }
   }

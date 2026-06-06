@@ -2,17 +2,35 @@
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #f8fafc; /* slate-50 */
+  /* CI — Anni Perka Fanclub Logo */
+  --fc-navy: #143165;
+  --fc-blue: #2c64a3;
+  --fc-sky: #4c89c1;
+  --fc-ice: #eef4fb;
+  --fc-mist: #f4f7fb;
+  --fc-gold: #c9a227;
+  --fc-gold-soft: #faf5eb;
+
+  --background: var(--fc-mist);
   --surface: #ffffff;
-  --foreground: #0f172a; /* slate-900 */
-  --muted: #475569; /* slate-600 */
-  --border: rgba(15, 23, 42, 0.10);
-  --ring: rgba(59, 130, 246, 0.35); /* blue-500 */
+  --foreground: var(--fc-navy);
+  --muted: #5a7394;
+  --border: rgba(20, 49, 101, 0.12);
+  --ring: rgba(44, 100, 163, 0.38);
+  --fanclub-sidebar-width: 16rem;
+  --fanclub-chrome-header-height: 4rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-fc-navy: var(--fc-navy);
+  --color-fc-blue: var(--fc-blue);
+  --color-fc-sky: var(--fc-sky);
+  --color-fc-ice: var(--fc-ice);
+  --color-fc-mist: var(--fc-mist);
+  --color-fc-gold: var(--fc-gold);
+  --color-fc-gold-soft: var(--fc-gold-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --animate-fc-points-pop: fc-points-pop 0.5s ease-out forwards;
@@ -30,7 +48,7 @@ body {
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.18);
+  background: rgba(44, 100, 163, 0.22);
 }
 
 /* Leaflet: Tailwind base styles can break tile sizing (shows "quadrants"). */
@@ -50,25 +68,98 @@ body {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.15);
 }
 
-.leaflet-tooltip.fc-event-hover-tip {
+.leaflet-tooltip.fc-event-hover-tip,
+.leaflet-tooltip.fc-map-tooltip {
   max-width: 220px;
-  padding: 8px 10px !important;
-  border: 1px solid rgba(15, 23, 42, 0.12) !important;
-  border-radius: 10px !important;
-  background: #fff !important;
-  color: #0f172a !important;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.14) !important;
+  padding: 8px 12px !important;
+  border: 2px solid color-mix(in srgb, var(--fc-gold) 55%, transparent) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(145deg, var(--fc-ice), #fff) !important;
+  color: var(--fc-navy) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--fc-navy) 12%, transparent),
+    0 10px 24px rgba(20, 49, 101, 0.22) !important;
   white-space: normal !important;
   pointer-events: none;
   z-index: 900 !important;
+  font-weight: 600;
 }
 
 .leaflet-tooltip-pane {
   z-index: 650 !important;
 }
 
-.leaflet-tooltip.fc-event-hover-tip::before {
-  border-top-color: #fff !important;
+.leaflet-tooltip.fc-event-hover-tip::before,
+.leaflet-tooltip.fc-map-tooltip::before {
+  border-top-color: var(--fc-ice) !important;
+}
+
+.fc-map-hover-card {
+  animation: fc-map-hover-in 0.16s ease-out;
+}
+
+.fc-map-hover-card[data-side="top"] {
+  animation-name: fc-map-hover-in-top;
+}
+
+.fc-map-hover-card[data-side="bottom"] {
+  animation-name: fc-map-hover-in-bottom;
+}
+
+.fc-map-hover-card[data-side="left"] {
+  animation-name: fc-map-hover-in-left;
+}
+
+.fc-map-hover-card[data-side="right"] {
+  animation-name: fc-map-hover-in-right;
+}
+
+@keyframes fc-map-hover-in-top {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fc-map-hover-in-bottom {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fc-map-hover-in-left {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes fc-map-hover-in-right {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+.fc-event-pin-active {
+  z-index: 1000 !important;
 }
 
 .leaflet-popup-close-button {
@@ -91,6 +182,105 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@layer components {
+  .fc-surface {
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    box-shadow: 0 1px 3px rgba(20, 49, 101, 0.06);
+  }
+
+  .fc-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: var(--fc-navy);
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(20, 49, 101, 0.12);
+    transition: background-color 0.15s ease;
+  }
+
+  .fc-btn-primary:hover:not(:disabled) {
+    background: var(--fc-blue);
+  }
+
+  .fc-btn-primary:disabled {
+    opacity: 0.6;
+  }
+
+  .fc-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--fc-sky) 35%, transparent);
+    background: #fff;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--fc-navy);
+    transition: background-color 0.15s ease;
+  }
+
+  .fc-btn-secondary:hover:not(:disabled) {
+    background: var(--fc-ice);
+  }
+
+  .fc-link {
+    font-weight: 500;
+    color: var(--fc-blue);
+  }
+
+  .fc-link:hover {
+    text-decoration: underline;
+  }
+
+  .fc-accent-bar {
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--fc-navy), var(--fc-sky));
+  }
+
+  .fc-action-edit {
+    border: 1px solid color-mix(in srgb, var(--fc-sky) 35%, transparent);
+    color: var(--fc-blue);
+  }
+
+  .fc-action-edit:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--fc-sky) 55%, transparent);
+    background: var(--fc-ice);
+  }
+
+  .fc-action-delete {
+    border: 1px solid color-mix(in srgb, #f43f5e 28%, transparent);
+    color: #e11d48;
+  }
+
+  .fc-action-delete:hover:not(:disabled) {
+    background: #fff1f2;
+  }
+
+  .fc-action-warn {
+    border: 1px solid color-mix(in srgb, var(--fc-gold) 45%, transparent);
+    color: #b45309;
+  }
+
+  .fc-action-warn:hover:not(:disabled) {
+    background: var(--fc-gold-soft);
+  }
+
+  .fc-callout-info {
+    border-radius: 0.75rem;
+    border: 1px solid color-mix(in srgb, var(--fc-gold) 35%, transparent);
+    background: var(--fc-gold-soft);
+    color: var(--fc-navy);
   }
 }
 

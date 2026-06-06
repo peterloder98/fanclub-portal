@@ -19,7 +19,7 @@ export function ReferMembershipClient() {
         </div>
       ) : null}
 
-      <Card className="border-blue-200/80 bg-gradient-to-br from-blue-50/80 via-white to-rose-50/40">
+      <Card className="border-fc-sky/30/80 bg-gradient-to-br from-blue-50/80 via-white to-rose-50/40">
         <CardHeader>
           <CardTitle>Neues Mitglied werben</CardTitle>
         </CardHeader>
@@ -45,14 +45,14 @@ export function ReferMembershipClient() {
             Nach digitaler Antragstellung informieren wir dich kurz per E-Mail.
           </p>
           <p className="text-xs text-slate-500">
-            <Link href="/punkte" className="font-medium text-blue-700 hover:underline">
+            <Link href="/punkte" className="font-medium text-fc-blue hover:underline">
               Alle Punkte-Regeln ansehen
             </Link>
           </p>
           <button
             type="button"
             onClick={() => setDialogOpen(true)}
-            className="h-11 w-full max-w-xs rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm"
+            className="h-11 w-full max-w-xs rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm"
           >
             Antrag per E-Mail senden
           </button>

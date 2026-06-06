@@ -14,7 +14,7 @@ export function CreateMemberSection() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
+          className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm hover:bg-fc-blue"
         >
           + Mitglied manuell anlegen
         </button>
@@ -25,7 +25,7 @@ export function CreateMemberSection() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="text-sm font-medium text-slate-600 hover:text-fc-navy"
             >
               Schließen
             </button>
@@ -157,7 +157,7 @@ export function CreateMemberSection() {
                 </select>
               </label>
               <div className="md:col-span-2">
-                <button className="h-11 w-full rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-slate-800">
+                <button className="h-11 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-fc-blue">
                   Mitglied erstellen
                 </button>
               </div>

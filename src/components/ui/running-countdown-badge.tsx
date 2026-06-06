@@ -45,8 +45,8 @@ export function RunningCountdownBadge({
       variant="brand"
       className={cn(
         inline
-          ? "inline-flex max-w-[min(100%,14rem)] flex-wrap items-center justify-end gap-x-1 gap-y-0.5 text-right text-[10px] font-semibold leading-snug"
-          : "max-w-full whitespace-normal text-left text-[11px] font-semibold leading-snug tracking-normal",
+          ? "inline-flex max-w-full flex-nowrap items-center gap-x-1 whitespace-nowrap text-[10px] font-semibold leading-none"
+          : "inline-flex max-w-full flex-nowrap items-center gap-x-1 whitespace-nowrap text-left text-[11px] font-semibold leading-none tracking-normal",
         className,
       )}
     >

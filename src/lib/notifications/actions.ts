@@ -12,6 +12,7 @@ export type UserNotificationRow = {
   link_label: string | null;
   read_at: string | null;
   created_at: string;
+  metadata?: Record<string, unknown> | null;
 };
 
 export async function fetchMyNotifications(limit = 30): Promise<{
@@ -27,7 +28,7 @@ export async function fetchMyNotifications(limit = 30): Promise<{
 
   const { data: items, error } = await supabase
     .from("user_notifications")
-    .select("id,kind,title,body,link_url,link_label,read_at,created_at")
+    .select("id,kind,title,body,link_url,link_label,read_at,created_at,metadata")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(limit);

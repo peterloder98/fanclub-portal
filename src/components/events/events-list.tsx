@@ -30,7 +30,7 @@ function EventCard({
   const ticket = ticketDisplay(event.ticket_url);
 
   return (
-    <Card className={highlight ? "border-blue-200 bg-blue-50/40" : undefined}>
+    <Card className={highlight ? "border-fc-sky/30 bg-fc-ice/40" : undefined}>
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <CardTitle className="text-base">{event.title}</CardTitle>
@@ -48,7 +48,7 @@ function EventCard({
             href={ticket.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-fit text-sm font-medium text-blue-700 hover:underline"
+            className="inline-flex w-fit text-sm font-medium text-fc-blue hover:underline"
           >
             Tickets / Infos →
           </a>
@@ -81,7 +81,7 @@ export function EventsList({
           {isAdmin ? (
             <p>
               Als Admin:{" "}
-              <Link href="/admin/events-sync" className="font-medium text-blue-700 hover:underline">
+              <Link href="/admin/events-sync" className="font-medium text-fc-blue hover:underline">
                 Events Sync
               </Link>{" "}
               öffnen und „Sync starten“. Vorher{" "}

@@ -97,7 +97,7 @@ export function UserListPopover({
         if (!pinned) setHoverOpen(false);
       }}
     >
-      <span className="font-semibold text-slate-900">{label}</span>
+      <span className="font-semibold text-fc-navy">{label}</span>
       {pinned ? (
         <span className="mt-0.5 block text-[10px] text-slate-500">Erneut klicken zum Schließen</span>
       ) : null}

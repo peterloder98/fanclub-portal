@@ -85,7 +85,9 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
         kind: NOTIFICATION_KINDS.birthdayPost,
         title: "Alles Gute zum Geburtstag!",
         body: "Im Feed wartet deine Geburtstagsgratulation von Anni.",
-        linkUrl: base ? `${base}/dashboard#post-${inserted.id}` : `/dashboard#post-${inserted.id}`,
+        linkUrl: base
+          ? `${base}/dashboard?post=${inserted.id}`
+          : `/dashboard?post=${inserted.id}`,
         linkLabel: "Zum Post",
         metadata: { post_id: inserted.id, dedupe_key: `birthday:${todayIso}` },
       }).catch(console.error);

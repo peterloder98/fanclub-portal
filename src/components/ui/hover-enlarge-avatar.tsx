@@ -59,12 +59,12 @@ export function HoverEnlargeAvatar({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
         ) : (
-          <span className="grid h-full w-full place-items-center bg-gradient-to-br from-blue-600 to-rose-500 text-sm font-bold text-white">
+          <span className="grid h-full w-full place-items-center bg-gradient-to-br from-fc-navy to-fc-sky text-sm font-bold text-white">
             {initialsFromName(name)}
           </span>
         )}
       </span>
-      <span className="mt-1 max-w-[min(10rem,40vw)] truncate rounded-md bg-slate-900/92 px-2 py-0.5 text-center text-[11px] font-medium text-white shadow-sm">
+      <span className="mt-1 max-w-[min(10rem,40vw)] truncate rounded-md bg-fc-navy/92 px-2 py-0.5 text-center text-[11px] font-medium text-white shadow-sm">
         {name}
       </span>
     </span>

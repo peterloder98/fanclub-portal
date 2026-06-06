@@ -141,7 +141,7 @@ export function MembershipInviteEmailDialog({
       ref={sendBtnRef}
       type="button"
       disabled={pending || loading || !canSend}
-      className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+      className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-50"
       onClick={() => {
         startTransition(async () => {
           try {

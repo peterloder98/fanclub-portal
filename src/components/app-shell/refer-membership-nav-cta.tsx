@@ -18,7 +18,7 @@ export function ReferMembershipNavCta() {
       className={cn(
         "group block overflow-hidden rounded-2xl border transition",
         active
-          ? "border-slate-800 bg-slate-900 text-white shadow-lg shadow-slate-900/25 ring-2 ring-slate-700/80"
+          ? "border-slate-800 bg-fc-navy text-white shadow-lg shadow-slate-900/25 ring-2 ring-slate-700/80"
           : "border-amber-200/90 bg-gradient-to-br from-amber-50/95 via-white to-blue-50/90 shadow-md shadow-amber-900/10 ring-1 ring-amber-100 hover:border-amber-300 hover:shadow-lg hover:shadow-amber-900/15",
       )}
     >
@@ -28,7 +28,7 @@ export function ReferMembershipNavCta() {
             "grid w-12 shrink-0 place-items-center",
             active
               ? "bg-white/10"
-              : "bg-gradient-to-br from-blue-600 to-rose-500 text-white",
+              : "bg-gradient-to-br from-fc-navy to-fc-sky text-white",
           )}
         >
           <UserPlus className="h-5 w-5" aria-hidden />
@@ -37,7 +37,7 @@ export function ReferMembershipNavCta() {
           <p
             className={cn(
               "text-[13px] font-semibold leading-snug tracking-tight",
-              active ? "text-white" : "text-slate-900",
+              active ? "text-white" : "text-fc-navy",
             )}
           >
             Neues Mitglied werben

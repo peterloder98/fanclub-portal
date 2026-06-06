@@ -4,6 +4,9 @@ import {
   ArrowRight,
   Bell,
   FileText,
+  Gift,
+  HeartHandshake,
+  UserPlus,
   Mail,
   Mails,
   MapPinned,
@@ -23,7 +26,6 @@ type AdminHubItem = {
   title: string;
   description: string;
   icon: LucideIcon;
-  iconClassName?: string;
 };
 
 type AdminHubSection = {
@@ -32,6 +34,14 @@ type AdminHubSection = {
   subtitle: string;
   items: AdminHubItem[];
 };
+
+/** Abwechselnde CI-Verläufe — kein Regenbogen mehr. */
+const CI_ICON_GRADIENTS = [
+  "from-fc-navy to-fc-blue",
+  "from-fc-blue to-fc-sky",
+  "from-fc-sky to-fc-navy",
+  "from-fc-navy to-fc-sky",
+] as const;
 
 const SECTIONS: AdminHubSection[] = [
   {
@@ -44,28 +54,30 @@ const SECTIONS: AdminHubSection[] = [
         title: "Mitglieder & Anträge",
         description: "Liste, Freischaltung, Detailansicht und PDF.",
         icon: Users,
-        iconClassName: "from-blue-600 to-indigo-600",
       },
       {
         href: "/admin/membership-form",
         title: "Antragsformular",
         description: "Öffentlicher Link, E-Mail-Versand an Interessenten.",
         icon: FileText,
-        iconClassName: "from-violet-600 to-purple-600",
+      },
+      {
+        href: "/admin/referrals",
+        title: "Empfehlungen",
+        description: "Versendete Einladungen und erfolgreich geworbene Mitglieder.",
+        icon: UserPlus,
       },
       {
         href: "/admin/accounting",
         title: "Buchhaltung",
         description: "Einnahmen, Ausgaben und Zahlungen pro Mitglied.",
         icon: Wallet,
-        iconClassName: "from-emerald-600 to-teal-600",
       },
       {
         href: "/admin/merchandise",
         title: "Merchandise",
         description: "Fanschals, Kugelschreiber — Bestand, Größen, Fotos.",
         icon: ShoppingBag,
-        iconClassName: "from-orange-500 to-amber-600",
       },
     ],
   },
@@ -79,35 +91,30 @@ const SECTIONS: AdminHubSection[] = [
         title: "E-Mail / SMTP",
         description: "Versandserver, Absender und Verbindungstest.",
         icon: Mail,
-        iconClassName: "from-sky-600 to-blue-600",
       },
       {
         href: "/admin/settings/email-templates",
         title: "E-Mail & Geburtstagsgrüße",
         description: "System-Mails, Geburtstagspost-Vorlagen, Platzhalter.",
         icon: Mails,
-        iconClassName: "from-cyan-600 to-teal-600",
       },
       {
         href: "/admin/signatures",
         title: "Signaturen",
         description: "Fanclub-Signatur und persönliche Admin-Unterschrift.",
         icon: PenLine,
-        iconClassName: "from-amber-500 to-orange-600",
       },
       {
         href: "/admin/settings/notifications",
         title: "Mitglieder-Benachrichtigungen",
         description: "E-Mail bei neuem Gewinnspiel oder neuer Umfrage.",
         icon: Bell,
-        iconClassName: "from-rose-500 to-pink-600",
       },
       {
         href: "/admin/settings/email-log",
         title: "E-Mail-Historie",
         description: "Gesendet, fehlgeschlagen — erneut senden.",
         icon: Mail,
-        iconClassName: "from-violet-600 to-purple-600",
       },
     ],
   },
@@ -121,63 +128,74 @@ const SECTIONS: AdminHubSection[] = [
         title: "Spotify",
         description: "Web-Player im Portal und Extended Quota.",
         icon: Music2,
-        iconClassName: "from-emerald-600 to-green-600",
+      },
+      {
+        href: "/admin/advent-calendar",
+        title: "Adventskalender",
+        description: "24 Türchen — Funktion in Vorbereitung.",
+        icon: Gift,
       },
     ],
   },
   {
     id: "events",
-    title: "Events",
-    subtitle: "Termine aus Artistflow und Karte.",
+    title: "Events & Treffen",
+    subtitle: "Artistflow-Termine, eigene Fanclub-Treffen und Karte.",
     items: [
+      {
+        href: "/admin/treffen",
+        title: "Fanclub Treffen",
+        description: "Eigene Treffen anlegen — News-Seite mit Teilnahme für Mitglieder.",
+        icon: HeartHandshake,
+      },
       {
         href: "/events",
         title: "Events & Reise-Infos",
         description: "Termine ansehen — Admins bearbeiten Bahnhof/Hotel in der Eventliste.",
         icon: Train,
-        iconClassName: "from-violet-600 to-fuchsia-600",
       },
       {
         href: "/admin/events-sync",
         title: "Artistflow Sync",
         description: "Sync, Teilnehmer & Pins reparieren, Geocoding und Logs.",
         icon: MapPinned,
-        iconClassName: "from-fuchsia-600 to-rose-600",
       },
       {
         href: "/admin/audit",
         title: "Audit-Log",
         description: "Nachvollziehen, welcher Admin was geändert hat.",
         icon: ScrollText,
-        iconClassName: "from-slate-600 to-slate-800",
       },
     ],
   },
 ];
 
+let tileGradientIndex = 0;
+
 function AdminHubTile({ item }: { item: AdminHubItem }) {
   const Icon = item.icon;
+  const gradient = CI_ICON_GRADIENTS[tileGradientIndex++ % CI_ICON_GRADIENTS.length];
 
   return (
     <Link
       href={item.href}
-      className="group flex gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm shadow-slate-900/5 transition hover:border-blue-200/80 hover:shadow-md hover:shadow-slate-900/8"
+      className="group flex gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/40 hover:shadow-md hover:shadow-fc-navy/8"
     >
       <div
         className={cn(
           "grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white shadow-sm",
-          item.iconClassName ?? "from-slate-600 to-slate-800",
+          gradient,
         )}
       >
         <Icon className="h-5 w-5" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-snug text-slate-900 group-hover:text-blue-800">
+          <h3 className="font-semibold leading-snug text-fc-navy group-hover:text-fc-blue">
             {item.title}
           </h3>
           <ArrowRight
-            className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-600"
+            className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-fc-blue"
             aria-hidden
           />
         </div>
@@ -188,15 +206,17 @@ function AdminHubTile({ item }: { item: AdminHubItem }) {
 }
 
 export function AdminHub() {
+  tileGradientIndex = 0;
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8">
-      <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/90 via-white to-slate-50 px-5 py-5 shadow-sm shadow-slate-900/5">
+      <div className="rounded-2xl border border-fc-sky/25 bg-gradient-to-br from-fc-ice via-white to-fc-mist px-5 py-5 shadow-sm shadow-fc-navy/5">
         <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-amber-500 to-rose-600 text-white shadow-sm">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm">
             <Shield className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-slate-900">Admin-Bereich</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-fc-navy">Admin-Bereich</h2>
             <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
               Alles für Moderation, Mitglieder und technische Einstellungen — nach Bereichen
               sortiert. Inhaltliche Verwaltung von Umfragen und Gewinnspielen erfolgt direkt in den
@@ -210,7 +230,7 @@ export function AdminHub() {
         {SECTIONS.map((section) => (
           <section key={section.id} className="space-y-3">
             <div className="px-0.5">
-              <h3 className="text-base font-semibold text-slate-900">{section.title}</h3>
+              <h3 className="text-base font-semibold text-fc-navy">{section.title}</h3>
               <p className="mt-0.5 text-sm text-slate-500">{section.subtitle}</p>
             </div>
             <ul

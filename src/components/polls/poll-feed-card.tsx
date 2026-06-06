@@ -88,7 +88,7 @@ export function PollFeedCard({
     <Link
       href={`/polls/${poll.id}`}
       className={cn(
-        "inline-flex font-medium text-blue-600 hover:underline",
+        "inline-flex font-medium text-fc-blue hover:underline",
         compact ? "text-[11px]" : "text-xs",
       )}
     >

@@ -12,16 +12,18 @@ export function EventMapHoverContent({ event }: { event: MapEvent }) {
 
   return (
     <div className="max-w-[200px] leading-snug">
-      <div className="line-clamp-2 text-[11px] font-semibold text-slate-900">{event.title}</div>
-      <div className="mt-0.5 text-[10px] text-slate-600">
+      <div className="line-clamp-2 text-[11px] font-bold text-fc-navy">{event.title}</div>
+      <div className="mt-0.5 text-[10px] font-medium text-fc-blue">
         {date}
         {time ? ` · ${time} Uhr` : ""}
       </div>
       {location ? (
-        <div className="mt-0.5 line-clamp-2 text-[10px] text-slate-500">{location}</div>
+        <div className="mt-0.5 line-clamp-2 text-[10px] text-slate-600">{location}</div>
       ) : null}
       {ticket.text ? (
-        <div className="mt-0.5 line-clamp-3 text-[10px] font-medium text-slate-700">{ticket.text}</div>
+        <div className="mt-0.5 line-clamp-3 text-[10px] font-semibold text-fc-navy/80">
+          {ticket.text}
+        </div>
       ) : null}
     </div>
   );

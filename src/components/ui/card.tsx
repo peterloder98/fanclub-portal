@@ -6,7 +6,7 @@ export function Card(props: ComponentProps<"div">) {
   return (
     <div
       className={cn(
-        "rounded-2xl border bg-white shadow-sm shadow-slate-900/5",
+        "rounded-2xl border bg-white shadow-sm shadow-fc-navy/5",
         className,
       )}
       {...rest}
@@ -23,7 +23,7 @@ export function CardTitle(props: ComponentProps<"h3">) {
   const { className, ...rest } = props;
   return (
     <h3
-      className={cn("text-sm font-semibold text-slate-900", className)}
+      className={cn("text-sm font-semibold text-fc-navy", className)}
       {...rest}
     />
   );

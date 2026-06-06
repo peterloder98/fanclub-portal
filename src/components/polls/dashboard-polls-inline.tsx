@@ -179,7 +179,7 @@ export function DashboardPollsInline() {
     <div className="grid gap-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-900">Umfragen</h3>
-        <Link href="/polls" className="text-xs font-medium text-blue-600 hover:underline">
+        <Link href="/polls" className="text-xs font-medium text-fc-blue hover:underline">
           alle Umfragen →
         </Link>
       </div>
@@ -230,7 +230,7 @@ export function DashboardPollsInline() {
             </div>
             <Link
               href={`/polls/${poll.id}`}
-              className="mt-2 inline-block text-xs font-medium text-blue-600 hover:underline"
+              className="mt-2 inline-block text-xs font-medium text-fc-blue hover:underline"
             >
               Kommentare →
             </Link>

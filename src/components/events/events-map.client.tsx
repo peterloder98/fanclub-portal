@@ -255,7 +255,7 @@ export function EventsMapClient({
             <MapHoverOverlay
               lat={hoveredPlacement.position[0]}
               lng={hoveredPlacement.position[1]}
-              pinOffsetY={38}
+              pinOffsetY={48}
             >
               <EventMapHoverContent event={hoveredPlacement.event} />
             </MapHoverOverlay>

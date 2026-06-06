@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, Heart, MessageCircle, SendHorizontal } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { flyPointsFromElement } from "@/lib/points/fly";
@@ -16,6 +16,9 @@ import {
 } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminControls } from "@/components/giveaways/giveaway-admin-controls";
+import { GiveawayAdminToolbar } from "@/components/giveaways/giveaway-admin-toolbar";
+import { GiveawayDrawStatus } from "@/components/giveaways/giveaway-draw-status";
+import { GiveawayWinnerReveal } from "@/components/giveaways/giveaway-winner-reveal";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import {
@@ -59,6 +62,8 @@ export function GiveawayDetailClient({
   hasEntries = false,
   entryCount = 0,
   eligibleEntryCount = null,
+  initialAdminEdit = false,
+  celebrateDraw = false,
 }: {
   giveaway: {
     id: string;
@@ -94,7 +99,12 @@ export function GiveawayDetailClient({
   hasEntries?: boolean;
   entryCount?: number;
   eligibleEntryCount?: number | null;
+  initialAdminEdit?: boolean;
+  /** Kurz nach Auslosung: Konfetti + URL-Parameter `?ausgelost=1` */
+  celebrateDraw?: boolean;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const phase = giveawayPhase(giveaway.ends_at, giveaway.status, giveaway.is_paused);
   const giveawayOver = isGiveawayOver(
     giveaway.ends_at,
@@ -114,8 +124,9 @@ export function GiveawayDetailClient({
   const [localWinners, setLocalWinners] = useState(winners);
   const [localStatus, setLocalStatus] = useState(giveaway.status);
   const [signatureId, setSignatureId] = useState(CLUB_SIGNATURE_ID);
-  const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(false);
+  const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(initialAdminEdit);
   const [answersExpanded, setAnswersExpanded] = useState(false);
+  const [celebrate, setCelebrate] = useState(celebrateDraw);
 
   const isYearEnd = Boolean(giveaway.is_year_end_lottery);
   const canDrawWinners =
@@ -134,7 +145,13 @@ export function GiveawayDetailClient({
     !localEntered &&
     userId &&
     !adminEditingGiveaway;
-  const showWinners = localStatus === "drawn" && localWinners.length > 0;
+  const showWinnerReveal = localStatus === "drawn" && localWinners.length > 0;
+
+  useEffect(() => {
+    if (!celebrateDraw) return;
+    setCelebrate(true);
+    router.replace(pathname, { scroll: false });
+  }, [celebrateDraw, pathname, router]);
 
   const quizReview = useMemo(() => {
     if (!quizResult) return null;
@@ -191,7 +208,7 @@ export function GiveawayDetailClient({
     setError(null);
     try {
       await drawGiveawayWinners(giveaway.id);
-      window.location.reload();
+      window.location.href = `/giveaways/${giveaway.id}?ausgelost=1`;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Auslosung fehlgeschlagen");
     } finally {
@@ -278,35 +295,69 @@ export function GiveawayDetailClient({
 
   return (
     <div className="mx-auto grid max-w-2xl gap-4">
-      <Link href="/giveaways" className="text-sm font-medium text-blue-600 hover:underline">
+      <Link href="/giveaways" className="text-sm font-medium text-fc-blue hover:underline">
         ← Alle Gewinnspiele
       </Link>
 
+      {isAdmin && !isYearEnd ? (
+        <GiveawayAdminToolbar
+          giveawayId={giveaway.id}
+          isPaused={giveaway.is_paused}
+          status={localStatus}
+          onEdit={() => setAdminEditingGiveaway(true)}
+        />
+      ) : null}
+
+      {!isYearEnd && !showWinnerReveal ? (
+        <GiveawayDrawStatus
+          endsAt={giveaway.ends_at}
+          status={localStatus}
+          isPaused={giveaway.is_paused}
+        />
+      ) : null}
+
+      {isAdmin && !isYearEnd && adminEditingGiveaway ? (
+        <GiveawayAdminControls
+          giveaway={giveaway}
+          prizes={prizes}
+          questions={questions}
+          hasEntries={hasEntries}
+          hideToolbar
+          editing={adminEditingGiveaway}
+          onEditingChange={setAdminEditingGiveaway}
+        />
+      ) : null}
+
+      {showWinnerReveal ? (
+        <GiveawayWinnerReveal
+          winners={localWinners}
+          isAdmin={isAdmin}
+          signatures={signatures}
+          signatureId={signatureId}
+          onSignatureChange={setSignatureId}
+          onNotifyWinner={(id) => void onNotifyWinner(id)}
+          busy={busy}
+          celebrate={celebrate}
+        />
+      ) : null}
+
       <Card>
         <CardHeader className="pb-2">
-          <RunningCountdownBadge
-            endsAt={giveaway.ends_at}
-            paused={giveaway.is_paused}
-            pausedLabel="Pausiert"
-            className="mb-2 max-w-full justify-start sm:hidden"
-          />
-          <div className="flex items-start justify-between gap-3">
-            <CardTitle className="min-w-0 flex-1 text-lg leading-snug">
-              {giveaway.title}
-            </CardTitle>
+          {!showWinnerReveal ? (
             <RunningCountdownBadge
               endsAt={giveaway.ends_at}
               paused={giveaway.is_paused}
               pausedLabel="Pausiert"
-              runningPrefix="Endet in"
-              inline
-              className="hidden !px-2 !py-1 !text-[11px] sm:inline-flex"
+              className="mb-2 max-w-full justify-start"
             />
-          </div>
+          ) : null}
+          <CardTitle className={cn("leading-snug", showWinnerReveal ? "text-base text-slate-600" : "text-lg")}>
+            {giveaway.title}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4">
           {yearEndAdmin}
-          {isAdmin && !isYearEnd && eligibleEntryCount != null ? (
+          {isAdmin && !isYearEnd && !showWinnerReveal && eligibleEntryCount != null ? (
             <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-3 text-sm text-amber-950">
               <p>
                 <span className="font-semibold">Teilnahmen:</span> {entryCount ?? 0} gesamt ·{" "}
@@ -324,28 +375,20 @@ export function GiveawayDetailClient({
               ) : null}
             </div>
           ) : null}
-          {isAdmin && !isYearEnd ? (
-            <GiveawayAdminControls
-              giveaway={giveaway}
-              prizes={prizes}
-              questions={questions}
-              hasEntries={hasEntries}
-              onEditingChange={setAdminEditingGiveaway}
-            />
-          ) : null}
-
-          {giveaway.description ? (
+          {!showWinnerReveal && giveaway.description ? (
             <p className="text-sm leading-relaxed text-slate-700">{giveaway.description}</p>
           ) : null}
 
-          <div>
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preise</h4>
-            <ul className="mt-1 list-inside list-disc text-sm text-slate-800">
-              {prizes.map((p) => (
-                <li key={p.id}>{p.name}</li>
-              ))}
-            </ul>
-          </div>
+          {!showWinnerReveal ? (
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preise</h4>
+              <ul className="mt-1 list-inside list-disc text-sm text-slate-800">
+                {prizes.map((p) => (
+                  <li key={p.id}>{p.name}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {isYearEnd ? (
             <div className="rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-sm text-violet-950">
@@ -358,7 +401,7 @@ export function GiveawayDetailClient({
                 </span>
               ) : null}
             </div>
-          ) : localEntered ? (
+          ) : !showWinnerReveal && localEntered ? (
             <div
               className={cn(
                 "rounded-xl border px-3 py-2 text-sm font-medium",
@@ -373,7 +416,7 @@ export function GiveawayDetailClient({
                   ? "Glückwunsch, du nimmst nun am Gewinnspiel teil, wir drücken dir die Daumen!"
                   : "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"}
             </div>
-          ) : phase !== "active" ? null : (
+          ) : phase !== "active" || showWinnerReveal ? null : (
             <p className="text-sm text-slate-600">Noch nicht teilgenommen.</p>
           )}
 
@@ -384,7 +427,7 @@ export function GiveawayDetailClient({
               type="button"
               disabled={busy}
               onClick={(e) => void onParticipateSimple(e.currentTarget)}
-              className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+              className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-60"
             >
               Jetzt teilnehmen
             </button>
@@ -419,14 +462,14 @@ export function GiveawayDetailClient({
                 type="button"
                 disabled={busy}
                 onClick={(e) => void onSubmitQuiz(e.currentTarget)}
-                className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+                className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
               >
                 Antworten absenden
               </button>
             </div>
           ) : null}
 
-          {quizReview && localEntered && giveaway.entry_mode === "quiz" ? (
+          {quizReview && localEntered && giveaway.entry_mode === "quiz" && !showWinnerReveal ? (
             <div className="grid gap-2" aria-label="Deine persönliche Teilnahme">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h4 className="text-sm font-semibold text-slate-900">
@@ -490,77 +533,11 @@ export function GiveawayDetailClient({
             </div>
           ) : null}
 
-          {isAdmin && showWinners ? (
-            <div className="grid gap-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3">
-              <h4 className="text-sm font-semibold text-amber-950">Gewinner (Admin)</h4>
-              {signatures.length ? (
-                <label className="grid gap-1 text-xs text-amber-950">
-                  Signatur für Gewinner-E-Mails
-                  <select
-                    value={signatureId}
-                    onChange={(e) => setSignatureId(e.target.value)}
-                    className="h-9 rounded-lg border bg-white px-2"
-                  >
-                    {signatures.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {localWinners.map((w) => (
-                <div
-                  key={w.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"
-                >
-                  <div>
-                    <span className="font-medium">{w.userName}</span>
-                    <span className="text-slate-600"> — {w.prizeName}</span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={busy || Boolean(w.notifiedAt)}
-                    onClick={() => void onNotifyWinner(w.id)}
-                    className="rounded-lg border px-2 py-1 text-xs font-medium disabled:opacity-50"
-                  >
-                    {w.notifiedAt ? "E-Mail gesendet" : "Per E-Mail benachrichtigen"}
-                  </button>
-                </div>
-              ))}
-            </div>
+          {showWinnerReveal ? (
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Diskussion</p>
           ) : null}
 
-          {showWinners ? (
-            <div className="grid gap-3">
-              <h4 className="text-sm font-semibold text-slate-900">Gewinner</h4>
-              {localWinners.map((w) => (
-                <div key={w.id} className="flex items-center gap-3 rounded-xl border p-3">
-                  <div className="h-8 w-8 overflow-hidden rounded-full border bg-slate-50">
-                    {w.avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={w.avatarUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="grid h-full w-full place-items-center text-xs font-semibold text-slate-600">
-                        {w.userName
-                          .split(" ")
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((p) => p[0]?.toUpperCase())
-                          .join("")}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-slate-900">{w.userName}</div>
-                    <div className="text-xs text-slate-600">{w.prizeName}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="flex items-center gap-2 border-t pt-3">
+          <div className={cn("flex items-center gap-2", showWinnerReveal ? "" : "border-t pt-3")}>
             <button
               type="button"
               onClick={(e) => void toggleLike(e.currentTarget)}
@@ -588,7 +565,7 @@ export function GiveawayDetailClient({
             <button
               type="button"
               onClick={() => void addComment()}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-slate-900 text-white"
+              className="grid h-9 w-9 place-items-center rounded-lg bg-fc-navy text-white"
               aria-label="Senden"
             >
               <SendHorizontal className="h-3.5 w-3.5" />

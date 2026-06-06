@@ -99,7 +99,7 @@ export function GiveawayAdminCreate() {
                 type="button"
                 onClick={() => setEntryMode("simple")}
                 className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                  entryMode === "simple" ? "border-slate-900 bg-slate-900 text-white" : ""
+                  entryMode === "simple" ? "border-slate-900 bg-fc-navy text-white" : ""
                 }`}
               >
                 Einfach teilnehmen
@@ -108,7 +108,7 @@ export function GiveawayAdminCreate() {
                 type="button"
                 onClick={() => setEntryMode("quiz")}
                 className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                  entryMode === "quiz" ? "border-slate-900 bg-slate-900 text-white" : ""
+                  entryMode === "quiz" ? "border-slate-900 bg-fc-navy text-white" : ""
                 }`}
               >
                 Quiz (mind. 3 Fragen)
@@ -122,7 +122,7 @@ export function GiveawayAdminCreate() {
               <button
                 type="button"
                 onClick={addPrize}
-                className="inline-flex items-center gap-1 text-xs font-medium text-blue-600"
+                className="inline-flex items-center gap-1 text-xs font-medium text-fc-blue"
               >
                 <Plus className="h-3.5 w-3.5" /> Preis
               </button>
@@ -159,7 +159,7 @@ export function GiveawayAdminCreate() {
                 <button
                   type="button"
                   onClick={addQuestion}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-blue-600"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-fc-blue"
                 >
                   <Plus className="h-3.5 w-3.5" /> Frage
                 </button>
@@ -236,7 +236,7 @@ export function GiveawayAdminCreate() {
           <button
             type="submit"
             disabled={busy}
-            className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+            className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-60"
           >
             {busy ? "Speichern…" : "Gewinnspiel veröffentlichen"}
           </button>

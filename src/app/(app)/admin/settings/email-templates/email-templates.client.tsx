@@ -80,7 +80,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
           className={cn(
             "inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition",
             tab === "email"
-              ? "bg-slate-900 text-white"
+              ? "bg-fc-navy text-white"
               : "border bg-white text-slate-700 hover:bg-slate-50",
           )}
         >
@@ -93,7 +93,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
           className={cn(
             "inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-semibold transition",
             tab === "birthday"
-              ? "bg-slate-900 text-white"
+              ? "bg-fc-navy text-white"
               : "border bg-white text-slate-700 hover:bg-slate-50",
           )}
         >
@@ -131,7 +131,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
               </p>
               <Link
                 href="/admin/signatures"
-                className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline"
+                className="mt-2 inline-block text-sm font-medium text-fc-blue hover:underline"
               >
                 Fanclub-Signatur bearbeiten →
               </Link>
@@ -155,7 +155,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
                       className={cn(
                         "rounded-xl px-3 py-2 text-left text-sm transition",
                         t.key === activeKey
-                          ? "bg-slate-900 font-semibold text-white"
+                          ? "bg-fc-navy font-semibold text-white"
                           : "text-slate-700 hover:bg-slate-100",
                       )}
                     >
@@ -164,7 +164,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
                   ))}
                   <Link
                     href="/admin/signatures"
-                    className="mt-2 block rounded-xl px-3 py-2 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                    className="mt-2 block rounded-xl px-3 py-2 text-xs font-medium text-fc-blue hover:bg-fc-ice"
                   >
                     Signaturen bearbeiten →
                   </Link>
@@ -249,7 +249,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
                       <button
                         type="submit"
                         disabled={busy}
-                        className="h-11 w-full max-w-xs rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-60"
+                        className="h-11 w-full max-w-xs rounded-xl bg-fc-navy text-sm font-semibold text-white disabled:opacity-60"
                       >
                         {busy ? "Speichern…" : "Vorlage speichern"}
                       </button>

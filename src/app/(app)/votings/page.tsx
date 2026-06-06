@@ -75,7 +75,7 @@ export default async function VotingsPage() {
                   ))}
                 </div>
 
-                <button className="h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-slate-800">
+                <button className="h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-fc-blue">
                   Voting veröffentlichen
                 </button>
               </form>
@@ -84,7 +84,7 @@ export default async function VotingsPage() {
         ) : (
           <div className="mb-4 text-sm text-slate-600">
             Du siehst hier nur aktive Votings und Ergebnisse.{" "}
-            <Link href="/polls" className="font-medium text-blue-600 hover:underline">
+            <Link href="/polls" className="font-medium text-fc-blue hover:underline">
               Zu den Umfragen →
             </Link>
           </div>

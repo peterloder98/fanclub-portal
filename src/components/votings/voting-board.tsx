@@ -196,7 +196,7 @@ export function VotingBoard({
                 return (
                   <div key={o.id} className="relative overflow-hidden rounded-xl border bg-white">
                     <div
-                      className="absolute inset-y-0 left-0 bg-blue-50/90 transition-all duration-500"
+                      className="absolute inset-y-0 left-0 bg-fc-ice/90 transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                     <div className="relative flex items-center justify-between gap-3 px-3 py-2 text-sm">
@@ -211,7 +211,7 @@ export function VotingBoard({
 
               <Link
                 href={`/votings/${v.id}`}
-                className="mt-1 inline-flex h-10 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
+                className="mt-1 inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue"
               >
                 {ended ? "Ergebnisse & Kommentare" : "Abstimmen & Kommentieren"}
               </Link>

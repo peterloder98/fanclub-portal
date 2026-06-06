@@ -50,7 +50,7 @@ function PlaceLine({
       : null;
   return (
     <div className="flex gap-2 py-1.5">
-      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden />
+      <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fc-blue" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="font-semibold text-slate-900">{place.name}</span>
@@ -67,7 +67,7 @@ function PlaceLine({
           </p>
         ) : null}
         {dist && routeUrl ? (
-          <p className="mt-0.5 text-[11px] font-medium text-blue-700">
+          <p className="mt-0.5 text-[11px] font-medium text-fc-blue">
             {dist} zu Fuß ·{" "}
             <a
               href={routeUrl}
@@ -86,7 +86,7 @@ function PlaceLine({
             href={place.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-blue-700 hover:underline"
+            className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-semibold text-fc-blue hover:underline"
           >
             Website
             <ExternalLink className="h-3 w-3" aria-hidden />
@@ -112,7 +112,7 @@ export function EventTravelInfoBlock({
     closestHotel >= 0 ? travel.hotels[closestHotel] : travel.hotels[0] ?? null;
 
   return (
-    <div className="mt-2 rounded-lg border border-slate-200/90 bg-slate-50/60">
+    <div className="rounded-lg border border-slate-200/90 bg-slate-50/60">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

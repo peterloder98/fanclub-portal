@@ -25,7 +25,7 @@ export async function PollsMini() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle>Umfragen</CardTitle>
-          <Link href="/polls" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link href="/polls" className="text-sm font-medium text-fc-blue hover:underline">
             alle →
           </Link>
         </div>

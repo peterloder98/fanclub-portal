@@ -9,6 +9,8 @@ const REASON_LABELS: Record<string, string> = {
   giveaway_like: "Gewinnspiel geliked",
   giveaway_comment: "Kommentar Gewinnspiel",
   event_participation: "Event-Teilnahme",
+  shop_order: "Fanshop-Einkauf",
+  shop_order_revoked: "Fanshop-Bestellung storniert",
 };
 
 export function pointsReasonLabel(reason: string): string {

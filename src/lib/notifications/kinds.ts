@@ -17,6 +17,11 @@ export const NOTIFICATION_KINDS = {
   rankUp: "rank_up",
   merchandiseOrderAdmin: "merchandise_order_admin",
   eventSyncFailed: "event_sync_failed",
+  clubMeetingPublished: "club_meeting_published",
+  commentReply: "comment_reply",
+  postComment: "post_comment",
+  referralCompleted: "referral_completed",
+  badgeUnlocked: "badge_unlocked",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

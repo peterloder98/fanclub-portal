@@ -76,7 +76,7 @@ export default async function AdminAuditPage() {
                     <td className="px-4 py-3">
                       {r.actor_id ? actorName.get(r.actor_id) ?? "—" : "—"}
                     </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{r.action}</td>
+                    <td className="px-4 py-3 font-medium text-fc-navy">{r.action}</td>
                     <td className="px-4 py-3 text-slate-700">{r.summary}</td>
                   </tr>
                 ))

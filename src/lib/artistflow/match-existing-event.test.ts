@@ -35,6 +35,27 @@ describe("matchExistingExternalEvent", () => {
     expect(match?.id).toBe("uuid-old");
   });
 
+  it("does not reuse the same row for a second feed item", () => {
+    const feedA = normalizeArtistflowEvent({
+      event_id: "jobdate_a",
+      dateSort: "2026-06-09",
+      title: "PROMINENTEN BENEFIZSPIEL",
+      city: "KOBLENZ",
+    });
+    const feedB = normalizeArtistflowEvent({
+      event_id: "jobdate_b",
+      dateSort: "2026-06-14",
+      title: "CAMPING HOLMERNHOF",
+      city: "HOLMERNHOF",
+    });
+    const used = new Set<string>();
+    const matchA = matchExistingExternalEvent(feedA, rows, { excludeIds: used });
+    if (matchA) used.add(matchA.id);
+    const matchB = matchExistingExternalEvent(feedB, rows, { excludeIds: used });
+    expect(matchA?.id).toBe("uuid-old");
+    expect(matchB).toBeNull();
+  });
+
   it("prefers row with participations when multiple title/day matches", () => {
     const feed = normalizeArtistflowEvent({
       event_id: "jobdate_x",

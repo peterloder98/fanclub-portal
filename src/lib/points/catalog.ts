@@ -1,4 +1,4 @@
-/** Zentrale Übersicht: wofür es Statuspunkte gibt (UI + Doku). */
+/** Zentrale Übersicht: wofür es Anni-Stars gibt (UI + Doku). */
 
 import {
   POINTS_RANKS,
@@ -23,7 +23,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Empfehlung: Antrag eingereicht & Mitglied freigegeben",
     points: POINT_VALUES.membershipReferralCompleted,
     how: "Du lädst jemanden per „Neues Mitglied werben“ ein, die Person reicht den Antrag digital ein und wird vom Vorstand freigeschaltet.",
-    note: "Einmal pro erfolgreicher Empfehlung. Zusätzlich +20 Punkte beim Versand der Einladung.",
+    note: "Einmal pro erfolgreicher Empfehlung. Zusätzlich +20 Anni-Stars beim Versand der Einladung.",
   },
   {
     id: "membership_referral",
@@ -37,21 +37,21 @@ export const POINTS_RULES: PointsRule[] = [
     label: "An Umfrage teilgenommen",
     points: POINT_VALUES.pollVote,
     how: "In einer Umfrage mindestens eine Antwort wählen.",
-    note: `Pro Umfrage einmal. Alle Stimmen zurücknehmen: −${POINT_VALUES.pollVote} Punkte.`,
+    note: `Pro Umfrage einmal. Alle Stimmen zurücknehmen: −${POINT_VALUES.pollVote} Anni-Stars.`,
   },
   {
     id: "birthday_comment",
     label: "Zum Geburtstag gratuliert",
     points: POINT_VALUES.birthdayComment,
     how: "Einmal einen Kommentar unter einem Geburtstags-Beitrag im Feed schreiben.",
-    note: "Einmal pro Geburtstags-Beitrag. Kommentar löschen: −2 Punkte.",
+    note: "Einmal pro Geburtstags-Beitrag. Kommentar löschen: −2 Anni-Stars.",
   },
   {
     id: "post_comment",
     label: "Beitrag kommentiert",
     points: POINT_VALUES.postComment,
     how: "Einen Kommentar unter einem normalen Beitrag im Dashboard schreiben.",
-    note: "Einmal pro Beitrag — weitere Kommentare bringen keine zusätzlichen Punkte. Löschen: −3 Punkte.",
+    note: "Einmal pro Beitrag — weitere Kommentare bringen keine zusätzlichen Anni-Stars. Löschen: −3 Anni-Stars.",
   },
   {
     id: "giveaway_entry",
@@ -65,21 +65,28 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Am Event teilnehmen",
     points: POINT_VALUES.eventParticipation,
     how: "Bei einem Termin in der Event-Liste „Am Event teilnehmen“ wählen.",
-    note: "Pro Event einmal. Teilnahme zurücknehmen: −1 Punkt.",
+    note: "Pro Event einmal. Teilnahme zurücknehmen: −1 Anni-Star.",
   },
   {
     id: "post_like",
     label: "Beitrag geliked",
     points: POINT_VALUES.postLike,
     how: "Den Daumen bei einem Beitrag setzen.",
-    note: "Like zurücknehmen: Punkt wird wieder abgezogen.",
+    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen.",
+  },
+  {
+    id: "shop_order",
+    label: "Fanshop-Einkauf",
+    points: 1,
+    how: "Für je 10 € Einkaufswert im Fanshop (nach Versand der Bestellung).",
+    note: "9,99 € = 0 · 10 € = 1 · 24,90 € = 2 · 50 € = 5 Anni-Stars. Storno zieht Sterne wieder ab.",
   },
   {
     id: "giveaway_like",
     label: "Gewinnspiel geliked",
     points: POINT_VALUES.giveawayLike,
     how: "Ein Gewinnspiel mit „Gefällt mir“ markieren.",
-    note: "Like zurücknehmen: Punkt wird wieder abgezogen.",
+    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen.",
   },
   {
     id: "giveaway_comment",

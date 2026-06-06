@@ -1,6 +1,7 @@
 import {
   filterLedgerByPeriod,
   formatEur,
+  formatLedgerEntryNumber,
   LEDGER_CATEGORY_LABELS,
   sumLedgerRows,
   type ClubLedgerRow,
@@ -20,6 +21,7 @@ function formatDE(date: string) {
 
 export function buildLedgerCsv(rows: ClubLedgerRow[]) {
   const header = [
+    "Vorgangsnummer",
     "Datum",
     "Art",
     "Betrag_EUR",
@@ -32,6 +34,7 @@ export function buildLedgerCsv(rows: ClubLedgerRow[]) {
 
   const lines = rows.map((r) =>
     [
+      formatLedgerEntryNumber(r.entry_number),
       formatDE(r.entry_date),
       r.entry_type === "income" ? "Einnahme" : "Ausgabe",
       (r.amount_cents / 100).toFixed(2).replace(".", ","),

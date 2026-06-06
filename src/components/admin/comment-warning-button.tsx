@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
+import { AdminIconButton } from "@/components/admin/admin-icon-button";
 
 export function CommentWarningButton({
   commentType,
@@ -21,11 +22,13 @@ export function CommentWarningButton({
 
   return (
     <>
-      <button
-        type="button"
+      <AdminIconButton
+        label="Verwarnung aussprechen"
+        icon={AlertTriangle}
+        variant="warn"
+        size="sm"
         disabled={pending}
-        title="Verwarnung aussprechen"
-        aria-label="Verwarnung aussprechen"
+        className="!h-7 !w-7 !rounded-md !shadow-none"
         onClick={() => {
           setError(null);
           const ok = window.confirm(
@@ -53,10 +56,7 @@ export function CommentWarningButton({
             }
           });
         }}
-        className="grid h-6 w-6 place-items-center rounded text-red-600 hover:bg-red-50 disabled:opacity-50"
-      >
-        <AlertTriangle className="h-3.5 w-3.5" />
-      </button>
+      />
       {error ? (
         <span className="sr-only" role="alert">
           {error}

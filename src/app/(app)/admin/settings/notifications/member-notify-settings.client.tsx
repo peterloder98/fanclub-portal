@@ -52,7 +52,7 @@ export function MemberNotifySettingsClient({
               onChange={(e) => setNotifyGiveaway(e.target.checked)}
             />
             <span>
-              <span className="font-medium text-slate-900">Neues Gewinnspiel</span>
+              <span className="font-medium text-fc-navy">Neues Gewinnspiel</span>
               <span className="mt-0.5 block text-sm text-slate-600">
                 Betreff: „Neues Gewinnspiel in der Anni Perka Fanclub App“ — Fanclub-Signatur fest.
               </span>
@@ -67,7 +67,7 @@ export function MemberNotifySettingsClient({
               onChange={(e) => setNotifyPoll(e.target.checked)}
             />
             <span>
-              <span className="font-medium text-slate-900">Neue Umfrage</span>
+              <span className="font-medium text-fc-navy">Neue Umfrage</span>
               <span className="mt-0.5 block text-sm text-slate-600">
                 Betreff: „Neue Umfrage in der Anni Perka Fanclub App“ — gleiche Vorlage, angepasster Text.
               </span>
@@ -90,7 +90,7 @@ export function MemberNotifySettingsClient({
             type="button"
             disabled={pending}
             onClick={save}
-            className="h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white disabled:opacity-50"
+            className="h-11 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white disabled:opacity-50"
           >
             Speichern
           </button>

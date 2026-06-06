@@ -3,13 +3,13 @@ import {
   EventsInteractivePanel,
   type EventParticipationMeta,
 } from "@/components/events/events-interactive-panel.client";
-import { EventsAdminToolbar } from "@/components/events/events-admin-toolbar.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { parseTravelInfo, type EventTravelNoteRow } from "@/lib/events/travel-info";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { maybeSyncArtistflowIfStale } from "@/lib/artistflow/maybe-sync-if-stale";
+import { loadPublishedMeetings } from "@/lib/meetings/load";
 
 export default async function EventsPage() {
   after(() => maybeSyncArtistflowIfStale());
@@ -106,13 +106,22 @@ export default async function EventsPage() {
     }
   }
 
+  let clubMeetings: Awaited<ReturnType<typeof loadPublishedMeetings>> = [];
+  try {
+    clubMeetings = await loadPublishedMeetings(supabase, user.id, { includePastDays: 0 }).then(
+      (rows) => rows.filter((m) => new Date(m.starts_at).getTime() >= Date.now()),
+    );
+  } catch {
+    clubMeetings = [];
+  }
+
   return (
-    <div className="flex min-h-screen flex-col lg:h-dvh lg:max-h-dvh lg:overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col lg:overflow-hidden">
       <Topbar
         title="Events"
         subtitle="Konzerte und TV-Auftritte von Anni"
       />
-      <main className="flex flex-col px-4 py-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:px-6">
+      <main className="flex flex-col px-1.5 py-2 sm:px-3 sm:py-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:px-6">
         {error ? (
           <div className="mb-3 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("external_events")
@@ -123,11 +132,10 @@ export default async function EventsPage() {
           </div>
         ) : null}
 
-        {isAdmin ? <EventsAdminToolbar /> : null}
-
-        <div className="lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <EventsInteractivePanel
             events={(events ?? []) as never[]}
+            clubMeetings={clubMeetings}
             nextStartAt={nextEventWithDate?.start_at ?? null}
             nextTitle={nextEventWithDate?.title ?? null}
             participationByEventId={participationByEventId}

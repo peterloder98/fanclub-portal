@@ -68,7 +68,7 @@ export function EventTravelEditForm({
   }
 
   return (
-    <div className="border-t border-blue-200/80 bg-blue-50/30 px-3 py-3">
+    <div className="border-t border-fc-sky/30/80 bg-fc-ice/30 px-3 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-semibold text-slate-800">Reise-Infos</p>
         {error ? <p className="text-xs text-rose-700">{error}</p> : null}
@@ -133,7 +133,7 @@ export function EventTravelEditForm({
             <button
               type="button"
               onClick={() => setForm((f) => ({ ...f, hotels: [...f.hotels, emptyHotel()] }))}
-              className="text-left text-xs font-semibold text-blue-600"
+              className="text-left text-xs font-semibold text-fc-blue"
             >
               + Hotel
             </button>
@@ -146,7 +146,7 @@ export function EventTravelEditForm({
           type="button"
           disabled={pending}
           onClick={handleSave}
-          className="h-8 rounded-lg bg-slate-900 px-3 text-xs font-semibold text-white disabled:opacity-50"
+          className="h-8 rounded-lg bg-fc-navy px-3 text-xs font-semibold text-white disabled:opacity-50"
         >
           {pending ? "Speichern…" : "Speichern"}
         </button>

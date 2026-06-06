@@ -28,7 +28,7 @@ function OrderCard({ o }: { o: MerchandiseOrderRow }) {
     >
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-slate-900">
+          <p className="font-semibold text-fc-navy">
             {o.buyer_first_name} {o.buyer_last_name}
           </p>
           <p className="text-xs text-slate-500">{o.buyer_email}</p>
@@ -48,7 +48,7 @@ function OrderCard({ o }: { o: MerchandiseOrderRow }) {
         </span>
         <span className="font-bold tabular-nums">{formatEur(o.total_cents)}</span>
       </div>
-      <p className="mt-1 text-xs text-blue-700">Details →</p>
+      <p className="mt-1 text-xs text-fc-blue">Details →</p>
     </Link>
   );
 }
@@ -104,7 +104,7 @@ export function MerchandiseOrdersPanel() {
                   })}
                 </td>
                 <td className="px-4 py-3">
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-fc-navy">
                     {o.buyer_first_name} {o.buyer_last_name}
                   </p>
                   <p className="text-xs text-slate-500">{o.buyer_email}</p>
@@ -121,7 +121,7 @@ export function MerchandiseOrdersPanel() {
                 <td className="px-4 py-3 text-right">
                   <Link
                     href={`/admin/merchandise/orders/${o.id}`}
-                    className="text-xs font-semibold text-blue-600 hover:underline"
+                    className="text-xs font-semibold text-fc-blue hover:underline"
                   >
                     Details →
                   </Link>

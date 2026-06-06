@@ -1,32 +1,48 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import {
-  eventCalendarDay,
-  normalizeEventTitle,
-} from "@/lib/artistflow/legacy-external-id";
+import { feedMatchKey } from "@/lib/artistflow/feed-match-key";
 
 type EventRow = {
   id: string;
   title: string;
   start_at: string | null;
+  city: string | null;
+  kind: string | null;
+  broadcaster: string | null;
   is_visible: boolean;
 };
 
 function matchKey(row: EventRow) {
-  return `${eventCalendarDay(row.start_at)}|${normalizeEventTitle(row.title)}`;
+  return feedMatchKey({
+    kind: row.kind,
+    title: row.title,
+    start_at: row.start_at,
+    city: row.city,
+    broadcaster: row.broadcaster,
+  });
 }
 
 /** Teilnahmen & Reiseinfos von versteckten Duplikaten auf sichtbares Event übertragen. */
 export async function relinkOrphanedPortalEventData(admin: SupabaseClient) {
   const { data: events, error } = await admin
     .from("external_events")
-    .select("id,title,start_at,is_visible")
+    .select("id,title,start_at,city,kind,broadcaster,is_visible")
     .eq("source", "artistflow");
   if (error || !events?.length) {
     return { participationsMoved: 0, travelNotesMoved: 0 };
   }
 
+  const rows: EventRow[] = events.map((e) => ({
+    id: e.id,
+    title: e.title,
+    start_at: e.start_at,
+    city: e.city,
+    kind: (e as { kind?: string }).kind ?? "event",
+    broadcaster: (e as { broadcaster?: string | null }).broadcaster ?? null,
+    is_visible: e.is_visible,
+  }));
+
   const visibleByKey = new Map<string, string>();
-  for (const e of events) {
+  for (const e of rows) {
     if (!e.is_visible) continue;
     const key = matchKey(e);
     if (!visibleByKey.has(key)) visibleByKey.set(key, e.id);
@@ -35,7 +51,7 @@ export async function relinkOrphanedPortalEventData(admin: SupabaseClient) {
   let participationsMoved = 0;
   let travelNotesMoved = 0;
 
-  for (const hidden of events.filter((e) => !e.is_visible)) {
+  for (const hidden of rows.filter((e) => !e.is_visible)) {
     const targetId = visibleByKey.get(matchKey(hidden));
     if (!targetId || targetId === hidden.id) continue;
 

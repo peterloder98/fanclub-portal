@@ -85,7 +85,7 @@ export function DocumentUploadField({
           }}
           className={cn(
             "rounded-2xl border-2 border-dashed p-5 transition",
-            dragActive ? "border-blue-400 bg-blue-50/60" : "border-slate-200 bg-slate-50/80",
+            dragActive ? "border-blue-400 bg-fc-ice/60" : "border-slate-200 bg-slate-50/80",
             (disabled || busy) && "opacity-60",
           )}
         >
@@ -112,7 +112,7 @@ export function DocumentUploadField({
               type="button"
               disabled={disabled || busy}
               onClick={() => inputRef.current?.click()}
-              className="h-10 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white disabled:opacity-50"
+              className="h-10 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {busy ? "Wird verarbeitet…" : "Bild hochladen"}
             </button>

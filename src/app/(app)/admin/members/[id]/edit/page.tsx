@@ -237,7 +237,7 @@ export default async function AdminMemberEditPage({
                 </label>
 
                 <div className="md:col-span-2">
-                  <button className="h-11 w-full rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm hover:bg-slate-800">
+                  <button className="h-11 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm hover:bg-fc-blue">
                     Speichern
                   </button>
                 </div>

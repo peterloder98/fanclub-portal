@@ -33,7 +33,7 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
       <div className="fixed inset-0 z-[6000] lg:hidden" role="presentation">
         <button
           type="button"
-          className="absolute inset-0 bg-slate-900/50"
+          className="absolute inset-0 bg-fc-navy/50"
           aria-label="Menü schließen"
           onClick={() => setOpen(false)}
         />
@@ -44,7 +44,7 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
           className="absolute inset-y-0 left-0 z-10 flex h-full w-[min(100%,18rem)] flex-col border-r bg-[color:var(--background)] shadow-2xl"
         >
           <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
-            <span id="mobile-nav-title" className="text-sm font-semibold text-slate-900">
+            <span id="mobile-nav-title" className="text-sm font-semibold text-fc-navy">
               Navigation
             </span>
             <button

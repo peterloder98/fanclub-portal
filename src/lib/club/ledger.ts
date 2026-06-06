@@ -10,6 +10,7 @@ export type LedgerCategory =
 
 export type ClubLedgerRow = {
   id: string;
+  entry_number: string | null;
   entry_type: LedgerEntryType;
   amount_cents: number;
   description: string;
@@ -33,6 +34,10 @@ export const LEDGER_CATEGORY_LABELS: Record<LedgerCategory, string> = {
 
 export function formatEur(cents: number) {
   return `${(cents / 100).toFixed(2).replace(".", ",")} €`;
+}
+
+export function formatLedgerEntryNumber(entryNumber: string | null | undefined) {
+  return entryNumber?.trim() || "—";
 }
 
 export type LedgerPeriodMode = "all" | "year" | "month";
@@ -79,7 +84,7 @@ export async function listClubLedger(opts?: {
   let q = admin
     .from("club_ledger_entries")
     .select(
-      "id,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id",
+      "id,entry_number,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id",
     )
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -119,6 +124,7 @@ export async function listClubLedger(opts?: {
 
   return (data ?? []).map((r) => ({
     id: r.id,
+    entry_number: (r as { entry_number?: string | null }).entry_number ?? null,
     entry_type: r.entry_type as LedgerEntryType,
     amount_cents: r.amount_cents,
     description: r.description,

@@ -474,6 +474,45 @@ export async function resumeGiveaway(giveawayId: string) {
   revalidatePath(`/giveaways/${giveawayId}`);
 }
 
+/** Beendet ein laufendes Gewinnspiel sofort (Admin). Jahresend-Lotterie ausgenommen. */
+export async function endGiveawayEarly(giveawayId: string) {
+  const { admin } = await requireAdmin();
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("status,title,is_year_end_lottery,admin_ended_notified_at")
+    .eq("id", giveawayId)
+    .maybeSingle();
+  if (!g) throw new Error("Gewinnspiel nicht gefunden.");
+  if (g.is_year_end_lottery) {
+    throw new Error("Jahresend-Gewinnspiel kann nicht vorzeitig beendet werden.");
+  }
+  if (g.status === "drawn") throw new Error("Bereits ausgelost — Beendigung nicht möglich.");
+  if (g.status === "ended") throw new Error("Gewinnspiel ist bereits beendet.");
+
+  const now = new Date().toISOString();
+  const { error } = await admin
+    .from("giveaways")
+    .update({ status: "ended", ends_at: now, is_paused: false })
+    .eq("id", giveawayId);
+  if (error) throw new Error(error.message);
+
+  if (!g.admin_ended_notified_at) {
+    try {
+      await notifyAdminsGiveawayEnded({ giveawayId, title: g.title });
+      await admin
+        .from("giveaways")
+        .update({ admin_ended_notified_at: now })
+        .eq("id", giveawayId);
+    } catch (e) {
+      console.error("[giveaway] Admin-Mail fehlgeschlagen:", e);
+    }
+  }
+
+  revalidatePath("/giveaways");
+  revalidatePath(`/giveaways/${giveawayId}`);
+  revalidatePath("/dashboard");
+}
+
 export async function updateGiveawayBasics(formData: FormData) {
   const { admin } = await requireAdmin();
   const id = String(formData.get("giveaway_id") ?? "");

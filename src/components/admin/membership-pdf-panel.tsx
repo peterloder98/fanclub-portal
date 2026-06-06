@@ -36,7 +36,7 @@ export function MembershipPdfPanel({
           <a
             href={pdfDownloadUrl}
             download
-            className="inline-flex h-10 items-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
+            className="inline-flex h-10 items-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
           >
             PDF speichern
           </a>

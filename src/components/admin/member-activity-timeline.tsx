@@ -76,7 +76,7 @@ export function MemberActivityTimeline({
 
   return (
     <div className="rounded-xl border bg-slate-50/80 p-4">
-      <h4 className="text-sm font-semibold text-slate-900">Historie</h4>
+      <h4 className="text-sm font-semibold text-fc-navy">Historie</h4>
       <p className="mt-0.5 text-xs text-slate-600">
         Aufnahme, E-Mails, Zahlungen, Verwarnungen und Änderungen.
       </p>
@@ -101,7 +101,7 @@ export function MemberActivityTimeline({
               }
             >
               <div className="flex flex-wrap items-baseline justify-between gap-1">
-                <span className="font-semibold text-slate-900">{r.title}</span>
+                <span className="font-semibold text-fc-navy">{r.title}</span>
                 <span className="text-slate-500">{formatWhen(r.created_at)}</span>
               </div>
               <div className="mt-0.5 text-slate-500">
@@ -114,7 +114,7 @@ export function MemberActivityTimeline({
               {r.link_url ? (
                 <a
                   href={r.link_url}
-                  className="mt-1 inline-block font-medium text-blue-600 hover:underline"
+                  className="mt-1 inline-block font-medium text-fc-blue hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -124,7 +124,7 @@ export function MemberActivityTimeline({
               {ledgerId ? (
                 <Link
                   href={`#ledger-${ledgerId}`}
-                  className="mt-1 inline-block font-medium text-blue-600 hover:underline"
+                  className="mt-1 inline-block font-medium text-fc-blue hover:underline"
                 >
                   Buchung ansehen →
                 </Link>

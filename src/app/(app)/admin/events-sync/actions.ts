@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { repairPortalEventData } from "@/lib/artistflow/repair-portal-events";
+import { restoreVisibleEventsFromFeed } from "@/lib/artistflow/restore-events-from-feed";
 import { syncArtistflowEventsFromFeed } from "@/lib/artistflow/sync";
 import type { SyncLogSnapshot } from "./events-sync-panel.client";
 
@@ -71,6 +72,40 @@ export async function runArtistflowGeocodeBackfill(): Promise<
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "geocode_failed" };
+  }
+}
+
+export async function runRestoreEventsFromFeed(): Promise<
+  | {
+      ok: true;
+      feedTotal: number;
+      restored: number;
+      inserted: number;
+      duplicatesHidden: number;
+      hiddenNotInFeed: number;
+      participationsMoved: number;
+      travelNotesMoved: number;
+      geocoded: number;
+      pinsRestored: number;
+    }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+
+  const feedUrl = process.env.ARTISTFLOW_FEED_URL;
+  if (!feedUrl) {
+    return { ok: false, error: "Missing ARTISTFLOW_FEED_URL in .env.local" };
+  }
+
+  const admin = createSupabaseAdminClient();
+  try {
+    const result = await restoreVisibleEventsFromFeed(admin, feedUrl);
+    return { ok: true, ...result };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "restore_failed",
+    };
   }
 }
 

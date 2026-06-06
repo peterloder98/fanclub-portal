@@ -18,7 +18,7 @@ export function EmailDialogShell({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-fc-navy/40 p-4"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -41,7 +41,7 @@ export function EmailDialogShell({
         </button>
 
         <div className="border-b border-slate-100 bg-gradient-to-r from-sky-50/80 via-white to-rose-50/50 px-5 pb-4 pt-5 pr-14">
-          <h3 id="email-dialog-title" className="text-base font-semibold text-slate-900">
+          <h3 id="email-dialog-title" className="text-base font-semibold text-fc-navy">
             {title}
           </h3>
           {description ? <p className="mt-1 text-sm text-slate-600">{description}</p> : null}

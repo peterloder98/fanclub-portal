@@ -166,7 +166,7 @@ export function AvatarCropModal({
               type="button"
               disabled={busy || !imageUrl}
               onClick={handleSave}
-              className="h-11 flex-1 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
+              className="h-11 flex-1 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm hover:bg-fc-blue disabled:opacity-60"
             >
               {busy ? "Speichere…" : "Zuschneiden & speichern"}
             </button>

@@ -1,5 +1,6 @@
 "use client";
 
+import { anniStarsDeltaHtml } from "@/lib/anni-stars/format";
 import { emitPointsDelta } from "@/lib/points/events";
 import { getPointsTargetElement } from "@/lib/points/target";
 
@@ -9,7 +10,7 @@ function clamp(n: number, min: number, max: number) {
 
 function spawnPopAt(x: number, y: number, positive: boolean) {
   const colors = positive
-    ? ["#34d399", "#10b981", "#6ee7b7", "#a7f3d0"]
+    ? ["#34d399", "#10b981", "#059669", "#c9a227"]
     : ["#fb7185", "#f43f5e", "#fda4af", "#fecdd3"];
 
   for (let i = 0; i < 8; i++) {
@@ -72,16 +73,7 @@ export function flyPointsFromElement(params: {
   el.style.transform = `translate(${startX}px, ${startY}px)`;
 
   const badge = document.createElement("div");
-  badge.textContent = `${delta >= 0 ? "+" : "−"}${Math.abs(delta)}`;
-  badge.style.padding = "5px 9px";
-  badge.style.borderRadius = "999px";
-  badge.style.fontSize = "12px";
-  badge.style.fontWeight = "800";
-  badge.style.boxShadow = "0 10px 20px rgba(15,23,42,.16)";
-  badge.style.border = "1px solid rgba(15,23,42,.08)";
-  badge.style.background = delta >= 0 ? "rgba(236,253,245,.95)" : "rgba(254,242,242,.95)";
-  badge.style.color = delta >= 0 ? "#047857" : "#be123c";
-
+  badge.innerHTML = anniStarsDeltaHtml(delta);
   el.appendChild(badge);
   document.body.appendChild(el);
 

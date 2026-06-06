@@ -85,7 +85,7 @@ export function CountrySelect({
                   aria-selected={c.code === selected.code}
                   className={cn(
                     "flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50",
-                    c.code === selected.code && "bg-blue-50",
+                    c.code === selected.code && "bg-fc-ice",
                   )}
                   onClick={() => {
                     onChange(c);

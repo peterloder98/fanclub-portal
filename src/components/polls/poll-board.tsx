@@ -366,7 +366,7 @@ export function PollBoard({
               />
               <Link
                 href={`/polls/${poll.id}`}
-                className="inline-flex text-xs font-medium text-blue-600 hover:underline"
+                className="inline-flex text-xs font-medium text-fc-blue hover:underline"
               >
                 Details & Kommentare →
               </Link>

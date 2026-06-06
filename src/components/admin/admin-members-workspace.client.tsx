@@ -87,8 +87,8 @@ function SortBtn({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-slate-900",
-        active && "text-blue-700",
+        "inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-fc-navy",
+        active && "text-fc-blue",
       )}
     >
       {label}
@@ -335,7 +335,7 @@ export function AdminMembersWorkspace({
                   onClick={() => openRecord(`/admin/members/applications/${a.id}`)}
                   className={`w-full rounded-xl border bg-white p-3 text-left transition hover:border-slate-300 hover:bg-slate-50 ${navPending && navTarget === `/admin/members/applications/${a.id}` ? "opacity-60" : ""}`}
                 >
-                  <div className="font-semibold text-slate-900">
+                  <div className="font-semibold text-fc-navy">
                     {a.last_name}, {a.first_name}
                   </div>
                   <div className="mt-0.5 truncate text-xs text-slate-600">{a.email}</div>
@@ -441,7 +441,7 @@ export function AdminMembersWorkspace({
                         {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
                       </td>
                       <td className="px-3 py-2">{a.first_name}</td>
-                      <td className="px-3 py-2 font-medium text-slate-900">{a.last_name}</td>
+                      <td className="px-3 py-2 font-medium text-fc-navy">{a.last_name}</td>
                       <td className="px-3 py-2 text-slate-600">{a.email}</td>
                       <td className="px-3 py-2">{formatDE(a.created_at)}</td>
                       <td className="px-3 py-2">
@@ -518,7 +518,7 @@ export function AdminMembersWorkspace({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="truncate font-semibold text-slate-900">
+                      <div className="truncate font-semibold text-fc-navy">
                         {m.first_name} {m.last_name}
                       </div>
                       <div className="mt-0.5 text-xs text-slate-500">
@@ -651,7 +651,7 @@ export function AdminMembersWorkspace({
                       onClick={() => openRecord(`/admin/members/${m.id}`)}
                       className={`cursor-pointer border-b transition hover:bg-slate-50 ${navPending && navTarget === `/admin/members/${m.id}` ? "opacity-60" : ""}`}
                     >
-                      <td className="px-3 py-2 tabular-nums font-medium text-slate-900">
+                      <td className="px-3 py-2 tabular-nums font-medium text-fc-navy">
                         {m.membership_number ?? "—"}
                       </td>
                       <td className="px-3 py-2">{m.first_name}</td>

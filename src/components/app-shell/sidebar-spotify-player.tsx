@@ -101,7 +101,7 @@ export function SidebarSpotifyPlayer() {
     <div className="shrink-0 border-t border-slate-200/80 bg-gradient-to-br from-blue-600/10 via-white to-rose-500/10 p-2">
       <div className="mb-1.5 flex items-center justify-between gap-1.5 px-1">
         <div className="flex items-center gap-1.5">
-          <Music2 className="h-3.5 w-3.5 text-blue-600" />
+          <Music2 className="h-3.5 w-3.5 text-fc-blue" />
           <span className="text-[11px] font-semibold text-slate-800">Anni Perka</span>
         </div>
         {connected ? (
@@ -140,10 +140,6 @@ export function SidebarSpotifyPlayer() {
           >
             {connecting ? "Spotify-Fenster …" : "Mit Spotify verbinden"}
           </button>
-          <p className="mt-2 px-1 text-[10px] text-slate-500">
-            Für alle Mitglieder: Admin muss „Extended Quota“ bei Spotify beantragen (siehe Admin →
-            Spotify).
-          </p>
         </>
       )}
     </div>

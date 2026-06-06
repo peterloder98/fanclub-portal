@@ -92,13 +92,13 @@ export default async function AdminMembershipApplicationPage({
       />
       <main className="px-4 py-6 lg:px-8">
         <div className="mb-4 flex flex-wrap gap-3">
-          <Link href="/admin/members" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link href="/admin/members" className="text-sm font-medium text-fc-blue hover:underline">
             ← Mitglieder
           </Link>
           {app.user_id ? (
             <Link
               href={`/admin/members/${app.user_id}`}
-              className="text-sm font-medium text-blue-600 hover:underline"
+              className="text-sm font-medium text-fc-blue hover:underline"
             >
               Profil bearbeiten
             </Link>

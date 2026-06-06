@@ -1,5 +1,5 @@
 -- Testdaten 2026: Beitritte ab 08.03.2026, je ein Beitrag 2026, Ausgaben ab 08.03.2026
--- Im Supabase SQL Editor ausführen (nach 049_club_ledger.sql).
+-- Im Supabase SQL Editor ausführen (nach 049_club_ledger.sql und 074_ledger_entry_number.sql).
 -- Setzt Buchungen zurück und legt sie neu an.
 
 -- 0) Alte Buchungen + zugehörige Historie-Einträge entfernen

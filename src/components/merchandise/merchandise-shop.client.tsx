@@ -21,6 +21,7 @@ import {
   loadShopProfileAction,
   type ShopProduct,
 } from "@/app/(app)/merchandise/shop-actions";
+import { stockBadge, stockBadgeLabel } from "@/lib/merchandise/stock-label";
 
 type CartLine = {
   productId: string;
@@ -80,27 +81,33 @@ function ProductCatalogCard({
         ) : (
           <div className="grid h-full place-items-center text-xs text-slate-400">Kein Foto</div>
         )}
-        <span className="absolute left-3 top-3 rounded-full bg-slate-900/90 px-2.5 py-1 text-xs font-bold text-white">
+        <span className="absolute left-3 top-3 rounded-full bg-fc-navy/90 px-2.5 py-1 text-xs font-bold text-white">
           {formatEur(product.sale_price_cents)}
         </span>
-        {soldOut ? (
-          <span className="absolute right-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-[11px] font-bold text-white">
-            Ausverkauft
-          </span>
-        ) : (
-          <span className="absolute right-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 shadow">
-            {product.total_available} verfügbar
-          </span>
-        )}
+        {(() => {
+          const badge = stockBadge(product.total_available);
+          return (
+            <span
+              className={cn(
+                "absolute right-3 top-3 max-w-[calc(100%-1.5rem)] rounded-full px-2.5 py-1 text-[10px] font-bold shadow",
+                badge === "sold_out" && "bg-rose-600 text-white",
+                badge === "low" && "bg-fc-gold-soft text-amber-900 ring-1 ring-fc-gold/50",
+                badge === "available" && "bg-white/95 text-fc-navy",
+              )}
+            >
+              {stockBadgeLabel(product.total_available)}
+            </span>
+          );
+        })()}
       </div>
       <div className="p-4">
-        <h3 className="text-base font-semibold text-slate-900 group-hover:text-blue-700">
+        <h3 className="text-base font-semibold text-slate-900 group-hover:text-fc-blue">
           {product.name}
         </h3>
         {product.description ? (
           <p className="mt-1 line-clamp-2 text-xs text-slate-600">{product.description}</p>
         ) : null}
-        <p className="mt-3 text-xs font-semibold text-blue-700 group-hover:underline">
+        <p className="mt-3 text-xs font-semibold text-fc-blue group-hover:underline">
           Artikel ansehen →
         </p>
       </div>
@@ -235,7 +242,7 @@ function ProductDetailView({
                         className={cn(
                           "min-w-[3.5rem] rounded-xl border px-4 py-2.5 text-sm font-semibold transition",
                           active
-                            ? "border-slate-900 bg-slate-900 text-white"
+                            ? "border-slate-900 bg-fc-navy text-white"
                             : "border-slate-200 bg-white text-slate-800 hover:border-slate-400",
                           disabled && "cursor-not-allowed opacity-40",
                         )}
@@ -304,7 +311,7 @@ function ProductDetailView({
               type="button"
               disabled={!canAdd}
               onClick={addToCart}
-              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-fc-navy text-sm font-semibold text-white transition hover:bg-fc-blue disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ShoppingCart className="h-4 w-4" />
               In den Warenkorb legen
@@ -488,7 +495,7 @@ export function MerchandiseShop() {
           >
             <ShoppingCart className="h-5 w-5" />
             Warenkorb
-            <span className="rounded-full bg-slate-900 px-2 py-0.5 text-xs font-bold text-white">
+            <span className="rounded-full bg-fc-navy px-2 py-0.5 text-xs font-bold text-white">
               {cartCount}
             </span>
           </button>
@@ -506,7 +513,7 @@ export function MerchandiseShop() {
         </div>
       ) : null}
       {addNotice ? (
-        <div className="flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <div className="flex items-center gap-2 rounded-xl border border-fc-sky/30 bg-fc-ice px-4 py-3 text-sm text-blue-900">
           <Check className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>{addNotice}</span>
           <button
@@ -544,7 +551,7 @@ export function MerchandiseShop() {
                     <button
                       type="button"
                       onClick={() => setView("catalog")}
-                      className="mt-4 text-sm font-semibold text-blue-700 hover:underline"
+                      className="mt-4 text-sm font-semibold text-fc-blue hover:underline"
                     >
                       Zum Shop
                     </button>
@@ -715,7 +722,7 @@ export function MerchandiseShop() {
                     !city
                   }
                   onClick={placeOrder}
-                  className="h-12 w-full rounded-xl bg-slate-900 text-sm font-bold text-white disabled:opacity-50 sm:max-w-xs"
+                  className="h-12 w-full rounded-xl bg-fc-navy text-sm font-bold text-white disabled:opacity-50 sm:max-w-xs"
                 >
                   {pending ? "Bestellung wird gesendet…" : "Jetzt bestellen"}
                 </button>
@@ -757,7 +764,7 @@ export function MerchandiseShop() {
       )}
 
       {cartCount > 0 && view !== "checkout" ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-white/95 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur sm:px-8">
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur sm:px-8 lg:left-[var(--fanclub-sidebar-width,16rem)]">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
             <div className="text-sm">
               <span className="font-bold text-slate-900">{cartCount} Artikel</span>
@@ -769,7 +776,7 @@ export function MerchandiseShop() {
                 setView("checkout");
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="h-11 rounded-xl bg-slate-900 px-6 text-sm font-bold text-white"
+              className="h-11 rounded-xl bg-fc-navy px-6 text-sm font-bold text-white"
             >
               Zur Kasse
             </button>

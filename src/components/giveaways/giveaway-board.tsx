@@ -10,6 +10,8 @@ import { cn } from "@/lib/cn";
 import { giveawayPhase, giveawayPhaseLabel } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminCreate } from "@/components/giveaways/giveaway-admin-create";
+import { GiveawayAdminToolbar } from "@/components/giveaways/giveaway-admin-toolbar";
+import { GiveawayDrawStatus } from "@/components/giveaways/giveaway-draw-status";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export type GiveawayListItem = {
@@ -87,7 +89,7 @@ export function GiveawayBoard({
               className={cn(
                 "rounded-xl border px-3 py-2 text-sm font-medium transition",
                 tab === key
-                  ? "border-slate-900 bg-slate-900 text-white"
+                  ? "border-slate-900 bg-fc-navy text-white"
                   : "bg-white text-slate-700 hover:bg-slate-50",
               )}
             >
@@ -108,7 +110,7 @@ export function GiveawayBoard({
             className={cn(
               "rounded-lg border px-2.5 py-1 text-xs font-medium",
               sort === "newest"
-                ? "border-slate-900 bg-slate-900 text-white"
+                ? "border-slate-900 bg-fc-navy text-white"
                 : "bg-white text-slate-700 hover:bg-slate-50",
             )}
           >
@@ -120,7 +122,7 @@ export function GiveawayBoard({
             className={cn(
               "rounded-lg border px-2.5 py-1 text-xs font-medium",
               sort === "ends_at"
-                ? "border-slate-900 bg-slate-900 text-white"
+                ? "border-slate-900 bg-fc-navy text-white"
                 : "bg-white text-slate-700 hover:bg-slate-50",
             )}
           >
@@ -134,34 +136,44 @@ export function GiveawayBoard({
           <div className="grid gap-3">
             {filtered.map((g) => {
               const phase = giveawayPhase(g.ends_at, g.status, g.isPaused);
+              const showDrawStatus = phase === "ended" || phase === "drawn";
               return (
-                <Link key={g.id} href={`/giveaways/${g.id}`} className="block">
-                  <Card className="transition hover:shadow-md">
+                <Card key={g.id} className="overflow-hidden transition hover:shadow-md">
+                  {isAdmin && !g.isYearEndLottery ? (
+                    <div className="border-b border-slate-100 bg-slate-50/80 px-4 py-2.5">
+                      <GiveawayAdminToolbar
+                        giveawayId={g.id}
+                        isPaused={g.isPaused}
+                        status={g.status}
+                        editHref={`/giveaways/${g.id}?edit=1`}
+                      />
+                    </div>
+                  ) : null}
+                  <Link href={`/giveaways/${g.id}`} className="block">
                     <CardContent className="p-4">
+                      {showDrawStatus && !g.isYearEndLottery ? (
+                        <GiveawayDrawStatus
+                          endsAt={g.ends_at}
+                          status={g.status}
+                          isPaused={g.isPaused}
+                          className="mb-2"
+                        />
+                      ) : null}
                       <RunningCountdownBadge
                         endsAt={g.ends_at}
                         paused={g.isPaused}
-                        className="mb-2 max-w-full justify-start sm:hidden"
+                        className="mb-2 max-w-full justify-start"
                       />
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                          <Gift className="h-4 w-4 shrink-0 text-blue-600" />
-                          <h3 className="text-sm font-semibold leading-snug text-slate-900">
-                            {g.title}
-                          </h3>
-                          {g.isYearEndLottery ? (
-                            <Badge variant="brand" className="text-[10px]">
-                              Sonderverlosung
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <RunningCountdownBadge
-                          endsAt={g.ends_at}
-                          paused={g.isPaused}
-                          runningPrefix="Endet in"
-                          inline
-                          className="hidden !px-2 !py-1 !text-[11px] sm:inline-flex"
-                        />
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <Gift className="h-4 w-4 shrink-0 text-fc-blue" />
+                        <h3 className="text-sm font-semibold leading-snug text-slate-900">
+                          {g.title}
+                        </h3>
+                        {g.isYearEndLottery ? (
+                          <Badge variant="brand" className="text-[10px]">
+                            Sonderverlosung
+                          </Badge>
+                        ) : null}
                       </div>
                       {g.description ? (
                         <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>
@@ -183,8 +195,8 @@ export function GiveawayBoard({
                         )
                       ) : null}
                     </CardContent>
-                  </Card>
-                </Link>
+                  </Link>
+                </Card>
               );
             })}
           </div>

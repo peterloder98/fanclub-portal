@@ -1,4 +1,5 @@
 import type { NormalizedExternalEvent } from "@/lib/artistflow/normalize";
+import { feedMatchKey } from "@/lib/artistflow/feed-match-key";
 import {
   eventCalendarDay,
   legacyExternalId,
@@ -11,6 +12,8 @@ export type ExistingExternalEventRow = {
   title: string;
   start_at: string | null;
   city: string | null;
+  kind?: string | null;
+  broadcaster?: string | null;
   content_hash: string;
   is_visible: boolean;
   participation_count?: number;
@@ -30,15 +33,28 @@ function pickBest(candidates: ExistingExternalEventRow[]) {
   return [...candidates].sort((a, b) => scoreMatch(b) - scoreMatch(a))[0] ?? null;
 }
 
+function rowFeedKey(row: ExistingExternalEventRow) {
+  return feedMatchKey({
+    kind: row.kind,
+    title: row.title,
+    start_at: row.start_at,
+    city: row.city,
+    broadcaster: row.broadcaster,
+  });
+}
+
 /**
  * Findet bestehendes Portal-Event zum Feed-Eintrag.
- * Reihenfolge: event_id → Legacy-Hash → Titel+Datum
+ * Reihenfolge: event_id → Legacy-Hash → Titel+Datum+Ort
  */
 export function matchExistingExternalEvent(
   feed: NormalizedExternalEvent,
   rows: ExistingExternalEventRow[],
+  options?: { excludeIds?: Set<string> },
 ): ExistingExternalEventRow | null {
-  const byExternalId = new Map(rows.map((r) => [r.external_id, r]));
+  const excludeIds = options?.excludeIds;
+  const available = excludeIds ? rows.filter((r) => !excludeIds.has(r.id)) : rows;
+  const byExternalId = new Map(available.map((r) => [r.external_id, r]));
 
   if (byExternalId.has(feed.external_id)) {
     return byExternalId.get(feed.external_id)!;
@@ -64,11 +80,15 @@ export function matchExistingExternalEvent(
     }
   }
 
+  const feedKey = feedMatchKey(feed);
+  const keyMatches = available.filter((r) => rowFeedKey(r) === feedKey);
+  if (keyMatches.length) return pickBest(keyMatches);
+
   const feedTitle = normalizeEventTitle(feed.title);
   const feedDay = eventCalendarDay(feed.start_at);
   if (!feedTitle || !feedDay) return null;
 
-  const titleDayMatches = rows.filter(
+  const titleDayMatches = available.filter(
     (r) =>
       normalizeEventTitle(r.title) === feedTitle &&
       eventCalendarDay(r.start_at) === feedDay,

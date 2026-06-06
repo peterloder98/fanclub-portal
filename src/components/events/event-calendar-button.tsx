@@ -81,7 +81,7 @@ export function EventCalendarButton({
       <button
         type="button"
         onClick={handleClick}
-        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50/50"
+        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50"
         aria-label={`Termin „${title}“ in den Kalender speichern`}
       >
         <CalendarPlus className="h-3.5 w-3.5 shrink-0" aria-hidden />

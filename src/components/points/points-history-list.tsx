@@ -28,6 +28,14 @@ export function PointsHistoryList({ userId }: { userId: string | null }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => setOpen(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
     if (!userId) {
       setLoading(false);
       return;
@@ -56,7 +64,7 @@ export function PointsHistoryList({ userId }: { userId: string | null }) {
         aria-expanded={open}
       >
         <div className="min-w-0">
-          <h3 className="text-base font-semibold text-slate-900">Deine Punkte-Historie</h3>
+          <h3 className="text-base font-semibold text-fc-navy">Deine Anni-Stars-Historie</h3>
           <p className="mt-0.5 text-xs text-slate-600">
             {open ? "Aktuelles Kalenderjahr — scrollbar" : "Einklappen / Ausklappen"}
           </p>
@@ -78,14 +86,14 @@ export function PointsHistoryList({ userId }: { userId: string | null }) {
         <div
           className="max-h-[min(320px,40vh)] overflow-y-auto overscroll-contain px-2 py-2"
           role="region"
-          aria-label="Punkte-Historie"
+          aria-label="Anni-Stars-Historie"
           tabIndex={0}
         >
           {loading ? (
             <p className="px-2 py-4 text-sm text-slate-500">Wird geladen …</p>
           ) : rows.length === 0 ? (
             <p className="px-2 py-4 text-sm text-slate-500">
-              Noch keine Punkte in diesem Jahr — starte z. B. mit einem Like oder einer Umfrage.
+              Noch keine Anni-Stars in diesem Jahr — starte z. B. mit einem Like oder einer Umfrage.
             </p>
           ) : (
             <ul className="grid gap-1">

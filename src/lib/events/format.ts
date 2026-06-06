@@ -57,14 +57,20 @@ const listDateFmt = new Intl.DateTimeFormat("de-DE", {
   timeZone: BERLIN_TZ,
 });
 
-/** Kompakt für Terminliste (wie Homepage): 09.06.2026 · 10:00 Uhr */
+/** Kompakt für Terminliste: nur Datum (Uhrzeit separat, z. B. bei TV). */
 export function formatEventListDate(startAt: string | null): string {
   if (!startAt) return "Datum folgt";
   const d = new Date(startAt);
   if (Number.isNaN(d.getTime())) return "Datum folgt";
-  const date = listDateFmt.format(d);
-  const time = hasEventStartTime(startAt) ? timeFmt.format(d) : null;
-  return time ? `${date} · ${time} Uhr` : date;
+  return listDateFmt.format(d);
+}
+
+/** Uhrzeit für TV-Zeile in der Terminliste. */
+export function formatEventListTime(startAt: string | null): string | null {
+  if (!startAt || !hasEventStartTime(startAt)) return null;
+  const d = new Date(startAt);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${timeFmt.format(d)} Uhr`;
 }
 
 export function formatEventAddress(parts: {
@@ -109,6 +115,27 @@ export function formatEventCity(parts: {
 export function formatVenueName(venue?: string | null): string | null {
   const v = (venue ?? "").trim();
   return v || null;
+}
+
+function normalizePlaceKey(value: string) {
+  return value.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
+/** Venue + Stadt ohne Doppelung (z. B. nicht „KOBLENZ · KOBLENZ“). */
+export function formatEventVenueCityLine(parts: {
+  venue?: string | null;
+  city?: string | null;
+  country?: string | null;
+}): string | null {
+  const venue = formatVenueName(parts.venue);
+  const city = formatEventCity({ city: parts.city, country: parts.country });
+  if (venue && city && normalizePlaceKey(venue) === normalizePlaceKey(city)) {
+    return city;
+  }
+  if (venue && city) return `${venue} · ${city}`;
+  if (venue) return venue;
+  if (city) return city;
+  return null;
 }
 
 /** TV-Auftritt: Sender-Zeile in der Terminliste. */

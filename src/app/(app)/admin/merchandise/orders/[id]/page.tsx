@@ -45,7 +45,7 @@ export default async function MerchandiseOrderDetailPage({
           <MerchandiseOrderDetail initial={order} />
         </div>
         <p className="mt-6 text-xs text-slate-500">
-          <Link href="/admin/merchandise/orders" className="text-blue-600 hover:underline">
+          <Link href="/admin/merchandise/orders" className="text-fc-blue hover:underline">
             Alle Bestellungen
           </Link>
         </p>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Pause, Pencil, Play, Plus, Square, Trash2 } from "lucide-react";
 import {
+  endGiveawayEarly,
   pauseGiveaway,
   resumeGiveaway,
   updateGiveawayFull,
@@ -20,6 +21,8 @@ export function GiveawayAdminControls({
   prizes: initialPrizes,
   questions: initialQuestions,
   hasEntries = false,
+  hideToolbar = false,
+  editing: controlledEditing,
   onEditingChange,
 }: {
   giveaway: {
@@ -29,6 +32,7 @@ export function GiveawayAdminControls({
     ends_at: string;
     status: string;
     is_paused: boolean;
+    is_year_end_lottery?: boolean;
     entry_mode: "simple" | "quiz";
   };
   prizes: { id: string; name: string }[];
@@ -39,9 +43,17 @@ export function GiveawayAdminControls({
   }>;
   /** Sobald Teilnehmer eingetragen sind: nur Texte/Preise, keine „richtige“ Antwort ändern. */
   hasEntries?: boolean;
+  hideToolbar?: boolean;
+  editing?: boolean;
   onEditingChange?: (editing: boolean) => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [internalEditing, setInternalEditing] = useState(false);
+  const editing = controlledEditing ?? internalEditing;
+  const setEditing = (next: boolean | ((v: boolean) => boolean)) => {
+    const value = typeof next === "function" ? next(editing) : next;
+    if (onEditingChange) onEditingChange(value);
+    else setInternalEditing(value);
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const drawn = giveaway.status === "drawn";
@@ -72,6 +84,25 @@ export function GiveawayAdminControls({
   const endInput = new Date(endLocal.getTime() - endLocal.getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 16);
+
+  async function onEndEarly() {
+    if (
+      !window.confirm(
+        "Gewinnspiel jetzt beenden? Teilnahme ist danach nicht mehr möglich.",
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await endGiveawayEarly(giveaway.id);
+      window.location.reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Fehler");
+      setBusy(false);
+    }
+  }
 
   async function togglePause() {
     setBusy(true);
@@ -107,39 +138,61 @@ export function GiveawayAdminControls({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm">
-      <div className="flex flex-wrap gap-2">
-        {!drawn ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void togglePause()}
-            className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"
-          >
-            {giveaway.is_paused ? "Fortsetzen" : "Pausieren"}
-          </button>
-        ) : null}
-        {!drawn ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setEditing((v) => {
-                const next = !v;
-                onEditingChange?.(next);
-                return next;
-              });
-            }}
-            className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"
-          >
-            {editing ? "Abbrechen" : "Bearbeiten"}
-          </button>
-        ) : null}
-      </div>
+    <div
+      className={
+        editing || !hideToolbar
+          ? "rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm"
+          : undefined
+      }
+    >
+      {!hideToolbar ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {!drawn ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void togglePause()}
+              title={giveaway.is_paused ? "Fortsetzen" : "Pausieren"}
+              aria-label={giveaway.is_paused ? "Fortsetzen" : "Pausieren"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
+            >
+              {giveaway.is_paused ? (
+                <Play className="h-4 w-4" aria-hidden />
+              ) : (
+                <Pause className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+          ) : null}
+          {!drawn && !giveaway.is_year_end_lottery ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void onEndEarly()}
+              title="Vorzeitig beenden"
+              aria-label="Vorzeitig beenden"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-white text-slate-700 shadow-sm transition hover:bg-rose-50 hover:text-rose-700 disabled:opacity-60"
+            >
+              <Square className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
+          {!drawn ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => setEditing(!editing)}
+              title={editing ? "Abbrechen" : "Bearbeiten"}
+              aria-label={editing ? "Abbrechen" : "Bearbeiten"}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-white text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
+            >
+              <Pencil className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {editing ? (
         <form onSubmit={(e) => void onSave(e)} className="mt-3 grid gap-3">
-          <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-2.5 py-2 text-xs text-blue-950">
+          <p className="rounded-lg border border-blue-100 bg-fc-ice/80 px-2.5 py-2 text-xs text-blue-950">
             Hier bearbeitest du nur den <strong>Inhalt des Gewinnspiels</strong> (Titel, Texte,
             Preise, Quiz-Fragen). Deine persönliche Teilnahme oder Quiz-Antworten änderst du hier
             nicht — die bleiben unter „Deine Antworten“ gespeichert.
@@ -201,7 +254,7 @@ export function GiveawayAdminControls({
               <button
                 type="button"
                 onClick={() => setPrizes((arr) => [...arr, ""])}
-                className="inline-flex items-center gap-1 text-xs font-medium text-blue-700"
+                className="inline-flex items-center gap-1 text-xs font-medium text-fc-blue"
               >
                 <Plus className="h-3 w-3" /> Preis
               </button>
@@ -273,7 +326,7 @@ export function GiveawayAdminControls({
           <button
             type="submit"
             disabled={busy}
-            className="h-9 rounded-lg bg-slate-900 text-xs font-semibold text-white"
+            className="h-9 rounded-lg bg-fc-navy text-xs font-semibold text-white"
           >
             Alles speichern
           </button>

@@ -15,10 +15,10 @@ export function DashboardGiveawaysInline({ items }: { items: GiveawayListItem[] 
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center justify-between gap-2 pb-2">
         <div className="flex items-center gap-1.5">
-          <Gift className="h-3.5 w-3.5 text-blue-600" />
+          <Gift className="h-3.5 w-3.5 text-fc-blue" />
           <span className="text-xs font-semibold text-slate-900">Gewinnspiele</span>
         </div>
-        <Link href="/giveaways" className="text-[10px] font-medium text-blue-600 hover:underline">
+        <Link href="/giveaways" className="text-[10px] font-medium text-fc-blue hover:underline">
           alle →
         </Link>
       </div>
@@ -31,7 +31,7 @@ export function DashboardGiveawaysInline({ items }: { items: GiveawayListItem[] 
                 <li key={g.id}>
                   <Link
                     href={`/giveaways/${g.id}`}
-                    className="block rounded-lg border bg-white px-2 py-1.5 transition hover:border-blue-200 hover:bg-blue-50/30"
+                    className="block rounded-lg border bg-white px-2 py-1.5 transition hover:border-fc-sky/30 hover:bg-fc-ice/30"
                   >
                     <div className="text-xs font-medium leading-snug text-slate-900 line-clamp-2">
                       {g.title}

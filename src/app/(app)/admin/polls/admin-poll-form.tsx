@@ -21,7 +21,7 @@ export function AdminPollForm() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 items-center justify-center rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800"
+        className="inline-flex h-11 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue"
       >
         {open ? "Abbrechen" : "Neue Umfrage erstellen"}
       </button>
@@ -68,7 +68,7 @@ export function AdminPollForm() {
                     type="button"
                     disabled={optionCount >= 10}
                     onClick={() => setOptionCount((c) => Math.min(10, c + 1))}
-                    className="text-sm font-medium text-blue-600 disabled:opacity-50"
+                    className="text-sm font-medium text-fc-blue disabled:opacity-50"
                   >
                     + Option
                   </button>
@@ -84,7 +84,7 @@ export function AdminPollForm() {
                 ))}
               </div>
 
-              <button className="h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-slate-800">
+              <button className="h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-fc-blue">
                 Umfrage veröffentlichen
               </button>
             </form>

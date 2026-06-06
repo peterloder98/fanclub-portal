@@ -5,6 +5,7 @@ import { ClubAccountingPanel } from "@/components/admin/club-accounting-panel.cl
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listClubLedger } from "@/lib/club/ledger";
 import { listOpenContributions } from "@/lib/club/membership-contribution";
+import { listOpenMeetingCharges } from "@/lib/club/meeting-charges";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -24,12 +25,14 @@ export default async function AdminAccountingPage() {
 
   let entries: Awaited<ReturnType<typeof listClubLedger>> = [];
   let openContributions: Awaited<ReturnType<typeof listOpenContributions>> = [];
+  let openMeetingCharges: Awaited<ReturnType<typeof listOpenMeetingCharges>> = [];
   let ledgerAvailable = true;
 
   try {
-    [entries, openContributions] = await Promise.all([
+    [entries, openContributions, openMeetingCharges] = await Promise.all([
       listClubLedger({ limit: 500 }),
       listOpenContributions(),
+      listOpenMeetingCharges(),
     ]);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -55,6 +58,7 @@ export default async function AdminAccountingPage() {
           <ClubAccountingPanel
             entries={entries}
             openContributions={openContributions}
+            openMeetingCharges={openMeetingCharges}
             ledgerAvailable={ledgerAvailable}
           />
         </div>

@@ -1,26 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { Bell, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   fetchMyNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   type UserNotificationRow,
 } from "@/lib/notifications/actions";
-
-function formatWhen(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const now = Date.now();
-  const diff = now - d.getTime();
-  if (diff < 60_000) return "Gerade eben";
-  if (diff < 3_600_000) return `vor ${Math.floor(diff / 60_000)} Min.`;
-  if (diff < 86_400_000) return `vor ${Math.floor(diff / 3_600_000)} Std.`;
-  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
-}
+import { presentNotification } from "@/lib/notifications/present";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
@@ -29,6 +20,7 @@ export function NotificationBell() {
   const [available, setAvailable] = useState(true);
   const [pending, startTransition] = useTransition();
   const ref = useRef<HTMLDivElement>(null);
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   function load() {
     startTransition(async () => {
@@ -45,9 +37,47 @@ export function NotificationBell() {
 
   useEffect(() => {
     load();
-    const id = window.setInterval(load, 60_000);
-    return () => window.clearInterval(id);
+    const id = window.setInterval(load, 30_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
+
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+
+      channel = supabase
+        .channel(`user-notifications:${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "user_notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          () => load(),
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) void supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   useEffect(() => {
     if (!open) return;
@@ -83,13 +113,13 @@ export function NotificationBell() {
 
       <div
         className={cn(
-          "absolute right-0 top-full z-[60] w-[min(20rem,calc(100vw-2rem))] pt-2 transition-opacity duration-150",
+          "absolute right-0 top-full z-[60] w-[min(24rem,calc(100vw-2rem))] pt-2 transition-opacity duration-150",
           open ? "visible opacity-100" : "pointer-events-none invisible opacity-0",
         )}
       >
         <div className="overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-900/15">
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="text-sm font-semibold text-slate-900">Benachrichtigungen</span>
+          <div className="flex items-center justify-between border-b px-3 py-2.5">
+            <span className="text-sm font-semibold text-fc-navy">Benachrichtigungen</span>
             {unread > 0 ? (
               <button
                 type="button"
@@ -100,53 +130,27 @@ export function NotificationBell() {
                     load();
                   });
                 }}
-                className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
+                className="text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
               >
                 Alle gelesen
               </button>
             ) : null}
           </div>
-          <ul className="max-h-[min(24rem,50dvh)] overflow-y-auto">
+          <ul className="max-h-[min(28rem,55dvh)] overflow-y-auto">
             {items.length === 0 ? (
-              <li className="px-3 py-6 text-center text-xs text-slate-500">
+              <li className="px-3 py-8 text-center text-xs text-slate-500">
                 Keine Benachrichtigungen.
               </li>
             ) : (
               items.map((n) => (
-                <li key={n.id} className="border-b last:border-b-0">
-                  {n.link_url ? (
-                    <Link
-                      href={n.link_url}
-                      onClick={() => {
-                        setOpen(false);
-                        if (!n.read_at) {
-                          void markNotificationRead(n.id).then(load);
-                        }
-                      }}
-                      className={cn(
-                        "block px-3 py-2.5 transition hover:bg-slate-50",
-                        !n.read_at && "bg-blue-50/40",
-                      )}
-                    >
-                      <NotificationItem n={n} />
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!n.read_at) {
-                          void markNotificationRead(n.id).then(load);
-                        }
-                      }}
-                      className={cn(
-                        "block w-full px-3 py-2.5 text-left transition hover:bg-slate-50",
-                        !n.read_at && "bg-blue-50/40",
-                      )}
-                    >
-                      <NotificationItem n={n} />
-                    </button>
-                  )}
-                </li>
+                <NotificationListItem
+                  key={n.id}
+                  n={n}
+                  onNavigate={() => setOpen(false)}
+                  onRead={() => {
+                    if (!n.read_at) void markNotificationRead(n.id).then(load);
+                  }}
+                />
               ))
             )}
           </ul>
@@ -156,12 +160,71 @@ export function NotificationBell() {
   );
 }
 
-function NotificationItem({ n }: { n: UserNotificationRow }) {
+function NotificationListItem({
+  n,
+  onNavigate,
+  onRead,
+}: {
+  n: UserNotificationRow;
+  onNavigate: () => void;
+  onRead: () => void;
+}) {
+  const p = presentNotification(n);
+  const Icon = p.icon;
+  const unread = !n.read_at;
+
+  const inner = (
+    <div
+      className={cn(
+        "flex gap-2.5 px-3 py-3 transition hover:bg-slate-50/90",
+        unread && "bg-fc-ice/35",
+      )}
+    >
+      <div
+        className={cn(
+          "grid h-9 w-9 shrink-0 place-items-center rounded-xl ring-1 ring-black/5",
+          p.iconClass,
+        )}
+      >
+        <Icon className="h-4 w-4" aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold leading-snug text-fc-navy">{p.headline}</p>
+          {p.hasTarget ? (
+            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden />
+          ) : null}
+        </div>
+        {p.contextLabel ? (
+          <p className="mt-1 text-[11px] font-medium leading-snug text-slate-600 line-clamp-2">
+            {p.contextLabel}
+          </p>
+        ) : null}
+        <p className="mt-1 text-[11px] text-slate-500">{p.whenLabel}</p>
+        {p.quote ? (
+          <p className="mt-1.5 rounded-lg border border-slate-100 bg-slate-50/90 px-2 py-1.5 text-xs italic leading-snug text-slate-700 line-clamp-3">
+            „{p.quote}"
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  if (p.href) {
+    return (
+      <li className="border-b last:border-b-0">
+        <Link href={p.href} onClick={() => { onNavigate(); onRead(); }}>
+          {inner}
+        </Link>
+      </li>
+    );
+  }
+
   return (
-    <>
-      <div className="text-sm font-medium text-slate-900">{n.title}</div>
-      {n.body ? <div className="mt-0.5 text-xs text-slate-600 line-clamp-2">{n.body}</div> : null}
-      <div className="mt-1 text-[10px] text-slate-400">{formatWhen(n.created_at)}</div>
-    </>
+    <li className="border-b last:border-b-0">
+      <button type="button" className="block w-full text-left" onClick={onRead}>
+        {inner}
+      </button>
+    </li>
   );
 }

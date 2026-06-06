@@ -180,7 +180,7 @@ export function BirthdayTemplatesPanel() {
                   setShowNewForm(true);
                   setActiveId(null);
                 }}
-                className="text-xs font-semibold text-blue-600 hover:underline"
+                className="text-xs font-semibold text-fc-blue hover:underline"
               >
                 + Neu
               </button>
@@ -193,7 +193,7 @@ export function BirthdayTemplatesPanel() {
                   onClick={() => selectRow(r)}
                   className={`rounded-xl px-3 py-2 text-left text-sm transition ${
                     r.id === activeId && !showNewForm
-                      ? "bg-slate-900 font-semibold text-white"
+                      ? "bg-fc-navy font-semibold text-white"
                       : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
@@ -234,7 +234,7 @@ export function BirthdayTemplatesPanel() {
                     type="button"
                     disabled={busy}
                     onClick={() => void handleCreate()}
-                    className="h-10 max-w-xs rounded-xl bg-slate-900 text-sm font-semibold text-white disabled:opacity-50"
+                    className="h-10 max-w-xs rounded-xl bg-fc-navy text-sm font-semibold text-white disabled:opacity-50"
                   >
                     Vorlage anlegen
                   </button>
@@ -276,7 +276,7 @@ export function BirthdayTemplatesPanel() {
                       type="button"
                       disabled={busy}
                       onClick={() => void handleSave()}
-                      className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                      className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-50"
                     >
                       Speichern
                     </button>
@@ -301,7 +301,7 @@ export function BirthdayTemplatesPanel() {
                 <CardContent className="grid gap-3 sm:grid-cols-2">
                   {previews.map((p) => (
                     <div key={p.index} className="rounded-xl border bg-slate-50/80 p-3 text-sm">
-                      <p className="font-semibold text-slate-900">{p.title}</p>
+                      <p className="font-semibold text-fc-navy">{p.title}</p>
                       <p className="mt-1 text-slate-700">{p.body}</p>
                     </div>
                   ))}

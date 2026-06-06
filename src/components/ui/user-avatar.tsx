@@ -39,7 +39,7 @@ export function UserAvatar({
           onError={() => setImgFailed(true)}
         />
       ) : (
-        <div className="grid h-full w-full place-items-center bg-gradient-to-br from-blue-600 to-rose-500 font-bold text-white">
+        <div className="grid h-full w-full place-items-center bg-gradient-to-br from-fc-navy to-fc-sky font-bold text-white">
           {initialsFromName(name)}
         </div>
       )}

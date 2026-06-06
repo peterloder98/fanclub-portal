@@ -56,7 +56,7 @@ export default async function MembershipPendingPage() {
           <p className="text-slate-600">
             Bis dahin hast du noch keinen Zugang zum Mitgliederbereich.
           </p>
-          <Link href="/login" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link href="/login" className="text-sm font-medium text-fc-blue hover:underline">
             Zur Anmeldeseite
           </Link>
         </CardContent>

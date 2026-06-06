@@ -105,7 +105,7 @@ export function MembershipApplicationForm() {
         </p>
         <p>
           Ich bestätige, die{" "}
-          <Link href="/documents/satzung.pdf" target="_blank" className="text-blue-600 hover:underline">
+          <Link href="/documents/satzung.pdf" target="_blank" className="text-fc-blue hover:underline">
             Satzung (Anlage, Seiten 3–4 des Antragsformulars)
           </Link>{" "}
           vollständig gelesen zu haben, sie als Vertragsbestandteil anzuerkennen und die Angaben in
@@ -233,7 +233,7 @@ export function MembershipApplicationForm() {
             <a
               href={pdfDownloadUrl}
               download
-              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-slate-900 text-sm font-semibold text-white"
+              className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-fc-navy text-sm font-semibold text-white"
             >
               Antrag inkl. Satzung als PDF herunterladen
             </a>
@@ -248,7 +248,7 @@ export function MembershipApplicationForm() {
 
   return (
     <div className="grid gap-6">
-      <div className="rounded-2xl border bg-blue-50 px-4 py-3 text-sm text-blue-950">
+      <div className="rounded-2xl border bg-fc-ice px-4 py-3 text-sm text-blue-950">
         <strong>Hinweis:</strong> Seiten 1–2 des PDF-Antrags füllst du hier online aus. Die Satzung
         (PDF-Seiten 3–4) ist als{" "}
         <Link href="/documents/satzung.pdf" target="_blank" className="font-medium underline">
@@ -400,7 +400,7 @@ export function MembershipApplicationForm() {
         <CardContent className="grid gap-4">
           {contractPreview}
 
-          <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+          <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/60 p-4">
             <label className="flex items-start gap-2 text-sm text-slate-800">
               <input
                 type="checkbox"
@@ -452,7 +452,7 @@ export function MembershipApplicationForm() {
             />
             <span>
               Ich habe die{" "}
-              <Link href="/documents/satzung.pdf" target="_blank" className="text-blue-600 hover:underline">
+              <Link href="/documents/satzung.pdf" target="_blank" className="text-fc-blue hover:underline">
                 Satzung (Anlage)
               </Link>{" "}
               vollständig gelesen und akzeptiere sie als Vertragsbestandteil. *
@@ -530,7 +530,7 @@ export function MembershipApplicationForm() {
         type="button"
         disabled={busy}
         onClick={() => void submit()}
-        className="h-12 w-full rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm disabled:opacity-60"
+        className="h-12 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm disabled:opacity-60"
       >
         {busy ? "Wird gesendet…" : "Antrag verbindlich absenden"}
       </button>

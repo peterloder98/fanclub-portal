@@ -71,7 +71,7 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase text-slate-500">Status</p>
-          <p className="mt-1 text-lg font-bold text-slate-900">
+          <p className="mt-1 text-lg font-bold text-fc-navy">
             {STATUS_LABEL[order.status] ?? order.status}
           </p>
           <p className="mt-1 text-xs text-slate-500">
@@ -108,7 +108,7 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border bg-white p-4 text-sm">
           <h2 className="text-xs font-semibold uppercase text-slate-500">Käufer</h2>
-          <p className="mt-2 font-semibold text-slate-900">
+          <p className="mt-2 font-semibold text-fc-navy">
             {order.buyer_first_name} {order.buyer_last_name}
           </p>
           <p className="text-slate-600">{order.buyer_email}</p>
@@ -132,7 +132,7 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
               </li>
             ))}
           </ul>
-          <p className="mt-3 border-t pt-2 font-bold text-slate-900">
+          <p className="mt-3 border-t pt-2 font-bold text-fc-navy">
             Gesamt: {formatEur(order.total_cents)}
           </p>
         </div>
@@ -144,7 +144,7 @@ export function MerchandiseOrderDetail({ initial }: { initial: MerchandiseOrderD
           {order.events.map((e) => (
             <li key={e.id} className="flex flex-wrap justify-between gap-2 border-b border-slate-100 pb-2 last:border-0">
               <div>
-                <p className="font-medium text-slate-900">{e.title}</p>
+                <p className="font-medium text-fc-navy">{e.title}</p>
                 {e.details ? <p className="text-xs text-slate-600">{e.details}</p> : null}
               </div>
               <div className="text-right text-xs text-slate-500">

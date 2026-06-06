@@ -85,13 +85,13 @@ export function ClubSignatureSettings() {
         type="button"
         disabled={busy}
         onClick={() => void saveText()}
-        className="h-10 w-fit rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-60"
+        className="h-10 w-fit rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-60"
       >
         Text speichern
       </button>
 
       <div className="rounded-2xl border bg-slate-50 p-4">
-        <div className="text-sm font-semibold text-slate-900">Gespeicherte Unterschrift (Fanclub)</div>
+        <div className="text-sm font-semibold text-fc-navy">Gespeicherte Unterschrift (Fanclub)</div>
         {imageUrl && !creatingNew ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img

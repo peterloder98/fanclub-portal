@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
+import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { formatEur } from "@/lib/club/ledger";
 import { cn } from "@/lib/cn";
 import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
@@ -69,7 +70,7 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/merchandise" className="text-sm font-semibold text-slate-600 hover:text-slate-900">
+      <Link href="/admin/merchandise" className="text-sm font-semibold text-slate-600 hover:text-fc-navy">
         ← Alle Artikel
       </Link>
 
@@ -96,7 +97,7 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {product.sale_price_cents <= 0 ? "Geschenkartikel" : "Im Shop"}
               </p>
-              <h1 className="mt-1 text-2xl font-bold text-slate-900">{product.name}</h1>
+              <h1 className="mt-1 text-2xl font-bold text-fc-navy">{product.name}</h1>
               <p className="mt-2 text-xl font-bold">
                 {product.sale_price_cents <= 0 ? "0 €" : formatEur(product.sale_price_cents)}
               </p>
@@ -117,35 +118,30 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
                 </span>
               </div>
             </div>
-            <div className="mt-6 flex flex-wrap gap-2">
-              <Link
+            <div className="mt-6 flex flex-wrap items-center gap-2">
+              <AdminIconButton
+                label="Bearbeiten"
+                icon={Pencil}
+                variant="edit"
                 href={`/admin/merchandise/${product.id}/edit`}
-                title="Bearbeiten"
-                className="inline-flex h-11 items-center gap-2 rounded-xl border px-4 text-sm font-semibold sm:px-4"
-              >
-                <Pencil className="h-4 w-4" />
-                <span className="hidden sm:inline">Bearbeiten</span>
-              </Link>
+              />
               <button
                 type="button"
                 onClick={() => {
                   loadExpenses();
                   setShowRestock((v) => !v);
                 }}
-                className="h-11 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white"
+                className="fc-btn-primary h-11"
               >
                 + Nachbestellen
               </button>
-              <button
-                type="button"
+              <AdminIconButton
+                label="Löschen"
+                icon={Trash2}
+                variant="delete"
                 disabled={pending}
                 onClick={handleDelete}
-                title="Löschen"
-                className="inline-flex h-11 items-center gap-2 rounded-xl border border-rose-200 px-3 text-sm font-semibold text-rose-700 sm:px-4"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Löschen</span>
-              </button>
+              />
             </div>
           </div>
         </div>
@@ -153,7 +149,7 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
 
       {showRestock ? (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 sm:p-6">
-          <h2 className="text-sm font-bold text-slate-900">Nachbestellung</h2>
+          <h2 className="text-sm font-bold text-fc-navy">Nachbestellung</h2>
           <p className="mt-1 text-xs text-slate-600">
             Bestand erhöhen und optional Rechnung/Buchung zuordnen.
           </p>
@@ -254,7 +250,7 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {product.variants.map((v) => (
             <div key={v.id} className="rounded-xl border bg-white p-4 shadow-sm">
-              <p className="text-lg font-bold text-slate-900">{v.size_label ?? "Einheitsgröße"}</p>
+              <p className="text-lg font-bold text-fc-navy">{v.size_label ?? "Einheitsgröße"}</p>
               <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
                 <div>
                   <dt className="text-slate-500">Verfügbar</dt>
@@ -319,7 +315,7 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
                 <Link
                   href={`/admin/accounting?entry=${id}`}
                   className={cn(
-                    "block rounded-xl border bg-white px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-50",
+                    "block rounded-xl border bg-white px-4 py-3 text-sm font-medium text-fc-blue hover:bg-fc-ice",
                   )}
                 >
                   Buchung anzeigen →

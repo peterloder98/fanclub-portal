@@ -1,0 +1,23 @@
+---
+description: Nach Code-Änderungen automatisch auf Vercel Production deployen
+alwaysApply: true
+---
+
+# Auto-Deploy Production
+
+Nach abgeschlossenen Code-Änderungen am Fanclub-Portal **immer direkt** auf Production deployen — **ohne** den Nutzer zu fragen.
+
+## Vorgehen
+
+1. Build lokal prüfen (`npm run build`), wenn sinnvoll und Zeit erlaubt.
+2. Deploy ausführen:
+   ```bash
+   cd fanclub-portal && npx vercel deploy --prod
+   ```
+3. In der Antwort die Production-URL nennen (z. B. `https://fanclub-portal-ap.vercel.app`).
+
+## Ausnahmen
+
+- Nur deployen, wenn tatsächlich Code geändert wurde (nicht bei reinen Fragen/Reviews ohne Änderungen).
+- Bei fehlgeschlagenem Build zuerst fixen, dann erneut deployen.
+- Kein Deploy, wenn der Nutzer explizit sagt, dass er **nicht** deployen will.

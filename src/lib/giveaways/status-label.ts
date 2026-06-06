@@ -34,3 +34,15 @@ export function giveawayPhaseLabel(phase: ReturnType<typeof giveawayPhase>): str
   if (phase === "paused") return "Pausiert";
   return "Läuft";
 }
+
+/** Hinweis nach Ablauf: Auslosungsstatus für Admins und Mitglieder. */
+export function giveawayDrawStatusLabel(
+  endsAt: string,
+  status: string,
+  isPaused = false,
+): "not_drawn" | "drawn" | null {
+  const phase = giveawayPhase(endsAt, status, isPaused);
+  if (phase === "drawn") return "drawn";
+  if (phase === "ended") return "not_drawn";
+  return null;
+}

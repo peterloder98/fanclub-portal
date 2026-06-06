@@ -132,7 +132,7 @@ export function SignaturePad({
           type="button"
           disabled={disabled || !hasInk}
           onClick={() => void save()}
-          className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 disabled:opacity-60"
+          className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 disabled:opacity-60"
         >
           Unterschrift speichern
         </button>

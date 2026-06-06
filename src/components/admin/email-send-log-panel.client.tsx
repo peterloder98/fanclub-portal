@@ -60,7 +60,7 @@ export function EmailSendLogPanel({
                 <div key={r.id} className="rounded-xl border bg-white p-3 text-sm">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-slate-900">{r.subject}</div>
+                      <div className="font-semibold text-fc-navy">{r.subject}</div>
                       <div className="mt-0.5 text-xs text-slate-600">
                         An {r.to_address} · {formatWhen(r.created_at)}
                       </div>
@@ -87,7 +87,7 @@ export function EmailSendLogPanel({
                     <button
                       type="button"
                       onClick={() => setExpandedId(expanded ? null : r.id)}
-                      className="text-xs font-medium text-blue-600 hover:underline"
+                      className="text-xs font-medium text-fc-blue hover:underline"
                     >
                       {expanded ? "Weniger" : "Inhalt anzeigen"}
                     </button>

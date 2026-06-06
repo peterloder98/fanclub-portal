@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
             <button
               type="submit"
               disabled={busy}
-              className="mt-1 h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800 disabled:opacity-60"
+              className="mt-1 h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue disabled:opacity-60"
             >
               {busy ? "Speichere…" : "Passwort speichern"}
             </button>

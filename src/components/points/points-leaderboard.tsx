@@ -32,7 +32,7 @@ function LeaderboardEntry({
           </span>
         </HoverEnlargeAvatar>
       </span>
-      <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-0.5 text-sm font-bold tabular-nums text-blue-800">
+      <span className="shrink-0 rounded-lg bg-fc-ice px-2 py-0.5 text-sm font-bold tabular-nums text-fc-navy">
         {points}
       </span>
     </li>
@@ -43,7 +43,7 @@ export function PointsLeaderboard({ data }: { data: YearLeaderboardData }) {
   const { rows, selfRow } = data;
 
   if (!rows.length && !selfRow) {
-    return <p className="px-2 py-4 text-sm text-slate-500">Noch keine Punkte in diesem Jahr.</p>;
+    return <p className="px-2 py-4 text-sm text-slate-500">Noch keine Anni-Stars in diesem Jahr.</p>;
   }
 
   return (

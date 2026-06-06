@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { endPollEarly, deletePoll, updatePoll } from "@/app/(app)/polls/actions";
 
 type PollOption = { id: string; label: string };
@@ -104,17 +104,21 @@ export function PollAdminControls({
           type="button"
           disabled={busy}
           onClick={() => setEditing((v) => !v)}
-          className="rounded-lg border bg-white px-3 py-1.5 text-xs font-medium"
+          title={editing ? "Abbrechen" : "Bearbeiten"}
+          aria-label={editing ? "Abbrechen" : "Bearbeiten"}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
         >
-          {editing ? "Abbrechen" : "Bearbeiten"}
+          <Pencil className="h-4 w-4" aria-hidden />
         </button>
         <button
           type="button"
           disabled={busy}
           onClick={() => void onDelete()}
-          className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-800"
+          title="Löschen"
+          aria-label="Löschen"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-800 shadow-sm transition hover:bg-rose-100"
         >
-          Löschen
+          <Trash2 className="h-4 w-4" aria-hidden />
         </button>
       </div>
 
@@ -198,7 +202,7 @@ export function PollAdminControls({
             {options.length < 10 ? (
               <button
                 type="button"
-                className="text-xs font-medium text-blue-700"
+                className="text-xs font-medium text-fc-blue"
                 onClick={() => setOptions((arr) => [...arr, { id: "", label: "" }])}
               >
                 + Option
@@ -215,7 +219,7 @@ export function PollAdminControls({
           <button
             type="submit"
             disabled={busy}
-            className="h-9 rounded-lg bg-slate-900 text-xs font-semibold text-white"
+            className="h-9 rounded-lg bg-fc-navy text-xs font-semibold text-white"
           >
             Speichern
           </button>

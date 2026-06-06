@@ -6,6 +6,7 @@ import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
+import { awardShopOrderStars, revokeShopOrderStars } from "@/lib/shop/order-stars";
 
 export type MerchandiseOrderRow = {
   id: string;
@@ -211,6 +212,12 @@ export async function updateMerchandiseOrderStatusAction(input: {
     createdBy: user.id,
     metadata: { order_id: input.orderId },
   }).catch(() => {});
+
+  if (parsed === "shipped") {
+    await awardShopOrderStars(input.orderId).catch(() => {});
+  } else {
+    await revokeShopOrderStars(input.orderId).catch(() => {});
+  }
 
   revalidatePath("/admin/merchandise");
   revalidatePath(`/admin/merchandise/orders/${input.orderId}`);

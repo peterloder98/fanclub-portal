@@ -84,14 +84,14 @@ export function LoginClient() {
           <button
             type="submit"
             disabled={busy}
-            className="mt-1 h-11 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800 disabled:opacity-60"
+            className="mt-1 h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue disabled:opacity-60"
           >
             {busy ? "Anmelden…" : "Anmelden"}
           </button>
 
           <div className="mt-3 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-700">
             Noch kein Mitglied?{" "}
-            <Link href="/mitgliedschaft" className="font-medium text-blue-600 hover:underline">
+            <Link href="/mitgliedschaft" className="font-medium text-fc-blue hover:underline">
               Online-Antrag stellen →
             </Link>
           </div>

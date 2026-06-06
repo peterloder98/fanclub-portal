@@ -42,7 +42,7 @@ export function UploadDropzone({
       className={cn(
         "rounded-2xl border-2 border-dashed p-6 transition",
         dragActive
-          ? "border-blue-400 bg-blue-50/60"
+          ? "border-blue-400 bg-fc-ice/60"
           : "border-slate-200 bg-slate-50/80",
         disabled && "opacity-60",
       )}
@@ -67,7 +67,7 @@ export function UploadDropzone({
           type="button"
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
-          className="h-11 w-full rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          className="h-11 w-full rounded-xl bg-fc-navy px-6 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         >
           Bild hochladen
         </button>

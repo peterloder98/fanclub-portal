@@ -9,7 +9,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="text-sm font-semibold text-slate-900">
             Anni Perka Fanclub
           </Link>
-          <Link href="/login" className="text-sm font-medium text-blue-600 hover:underline">
+          <Link href="/login" className="text-sm font-medium text-fc-blue hover:underline">
             Login
           </Link>
         </div>

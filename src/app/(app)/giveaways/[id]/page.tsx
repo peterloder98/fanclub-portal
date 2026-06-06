@@ -11,10 +11,14 @@ import { YearEndGiveawayAdmin } from "@/components/giveaways/year-end-giveaway-a
 
 export default async function GiveawayDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string; ausgelost?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const celebrateDraw = sp.ausgelost === "1";
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -224,6 +228,8 @@ export default async function GiveawayDetailPage({
       <Topbar title="Gewinnspiel" subtitle={g.title} />
       <main className="px-4 py-6 lg:px-8">
         <GiveawayDetailClient
+          initialAdminEdit={sp.edit === "1"}
+          celebrateDraw={celebrateDraw}
           giveaway={g}
           prizes={prizes ?? []}
           questions={questionPayload}

@@ -29,7 +29,7 @@ export function MembersLeaderboard({ rows }: { rows: MembersLeaderboardRow[] }) 
               <span className="truncate text-sm font-medium text-slate-900">{r.name}</span>
             </HoverEnlargeAvatar>
           </span>
-          <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-0.5 text-sm font-bold tabular-nums text-blue-800">
+          <span className="shrink-0 rounded-lg bg-fc-ice px-2 py-0.5 text-sm font-bold tabular-nums text-blue-800">
             {r.points}
           </span>
         </li>

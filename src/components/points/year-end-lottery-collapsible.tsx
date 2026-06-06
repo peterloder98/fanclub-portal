@@ -32,8 +32,8 @@ export function YearEndLotteryCollapsible() {
         <div className="border-t border-amber-200/80 px-5 pb-5 pt-3">
           <p className="text-sm leading-relaxed text-slate-700">{POINTS_YEAR_END_NOTE}</p>
           <p className="mt-2 text-sm font-semibold text-amber-900">
-            Genau zehn Mitglieder mit den meisten Statuspunkten im abgelaufenen Jahr nehmen automatisch
-            teil — bei Punktgleichstand nach festen Regeln, nicht per Zufall.
+            Die Top 10 der Anni-Stars im abgelaufenen Jahr nehmen automatisch teil — bei
+            Gleichstand nach festen Regeln, nicht per Zufall.
           </p>
         </div>
       ) : null}

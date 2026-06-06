@@ -48,7 +48,7 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
         <CardContent className="grid gap-4">
           <p className="text-sm text-slate-600">
             Öffentliche Seite für den digitalen Mitgliedsantrag. Vorlage bearbeiten unter{" "}
-            <Link href="/admin/settings/email-templates" className="font-medium text-blue-600 hover:underline">
+            <Link href="/admin/settings/email-templates" className="font-medium text-fc-blue hover:underline">
               E-Mail-Vorlagen
             </Link>{" "}
             („Einladung Antragsformular“).
@@ -60,7 +60,7 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
             <button
               type="button"
               onClick={() => void copyLink()}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+              className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
             >
               {copied ? "Kopiert ✓" : "Link kopieren"}
             </button>
@@ -78,7 +78,7 @@ export function MembershipFormLinkClient({ initialUrl }: { initialUrl: string })
               href="/mitgliedschaft"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-10 items-center rounded-xl border bg-white px-4 text-sm font-semibold text-blue-700"
+              className="inline-flex h-10 items-center rounded-xl border bg-white px-4 text-sm font-semibold text-fc-blue"
             >
               Formular öffnen
             </Link>

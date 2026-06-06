@@ -323,7 +323,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
 
   return (
     <div className="grid gap-4">
-      <Link href="/polls" className="text-sm font-medium text-blue-600 hover:underline">
+      <Link href="/polls" className="text-sm font-medium text-fc-blue hover:underline">
         ← Alle Umfragen
       </Link>
 
@@ -412,7 +412,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
             <button
               type="button"
               onClick={() => void addComment()}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+              className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
             >
               Senden
             </button>

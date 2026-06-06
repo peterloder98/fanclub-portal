@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AppShellClient } from "@/components/app-shell/app-shell-client";
 import { SkipToContent } from "@/components/app-shell/skip-to-content";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import type { SidebarUser } from "@/components/app-shell/sidebar";
@@ -64,16 +65,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen lg:flex">
+    <div className="flex min-h-dvh flex-col overflow-hidden lg:h-dvh lg:max-h-dvh lg:flex-row">
       <SkipToContent />
       <Sidebar user={await loadUser()} />
-      <div
-        id="main-content"
-        tabIndex={-1}
-        className="min-h-0 min-w-0 flex-1 overflow-x-hidden outline-none lg:flex lg:flex-col"
-      >
-        {children}
-      </div>
+      <AppShellClient>{children}</AppShellClient>
     </div>
   );
 }

@@ -79,7 +79,7 @@ export function SmtpSettingsClient() {
             type="button"
             disabled={busy}
             onClick={() => setEditing("new")}
-            className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white"
+            className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
           >
             Neues Konto
           </button>
@@ -99,7 +99,7 @@ export function SmtpSettingsClient() {
                 <div key={a.id} className="rounded-xl border bg-white p-3 text-sm">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-slate-900">{a.email}</p>
+                      <p className="truncate font-semibold text-fc-navy">{a.email}</p>
                       <p className="mt-0.5 text-xs text-slate-600">
                         {a.server}:{a.port}
                       </p>
@@ -315,7 +315,7 @@ export function SmtpSettingsClient() {
                 <span className="text-sm">Standard-Konto</span>
               </label>
               <div className="flex flex-wrap gap-2 sm:col-span-2">
-                <button type="submit" disabled={busy} className="h-11 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white">
+                <button type="submit" disabled={busy} className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white">
                   Speichern
                 </button>
                 <button type="button" disabled={busy} onClick={() => setEditing(null)} className="h-11 rounded-xl border px-4 text-sm">

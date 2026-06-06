@@ -44,7 +44,7 @@ export function EventsRows({ events }: { events: ExternalEventRow[] }) {
                 href={ticket.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex text-sm font-medium text-blue-700 hover:underline"
+                className="mt-2 inline-flex text-sm font-medium text-fc-blue hover:underline"
               >
                 Tickets / Infos →
               </a>

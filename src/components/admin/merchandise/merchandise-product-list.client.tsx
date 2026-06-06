@@ -79,7 +79,7 @@ export function MerchandiseProductList() {
               <Package className="h-8 w-8 text-slate-400" />
               <div>
                 <p className="text-xs font-semibold uppercase text-slate-500">Artikel</p>
-                <p className="text-2xl font-bold text-slate-900">{stats.count}</p>
+                <p className="text-2xl font-bold text-fc-navy">{stats.count}</p>
               </div>
             </CardContent>
           </Card>
@@ -92,7 +92,7 @@ export function MerchandiseProductList() {
         </div>
         <Link
           href="/admin/merchandise/new"
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white sm:w-auto"
+          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white sm:w-auto"
         >
           <Plus className="h-4 w-4" />
           Artikel anlegen
@@ -116,7 +116,7 @@ export function MerchandiseProductList() {
             className={cn(
               "h-9 rounded-full px-3 text-xs font-semibold transition",
               filter === key
-                ? "bg-slate-900 text-white"
+                ? "bg-fc-navy text-white"
                 : "border bg-white text-slate-700 hover:bg-slate-50",
             )}
           >
@@ -150,7 +150,7 @@ export function MerchandiseProductList() {
                 ) : (
                   <div className="grid h-full place-items-center text-xs text-slate-400">Kein Foto</div>
                 )}
-                <span className="absolute left-3 top-3 rounded-full bg-slate-900/90 px-2.5 py-1 text-xs font-bold text-white">
+                <span className="absolute left-3 top-3 rounded-full bg-fc-navy/90 px-2.5 py-1 text-xs font-bold text-white">
                   {p.sale_price_cents <= 0 ? "Geschenk" : formatEur(p.sale_price_cents)}
                 </span>
                 {p.total_available <= 0 ? (
@@ -160,7 +160,7 @@ export function MerchandiseProductList() {
                 ) : null}
               </div>
               <div className="p-4">
-                <h3 className="font-semibold text-slate-900 group-hover:text-blue-700">{p.name}</h3>
+                <h3 className="font-semibold text-fc-navy group-hover:text-fc-blue">{p.name}</h3>
                 <div className="mt-2 flex flex-wrap gap-1.5 text-[11px]">
                   <span className="rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-800">
                     {p.total_available} verfügbar
@@ -174,7 +174,7 @@ export function MerchandiseProductList() {
                     {p.total_sold} verkauft
                   </span>
                 </div>
-                <p className="mt-3 text-xs font-semibold text-blue-700 group-hover:underline">
+                <p className="mt-3 text-xs font-semibold text-fc-blue group-hover:underline">
                   Details öffnen →
                 </p>
               </div>

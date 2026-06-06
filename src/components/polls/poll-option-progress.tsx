@@ -12,7 +12,7 @@ export function PollOptionProgress({ percent }: { percent: number }) {
     >
       <div className="absolute inset-0 bg-slate-100/80" />
       <div
-        className="absolute inset-y-0 left-0 w-full origin-left bg-blue-400/50"
+        className="absolute inset-y-0 left-0 w-full origin-left bg-fc-sky/45"
         style={{ transform: `scaleX(${scale})` }}
       />
     </div>

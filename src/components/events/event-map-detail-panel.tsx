@@ -19,18 +19,18 @@ export function EventMapDetailPanel({
 
   return (
     <div
-      className="rounded-t-xl border border-slate-200/90 bg-white/98 px-3 py-3 shadow-[0_-8px_28px_rgba(15,23,42,0.18)] backdrop-blur-sm"
+      className="rounded-t-xl border border-fc-navy/15 bg-gradient-to-b from-fc-ice/95 to-white/98 px-3 py-3 shadow-[0_-10px_32px_rgba(20,49,101,0.22)] backdrop-blur-sm"
       role="dialog"
       aria-label="Eventdetails"
     >
       <div className="flex items-start gap-2.5">
         <div className="min-w-0 flex-1 space-y-2">
-          <h4 className="text-[13px] font-semibold leading-snug text-slate-900">{event.title}</h4>
+          <h4 className="text-[13px] font-bold leading-snug text-fc-navy">{event.title}</h4>
 
           <div className="flex items-start gap-1.5 text-xs text-slate-600">
-            <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+            <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fc-sky" aria-hidden />
             <span className="leading-snug">
-              <span className="font-medium text-slate-800">{date}</span>
+              <span className="font-semibold text-fc-blue">{date}</span>
               {time ? <span> · {time} Uhr</span> : null}
             </span>
           </div>
@@ -40,7 +40,7 @@ export function EventMapDetailPanel({
           ) : null}
           {location ? (
             <div className="flex items-start gap-1.5 text-xs text-slate-600">
-              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-fc-sky" aria-hidden />
               <span className="leading-snug">{location}</span>
             </div>
           ) : (
@@ -49,7 +49,7 @@ export function EventMapDetailPanel({
 
           {ticket.href ? (
             <a
-              className="inline-flex text-xs font-semibold text-blue-700 hover:underline"
+              className="inline-flex text-xs font-semibold text-fc-blue hover:underline"
               href={ticket.href}
               target="_blank"
               rel="noopener noreferrer"

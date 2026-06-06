@@ -15,6 +15,7 @@ export function EventParticipationRow({
   initialJoined,
   initialAttendees,
   inline = false,
+  tvMode = false,
 }: {
   eventId: string;
   initialCount: number;
@@ -22,6 +23,8 @@ export function EventParticipationRow({
   initialAttendees: UserListEntry[];
   /** Kein eigenes Border-Wrapper (z. B. neben Kalender-Button). */
   inline?: boolean;
+  /** TV-Auftritt: „Schaue ich mir an“. */
+  tvMode?: boolean;
 }) {
   const [joined, setJoined] = useState(initialJoined);
   const [count, setCount] = useState(initialCount);
@@ -111,10 +114,16 @@ export function EventParticipationRow({
           "rounded-lg px-2.5 py-1 text-xs font-semibold transition",
           joined
             ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-            : "bg-slate-900 text-white hover:bg-slate-800",
+            : "bg-fc-navy text-white hover:bg-fc-blue",
         )}
       >
-        {joined ? "Teilnahme zurücknehmen" : "Am Event teilnehmen"}
+        {joined
+          ? tvMode
+            ? "Schaue ich mir nicht an"
+            : "Teilnahme zurücknehmen"
+          : tvMode
+            ? "Schaue ich mir an"
+            : "Am Event teilnehmen"}
       </button>
       {count > 0 ? (
         <UserListPopover

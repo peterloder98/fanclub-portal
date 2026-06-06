@@ -22,8 +22,8 @@ export function MerchandiseAdminNav() {
             className={cn(
               "min-h-11 flex-1 rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition sm:flex-none",
               active
-                ? "bg-slate-900 text-white shadow-sm"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+                ? "bg-fc-navy text-white shadow-sm"
+                : "text-slate-600 hover:bg-slate-50 hover:text-fc-navy",
             )}
           >
             {tab.label}

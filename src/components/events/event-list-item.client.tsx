@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { EventCalendarButton } from "@/components/events/event-calendar-button";
 import { EventParticipationRow } from "@/components/events/event-participation-row";
-import { EventTravelEditForm, EventTravelEditTrigger } from "@/components/events/event-travel-edit.client";
+import {
+  EventTravelEditForm,
+  EventTravelEditTrigger,
+} from "@/components/events/event-travel-edit.client";
 import { EventTravelInfoBlock } from "@/components/events/event-travel-info-block.client";
 import { EventTvBadge } from "@/components/events/event-tv-badge";
 import type { EventListRow, EventParticipationMeta } from "@/components/events/events-map.types";
@@ -11,14 +14,39 @@ import type { EventTravelNoteRow } from "@/lib/events/admin-notes";
 import {
   formatEventCity,
   formatEventListDate,
+  formatEventListTime,
+  formatEventVenueCityLine,
   formatTvBroadcaster,
+  formatVenueName,
 } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import { cn } from "@/lib/cn";
 
+function formatLocationLine(e: EventListRow, isTv: boolean): string | null {
+  if (isTv) {
+    const parts: string[] = [];
+    const time = formatEventListTime(e.start_at);
+    if (time) parts.push(time);
+    const broadcaster = formatTvBroadcaster(e.broadcaster);
+    if (broadcaster) parts.push(broadcaster);
+    const venueCity = formatEventVenueCityLine({
+      venue: e.venue,
+      city: e.city,
+      country: e.country,
+    });
+    if (venueCity) parts.push(venueCity);
+    return parts.length ? parts.join(" · ") : null;
+  }
+
+  return formatEventVenueCityLine({
+    venue: e.venue,
+    city: e.city,
+    country: e.country,
+  });
+}
+
 export function EventListItem({
   event: e,
-  index,
   active,
   isAdmin,
   participation,
@@ -27,7 +55,7 @@ export function EventListItem({
   onMouseLeave,
 }: {
   event: EventListRow;
-  index: number;
+  index?: number;
   active: boolean;
   isAdmin?: boolean;
   participation: EventParticipationMeta;
@@ -38,63 +66,73 @@ export function EventListItem({
   const [travelOpen, setTravelOpen] = useState(false);
   const isTv = e.kind === "tv";
   const listDate = formatEventListDate(e.start_at);
-  const cityLabel = (
-    formatEventCity({ city: e.city, country: e.country }) ??
-    (isTv ? formatTvBroadcaster(e.broadcaster) : null)
-  )?.toUpperCase() ?? null;
+  const locationLine = formatLocationLine(e, isTv);
   const ticket = ticketDisplay(e.ticket_url);
+  const showAdminTravel = isAdmin && !isTv;
 
   return (
     <article
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        "overflow-hidden border-b border-slate-200/80 last:border-b-0",
-        index % 2 === 0 ? "bg-violet-100/35" : "bg-white",
-        active && "ring-2 ring-inset ring-blue-400",
+        "overflow-hidden rounded-xl border bg-white px-2 py-2 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 sm:px-3 sm:py-2.5",
+        active && "border-2 border-blue-400 bg-fc-ice/50",
       )}
     >
-      <div className="overflow-x-auto">
-        <div className="grid min-w-[min(100%,28rem)] grid-cols-[minmax(6.5rem,auto)_minmax(4rem,5.5rem)_minmax(0,1fr)_auto] items-center gap-x-2 px-3 py-2 sm:min-w-0 sm:grid-cols-[minmax(7.5rem,auto)_minmax(4.5rem,8rem)_1fr_auto] sm:gap-x-3">
-        <div className="text-[11px] font-medium tabular-nums text-slate-800 sm:text-xs">{listDate}</div>
-
-        <div className="truncate text-[11px] font-bold uppercase tracking-wide text-slate-900 sm:text-xs">
-          {cityLabel ?? "—"}
+      <div className={cn("relative min-w-0", showAdminTravel && "lg:pr-24")}>
+        <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+          <div className="w-[4.75rem] shrink-0 text-xs font-medium tabular-nums text-slate-800 sm:w-[5.75rem]">
+            {listDate}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-1.5">
+              {isTv ? <EventTvBadge /> : null}
+              <h3 className="min-w-0 text-xs font-bold uppercase leading-snug tracking-wide text-slate-900 sm:text-sm">
+                {e.title}
+              </h3>
+            </div>
+            {locationLine ? (
+              <p className="mt-0.5 text-xs text-slate-600">{locationLine}</p>
+            ) : null}
+          </div>
         </div>
 
-        <div className="flex min-w-0 items-center gap-1.5">
-          {isTv ? <EventTvBadge /> : null}
-          <h3 className="min-w-0 truncate text-[11px] font-bold uppercase tracking-wide text-slate-900 sm:text-sm">
-            {e.title}
-          </h3>
-        </div>
+        {showAdminTravel ? (
+          <div className="absolute right-0 top-0 hidden lg:block">
+            <EventTravelEditTrigger
+              hasTravel={Boolean(travelNote?.travel)}
+              onClick={() => setTravelOpen((v) => !v)}
+            />
+          </div>
+        ) : null}
+      </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-1.5">
+      {ticket.href || ticket.text || showAdminTravel ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
           {ticket.href ? (
             <a
               href={ticket.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-7 items-center rounded-md bg-slate-900 px-2.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-slate-800"
+              className="text-xs font-medium text-fc-blue hover:underline"
             >
-              {isTv ? "Infos" : "Tickets"}
+              {isTv ? "Sendung / Infos" : "Tickets / Infos"}
             </a>
           ) : ticket.text ? (
-            <span className="max-w-[8rem] truncate text-[10px] font-semibold text-slate-700">
-              {ticket.text}
-            </span>
+            <p className="text-xs text-slate-700">{ticket.text}</p>
           ) : null}
-          {isAdmin && !isTv ? (
-            <EventTravelEditTrigger
-              hasTravel={Boolean(travelNote?.travel)}
-              onClick={() => setTravelOpen((v) => !v)}
-            />
+          {showAdminTravel ? (
+            <div className="lg:hidden">
+              <EventTravelEditTrigger
+                hasTravel={Boolean(travelNote?.travel)}
+                onClick={() => setTravelOpen((v) => !v)}
+              />
+            </div>
           ) : null}
         </div>
-        </div>
-      </div>
+      ) : null}
 
-      {travelOpen && isAdmin && !isTv ? (
+      {travelOpen && showAdminTravel ? (
         <EventTravelEditForm
           eventId={e.id}
           initialTravel={travelNote?.travel}
@@ -103,7 +141,7 @@ export function EventListItem({
       ) : null}
 
       {travelNote?.travel && !isTv && !travelOpen ? (
-        <div className="px-3 pb-2">
+        <div className="mt-2 border-t border-slate-100 pt-2 sm:mt-3">
           <EventTravelInfoBlock
             travel={travelNote.travel}
             originAddress={[e.address, e.postal_code, e.city].filter(Boolean).join(", ")}
@@ -111,16 +149,15 @@ export function EventListItem({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/50 px-3 py-1.5">
-        {!isTv ? (
-          <EventParticipationRow
-            eventId={e.id}
-            initialCount={participation.count}
-            initialJoined={participation.joined}
-            initialAttendees={participation.attendees}
-            inline
-          />
-        ) : null}
+      <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+        <EventParticipationRow
+          eventId={e.id}
+          initialCount={participation.count}
+          initialJoined={participation.joined}
+          initialAttendees={participation.attendees}
+          inline
+          tvMode={isTv}
+        />
         <EventCalendarButton
           title={e.title}
           startAt={e.start_at}

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
@@ -22,6 +23,7 @@ import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { GENDER_OPTIONS } from "@/lib/person/gender";
 import {
   formatEur,
+  formatLedgerEntryNumber,
   LEDGER_CATEGORY_LABELS,
   type ClubLedgerRow,
   type LedgerCategory,
@@ -98,7 +100,7 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="grid gap-0.5 border-b border-slate-100 py-2.5 sm:grid-cols-[140px_1fr]">
       <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
-      <dd className="text-sm text-slate-900">{value}</dd>
+      <dd className="text-sm text-fc-navy">{value}</dd>
     </div>
   );
 }
@@ -304,31 +306,28 @@ export function MemberDetailPanel({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Link
+      <div className="flex flex-wrap items-center gap-2">
+        <AdminIconButton
+          label="Bearbeiten"
+          icon={Pencil}
+          variant="edit"
           href={`/admin/members/${member.id}/edit`}
-          className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800"
-        >
-          <Pencil className="h-4 w-4" aria-hidden />
-          Bearbeiten
-        </Link>
+        />
         <button
           type="button"
           disabled={pending || paymentLoading || !member.email}
           onClick={() => void openPaymentDialog()}
-          className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+          className="fc-btn-secondary h-10 disabled:opacity-50"
         >
           Zahlungserinnerung senden
         </button>
-        <button
-          type="button"
+        <AdminIconButton
+          label="Mitglied löschen"
+          icon={Trash2}
+          variant="delete"
           disabled={pending}
           onClick={handleDelete}
-          className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden />
-          Löschen
-        </button>
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -400,7 +399,7 @@ export function MemberDetailPanel({
             {member.application_id ? (
               <Link
                 href={`/admin/members/applications/${member.application_id}`}
-                className="mt-3 inline-block text-sm font-medium text-blue-600 hover:underline"
+                className="mt-3 inline-block text-sm font-medium text-fc-blue hover:underline"
               >
                 Mitgliedsantrag & PDF →
               </Link>
@@ -542,6 +541,9 @@ export function MemberDetailPanel({
                         className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-white px-3 py-2 text-sm"
                       >
                         <div>
+                          <span className="mr-2 font-mono text-xs font-semibold text-fc-navy">
+                            {formatLedgerEntryNumber(e.entry_number)}
+                          </span>
                           <span
                             className={
                               e.entry_type === "income"
@@ -564,7 +566,7 @@ export function MemberDetailPanel({
                             {e.activity_log_id ? (
                               <a
                                 href={`#activity-${e.activity_log_id}`}
-                                className="text-xs font-medium text-blue-600 hover:underline"
+                                className="text-xs font-medium text-fc-blue hover:underline"
                               >
                                 Historie →
                               </a>
@@ -572,22 +574,22 @@ export function MemberDetailPanel({
                           </span>
                         </div>
                         <div className="flex gap-3">
-                          <button
-                            type="button"
+                          <AdminIconButton
+                            label="Bearbeiten"
+                            icon={Pencil}
+                            variant="edit"
+                            size="sm"
                             disabled={pending}
                             onClick={() => startEditLedger(e)}
-                            className="text-xs font-medium text-blue-600 hover:underline disabled:opacity-50"
-                          >
-                            Bearbeiten
-                          </button>
-                          <button
-                            type="button"
+                          />
+                          <AdminIconButton
+                            label="Löschen"
+                            icon={Trash2}
+                            variant="delete"
+                            size="sm"
                             disabled={pending}
                             onClick={() => handleDeleteLedger(e.id)}
-                            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
-                          >
-                            Löschen
-                          </button>
+                          />
                         </div>
                       </li>
                     ),
@@ -699,7 +701,7 @@ export function MemberDetailPanel({
             <button
               type="button"
               disabled={pending || !paymentSignatureId}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+              className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-50"
               onClick={() => {
                 startTransition(async () => {
                   try {

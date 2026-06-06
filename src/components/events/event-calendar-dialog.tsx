@@ -108,7 +108,7 @@ export function EventCalendarDialog({
 
   const modal = (
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-900/50 p-4 sm:items-center"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-fc-navy/50 p-4 sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-labelledby="event-cal-title"

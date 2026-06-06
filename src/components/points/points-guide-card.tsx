@@ -15,18 +15,18 @@ export function PointsGuideCard({ id = "punkte" }: { id?: string }) {
 
   return (
     <div id={id} className="scroll-mt-24 w-full space-y-6">
-      <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-600/10 via-white to-rose-500/10 px-5 py-5 shadow-sm shadow-slate-900/5">
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900">So sammelst du Punkte</h2>
+      <div className="rounded-2xl border border-fc-sky/30/80 bg-gradient-to-br from-blue-600/10 via-white to-rose-500/10 px-5 py-5 shadow-sm shadow-slate-900/5">
+        <h2 className="text-xl font-semibold tracking-tight text-fc-navy">So sammelst du Anni-Stars</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">{POINTS_YEAR_HINT}</p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         <section className="space-y-3">
           <div className="flex items-center gap-2 px-0.5">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-rose-500 text-white shadow-sm">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-sky text-white shadow-sm">
               <Sparkles className="h-4 w-4" aria-hidden />
             </div>
-            <h3 className="text-base font-semibold text-slate-900">Punkte — Aktionen</h3>
+            <h3 className="text-base font-semibold text-fc-navy">Anni-Stars — Aktionen</h3>
           </div>
           <ul className="grid gap-3">
             {rules.map((rule) => (
@@ -78,13 +78,13 @@ export function PointsGuideCard({ id = "punkte" }: { id?: string }) {
 
       <div className="rounded-2xl border border-amber-200/70 bg-gradient-to-r from-amber-50/90 via-white to-blue-50/80 px-5 py-4 text-sm leading-relaxed text-slate-700">
         Tipp: Unter „Empfehlen“ →{" "}
-        <Link href="/mitgliedschaft/einladen" className="font-semibold text-blue-700 hover:underline">
+        <Link href="/mitgliedschaft/einladen" className="font-semibold text-fc-blue hover:underline">
           Neues Mitglied werben
         </Link>
         :{" "}
-        <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span> beim
+        <span className="font-semibold text-fc-blue">+{MEMBERSHIP_REFERRAL_POINTS} ★</span> beim
         Versand, zusätzlich{" "}
-        <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_COMPLETION_POINTS} Punkte</span>,
+        <span className="font-semibold text-fc-blue">+{MEMBERSHIP_REFERRAL_COMPLETION_POINTS} ★</span>,
         wenn die Person den Antrag einreicht und freigeschaltet wird.
       </div>
     </div>

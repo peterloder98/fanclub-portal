@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
+import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   addClubLedgerEntry,
@@ -15,6 +16,7 @@ import {
   filterLedgerByPeriod,
   formatEur,
   ledgerYearOptions,
+  formatLedgerEntryNumber,
   LEDGER_CATEGORY_LABELS,
   sumLedgerRows,
   type ClubLedgerRow,
@@ -22,6 +24,7 @@ import {
   type LedgerPeriodMode,
 } from "@/lib/club/ledger";
 import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
+import type { OpenMeetingCharge } from "@/lib/club/meeting-charges";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
 import { ReceiptLink } from "@/components/admin/receipt-link";
 import {
@@ -48,7 +51,13 @@ const MONTHS = [
   "Dezember",
 ];
 
-type LedgerSortKey = "entry_date" | "entry_type" | "amount_cents" | "category" | "description";
+type LedgerSortKey =
+  | "entry_number"
+  | "entry_date"
+  | "entry_type"
+  | "amount_cents"
+  | "category"
+  | "description";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -76,8 +85,8 @@ function SortBtn({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-slate-900",
-        active && "text-blue-700",
+        "inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-fc-navy",
+        active && "text-fc-blue",
       )}
     >
       {label}
@@ -89,10 +98,12 @@ function SortBtn({
 export function ClubAccountingPanel({
   entries,
   openContributions,
+  openMeetingCharges = [],
   ledgerAvailable,
 }: {
   entries: ClubLedgerRow[];
   openContributions: MemberContributionInfo[];
+  openMeetingCharges?: OpenMeetingCharge[];
   ledgerAvailable: boolean;
 }) {
   const router = useRouter();
@@ -133,6 +144,8 @@ export function ClubAccountingPanel({
     rows.sort((a, b) => {
       const pick = (r: ClubLedgerRow) => {
         switch (sort.key) {
+          case "entry_number":
+            return r.entry_number ?? "";
           case "entry_date":
             return r.entry_date;
           case "entry_type":
@@ -408,13 +421,82 @@ export function ClubAccountingPanel({
           <CardContent className="pt-5">
             <p className="text-xs font-semibold uppercase text-slate-500">Saldo</p>
             <p
-              className={`mt-1 text-2xl font-bold ${balance >= 0 ? "text-slate-900" : "text-rose-700"}`}
+              className={`mt-1 text-2xl font-bold ${balance >= 0 ? "text-fc-navy" : "text-rose-700"}`}
             >
               {formatEur(balance)}
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {openMeetingCharges.length > 0 ? (
+        <Card className="border-fc-sky/25">
+          <CardHeader>
+            <CardTitle>Offene Fanclub-Treffen Kosten ({openMeetingCharges.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-2 text-sm">
+            {openMeetingCharges.map((c) => (
+              <div
+                key={`${c.meetingId}-${c.userId}`}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fc-ice bg-fc-ice/30 px-3 py-2"
+              >
+                <div>
+                  <Link
+                    href={`/admin/members/${c.userId}`}
+                    className="font-medium text-fc-blue hover:underline"
+                  >
+                    {c.lastName}, {c.firstName}
+                  </Link>
+                  <p className="text-xs text-[color:var(--muted)]">
+                    {c.meetingTitle}
+                    {c.isOverdue ? (
+                      <span className="ml-1 font-semibold text-rose-700">· überfällig</span>
+                    ) : c.paymentDueAt ? (
+                      <span className="ml-1">
+                        · bis{" "}
+                        {new Date(c.paymentDueAt).toLocaleDateString("de-DE", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                      </span>
+                    ) : null}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-amber-800">{formatEur(c.chargeCents)}</span>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        setError(null);
+                        try {
+                          await addClubLedgerEntry({
+                            entryType: "income",
+                            amountEur: c.chargeCents / 100,
+                            description: `Fanclub-Treffen: ${c.meetingTitle}`,
+                            category: "event",
+                            memberId: c.userId,
+                            entryDate: new Date().toISOString().slice(0, 10),
+                            meetingId: c.meetingId,
+                          });
+                          router.refresh();
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : "Fehler");
+                        }
+                      });
+                    }}
+                    className="rounded-lg bg-fc-navy px-2.5 py-1 text-xs font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
+                  >
+                    Als bezahlt buchen
+                  </button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {openContributions.length > 0 ? (
         <Card>
@@ -429,7 +511,7 @@ export function ClubAccountingPanel({
                   href={`/admin/members/${c.userId}`}
                   className="block rounded-xl border bg-white p-3 transition hover:border-slate-300 hover:bg-slate-50"
                 >
-                  <div className="font-semibold text-slate-900">
+                  <div className="font-semibold text-fc-navy">
                     {c.lastName}, {c.firstName}
                     {c.membershipNumber ? (
                       <span className="ml-1 text-xs font-normal text-slate-500">
@@ -461,7 +543,7 @@ export function ClubAccountingPanel({
                       <td className="px-3 py-2">
                         <Link
                           href={`/admin/members/${c.userId}`}
-                          className="font-medium text-blue-600 hover:underline"
+                          className="font-medium text-fc-blue hover:underline"
                         >
                           {c.lastName}, {c.firstName}
                           {c.membershipNumber ? ` (Nr. ${c.membershipNumber})` : ""}
@@ -553,7 +635,7 @@ export function ClubAccountingPanel({
                   type="button"
                   disabled={pending || !ledgerDesc.trim() || !ledgerAmount}
                   onClick={handleAdd}
-                  className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                  className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   Speichern
                 </button>
@@ -649,8 +731,12 @@ export function ClubAccountingPanel({
                   <div key={e.id} className="rounded-xl border bg-white p-3 text-sm">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">{e.description}</p>
+                        <p className="font-semibold text-fc-navy">{e.description}</p>
                         <p className="mt-0.5 text-xs text-slate-500">
+                          <span className="font-mono font-semibold text-fc-navy">
+                            {formatLedgerEntryNumber(e.entry_number)}
+                          </span>
+                          {" · "}
                           {formatDE(e.entry_date)} · {LEDGER_CATEGORY_LABELS[e.category]}
                         </p>
                       </div>
@@ -664,7 +750,7 @@ export function ClubAccountingPanel({
                     {e.member_id ? (
                       <Link
                         href={`/admin/members/${e.member_id}`}
-                        className="mt-2 inline-block text-xs font-medium text-blue-600 hover:underline"
+                        className="mt-2 inline-block text-xs font-medium text-fc-blue hover:underline"
                       >
                         {e.member_name ?? "Mitglied"}
                       </Link>
@@ -673,24 +759,20 @@ export function ClubAccountingPanel({
                       {e.receipt_storage_path ? (
                         <ReceiptLink path={e.receipt_storage_path} />
                       ) : null}
-                      <button
-                        type="button"
+                      <AdminIconButton
+                        label="Bearbeiten"
+                        icon={Pencil}
+                        variant="edit"
                         disabled={pending}
-                        title="Bearbeiten"
                         onClick={() => startEdit(e)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden />
-                      </button>
-                      <button
-                        type="button"
+                      />
+                      <AdminIconButton
+                        label="Löschen"
+                        icon={Trash2}
+                        variant="delete"
                         disabled={pending}
-                        title="Löschen"
                         onClick={() => handleDelete(e.id)}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                      </button>
+                      />
                     </div>
                   </div>
                 ),
@@ -700,6 +782,14 @@ export function ClubAccountingPanel({
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
+                    <th className="px-3 py-2">
+                      <SortBtn
+                        label="Vorgang"
+                        active={sort.key === "entry_number"}
+                        dir={sort.dir}
+                        onClick={() => toggleSort("entry_number")}
+                      />
+                    </th>
                     <th className="px-3 py-2">
                       <SortBtn
                         label="Datum"
@@ -750,6 +840,9 @@ export function ClubAccountingPanel({
                   {sortedEntries.map((e) =>
                     editingId === e.id ? (
                       <tr key={e.id} id={`ledger-${e.id}`} className="border-b bg-slate-50/80">
+                        <td className="px-3 py-2 font-mono text-xs font-semibold text-fc-navy">
+                          {formatLedgerEntryNumber(e.entry_number)}
+                        </td>
                         <td className="px-3 py-2">
                           <input
                             type="date"
@@ -832,6 +925,9 @@ export function ClubAccountingPanel({
                       </tr>
                     ) : (
                       <tr key={e.id} id={`ledger-${e.id}`} className="border-b">
+                        <td className="px-3 py-2 font-mono text-xs font-semibold text-fc-navy">
+                          {formatLedgerEntryNumber(e.entry_number)}
+                        </td>
                         <td className="px-3 py-2">{formatDE(e.entry_date)}</td>
                         <td className="px-3 py-2">
                           {e.entry_type === "income" ? "Einnahme" : "Ausgabe"}
@@ -848,7 +944,7 @@ export function ClubAccountingPanel({
                           {e.member_id ? (
                             <Link
                               href={`/admin/members/${e.member_id}`}
-                              className="font-medium text-blue-600 hover:underline"
+                              className="font-medium text-fc-blue hover:underline"
                             >
                               {e.member_name ?? "Mitglied"}
                             </Link>
@@ -868,24 +964,20 @@ export function ClubAccountingPanel({
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1">
-                            <button
-                              type="button"
+                            <AdminIconButton
+                              label="Bearbeiten"
+                              icon={Pencil}
+                              variant="edit"
                               disabled={pending}
-                              title="Bearbeiten"
                               onClick={() => startEdit(e)}
-                              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border text-blue-600 hover:bg-slate-50 disabled:opacity-50"
-                            >
-                              <Pencil className="h-4 w-4" aria-hidden />
-                            </button>
-                            <button
-                              type="button"
+                            />
+                            <AdminIconButton
+                              label="Löschen"
+                              icon={Trash2}
+                              variant="delete"
                               disabled={pending}
-                              title="Löschen"
                               onClick={() => handleDelete(e.id)}
-                              className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-                            >
-                              <Trash2 className="h-4 w-4" aria-hidden />
-                            </button>
+                            />
                           </div>
                         </td>
                       </tr>

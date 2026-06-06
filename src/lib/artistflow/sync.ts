@@ -4,16 +4,19 @@ import {
   normalizeArtistflowEvent,
   type NormalizedExternalEvent,
 } from "@/lib/artistflow/normalize";
-import { formatEventCity, formatTvBroadcaster } from "@/lib/events/format";
 import { eventAddressChanged } from "@/lib/artistflow/geocode-event";
 import { eventStartChanged } from "@/lib/artistflow/legacy-external-id";
 import {
   matchExistingExternalEvent,
   type ExistingExternalEventRow,
 } from "@/lib/artistflow/match-existing-event";
-import { repairPortalEventData } from "@/lib/artistflow/repair-portal-events";
-import { notifyAllActiveMembers } from "@/lib/notifications/create";
-import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { feedMatchKey } from "@/lib/artistflow/feed-match-key";
+import { postSyncPortalEvents } from "@/lib/artistflow/post-sync-portal-events";
+import {
+  maybeQueueEventAvailableNotice,
+  sendEventAvailableNotices,
+  type EventAvailableNotice,
+} from "@/lib/notifications/event-available";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type SyncResult = {
@@ -92,16 +95,6 @@ async function patchSyncLog(
   await admin.from("artistflow_sync_logs").update(patch).eq("id", logId);
 }
 
-type NewEventNotice = {
-  eventId: string;
-  kind: NormalizedExternalEvent["kind"];
-  title: string;
-  startAt: string;
-  city: string | null;
-  country: string | null;
-  broadcaster: string | null;
-};
-
 async function loadExistingEventIndex(admin: SupabaseClient) {
   const { data: events, error } = await admin
     .from("external_events")
@@ -137,6 +130,8 @@ async function loadExistingEventIndex(admin: SupabaseClient) {
     title: e.title,
     start_at: e.start_at,
     city: e.city,
+    kind: (e as { kind?: string }).kind ?? "event",
+    broadcaster: (e as { broadcaster?: string | null }).broadcaster ?? null,
     content_hash: e.content_hash,
     is_visible: e.is_visible,
     participation_count: participationCount.get(e.id) ?? 0,
@@ -199,8 +194,9 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
     travel_notes_relinked: 0,
   };
 
-  const newEventNotices: NewEventNotice[] = [];
+  const newEventNotices: EventAvailableNotice[] = [];
   const matchedInternalIds = new Set<string>();
+  const matchedFeedKeys = new Set<string>();
 
   try {
     const raw = await fetchJson(feedUrl);
@@ -214,10 +210,13 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
 
     const { rows: existingRows, byId } = await loadExistingEventIndex(admin);
     let rows = [...existingRows];
+    const feedKeys = new Set(normalized.map((e) => feedMatchKey(e)));
 
     for (const e of normalized) {
       const is_visible = Boolean(e.published) && !e.secret;
-      const existing = matchExistingExternalEvent(e, rows);
+      const existing = matchExistingExternalEvent(e, rows, {
+        excludeIds: matchedInternalIds,
+      });
       const existingFull = existing ? byId.get(existing.id) : null;
 
       if (!existing || !existingFull) {
@@ -246,25 +245,29 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         });
         byId.set(insertedRow.id, insertedRow);
         matchedInternalIds.add(insertedRow.id);
+        matchedFeedKeys.add(feedMatchKey(e));
         result.inserted += 1;
 
-        if (is_visible && e.published && insertedRow.id && e.start_at) {
-          newEventNotices.push({
-            eventId: insertedRow.id,
-            kind: e.kind,
-            title: e.title,
-            startAt: e.start_at,
-            city: e.city,
-            country: e.country,
-            broadcaster: e.broadcaster,
-          });
-        }
+        maybeQueueEventAvailableNotice(newEventNotices, {
+          eventId: insertedRow.id,
+          wasVisible: false,
+          isVisible: is_visible,
+          published: e.published,
+          startAt: e.start_at,
+          kind: e.kind,
+          title: e.title,
+          city: e.city,
+          country: e.country,
+          broadcaster: e.broadcaster,
+        });
         continue;
       }
 
       matchedInternalIds.add(existing.id);
+      matchedFeedKeys.add(feedMatchKey(e));
 
       if (existing.content_hash === e.content_hash) {
+        const wasVisible = existing.is_visible;
         await admin
           .from("external_events")
           .update({
@@ -276,11 +279,24 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         if (existing.external_id !== e.external_id) {
           existing.external_id = e.external_id;
         }
+        maybeQueueEventAvailableNotice(newEventNotices, {
+          eventId: existing.id,
+          wasVisible,
+          isVisible: is_visible,
+          published: e.published,
+          startAt: e.start_at,
+          kind: e.kind,
+          title: e.title,
+          city: e.city,
+          country: e.country,
+          broadcaster: e.broadcaster,
+        });
         existing.is_visible = is_visible;
         result.skipped += 1;
         continue;
       }
 
+      const wasVisible = existing.is_visible;
       const dateChanged = eventStartChanged(existingFull.start_at, e.start_at);
       const addressChanged = eventAddressChanged(existingFull, e.address_signature);
 
@@ -300,6 +316,18 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         .eq("id", existing.id);
       if (error) throw new Error(error.message);
 
+      maybeQueueEventAvailableNotice(newEventNotices, {
+        eventId: existing.id,
+        wasVisible,
+        isVisible: is_visible,
+        published: e.published,
+        startAt: e.start_at,
+        kind: e.kind,
+        title: e.title,
+        city: e.city,
+        country: e.country,
+        broadcaster: e.broadcaster,
+      });
       existing.content_hash = e.content_hash;
       existing.external_id = e.external_id;
       existing.is_visible = is_visible;
@@ -315,12 +343,18 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
         result.participations_reset += 1;
       }
 
+      const eventKey = feedMatchKey(e);
       const duplicateIds = rows
         .filter((r) => r.id !== existing.id)
         .filter(
           (r) =>
-            r.title.trim().toUpperCase() === e.title.trim().toUpperCase() &&
-            (r.start_at?.slice(0, 10) ?? "") === (e.start_at?.slice(0, 10) ?? ""),
+            feedMatchKey({
+              kind: r.kind,
+              title: r.title,
+              start_at: r.start_at,
+              city: r.city,
+              broadcaster: r.broadcaster,
+            }) === eventKey,
         )
         .map((r) => r.id);
 
@@ -336,7 +370,19 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
       }
     }
 
-    const toHide = rows.filter((r) => r.is_visible && !matchedInternalIds.has(r.id));
+    const toHide = rows.filter((r) => {
+      if (!r.is_visible) return false;
+      if (matchedInternalIds.has(r.id)) return false;
+      const key = feedMatchKey({
+        kind: r.kind,
+        title: r.title,
+        start_at: r.start_at,
+        city: r.city,
+        broadcaster: r.broadcaster,
+      });
+      if (!feedKeys.has(key)) return true;
+      return matchedFeedKeys.has(key);
+    });
     if (toHide.length) {
       const { error } = await admin
         .from("external_events")
@@ -349,35 +395,13 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
       result.hidden += toHide.length;
     }
 
-    const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
-      /\/$/,
-      "",
-    );
-    for (const notice of newEventNotices) {
-      const dateLabel = new Date(notice.startAt).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-      const location =
-        notice.kind === "tv"
-          ? formatTvBroadcaster(notice.broadcaster)
-          : formatEventCity({ city: notice.city, country: notice.country });
-      await notifyAllActiveMembers({
-        kind: NOTIFICATION_KINDS.eventAvailable,
-        title: notice.kind === "tv" ? "Neuer TV-Auftritt" : "Neues Event",
-        body: `${notice.title} — ${dateLabel}${location ? `, ${location}` : ""}`,
-        linkUrl: base ? `${base}/events` : "/events",
-        linkLabel: "Zur Eventliste",
-        metadata: { event_id: notice.eventId },
-      }).catch(console.error);
-    }
+    await sendEventAvailableNotices(admin, newEventNotices);
 
-    const repaired = await repairPortalEventData(admin);
-    result.participations_relinked = repaired.participationsMoved;
-    result.travel_notes_relinked = repaired.travelNotesMoved;
+    const postSync = await postSyncPortalEvents(admin);
+    result.participations_relinked = postSync.participationsMoved;
+    result.travel_notes_relinked = postSync.travelNotesMoved;
 
-    result.geocoding_queued = repaired.geocoded + repaired.pinsRestored;
+    result.geocoding_queued = postSync.geocoded + postSync.pinsRestored;
 
     await patchSyncLog(admin, logId, {
       finished_at: new Date().toISOString(),

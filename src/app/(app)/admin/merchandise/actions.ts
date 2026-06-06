@@ -297,7 +297,7 @@ export async function listMerchandiseExpenseOptionsAction() {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("club_ledger_entries")
-    .select("id,description,amount_cents,entry_date")
+    .select("id,entry_number,description,amount_cents,entry_date")
     .eq("entry_type", "expense")
     .eq("category", "merchandise")
     .order("entry_date", { ascending: false })
@@ -308,7 +308,7 @@ export async function listMerchandiseExpenseOptionsAction() {
   }
   return (data ?? []).map((r) => ({
     id: r.id,
-    label: `${r.description} (${(r.amount_cents / 100).toFixed(2).replace(".", ",")} €, ${r.entry_date})`,
+    label: `${(r as { entry_number?: string | null }).entry_number ? `${(r as { entry_number: string }).entry_number} · ` : ""}${r.description} (${(r.amount_cents / 100).toFixed(2).replace(".", ",")} €, ${r.entry_date})`,
   }));
 }
 

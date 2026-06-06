@@ -90,7 +90,7 @@ export function MerchandiseProductForm({
     <div className="mx-auto max-w-3xl space-y-4">
       <Link
         href={product ? `/admin/merchandise/${product.id}` : "/admin/merchandise"}
-        className="text-sm font-semibold text-slate-600 hover:text-slate-900"
+        className="text-sm font-semibold text-slate-600 hover:text-fc-navy"
       >
         ← Zurück
       </Link>
@@ -334,7 +334,7 @@ export function MerchandiseProductForm({
                       { size_label: "M", qty_purchased: 0, qty_sold: 0, qty_gifted: 0 },
                     ])
                   }
-                  className="text-sm font-semibold text-blue-600"
+                  className="text-sm font-semibold text-fc-blue"
                 >
                   + Größe hinzufügen
                 </button>
@@ -347,7 +347,7 @@ export function MerchandiseProductForm({
               type="button"
               disabled={pending || !name.trim() || salePrice === ""}
               onClick={handleSave}
-              className="h-11 rounded-xl bg-slate-900 px-6 text-sm font-semibold text-white disabled:opacity-50"
+              className="h-11 rounded-xl bg-fc-navy px-6 text-sm font-semibold text-white disabled:opacity-50"
             >
               {pending ? "Speichern…" : "Speichern"}
             </button>

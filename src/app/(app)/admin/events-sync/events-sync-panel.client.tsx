@@ -10,6 +10,7 @@ import {
   runArtistflowGeocodeBackfill,
   runArtistflowSync,
   runPortalEventRepair,
+  runRestoreEventsFromFeed,
 } from "./actions";
 
 export type SyncLogSnapshot = {
@@ -81,20 +82,33 @@ export function EventsSyncPanel({
     });
   }
 
+  function runRestore() {
+    setMessage(null);
+    startTransition(async () => {
+      const result = await runRestoreEventsFromFeed();
+      if (result.ok) {
+        setMessage({
+          type: "ok",
+          text: `${result.restored} von ${result.feedTotal} Events aus dem Feed wieder sichtbar${result.inserted ? ` (${result.inserted} neu angelegt)` : ""}${result.participationsMoved ? `, ${result.participationsMoved} Teilnahme(n) verknüpft` : ""}.`,
+        });
+      } else {
+        setMessage({ type: "error", text: result.error });
+      }
+      router.refresh();
+    });
+  }
+
   function runRepair() {
     setMessage(null);
     startTransition(async () => {
       const result = await runPortalEventRepair();
       if (result.ok) {
         const parts = [
-          result.groupsMerged
-            ? `${result.groupsMerged} Duplikat-Gruppe(n) zusammengeführt`
-            : null,
           result.participationsMoved
-            ? `${result.participationsMoved} Teilnahme(n) wiederhergestellt`
+            ? `${result.participationsMoved} Teilnahme(n) verknüpft`
             : null,
           result.travelNotesMoved
-            ? `${result.travelNotesMoved} Reiseinfo(s) wiederhergestellt`
+            ? `${result.travelNotesMoved} Reiseinfo(s) verknüpft`
             : null,
           result.pinsRestored + result.geocoded
             ? `${result.pinsRestored + result.geocoded} Karten-Pin(s) gesetzt`
@@ -104,7 +118,7 @@ export function EventsSyncPanel({
           .join(", ");
         setMessage({
           type: "ok",
-          text: parts || "Reparatur abgeschlossen — keine Änderungen nötig.",
+          text: parts || "Verknüpfung abgeschlossen — keine Änderungen nötig.",
         });
       } else {
         setMessage({ type: "error", text: result.error });
@@ -130,33 +144,40 @@ export function EventsSyncPanel({
       ) : null}
 
       {busy ? (
-        <div className="mb-4 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-fc-sky/30 bg-fc-ice px-4 py-3 text-sm text-fc-navy">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
           Sync läuft — Status wird automatisch aktualisiert…
         </div>
       ) : null}
 
-      <Card className="mb-4 border-2 border-amber-300 bg-amber-50/90 shadow-sm">
+      <Card className="mb-4 border-2 border-emerald-300 bg-emerald-50/90 shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base text-amber-950">
+          <CardTitle className="flex items-center gap-2 text-base text-emerald-950">
             <Wrench className="h-5 w-5 shrink-0" aria-hidden />
-            Teilnehmer & Pins reparieren
+            Events aus Feed wiederherstellen
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 text-sm text-amber-950">
+        <CardContent className="grid gap-3 text-sm text-emerald-950">
           <p>
-            Stellt fehlende <strong>Teilnehmer</strong>, <strong>Reiseinfos</strong> und{" "}
-            <strong>Karten-Pins</strong> wieder her, wenn sie nach einem Artistflow-Sync auf alten
-            Event-Duplikaten hängen geblieben sind.
+            Stellt alle Termine aus <strong>termine.json</strong> wieder sichtbar her — ohne Events
+            zu löschen. Teilnahmen und Reiseinfos bleiben erhalten und werden verknüpft.
           </p>
           <button
             type="button"
             disabled={busy}
-            onClick={runRepair}
-            className="inline-flex h-12 w-full max-w-md items-center justify-center gap-2 rounded-xl border-2 border-amber-500 bg-amber-500 text-sm font-bold text-white shadow-md hover:bg-amber-600 disabled:opacity-60"
+            onClick={runRestore}
+            className="inline-flex h-12 w-full max-w-md items-center justify-center gap-2 rounded-xl border-2 border-emerald-600 bg-emerald-600 text-sm font-bold text-white shadow-md hover:bg-emerald-700 disabled:opacity-60"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-            Jetzt reparieren
+            Alle Events wiederherstellen
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={runRepair}
+            className="inline-flex h-10 w-full max-w-md items-center justify-center gap-2 rounded-xl border border-emerald-400 bg-white text-sm font-semibold text-emerald-900 hover:bg-emerald-100 disabled:opacity-60"
+          >
+            Nur Teilnehmer & Pins verknüpfen
           </button>
         </CardContent>
       </Card>
@@ -172,7 +193,7 @@ export function EventsSyncPanel({
                 type="button"
                 disabled={busy}
                 onClick={runSync}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 disabled:opacity-60"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm hover:bg-fc-blue disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                 {busy ? "Sync läuft…" : "Sync starten"}
@@ -186,10 +207,23 @@ export function EventsSyncPanel({
                 Karten-Pins nachholen
               </button>
             </div>
-            <p className="mt-2 text-xs text-slate-500">
-              Unveränderte Events werden nicht überschrieben. Teilnahmen und Reiseinfos bleiben
-              erhalten — nur bei Terminänderung werden Teilnehmer zurückgesetzt.
-            </p>
+            <div className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2.5 text-xs text-emerald-950">
+              <p className="font-semibold">Sync ist sicher — nichts wird gelöscht</p>
+              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-emerald-900">
+                <li>Events werden <strong>nicht gelöscht</strong>, nur bei Bedarf ausgeblendet.</li>
+                <li>
+                  <strong>Teilnahmen & Reiseinfos</strong> bleiben erhalten und werden automatisch
+                  verknüpft.
+                </li>
+                <li>
+                  Unveränderte Termine werden <strong>übersprungen</strong> (kein Datenverlust).
+                </li>
+                <li>
+                  Nur wenn sich ein <strong>Datum</strong> im Feed ändert, werden Teilnehmer für
+                  diesen einen Termin zurückgesetzt.
+                </li>
+              </ul>
+            </div>
             <div className="mt-3 grid gap-2 text-sm text-slate-600">
               <p>
                 Feed URL: <span className="font-mono">ARTISTFLOW_FEED_URL</span>
@@ -257,6 +291,45 @@ export function EventsSyncPanel({
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-4 border-fc-sky/30 bg-fc-ice/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base text-fc-navy">Benachrichtigungen testen</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm text-fc-navy">
+          <p>
+            Mitglieder (und Admins) erhalten eine Glocke-Benachrichtigung, wenn ein Event{" "}
+            <strong>neu sichtbar</strong> wird — z. B. frisch aus dem Feed oder nach
+            Wiederherstellung.
+          </p>
+          <ol className="list-decimal space-y-1 pl-5 text-xs text-fc-navy">
+            <li>
+              <strong>Sync starten</strong> (nicht nur „Verknüpfen“) und im Status prüfen:{" "}
+              <code className="rounded bg-white/80 px-1">neu</code> oder sichtbar gewordene Events.
+            </li>
+            <li>
+              In Supabase:{" "}
+              <code className="rounded bg-white/80 px-1">
+                SELECT kind, title, created_at FROM user_notifications WHERE kind =
+                &apos;event_available&apos; ORDER BY created_at DESC LIMIT 10
+              </code>
+            </li>
+            <li>
+              Als aktives Mitglied einloggen → Glocke öffnen (Badge erscheint spätestens nach 30 s
+              oder sofort beim Öffnen).
+            </li>
+            <li>
+              Bereits benachrichtigte Events werden nicht erneut gemeldet (gleiche Event-ID).
+            </li>
+          </ol>
+          <p className="text-xs text-fc-blue">
+            Hinweis: Benachrichtigungen gehen an <strong>aktive Mitgliedschaften</strong> (Admins
+            inklusive nach Migration 065). Die Tabelle{" "}
+            <code className="rounded bg-white/80 px-1">user_notifications</code> muss existieren
+            (Migration 059).
+          </p>
+        </CardContent>
+      </Card>
     </>
   );
 }

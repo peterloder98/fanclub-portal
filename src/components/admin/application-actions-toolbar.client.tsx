@@ -92,7 +92,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
                 setError(null);
                 setShowApproveDialog(true);
               }}
-              className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+              className="fc-btn-primary h-10 disabled:opacity-50"
             >
               Freigeben
             </button>
@@ -105,7 +105,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
                   if (ok) setShowPaymentDialog(true);
                 });
               }}
-              className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+              className="fc-btn-secondary h-10 disabled:opacity-50"
             >
               Zahlungserinnerung
             </button>
@@ -117,7 +117,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
                 setError(null);
                 setShowRejectDialog(true);
               }}
-              className="h-10 rounded-xl border border-amber-200 bg-amber-50 px-4 text-sm font-semibold text-amber-900 disabled:opacity-50"
+              className="fc-action-warn inline-flex h-10 items-center rounded-xl bg-white px-4 text-sm font-semibold disabled:opacity-50"
             >
               Ablehnen
             </button>
@@ -146,16 +146,16 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
               }
             });
           }}
-          className="h-10 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 disabled:opacity-50"
+          className="fc-action-delete inline-flex h-10 items-center rounded-xl bg-white px-4 text-sm font-semibold disabled:opacity-50"
         >
           Löschen
         </button>
       </div>
 
       {showApproveDialog ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-fc-navy/40 p-4">
           <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Antrag freigeben</h3>
+            <h3 className="text-base font-semibold text-fc-navy">Antrag freigeben</h3>
             <p className="mt-1 text-sm text-slate-600">
               {app.first_name} {app.last_name} — Status wird auf „aktiv“ gesetzt. Mitgliedsnummer
               und Vertrag-PDF werden automatisch ergänzt.
@@ -171,7 +171,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
               <button
                 type="button"
                 disabled={pending}
-                className="h-10 rounded-xl bg-emerald-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                className="fc-btn-primary h-10 disabled:opacity-50"
                 onClick={() => {
                   startTransition(async () => {
                     try {
@@ -193,9 +193,9 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
       ) : null}
 
       {showRejectDialog ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-4">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-fc-navy/40 p-4">
           <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
-            <h3 className="text-base font-semibold text-slate-900">Antrag ablehnen</h3>
+            <h3 className="text-base font-semibold text-fc-navy">Antrag ablehnen</h3>
             <p className="mt-1 text-sm text-slate-600">
               {app.first_name} {app.last_name} — Status wird auf „abgelehnt“ gesetzt.
             </p>
@@ -219,7 +219,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
               <button
                 type="button"
                 disabled={pending}
-                className="h-10 rounded-xl bg-amber-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
+                className="inline-flex h-10 items-center rounded-xl bg-amber-700 px-4 text-sm font-semibold text-white disabled:opacity-50"
                 onClick={() => {
                   startTransition(async () => {
                     try {
@@ -252,7 +252,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
             <button
               type="button"
               disabled={pending || paymentLoading || !paymentSignatureId}
-              className="h-10 rounded-xl bg-slate-900 px-4 text-sm font-semibold text-white disabled:opacity-50"
+              className="fc-btn-primary h-10 disabled:opacity-50"
               onClick={() => {
                 startTransition(async () => {
                   try {

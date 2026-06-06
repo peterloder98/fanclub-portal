@@ -43,7 +43,7 @@ export function PollVoteStats({
   );
 
   const myVoteBadge = showMyVote ? (
-    <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-800">
+    <span className="rounded-md bg-fc-ice px-1.5 py-0.5 text-[10px] font-semibold text-fc-navy">
       Meine Stimme
     </span>
   ) : reserveMyVoteSlot && compact ? (

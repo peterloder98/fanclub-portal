@@ -15,11 +15,11 @@ export default async function AdminSpotifySettingsPage() {
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
         <div className="mt-4 grid max-w-2xl gap-4">
-          <Card className="border-blue-200 bg-blue-50/40">
+          <Card className="border-fc-sky/30 bg-fc-ice/40">
             <CardHeader>
-              <CardTitle className="text-base text-blue-950">Zwei verschiedene Orte</CardTitle>
+              <CardTitle className="text-base text-fc-navy">Zwei verschiedene Orte</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-blue-950">
+            <CardContent className="space-y-3 text-sm text-fc-navy">
               <p>
                 <strong>„Admin → Spotify“</strong> ist diese Seite hier im Fanclub-Portal (
                 <code className="text-xs">/admin/settings/spotify</code>
@@ -85,7 +85,7 @@ export default async function AdminSpotifySettingsPage() {
                     href="https://developer.spotify.com/documentation/web-api/concepts/quota-modes"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-medium text-blue-700 underline"
+                    className="font-medium text-fc-blue underline"
                   >
                     Quota modes (Spotify)
                   </a>

@@ -79,7 +79,7 @@ const fieldInputClass =
   "h-11 w-full rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]";
 const fieldLabelClass = "text-sm font-medium text-slate-700";
 const primaryButtonClass =
-  "h-11 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50";
+  "h-11 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-50";
 
 function SectionHeading({
   icon: Icon,
@@ -232,7 +232,7 @@ function ActivityHistorySection({ rows }: { rows: MemberActivityRow[] }) {
                   {r.link_url ? (
                     <a
                       href={r.link_url}
-                      className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+                      className="mt-1 inline-block text-xs font-medium text-fc-blue hover:underline"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -695,7 +695,7 @@ export function ProfilePageClient() {
               >
                 <Link
                   href="/admin/signatures"
-                  className="inline-flex h-11 items-center rounded-xl border px-4 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                  className="inline-flex h-11 items-center rounded-xl border px-4 text-sm font-semibold text-fc-blue hover:bg-fc-ice"
                 >
                   Zu Admin · Signaturen →
                 </Link>
