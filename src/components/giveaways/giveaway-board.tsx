@@ -162,6 +162,7 @@ export function GiveawayBoard({
                       <RunningCountdownBadge
                         endsAt={g.ends_at}
                         paused={g.isPaused}
+                        forceEnded={phase !== "active"}
                         className="mb-2 max-w-full justify-start"
                       />
                       <div className="flex min-w-0 flex-wrap items-center gap-2">

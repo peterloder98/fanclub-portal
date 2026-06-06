@@ -21,11 +21,22 @@ export async function awardShopOrderStars(orderId: string): Promise<{ awarded: b
 
   const { data: order } = await admin
     .from("merchandise_orders")
-    .select("id,user_id,status,total_cents")
+    .select("id,user_id,status,total_cents,payment_id,payment_status")
     .eq("id", orderId)
     .maybeSingle();
 
-  if (!order || order.status !== "shipped") return { awarded: false, stars: 0 };
+  if (!order) return { awarded: false, stars: 0 };
+
+  const hasPaymentSystem = Boolean((order as { payment_id?: string | null }).payment_id);
+  const paymentPaid = (order as { payment_status?: string }).payment_status === "paid";
+
+  // Neue Bestellungen: Stars erst nach manueller Zahlungsbestätigung
+  if (hasPaymentSystem) {
+    if (!paymentPaid) return { awarded: false, stars: 0 };
+  } else if (order.status !== "shipped") {
+    // Legacy-Bestellungen ohne Payment: weiterhin bei Versand
+    return { awarded: false, stars: 0 };
+  }
 
   const stars = starsForOrderTotalCents(order.total_cents);
   if (stars <= 0) return { awarded: false, stars: 0 };

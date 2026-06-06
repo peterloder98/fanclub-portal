@@ -25,6 +25,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { PreferredCalendarSettings } from "@/components/profile/preferred-calendar-settings";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
+import { MembershipPaymentPanel } from "@/components/payments/membership-payment-panel";
 import {
   AVATAR_ACCEPT,
   AVATAR_MIN_DIMENSION,
@@ -670,6 +671,12 @@ export function ProfilePageClient() {
                     </>
                   ) : null}
                 </dl>
+                {contribution && contribution.status !== "paid" && membership?.fee_cents != null ? (
+                  <MembershipPaymentPanel
+                    openCents={contribution.openCents}
+                    feeCents={membership.fee_cents}
+                  />
+                ) : null}
               </ProfileSection>
 
               <PasswordSection />

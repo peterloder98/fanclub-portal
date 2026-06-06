@@ -9,6 +9,10 @@ import { notifyAdminsMerchandiseOrder } from "@/lib/email/merchandise-order-noti
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
+import { createPaymentWithAccounting } from "@/lib/payments/payment-service";
+import type { PaymentMethod } from "@/lib/payments/types";
+
+const paymentMethodSchema = z.enum(["bank_transfer", "paypal", "stripe"]);
 
 const cartLineSchema = z.object({
   productId: z.string().uuid(),
@@ -26,6 +30,7 @@ const orderSchema = z.object({
   buyerPostalCode: z.string().min(1),
   buyerCity: z.string().min(1),
   buyerCountry: z.string().optional(),
+  paymentMethod: paymentMethodSchema,
 });
 
 export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) {
@@ -190,7 +195,19 @@ export async function placeMerchandiseOrder(input: z.infer<typeof orderSchema>) 
     metadata: { order_id: order!.id },
   }).catch(console.error);
 
+  const paymentMethod = parsed.paymentMethod as PaymentMethod;
+  const paymentResult = await createPaymentWithAccounting({
+    userId: user.id,
+    amountCents: totalCents,
+    paymentType: "shop_order",
+    paymentMethod,
+    orderId: order!.id,
+    description: `Merchandise-Bestellung`,
+  });
+
   revalidatePath("/merchandise");
   revalidatePath("/admin/merchandise");
-  return { ok: true, orderId: order!.id };
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/accounting");
+  return { ok: true, orderId: order!.id, payment: paymentResult };
 }

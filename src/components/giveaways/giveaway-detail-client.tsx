@@ -146,6 +146,8 @@ export function GiveawayDetailClient({
     userId &&
     !adminEditingGiveaway;
   const showWinnerReveal = localStatus === "drawn" && localWinners.length > 0;
+  const detailPhase = giveawayPhase(giveaway.ends_at, localStatus, giveaway.is_paused);
+  const showDiscussion = detailPhase === "active" || detailPhase === "paused";
 
   useEffect(() => {
     if (!celebrateDraw) return;
@@ -348,6 +350,7 @@ export function GiveawayDetailClient({
               endsAt={giveaway.ends_at}
               paused={giveaway.is_paused}
               pausedLabel="Pausiert"
+              forceEnded={phase === "ended" || phase === "drawn"}
               className="mb-2 max-w-full justify-start"
             />
           ) : null}
@@ -533,76 +536,78 @@ export function GiveawayDetailClient({
             </div>
           ) : null}
 
-          {showWinnerReveal ? (
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Diskussion</p>
-          ) : null}
-
-          <div className={cn("flex items-center gap-2", showWinnerReveal ? "" : "border-t pt-3")}>
-            <button
-              type="button"
-              onClick={(e) => void toggleLike(e.currentTarget)}
-              className={cn(
-                "inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium",
-                likes.mine ? "bg-rose-50 text-rose-700" : "text-slate-600 hover:bg-slate-50",
-              )}
-            >
-              <Heart className={cn("h-3.5 w-3.5", likes.mine && "fill-rose-600 text-rose-600")} />
-              {likes.count || "Like"}
-            </button>
-            <span className="text-xs text-slate-500">
-              <MessageCircle className="mr-0.5 inline h-3.5 w-3.5" />
-              {commentList.length} Kommentare
-            </span>
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              value={commentDraft}
-              onChange={(e) => setCommentDraft(e.target.value)}
-              placeholder="Kommentieren…"
-              className="h-9 flex-1 rounded-lg border px-2 text-sm"
-            />
-            <button
-              type="button"
-              onClick={() => void addComment()}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-fc-navy text-white"
-              aria-label="Senden"
-            >
-              <SendHorizontal className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          {commentList.length ? (
-            <div className="grid gap-2">
-              {commentList.map((c) => (
-                <div key={c.id} className="flex gap-2 text-sm">
-                  <HoverEnlargeAvatar
-                    name={c.authorName}
-                    avatarUrl={c.authorAvatarUrl}
-                    size="sm"
-                    className="shrink-0"
+          {showDiscussion ? (
+            <>
+              <div className="flex items-center gap-2 border-t pt-3">
+                <button
+                  type="button"
+                  onClick={(e) => void toggleLike(e.currentTarget)}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1 rounded-md px-2 text-xs font-medium",
+                    likes.mine ? "bg-rose-50 text-rose-700" : "text-slate-600 hover:bg-slate-50",
+                  )}
+                >
+                  <Heart
+                    className={cn("h-3.5 w-3.5", likes.mine && "fill-rose-600 text-rose-600")}
                   />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1 pr-2">
-                      <span className="text-xs font-semibold">{c.authorName}</span>
-                      <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>
-                      {isAdmin ? (
-                        <div className="ml-auto shrink-0">
-                          <CommentWarningButton
-                            commentType="giveaway"
-                            commentId={c.id}
-                            onRemoved={() =>
-                              setCommentList((list) => list.filter((x) => x.id !== c.id))
-                            }
-                          />
+                  {likes.count || "Like"}
+                </button>
+                <span className="text-xs text-slate-500">
+                  <MessageCircle className="mr-0.5 inline h-3.5 w-3.5" />
+                  {commentList.length} Kommentare
+                </span>
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  value={commentDraft}
+                  onChange={(e) => setCommentDraft(e.target.value)}
+                  placeholder="Kommentieren…"
+                  className="h-9 flex-1 rounded-lg border px-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => void addComment()}
+                  className="grid h-9 w-9 place-items-center rounded-lg bg-fc-navy text-white"
+                  aria-label="Senden"
+                >
+                  <SendHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
+              {commentList.length ? (
+                <div className="grid gap-2">
+                  {commentList.map((c) => (
+                    <div key={c.id} className="flex gap-2 text-sm">
+                      <HoverEnlargeAvatar
+                        name={c.authorName}
+                        avatarUrl={c.authorAvatarUrl}
+                        size="sm"
+                        className="shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1 pr-2">
+                          <span className="text-xs font-semibold">{c.authorName}</span>
+                          <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>
+                          {isAdmin ? (
+                            <div className="ml-auto shrink-0">
+                              <CommentWarningButton
+                                commentType="giveaway"
+                                commentId={c.id}
+                                onRemoved={() =>
+                                  setCommentList((list) => list.filter((x) => x.id !== c.id))
+                                }
+                              />
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
+                        <p className="text-slate-700">{c.body}</p>
+                      </div>
                     </div>
-                    <p className="text-slate-700">{c.body}</p>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              ) : null}
+            </>
           ) : null}
         </CardContent>
       </Card>

@@ -214,7 +214,15 @@ export async function updateMerchandiseOrderStatusAction(input: {
   }).catch(() => {});
 
   if (parsed === "shipped") {
-    await awardShopOrderStars(input.orderId).catch(() => {});
+    // Stars bei Payment-Bestellungen erst nach Zahlungsbestätigung (payment-service)
+    const { data: orderPay } = await admin
+      .from("merchandise_orders")
+      .select("payment_id")
+      .eq("id", input.orderId)
+      .maybeSingle();
+    if (!orderPay?.payment_id) {
+      await awardShopOrderStars(input.orderId).catch(() => {});
+    }
   } else {
     await revokeShopOrderStars(input.orderId).catch(() => {});
   }

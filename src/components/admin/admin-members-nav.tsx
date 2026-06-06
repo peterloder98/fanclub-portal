@@ -7,13 +7,14 @@ import { cn } from "@/lib/cn";
 
 const items = [
   { id: "members" as const, label: "Mitglieder", href: "/admin/members" },
+  { id: "payments" as const, label: "Zahlungen", href: "/admin/payments" },
   { id: "accounting" as const, label: "Buchhaltung", href: "/admin/accounting" },
 ];
 
 export function AdminMembersNav({
   active,
 }: {
-  active: "members" | "accounting";
+  active: "members" | "payments" | "accounting";
 }) {
   const pathname = usePathname();
   const [pendingHref, setPendingHref] = useState<string | null>(null);

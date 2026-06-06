@@ -21,7 +21,11 @@ import {
   loadShopProfileAction,
   type ShopProduct,
 } from "@/app/(app)/merchandise/shop-actions";
+import { listPaymentMethodsAction } from "@/app/(app)/payments/actions";
+import { PaymentMethodPicker } from "@/components/payments/payment-method-picker";
+import { PaymentConfirmation } from "@/components/payments/payment-confirmation";
 import { stockBadge, stockBadgeLabel } from "@/lib/merchandise/stock-label";
+import type { PaymentCheckoutResult, PaymentMethod, PaymentSettingsRow } from "@/lib/payments/types";
 
 type CartLine = {
   productId: string;
@@ -355,6 +359,9 @@ export function MerchandiseShop() {
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentSettingsRow[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [paymentResult, setPaymentResult] = useState<PaymentCheckoutResult | null>(null);
 
   const selectedProduct = products.find((p) => p.id === selectedProductId) ?? null;
 
@@ -363,10 +370,14 @@ export function MerchandiseShop() {
     void (async () => {
       setLoading(true);
       try {
-        const [shop, profile] = await Promise.all([
+        const [shop, profile, methods] = await Promise.all([
           listShopProductsAction(),
           loadShopProfileAction(),
+          listPaymentMethodsAction().catch(() => []),
         ]);
+        setPaymentMethods(
+          methods.map((m) => ({ ...m, public_config_json: {} })),
+        );
         setTableMissing(shop.tableMissing);
         setProducts(shop.products);
         if (profile) {
@@ -424,11 +435,15 @@ export function MerchandiseShop() {
   }
 
   function placeOrder() {
+    if (!paymentMethod) {
+      setError("Bitte Zahlungsart wählen.");
+      return;
+    }
     setError(null);
     setSuccess(null);
     startTransition(async () => {
       try {
-        await placeMerchandiseOrder({
+        const res = await placeMerchandiseOrder({
           lines: cart.map((l) => ({
             productId: l.productId,
             variantId: l.variantId,
@@ -441,11 +456,14 @@ export function MerchandiseShop() {
           buyerStreet: street,
           buyerPostalCode: postalCode,
           buyerCity: city,
+          paymentMethod,
         });
         updateCart([]);
+        setPaymentResult(res.payment);
+        setPaymentMethod(null);
         setView("catalog");
         setSelectedProductId(null);
-        setSuccess("Danke! Deine Bestellung ist eingegangen. Der Vorstand meldet sich bei dir.");
+        setSuccess("Bestellung eingegangen — Zahlung offen. Der Vorstand prüft die Zahlung manuell.");
         const shop = await listShopProductsAction();
         setProducts(shop.products);
         router.refresh();
@@ -477,8 +495,8 @@ export function MerchandiseShop() {
               Merchandise entdecken & bestellen
             </h1>
             <p className="mt-2 text-sm text-slate-300">
-              Schau dir Artikel in Ruhe an, wähle Größe und Menge — erst dann legst du bewusst in
-              den Warenkorb. Versand und Zahlung klärt der Vorstand mit dir.
+              Schau dir Artikel in Ruhe an, wähle Größe und Menge — Zahlung per Überweisung, PayPal
+              oder Stripe (Testmodus). Der Vorstand bestätigt Zahlungen manuell.
             </p>
           </div>
           <button
@@ -511,6 +529,9 @@ export function MerchandiseShop() {
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           {success}
         </div>
+      ) : null}
+      {paymentResult ? (
+        <PaymentConfirmation result={paymentResult} />
       ) : null}
       {addNotice ? (
         <div className="flex items-center gap-2 rounded-xl border border-fc-sky/30 bg-fc-ice px-4 py-3 text-sm text-blue-900">
@@ -709,6 +730,15 @@ export function MerchandiseShop() {
                   </label>
                 </div>
 
+                {paymentMethods.length ? (
+                  <PaymentMethodPicker
+                    methods={paymentMethods}
+                    value={paymentMethod}
+                    onChange={setPaymentMethod}
+                    disabled={pending}
+                  />
+                ) : null}
+
                 <button
                   type="button"
                   disabled={
@@ -719,12 +749,19 @@ export function MerchandiseShop() {
                     !email ||
                     !street ||
                     !postalCode ||
-                    !city
+                    !city ||
+                    !paymentMethod
                   }
                   onClick={placeOrder}
                   className="h-12 w-full rounded-xl bg-fc-navy text-sm font-bold text-white disabled:opacity-50 sm:max-w-xs"
                 >
-                  {pending ? "Bestellung wird gesendet…" : "Jetzt bestellen"}
+                  {pending
+                    ? "Bestellung wird gesendet…"
+                    : paymentMethod === "paypal"
+                      ? "Mit PayPal bezahlen (Testmodus)"
+                      : paymentMethod === "stripe"
+                        ? "Mit Stripe bezahlen (Testmodus)"
+                        : "Jetzt bestellen"}
                 </button>
               </CardContent>
             </Card>

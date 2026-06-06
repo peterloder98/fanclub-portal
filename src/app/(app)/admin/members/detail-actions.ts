@@ -568,9 +568,22 @@ export async function deleteClubLedgerEntry(entryId: string) {
   return { ok: true };
 }
 
-export async function exportClubLedgerCsvAction() {
+export async function exportClubLedgerCsvAction(opts?: {
+  mode?: "all" | "paid" | "open";
+}) {
   await requireAdminAction();
   const rows = await listClubLedger({ limit: 5000 });
-  const csv = buildLedgerCsv(rows);
-  return { csv, filename: `buchhaltung-export-${new Date().toISOString().slice(0, 10)}.csv` };
+  const mode = opts?.mode ?? "paid";
+  const csv =
+    mode === "open"
+      ? buildLedgerCsv(rows, { openOnly: true })
+      : mode === "paid"
+        ? buildLedgerCsv(rows, { paidOnly: true })
+        : buildLedgerCsv(rows);
+  const suffix =
+    mode === "open" ? "offene-posten" : mode === "paid" ? "bestaetigt" : "gesamt";
+  return {
+    csv,
+    filename: `buchhaltung-${suffix}-${new Date().toISOString().slice(0, 10)}.csv`,
+  };
 }

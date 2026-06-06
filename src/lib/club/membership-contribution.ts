@@ -85,7 +85,7 @@ async function loadMembershipPaymentsForUsers(
     const chunk = userIds.slice(i, i + CHUNK);
     const { data, error } = await admin
       .from("club_ledger_entries")
-      .select("member_id,amount_cents,entry_date")
+      .select("member_id,amount_cents,entry_date,bookkeeping_status")
       .in("member_id", chunk)
       .eq("entry_type", "income")
       .eq("category", "membership");
@@ -95,6 +95,8 @@ async function loadMembershipPaymentsForUsers(
     }
     for (const row of data ?? []) {
       if (!row.member_id) continue;
+      const status = (row as { bookkeeping_status?: string | null }).bookkeeping_status;
+      if (status === "open" || status === "cancelled") continue;
       if (!map.has(row.member_id)) map.set(row.member_id, []);
       map.get(row.member_id)!.push(row as MembershipPaymentRow);
     }

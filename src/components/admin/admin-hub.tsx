@@ -17,6 +17,7 @@ import {
   Shield,
   Users,
   Wallet,
+  CreditCard,
   ShoppingBag,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -68,9 +69,15 @@ const SECTIONS: AdminHubSection[] = [
         icon: UserPlus,
       },
       {
+        href: "/admin/payments",
+        title: "Zahlungen",
+        description: "Offene Posten, Testmodus PayPal/Stripe, manuelle Freigabe.",
+        icon: CreditCard,
+      },
+      {
         href: "/admin/accounting",
         title: "Buchhaltung",
-        description: "Einnahmen, Ausgaben und Zahlungen pro Mitglied.",
+        description: "Einnahmen, Ausgaben und bestätigte Buchungen.",
         icon: Wallet,
       },
       {

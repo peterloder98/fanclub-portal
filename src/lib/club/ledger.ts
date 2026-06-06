@@ -8,6 +8,8 @@ export type LedgerCategory =
   | "general"
   | "other";
 
+export type BookkeepingStatus = "open" | "paid" | "cancelled";
+
 export type ClubLedgerRow = {
   id: string;
   entry_number: string | null;
@@ -22,6 +24,8 @@ export type ClubLedgerRow = {
   created_by_name: string | null;
   receipt_storage_path: string | null;
   activity_log_id: string | null;
+  payment_id: string | null;
+  bookkeeping_status: BookkeepingStatus | null;
 };
 
 export const LEDGER_CATEGORY_LABELS: Record<LedgerCategory, string> = {
@@ -84,7 +88,7 @@ export async function listClubLedger(opts?: {
   let q = admin
     .from("club_ledger_entries")
     .select(
-      "id,entry_number,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id",
+      "id,entry_number,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id,payment_id,bookkeeping_status",
     )
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -136,7 +140,16 @@ export async function listClubLedger(opts?: {
     created_by_name: r.created_by ? (nameById.get(r.created_by) ?? null) : null,
     receipt_storage_path: (r as { receipt_storage_path?: string | null }).receipt_storage_path ?? null,
     activity_log_id: (r as { activity_log_id?: string | null }).activity_log_id ?? null,
+    payment_id: (r as { payment_id?: string | null }).payment_id ?? null,
+    bookkeeping_status:
+      ((r as { bookkeeping_status?: BookkeepingStatus | null }).bookkeeping_status ??
+        "paid") as BookkeepingStatus,
   }));
+}
+
+export function isConfirmedLedgerIncome(row: Pick<ClubLedgerRow, "entry_type" | "bookkeeping_status">) {
+  if (row.entry_type !== "income") return true;
+  return row.bookkeeping_status !== "open" && row.bookkeeping_status !== "cancelled";
 }
 
 export async function sumClubLedger(): Promise<{

@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 export function RunningCountdownBadge({
   endsAt,
   paused = false,
+  forceEnded = false,
   endedLabel = "Beendet",
   runningPrefix = "Läuft noch",
   pausedLabel = "Pausiert",
@@ -15,6 +16,8 @@ export function RunningCountdownBadge({
 }: {
   endsAt: string;
   paused?: boolean;
+  /** Status beendet/ausgelost — auch wenn ends_at noch in der Zukunft liegt */
+  forceEnded?: boolean;
   endedLabel?: string;
   runningPrefix?: string;
   pausedLabel?: string;
@@ -23,6 +26,7 @@ export function RunningCountdownBadge({
   className?: string;
 }) {
   const { ended, text } = useCountdown(endsAt);
+  const showEnded = forceEnded || ended;
 
   if (paused) {
     return (
@@ -32,7 +36,7 @@ export function RunningCountdownBadge({
     );
   }
 
-  if (ended) {
+  if (showEnded) {
     return (
       <Badge variant="neutral" className={className}>
         {endedLabel}

@@ -232,10 +232,10 @@ export function ClubAccountingPanel({
     [entries, filterYear],
   );
 
-  function handleExportCsv() {
+  function handleExportCsv(mode: "paid" | "open" | "all" = "paid") {
     startTransition(async () => {
       try {
-        const { csv, filename } = await exportClubLedgerCsvAction();
+        const { csv, filename } = await exportClubLedgerCsvAction({ mode });
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -364,10 +364,18 @@ export function ClubAccountingPanel({
           <button
             type="button"
             disabled={pending || entries.length === 0}
-            onClick={handleExportCsv}
+            onClick={() => handleExportCsv("paid")}
             className="ml-auto h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
           >
-            CSV-Export (Steuerberater)
+            CSV bestätigt (Steuerberater)
+          </button>
+          <button
+            type="button"
+            disabled={pending || entries.length === 0}
+            onClick={() => handleExportCsv("open")}
+            className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+          >
+            CSV offene Posten
           </button>
         </CardContent>
       </Card>

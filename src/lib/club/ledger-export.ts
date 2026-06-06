@@ -2,11 +2,13 @@ import {
   filterLedgerByPeriod,
   formatEur,
   formatLedgerEntryNumber,
+  isConfirmedLedgerIncome,
   LEDGER_CATEGORY_LABELS,
   sumLedgerRows,
   type ClubLedgerRow,
   type LedgerPeriodMode,
 } from "@/lib/club/ledger";
+import { BOOKKEEPING_STATUS_LABELS } from "@/lib/payments/labels";
 
 function csvEscape(value: string) {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -19,26 +21,40 @@ function formatDE(date: string) {
   return `${d}.${m}.${y}`;
 }
 
-export function buildLedgerCsv(rows: ClubLedgerRow[]) {
+function bookkeepingLabel(r: ClubLedgerRow) {
+  if (!r.payment_id) return "manuell";
+  return BOOKKEEPING_STATUS_LABELS[r.bookkeeping_status ?? "paid"] ?? r.bookkeeping_status ?? "";
+}
+
+export function buildLedgerCsv(rows: ClubLedgerRow[], opts?: { openOnly?: boolean; paidOnly?: boolean }) {
+  let filtered = rows;
+  if (opts?.openOnly) {
+    filtered = rows.filter((r) => r.bookkeeping_status === "open");
+  } else if (opts?.paidOnly) {
+    filtered = rows.filter((r) => isConfirmedLedgerIncome(r) || r.entry_type === "expense");
+  }
+
   const header = [
     "Vorgangsnummer",
     "Datum",
     "Art",
     "Betrag_EUR",
     "Kategorie",
+    "Buchungsstatus",
     "Beschreibung",
     "Mitglied",
     "Beleg",
     "Angelegt_von",
   ].join(";");
 
-  const lines = rows.map((r) =>
+  const lines = filtered.map((r) =>
     [
       formatLedgerEntryNumber(r.entry_number),
       formatDE(r.entry_date),
       r.entry_type === "income" ? "Einnahme" : "Ausgabe",
       (r.amount_cents / 100).toFixed(2).replace(".", ","),
       LEDGER_CATEGORY_LABELS[r.category],
+      bookkeepingLabel(r),
       r.description,
       r.member_name ?? "",
       r.receipt_storage_path ? "ja" : "nein",

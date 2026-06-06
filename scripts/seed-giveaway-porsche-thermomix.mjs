@@ -87,8 +87,7 @@ async function main() {
   await removeExistingGiveaway();
 
   const { iso: endsAt, label: endsLabel } = endsAtTodayBerlin945();
-  // Testdaten mit vorgefüllten Teilnahmen → direkt auslosbar
-  const status = "ended";
+  const status = new Date(endsAt).getTime() <= Date.now() ? "ended" : "active";
 
   const { data: giveaway, error: gErr } = await admin
     .from("giveaways")
