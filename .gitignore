@@ -21,6 +21,7 @@
 /build
 
 # misc
+tmp-membership-calibration.pdf
 .DS_Store
 *.pem
 
