@@ -43,6 +43,8 @@ export type ApplicationDetailData = {
   whatsapp_opt_in: boolean;
   whatsapp_dial_code: string | null;
   whatsapp_number: string | null;
+  instagram: string | null;
+  facebook: string | null;
   fee_cents: number | null;
   media_consent: boolean;
   signed_at_place: string;
@@ -175,6 +177,8 @@ export function ApplicationDetailPanels({
                 : "Nein"
             }
           />
+          <Field label="Instagram" value={app.instagram ?? "—"} />
+          <Field label="Facebook" value={app.facebook ?? "—"} />
           <Field
             label="Beitrag"
             value={`${((app.fee_cents ?? 1500) / 100).toFixed(2)} EUR`}

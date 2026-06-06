@@ -53,6 +53,8 @@ const schema = z
     signed_at_date: z.string().min(1),
     signature_applicant: z.string().min(1),
     referrer_user_id: z.string().uuid().optional(),
+    instagram: z.string().max(120).optional(),
+    facebook: z.string().max(120).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.whatsapp_opt_in) {
@@ -191,6 +193,8 @@ export async function POST(request: Request) {
       whatsapp_opt_in: input.whatsapp_opt_in,
       whatsapp_dial_code: input.whatsapp_opt_in ? input.whatsapp_dial_code?.trim() ?? null : null,
       whatsapp_number: input.whatsapp_opt_in ? input.whatsapp_number?.trim() ?? null : null,
+      instagram: input.instagram?.trim() || null,
+      facebook: input.facebook?.trim() || null,
       fee_cents: 1500,
       signature_applicant_path: applicantPath,
       signature_guardian_path: null,

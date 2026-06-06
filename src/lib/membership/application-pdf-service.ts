@@ -56,6 +56,8 @@ async function buildPdfForApplication(
     whatsapp_number: row.whatsapp_number,
     signed_at_place: row.signed_at_place,
     signed_at_date: row.signed_at_date,
+    instagram: row.instagram,
+    facebook: row.facebook,
   };
 
   return generateMembershipPdf(data, signaturePng);

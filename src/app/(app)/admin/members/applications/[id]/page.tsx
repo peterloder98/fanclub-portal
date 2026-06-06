@@ -98,6 +98,8 @@ export default async function AdminMembershipApplicationPage({
     whatsapp_opt_in: app.whatsapp_opt_in,
     whatsapp_dial_code: app.whatsapp_dial_code,
     whatsapp_number: app.whatsapp_number,
+    instagram: app.instagram,
+    facebook: app.facebook,
     fee_cents: app.fee_cents,
     media_consent: app.media_consent,
     signed_at_place: app.signed_at_place,

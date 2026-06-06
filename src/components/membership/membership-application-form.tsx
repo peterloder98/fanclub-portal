@@ -72,6 +72,8 @@ export function MembershipApplicationForm() {
     statute_accepted: false,
     media_consent: false,
     whatsapp_opt_in: false,
+    instagram: "",
+    facebook: "",
   });
   const [mobileDial, setMobileDial] = useState(PHONE_COUNTRIES[0].dial);
   const [mobileNumber, setMobileNumber] = useState("");
@@ -108,7 +110,6 @@ export function MembershipApplicationForm() {
   }, []);
 
   const mobileFull = formatFullPhone(mobileDial, mobileNumber);
-  const whatsappFull = formatFullPhone(whatsappDial, whatsappNumber);
 
   const displayName = useMemo(
     () => `${form.first_name} ${form.last_name}`.trim(),
@@ -194,6 +195,8 @@ export function MembershipApplicationForm() {
           mobile_number: mobileNumber,
           whatsapp_dial_code: form.whatsapp_opt_in ? whatsappDial : undefined,
           whatsapp_number: form.whatsapp_opt_in ? whatsappNumber : undefined,
+          instagram: form.instagram.trim() || undefined,
+          facebook: form.facebook.trim() || undefined,
           privacy_accepted: true,
           statute_accepted: true,
           signature_applicant: signature,
@@ -399,6 +402,32 @@ export function MembershipApplicationForm() {
               className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
             />
           </label>
+          <label className="grid gap-1">
+            <span className="text-sm font-medium text-slate-700">
+              Instagram <span className="font-normal text-slate-500">(optional)</span>
+            </span>
+            <input
+              value={form.instagram}
+              onChange={(e) => setForm((f) => ({ ...f, instagram: e.target.value }))}
+              placeholder="z. B. @anni.perka.fan"
+              autoComplete="off"
+              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+            />
+            <span className="text-xs text-slate-500">Dein Instagram-Name für Verlinkungen im Fanclub</span>
+          </label>
+          <label className="grid gap-1">
+            <span className="text-sm font-medium text-slate-700">
+              Facebook <span className="font-normal text-slate-500">(optional)</span>
+            </span>
+            <input
+              value={form.facebook}
+              onChange={(e) => setForm((f) => ({ ...f, facebook: e.target.value }))}
+              placeholder="z. B. Max Mustermann"
+              autoComplete="off"
+              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+            />
+            <span className="text-xs text-slate-500">Dein Facebook-Profilname für Verlinkungen im Fanclub</span>
+          </label>
         </CardContent>
       </Card>
 
@@ -434,87 +463,128 @@ export function MembershipApplicationForm() {
         <CardContent className="grid gap-5">
           {contractPreview}
 
-          <div className="space-y-3 border-t border-slate-100 pt-4">
+          <div className="space-y-4 border-t border-slate-100 pt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Bestätigungen
             </p>
 
-          <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/50 p-4">
-            <label className="flex items-start gap-3 text-sm text-slate-800">
+            <label className="flex items-start gap-3 rounded-xl border bg-white px-4 py-3 text-sm text-slate-700">
               <input
                 type="checkbox"
-                checked={form.whatsapp_opt_in}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setForm((f) => ({ ...f, whatsapp_opt_in: checked }));
-                  if (checked && !whatsappTouched) {
-                    setWhatsappDial(mobileDial);
-                    setWhatsappNumber(mobileNumber);
-                  }
-                }}
+                checked={form.statute_accepted}
+                onChange={(e) => setForm((f) => ({ ...f, statute_accepted: e.target.checked }))}
                 className="mt-0.5 h-4 w-4 shrink-0 rounded border"
               />
               <span>
-                Ich möchte in die WhatsApp-Gruppe des Fanclubs aufgenommen werden und bestätige
-                dies ausdrücklich im Rahmen dieses Antrags. *
+                Ich habe die{" "}
+                <SatzungDownloadLink>Satzung des Anni Perka Fanclubs</SatzungDownloadLink>{" "}
+                vollständig gelesen und akzeptiere sie als Vertragsbestandteil. *
               </span>
             </label>
-            {form.whatsapp_opt_in ? (
-              <div className="mt-3">
-                <PhoneInput
-                  label="WhatsApp-Nummer"
-                  required
-                  dial={whatsappDial}
-                  number={whatsappNumber}
-                  onDialChange={(d) => {
-                    setWhatsappTouched(true);
-                    setWhatsappDial(d);
-                  }}
-                  onNumberChange={(n) => {
-                    setWhatsappTouched(true);
-                    setWhatsappNumber(n);
-                  }}
-                />
-                <p className="mt-1 text-xs text-slate-600">
-                  Vorausgefüllt mit deiner Handynummer – du kannst sie hier anpassen.
-                </p>
-              </div>
-            ) : null}
-          </div>
 
-          <label className="flex items-start gap-3 rounded-xl border bg-white px-3 py-3 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.statute_accepted}
-              onChange={(e) => setForm((f) => ({ ...f, statute_accepted: e.target.checked }))}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
-            />
-            <span>
-              Ich habe die{" "}
-              <SatzungDownloadLink>Satzung des Anni Perka Fanclubs</SatzungDownloadLink>{" "}
-              vollständig gelesen und akzeptiere sie als Vertragsbestandteil. *
-            </span>
-          </label>
-          <label className="flex items-start gap-3 rounded-xl border bg-white px-3 py-3 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.privacy_accepted}
-              onChange={(e) => setForm((f) => ({ ...f, privacy_accepted: e.target.checked }))}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
-            />
-            <span>Ich willige in die Verarbeitung meiner Daten zum Zweck der Mitgliedschaft ein. *</span>
-          </label>
-          <label className="flex items-start gap-3 rounded-xl border bg-white px-3 py-3 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.media_consent}
-              onChange={(e) => setForm((f) => ({ ...f, media_consent: e.target.checked }))}
-              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
-            />
-            <span>
-              Optional: Fotos/Beiträge im Fanclub-Portal und bei Events dürfen veröffentlicht werden.
-            </span>
-          </label>
+            <div className="rounded-xl border bg-white px-4 py-4">
+              <p className="text-sm font-semibold text-fc-navy">4. Datenschutz (DSGVO)</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Ich willige ein, dass der Anni Perka Fanclub meine personenbezogenen Daten (Name,
+                Adresse, Kontaktdaten) zum Zweck der Mitgliederverwaltung, Kommunikation sowie
+                Organisation von Fanclub-Aktivitäten speichert und verarbeitet. Eine Weitergabe an
+                Dritte erfolgt nicht, es sei denn, dies ist gesetzlich vorgeschrieben. Ich habe
+                jederzeit das Recht auf Auskunft, Berichtigung und Löschung meiner Daten, soweit
+                keine gesetzlichen Aufbewahrungspflichten entgegenstehen.
+              </p>
+              <label className="mt-3 flex items-start gap-3 text-sm text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={form.privacy_accepted}
+                  onChange={(e) => setForm((f) => ({ ...f, privacy_accepted: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border"
+                />
+                <span>Ich stimme der Datenschutzerklärung zu. *</span>
+              </label>
+            </div>
+
+            <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-4 py-4">
+              <p className="text-sm font-semibold text-fc-navy">
+                5. WhatsApp-Gruppe des Fanclubs{" "}
+                <span className="font-normal text-slate-500">(optional)</span>
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Der Anni Perka Fanclub bietet eine optionale WhatsApp-Gruppe zur internen
+                Kommunikation (z.&nbsp;B. Informationen zu Veranstaltungen, Aktionen und
+                Neuigkeiten). Mir ist bekannt, dass bei Teilnahme an der WhatsApp-Gruppe meine
+                Mobilfunknummer für andere Gruppenmitglieder sichtbar ist und personenbezogene Daten
+                durch den Dienst WhatsApp (Meta Platforms Ireland Ltd.) verarbeitet werden können. Die
+                Teilnahme an der WhatsApp-Gruppe ist freiwillig und kann jederzeit beendet werden,
+                ohne dass dies Auswirkungen auf die Fanclub-Mitgliedschaft hat.
+              </p>
+              <label className="mt-3 flex items-start gap-3 text-sm text-slate-800">
+                <input
+                  type="checkbox"
+                  checked={form.whatsapp_opt_in}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setForm((f) => ({ ...f, whatsapp_opt_in: checked }));
+                    if (checked && !whatsappTouched) {
+                      setWhatsappDial(mobileDial);
+                      setWhatsappNumber(mobileNumber);
+                    }
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border"
+                />
+                <span>Ich möchte der offiziellen WhatsApp-Gruppe des Fanclubs beitreten.</span>
+              </label>
+              {form.whatsapp_opt_in ? (
+                <div className="mt-3">
+                  <PhoneInput
+                    label="Mobilnummer"
+                    required
+                    dial={whatsappDial}
+                    number={whatsappNumber}
+                    onDialChange={(d) => {
+                      setWhatsappTouched(true);
+                      setWhatsappDial(d);
+                    }}
+                    onNumberChange={(n) => {
+                      setWhatsappTouched(true);
+                      setWhatsappNumber(n);
+                    }}
+                  />
+                  <p className="mt-1 text-xs text-slate-600">
+                    Vorausgefüllt mit deiner Handynummer – du kannst sie hier anpassen.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-slate-500">
+                  Kein Haken gesetzt — du wirst nicht in die WhatsApp-Gruppe aufgenommen.
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-xl border bg-slate-50 px-4 py-4">
+              <p className="text-sm font-semibold text-fc-navy">6. Nutzung von Namen, Bild und Logo</p>
+              <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                Name, Bild und Logos von Anni Perka sind urheber- und markenrechtlich geschützt. Die
+                Nutzung durch Fanclub-Mitglieder ist ausschließlich für private, nicht kommerzielle
+                Zwecke im Zusammenhang mit dem Fanclub gestattet. Jede weitergehende Nutzung bedarf
+                der vorherigen schriftlichen Zustimmung des Rechteinhabers.
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                Mit deiner Unterschrift bestätigst du, diesen Hinweis zur Kenntnis genommen zu haben.
+              </p>
+            </div>
+
+            <label className="flex items-start gap-3 rounded-xl border bg-white px-4 py-3 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.media_consent}
+                onChange={(e) => setForm((f) => ({ ...f, media_consent: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border"
+              />
+              <span>
+                Optional: Fotos/Beiträge im Fanclub-Portal und bei Events dürfen veröffentlicht
+                werden.
+              </span>
+            </label>
           </div>
         </CardContent>
       </Card>
