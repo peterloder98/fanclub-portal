@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { cn } from "@/lib/cn";
@@ -8,6 +8,7 @@ import { initialsFromName } from "@/lib/user/initials";
 
 const SIZE = { xs: 20, sm: 24 } as const;
 const NAME_TAG_HEIGHT = 22;
+const HOVER_CLOSE_MS = 220;
 
 export function HoverEnlargeAvatar({
   name,
@@ -22,14 +23,23 @@ export function HoverEnlargeAvatar({
   className?: string;
   children?: ReactNode;
 }) {
-  const avatarRef = useRef<HTMLSpanElement>(null);
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const previewRef = useRef<HTMLSpanElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const base = SIZE[size];
   const enlarged = base * 2;
 
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, []);
+
   const updatePosition = useCallback(() => {
-    const el = avatarRef.current;
+    const el = anchorRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const left = Math.max(
@@ -40,16 +50,27 @@ export function HoverEnlargeAvatar({
     setCoords({ top, left });
   }, [enlarged]);
 
-  const onEnter = () => {
+  const showPreview = useCallback(() => {
+    clearCloseTimer();
     updatePosition();
     setOpen(true);
-  };
+  }, [clearCloseTimer, updatePosition]);
+
+  const scheduleHide = useCallback(() => {
+    clearCloseTimer();
+    closeTimer.current = setTimeout(() => setOpen(false), HOVER_CLOSE_MS);
+  }, [clearCloseTimer]);
+
+  useEffect(() => () => clearCloseTimer(), [clearCloseTimer]);
 
   const preview = open ? (
     <span
+      ref={previewRef}
       role="tooltip"
       style={{ top: coords.top, left: coords.left, width: enlarged }}
-      className="pointer-events-none fixed z-[250] flex flex-col items-center"
+      className="fixed z-[250] flex flex-col items-center"
+      onMouseEnter={showPreview}
+      onMouseLeave={scheduleHide}
     >
       <span
         className="overflow-hidden rounded-full border-2 border-white shadow-xl shadow-slate-900/25"
@@ -71,24 +92,14 @@ export function HoverEnlargeAvatar({
   ) : null;
 
   return (
-    <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span
-        ref={avatarRef}
-        className="inline-flex shrink-0"
-        onMouseEnter={onEnter}
-        onMouseLeave={() => setOpen(false)}
-      >
-        <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
-      </span>
-      {children ? (
-        <span
-          className="min-w-0"
-          onMouseEnter={onEnter}
-          onMouseLeave={() => setOpen(false)}
-        >
-          {children}
-        </span>
-      ) : null}
+    <span
+      ref={anchorRef}
+      className={cn("inline-flex items-center gap-1.5", className)}
+      onMouseEnter={showPreview}
+      onMouseLeave={scheduleHide}
+    >
+      <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
+      {children ? <span className="min-w-0">{children}</span> : null}
       {typeof document !== "undefined" && preview
         ? createPortal(preview, document.body)
         : null}

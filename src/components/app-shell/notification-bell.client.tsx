@@ -14,9 +14,8 @@ import {
 } from "@/lib/notifications/actions";
 import { presentNotification } from "@/lib/notifications/present";
 
-/** Unter Header (10052), über Profil-Dropdown (9999) und Karten */
-const BACKDROP_Z = 10_049;
-const PANEL_Z = 10_050;
+/** Über Profil-Dropdown, Maps und restliche Chrome — Glocke + Panel als ein Portalfixed-Block */
+const PORTAL_Z = 10_200;
 
 type NotificationBellProps = {
   onOpenChange?: (open: boolean) => void;
@@ -30,20 +29,20 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
   const [available, setAvailable] = useState(true);
   const [pending, startTransition] = useTransition();
   const [portalReady, setPortalReady] = useState(false);
-  const [panelPos, setPanelPos] = useState({ top: 0, right: 0, width: 384 });
-  const bellRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const [anchor, setAnchor] = useState({ top: 0, left: 0, width: 44, height: 44 });
+  const [panelWidth, setPanelWidth] = useState(384);
+  const placeholderRef = useRef<HTMLDivElement>(null);
+  const portalRootRef = useRef<HTMLDivElement>(null);
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
 
   const close = useCallback(() => setOpen(false), []);
 
-  const measurePanelPos = useCallback(() => {
-    const el = bellRef.current;
+  const syncAnchor = useCallback(() => {
+    const el = placeholderRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    const width = Math.min(384, window.innerWidth - 16);
-    const right = Math.max(8, window.innerWidth - r.right);
-    setPanelPos({ top: r.bottom + 6, right, width });
+    setAnchor({ top: r.top, left: r.left, width: r.width, height: r.height });
+    setPanelWidth(Math.min(384, window.innerWidth - 16));
   }, []);
 
   function load() {
@@ -54,7 +53,7 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
         setUnread(data.unreadCount);
         setAvailable(data.available);
       } catch {
-        // Netzwerkfehler: Glocke sichtbar lassen, nur Badge nicht aktualisieren.
+        /* Glocke sichtbar lassen */
       }
     });
   }
@@ -63,7 +62,7 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
     setOpen((wasOpen) => {
       const next = !wasOpen;
       if (next) {
-        measurePanelPos();
+        syncAnchor();
         load();
       }
       return next;
@@ -126,103 +125,55 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
   }, [supabase]);
 
   useEffect(() => {
-    if (!open) return;
-    measurePanelPos();
-    const onReposition = () => measurePanelPos();
+    syncAnchor();
+    const onReposition = () => syncAnchor();
     window.addEventListener("scroll", onReposition, true);
     window.addEventListener("resize", onReposition);
     return () => {
       window.removeEventListener("scroll", onReposition, true);
       window.removeEventListener("resize", onReposition);
     };
-  }, [open, measurePanelPos]);
+  }, [syncAnchor]);
 
   useEffect(() => {
     if (!open) return;
+
     function onEscape(e: KeyboardEvent) {
       if (e.key === "Escape") close();
     }
+
+    function onDocumentClick(e: MouseEvent) {
+      const target = e.target as Node;
+      if (portalRootRef.current?.contains(target)) return;
+      close();
+    }
+
     document.addEventListener("keydown", onEscape);
-    return () => document.removeEventListener("keydown", onEscape);
+    const timer = window.setTimeout(() => {
+      document.addEventListener("click", onDocumentClick);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("keydown", onEscape);
+      document.removeEventListener("click", onDocumentClick);
+    };
   }, [open, close]);
 
   if (!available) return null;
 
-  const overlay =
-    portalReady && open
-      ? createPortal(
-          <>
-            <button
-              type="button"
-              tabIndex={-1}
-              aria-hidden
-              className="fixed inset-0 cursor-default border-0 bg-transparent p-0"
-              style={{ zIndex: BACKDROP_Z }}
-              onClick={close}
-            />
-            <div
-              ref={panelRef}
-              className="fixed pt-0"
-              style={{
-                zIndex: PANEL_Z,
-                top: panelPos.top,
-                right: panelPos.right,
-                width: panelPos.width,
-              }}
-              role="dialog"
-              aria-label="Benachrichtigungen"
-              onClick={(e) => e.stopPropagation()}
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <div className="overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-900/15">
-                <div className="flex items-center justify-between border-b px-3 py-2.5">
-                  <span className="text-sm font-semibold text-fc-navy">Benachrichtigungen</span>
-                  {unread > 0 ? (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => {
-                        startTransition(async () => {
-                          await markAllNotificationsRead();
-                          load();
-                        });
-                      }}
-                      className="text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
-                    >
-                      Alle gelesen
-                    </button>
-                  ) : null}
-                </div>
-                <ul className="max-h-[min(28rem,55dvh)] overflow-y-auto overscroll-contain">
-                  {items.length === 0 ? (
-                    <li className="px-3 py-8 text-center text-xs text-slate-500">
-                      Keine Benachrichtigungen.
-                    </li>
-                  ) : (
-                    items.map((n) => (
-                      <NotificationListItem
-                        key={n.id}
-                        n={n}
-                        onNavigate={close}
-                        onRead={() => {
-                          if (!n.read_at) void markNotificationRead(n.id).then(load);
-                        }}
-                      />
-                    ))
-                  )}
-                </ul>
-              </div>
-            </div>
-          </>,
-          document.body,
-        )
-      : null;
-
-  return (
-    <>
+  const portaledUi =
+    portalReady &&
+    createPortal(
       <div
-        ref={bellRef}
-        className={cn("relative", open && "z-[10051]")}
+        ref={portalRootRef}
+        className="fixed"
+        style={{
+          zIndex: PORTAL_Z,
+          top: anchor.top,
+          left: anchor.left,
+          width: anchor.width,
+        }}
       >
         <button
           type="button"
@@ -239,8 +190,65 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
             </span>
           ) : null}
         </button>
-      </div>
-      {overlay}
+
+        {open ? (
+          <div
+            className="absolute right-0 pt-1.5"
+            style={{
+              top: anchor.height,
+              width: panelWidth,
+            }}
+            role="dialog"
+            aria-label="Benachrichtigungen"
+          >
+            <div className="overflow-hidden rounded-2xl border bg-white shadow-lg shadow-slate-900/15">
+              <div className="flex items-center justify-between border-b px-3 py-2.5">
+                <span className="text-sm font-semibold text-fc-navy">Benachrichtigungen</span>
+                {unread > 0 ? (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      startTransition(async () => {
+                        await markAllNotificationsRead();
+                        load();
+                      });
+                    }}
+                    className="text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
+                  >
+                    Alle gelesen
+                  </button>
+                ) : null}
+              </div>
+              <ul className="max-h-[min(28rem,55dvh)] overflow-y-auto overscroll-contain">
+                {items.length === 0 ? (
+                  <li className="px-3 py-8 text-center text-xs text-slate-500">
+                    Keine Benachrichtigungen.
+                  </li>
+                ) : (
+                  items.map((n) => (
+                    <NotificationListItem
+                      key={n.id}
+                      n={n}
+                      onNavigate={close}
+                      onRead={() => {
+                        if (!n.read_at) void markNotificationRead(n.id).then(load);
+                      }}
+                    />
+                  ))
+                )}
+              </ul>
+            </div>
+          </div>
+        ) : null}
+      </div>,
+      document.body,
+    );
+
+  return (
+    <>
+      <div ref={placeholderRef} className="h-11 w-11 shrink-0" aria-hidden />
+      {portaledUi}
     </>
   );
 }

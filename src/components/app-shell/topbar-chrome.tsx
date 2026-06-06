@@ -137,8 +137,7 @@ export function TopbarChrome() {
         className={cn(
           "fixed top-0 z-[200] flex items-center gap-3 border-b bg-[color:var(--background)]/95 px-4 pt-[env(safe-area-inset-top,0px)] backdrop-blur",
           "h-[var(--fanclub-chrome-header-height,4rem)]",
-          (profileOpen || notificationsOpen) && "z-[9998]",
-          notificationsOpen && "z-[10052]",
+          profileOpen && "z-[9998]",
           "inset-x-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0 lg:px-8",
           className,
         )}
