@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createGiveaway } from "@/app/(app)/giveaways/actions";
@@ -11,14 +12,18 @@ type QuizQ = {
   correctIndex: number;
 };
 
+type EntryMode = "simple" | "quiz" | "question";
+
 export function GiveawayAdminCreate() {
-  const [entryMode, setEntryMode] = useState<"simple" | "quiz">("simple");
+  const router = useRouter();
+  const [entryMode, setEntryMode] = useState<EntryMode>("simple");
   const [prizes, setPrizes] = useState(["", ""]);
   const [questions, setQuestions] = useState<QuizQ[]>([
     { text: "", options: ["", "", ""], correctIndex: 0 },
     { text: "", options: ["", "", ""], correctIndex: 0 },
     { text: "", options: ["", "", ""], correctIndex: 0 },
   ]);
+  const [singleQuestion, setSingleQuestion] = useState({ text: "", options: ["", ""] });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -28,6 +33,10 @@ export function GiveawayAdminCreate() {
 
   function addQuestion() {
     setQuestions((q) => [...q, { text: "", options: ["", "", ""], correctIndex: 0 }]);
+  }
+
+  function addQuestionOption() {
+    setSingleQuestion((q) => ({ ...q, options: [...q.options, ""] }));
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -41,8 +50,19 @@ export function GiveawayAdminCreate() {
     if (entryMode === "quiz") {
       fd.set("questions_json", JSON.stringify(questions));
     }
+    if (entryMode === "question") {
+      fd.set(
+        "single_question_json",
+        JSON.stringify({
+          text: singleQuestion.text.trim(),
+          options: singleQuestion.options.map((o) => o.trim()).filter(Boolean),
+        }),
+      );
+    }
     try {
       await createGiveaway(fd);
+      router.push("/giveaways?tab=active");
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
       setBusy(false);
@@ -95,24 +115,24 @@ export function GiveawayAdminCreate() {
           <div className="grid gap-2">
             <span className="text-sm font-medium text-slate-700">Teilnahme-Modus</span>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setEntryMode("simple")}
-                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                  entryMode === "simple" ? "border-slate-900 bg-fc-navy text-white" : ""
-                }`}
-              >
-                Einfach teilnehmen
-              </button>
-              <button
-                type="button"
-                onClick={() => setEntryMode("quiz")}
-                className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                  entryMode === "quiz" ? "border-slate-900 bg-fc-navy text-white" : ""
-                }`}
-              >
-                Quiz (mind. 3 Fragen)
-              </button>
+              {(
+                [
+                  ["simple", "Einfach teilnehmen"],
+                  ["question", "Eine Frage"],
+                  ["quiz", "Quiz (mind. 3 Fragen)"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setEntryMode(mode)}
+                  className={`rounded-xl border px-3 py-2 text-sm font-medium ${
+                    entryMode === mode ? "border-slate-900 bg-fc-navy text-white" : ""
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -151,6 +171,65 @@ export function GiveawayAdminCreate() {
               </div>
             ))}
           </div>
+
+          {entryMode === "question" ? (
+            <div className="grid gap-3 rounded-xl border bg-slate-50 p-3">
+              <span className="text-sm font-semibold text-slate-800">Frage (Single-Choice)</span>
+              <input
+                value={singleQuestion.text}
+                onChange={(e) =>
+                  setSingleQuestion((q) => ({ ...q, text: e.target.value }))
+                }
+                required
+                className="h-9 w-full rounded-lg border px-2 text-sm"
+                placeholder="Fragentext"
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-600">Antwortoptionen</span>
+                <button
+                  type="button"
+                  onClick={addQuestionOption}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-fc-blue"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Option
+                </button>
+              </div>
+              {singleQuestion.options.map((opt, oi) => (
+                <div key={oi} className="flex gap-2">
+                  <input
+                    value={opt}
+                    onChange={(e) =>
+                      setSingleQuestion((q) => ({
+                        ...q,
+                        options: q.options.map((x, j) => (j === oi ? e.target.value : x)),
+                      }))
+                    }
+                    required={oi < 2}
+                    className="h-8 flex-1 rounded-lg border px-2 text-sm"
+                    placeholder={`Option ${oi + 1}`}
+                  />
+                  {singleQuestion.options.length > 2 ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSingleQuestion((q) => ({
+                          ...q,
+                          options: q.options.filter((_, j) => j !== oi),
+                        }))
+                      }
+                      className="grid h-8 w-8 place-items-center rounded-lg border text-rose-600"
+                      aria-label="Option entfernen"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+              ))}
+              <p className="text-[10px] text-slate-500">
+                Mindestens 2 Optionen — Mitglieder wählen genau eine Antwort.
+              </p>
+            </div>
+          ) : null}
 
           {entryMode === "quiz" ? (
             <div className="grid gap-3 rounded-xl border bg-slate-50 p-3">

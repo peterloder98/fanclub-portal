@@ -5,6 +5,7 @@ import { GiveawayDetailClient } from "@/components/giveaways/giveaway-detail-cli
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { listMailSignatureOptions } from "@/lib/email/signatures";
 import { loadQuizReviewForUser } from "@/lib/giveaways/load-quiz-review";
+import { loadQuestionAnswerForUser } from "@/lib/giveaways/load-question-answer";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getTopMembersForYear } from "@/lib/giveaways/year-end-lottery";
 import { YearEndGiveawayAdmin } from "@/components/giveaways/year-end-giveaway-admin";
@@ -96,6 +97,11 @@ export default async function GiveawayDetailPage({
   const initialQuizResult =
     myEntry && g.entry_mode === "quiz"
       ? await loadQuizReviewForUser(supabase, user.id, id, qIds)
+      : null;
+
+  const initialQuestionAnswer =
+    myEntry && g.entry_mode === "question"
+      ? await loadQuestionAnswerForUser(supabase, user.id, id)
       : null;
 
   const { data: winnerRows } = await supabase
@@ -235,6 +241,7 @@ export default async function GiveawayDetailPage({
           questions={questionPayload}
           myEntry={myEntry}
           initialQuizResult={initialQuizResult}
+          initialQuestionAnswer={initialQuestionAnswer}
           winners={winners}
           likeCount={likeCount ?? 0}
           likedByMe={Boolean(myLike)}

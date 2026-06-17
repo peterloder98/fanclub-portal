@@ -18,7 +18,7 @@ export type GiveawayListItem = {
   id: string;
   title: string;
   description: string | null;
-  entry_mode: "simple" | "quiz";
+  entry_mode: "simple" | "quiz" | "question";
   ends_at: string;
   created_at: string;
   status: string;
@@ -184,7 +184,11 @@ export function GiveawayBoard({
                         {isAdmin
                           ? `${g.entryCount} Teilnahme${g.entryCount === 1 ? "" : "n"}, ${g.eligibleCount} berechtigt`
                           : `${g.entryCount} Teilnehmer`}
-                        {g.entry_mode === "quiz" ? " · Quiz" : " · Einfach"}
+                        {g.entry_mode === "quiz"
+                          ? " · Quiz"
+                          : g.entry_mode === "question"
+                            ? " · Frage"
+                            : " · Einfach"}
                       </p>
                       {g.myEntered ? (
                         g.myEligible === false && !g.isYearEndLottery ? (

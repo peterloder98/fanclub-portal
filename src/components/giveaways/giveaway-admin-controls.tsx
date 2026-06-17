@@ -33,7 +33,7 @@ export function GiveawayAdminControls({
     status: string;
     is_paused: boolean;
     is_year_end_lottery?: boolean;
-    entry_mode: "simple" | "quiz";
+    entry_mode: "simple" | "quiz" | "question";
   };
   prizes: { id: string; name: string }[];
   questions: Array<{

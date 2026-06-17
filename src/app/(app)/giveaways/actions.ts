@@ -69,7 +69,7 @@ export async function processEndedGiveaways() {
 const createSchema = z.object({
   title: z.string().min(3),
   description: z.string().optional().default(""),
-  entry_mode: z.enum(["simple", "quiz"]),
+  entry_mode: z.enum(["simple", "quiz", "question"]),
   ends_at: z.string().min(1),
   prizes: z.array(z.string().min(1)).min(1).max(20),
   questions: z
@@ -81,9 +81,15 @@ const createSchema = z.object({
       }),
     )
     .optional(),
+  singleQuestion: z
+    .object({
+      text: z.string().min(3),
+      options: z.array(z.string().min(1)).min(2).max(12),
+    })
+    .optional(),
 });
 
-export async function createGiveaway(formData: FormData) {
+export async function createGiveaway(formData: FormData): Promise<{ ok: true; id: string }> {
   const { userId, admin } = await requireAdmin();
 
   const prizes = formData
@@ -99,7 +105,20 @@ export async function createGiveaway(formData: FormData) {
     questions = [];
   }
 
-  const entryMode = String(formData.get("entry_mode") ?? "simple") as "simple" | "quiz";
+  const singleQuestionRaw = String(formData.get("single_question_json") ?? "");
+  let singleQuestion: z.infer<typeof createSchema>["singleQuestion"];
+  if (singleQuestionRaw) {
+    try {
+      singleQuestion = JSON.parse(singleQuestionRaw) as typeof singleQuestion;
+    } catch {
+      singleQuestion = undefined;
+    }
+  }
+
+  const entryMode = String(formData.get("entry_mode") ?? "simple") as
+    | "simple"
+    | "quiz"
+    | "question";
 
   const input = createSchema.parse({
     title: String(formData.get("title") ?? "").trim(),
@@ -108,11 +127,18 @@ export async function createGiveaway(formData: FormData) {
     ends_at: String(formData.get("ends_at") ?? ""),
     prizes,
     questions: entryMode === "quiz" ? questions : undefined,
+    singleQuestion: entryMode === "question" ? singleQuestion : undefined,
   });
 
   if (input.entry_mode === "quiz") {
     if (!input.questions || input.questions.length < 3) {
       throw new Error("Quiz: mindestens 3 Fragen mit je 3 Antworten.");
+    }
+  }
+
+  if (input.entry_mode === "question") {
+    if (!input.singleQuestion || input.singleQuestion.options.length < 2) {
+      throw new Error("Frage-Gewinnspiel: eine Frage mit mindestens 2 Antwortoptionen.");
     }
   }
 
@@ -167,6 +193,29 @@ export async function createGiveaway(formData: FormData) {
     }
   }
 
+  if (input.entry_mode === "question" && input.singleQuestion) {
+    const sq = input.singleQuestion;
+    const { data: qRow, error: qErr } = await admin
+      .from("giveaway_questions")
+      .insert({
+        giveaway_id: row.id,
+        question_text: sq.text,
+        sort_order: 0,
+      })
+      .select("id")
+      .single();
+    if (qErr) throw new Error(qErr.message);
+
+    await admin.from("giveaway_question_options").insert(
+      sq.options.map((label, oi) => ({
+        question_id: qRow.id,
+        label,
+        sort_order: oi,
+        is_correct: false,
+      })),
+    );
+  }
+
   after(async () => {
     try {
       await notifyMembersNewGiveaway(row.id);
@@ -176,7 +225,7 @@ export async function createGiveaway(formData: FormData) {
   });
 
   revalidatePath("/giveaways");
-  redirect("/giveaways?tab=active");
+  return { ok: true, id: row.id };
 }
 
 export async function drawGiveawayWinners(giveawayId: string) {
@@ -367,6 +416,68 @@ export async function participateQuiz(
   return { eligible: allCorrect, results };
 }
 
+export async function participateQuestion(giveawayId: string, answersJson: string) {
+  const { supabase, userId } = await requireUser();
+  const admin = createSupabaseAdminClient();
+
+  const answers = quizAnswerSchema.parse(JSON.parse(answersJson));
+  if (answers.length !== 1) throw new Error("Bitte genau eine Antwort wählen.");
+
+  const { data: g } = await supabase
+    .from("giveaways")
+    .select("id,ends_at,status,entry_mode,is_paused,is_year_end_lottery")
+    .eq("id", giveawayId)
+    .maybeSingle();
+  if (!g || g.entry_mode !== "question") throw new Error("Ungültiges Frage-Gewinnspiel.");
+  assertGiveawayOpen(g);
+  if (g.is_year_end_lottery) {
+    throw new Error("Bei der Jahres-Sonderverlosung nehmen nur die Top-10 automatisch teil.");
+  }
+
+  const { data: questions } = await admin
+    .from("giveaway_questions")
+    .select("id")
+    .eq("giveaway_id", giveawayId);
+  const qIds = new Set((questions ?? []).map((q) => q.id));
+  if (qIds.size !== 1) throw new Error("Frage-Gewinnspiel ist unvollständig konfiguriert.");
+
+  const answer = answers[0]!;
+  if (!qIds.has(answer.questionId)) throw new Error("Ungültige Frage.");
+
+  const { data: options } = await admin
+    .from("giveaway_question_options")
+    .select("id,question_id")
+    .eq("question_id", answer.questionId);
+  const validOption = (options ?? []).some((o) => o.id === answer.optionId);
+  if (!validOption) throw new Error("Ungültige Antwort.");
+
+  const { data: entry, error: eErr } = await supabase
+    .from("giveaway_entries")
+    .insert({
+      giveaway_id: giveawayId,
+      user_id: userId,
+      is_eligible: true,
+    })
+    .select("id")
+    .single();
+
+  if (eErr) {
+    if (eErr.code === "23505") throw new Error("Du nimmst bereits teil.");
+    throw new Error(eErr.message);
+  }
+
+  await admin.from("giveaway_entry_answers").insert({
+    entry_id: entry.id,
+    question_id: answer.questionId,
+    option_id: answer.optionId,
+  });
+
+  revalidatePath(`/giveaways/${giveawayId}`);
+  revalidatePath("/giveaways");
+
+  return { ok: true as const };
+}
+
 export async function setupYearEndGiveaway(pointsYear?: number) {
   const { userId, admin } = await requireAdmin();
   const year = pointsYear ?? defaultPointsYearForYearEndRun();
@@ -511,6 +622,29 @@ export async function endGiveawayEarly(giveawayId: string) {
   revalidatePath("/giveaways");
   revalidatePath(`/giveaways/${giveawayId}`);
   revalidatePath("/dashboard");
+}
+
+/** Beendetes oder ausgelostes Gewinnspiel endgültig löschen (Admin). */
+export async function deleteGiveaway(giveawayId: string) {
+  const { admin } = await requireAdmin();
+  const { data: g } = await admin
+    .from("giveaways")
+    .select("status,is_year_end_lottery")
+    .eq("id", giveawayId)
+    .maybeSingle();
+  if (!g) throw new Error("Gewinnspiel nicht gefunden.");
+  if (g.is_year_end_lottery) {
+    throw new Error("Jahresend-Sonderverlosung kann nicht gelöscht werden.");
+  }
+  if (g.status === "active") {
+    throw new Error("Gewinnspiel muss zuerst beendet werden.");
+  }
+
+  const { error } = await admin.from("giveaways").delete().eq("id", giveawayId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/giveaways");
+  return { ok: true as const };
 }
 
 export async function updateGiveawayBasics(formData: FormData) {

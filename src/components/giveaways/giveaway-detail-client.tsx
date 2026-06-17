@@ -24,10 +24,12 @@ import { CommentWarningButton } from "@/components/admin/comment-warning-button"
 import {
   drawGiveawayWinners,
   participateQuiz,
+  participateQuestion,
   participateSimple,
   sendGiveawayWinnerEmail,
   type QuizParticipationResult,
 } from "@/app/(app)/giveaways/actions";
+import type { QuestionAnswerReview } from "@/lib/giveaways/load-question-answer";
 import { CLUB_SIGNATURE_ID, type MailSignatureOption } from "@/lib/email/signatures";
 
 type Question = {
@@ -50,6 +52,7 @@ export function GiveawayDetailClient({
   questions,
   myEntry,
   initialQuizResult = null,
+  initialQuestionAnswer = null,
   winners,
   likeCount,
   likedByMe,
@@ -69,7 +72,7 @@ export function GiveawayDetailClient({
     id: string;
     title: string;
     description: string | null;
-    entry_mode: "simple" | "quiz";
+    entry_mode: "simple" | "quiz" | "question";
     ends_at: string;
     status: string;
     is_paused: boolean;
@@ -80,6 +83,7 @@ export function GiveawayDetailClient({
   questions: Question[];
   myEntry: { is_eligible: boolean } | null;
   initialQuizResult?: QuizParticipationResult | null;
+  initialQuestionAnswer?: QuestionAnswerReview | null;
   winners: Winner[];
   likeCount: number;
   likedByMe: boolean;
@@ -119,6 +123,9 @@ export function GiveawayDetailClient({
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [quizResult, setQuizResult] = useState<QuizParticipationResult | null>(
     initialQuizResult,
+  );
+  const [questionAnswer, setQuestionAnswer] = useState<QuestionAnswerReview | null>(
+    initialQuestionAnswer,
   );
   const [localEntered, setLocalEntered] = useState(myEntry);
   const [localWinners, setLocalWinners] = useState(winners);
@@ -193,6 +200,33 @@ export function GiveawayDetailClient({
       if (result.eligible) flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Quiz fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onSubmitQuestion(fromEl: HTMLElement) {
+    const q = questions[0];
+    if (!q || !quizAnswers[q.id]) {
+      setError("Bitte eine Antwort wählen.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await participateQuestion(
+        giveaway.id,
+        JSON.stringify([{ questionId: q.id, optionId: quizAnswers[q.id]! }]),
+      );
+      const chosen = q.options.find((o) => o.id === quizAnswers[q.id]);
+      setQuestionAnswer({
+        questionText: q.text,
+        optionLabel: chosen?.label ?? "",
+      });
+      setLocalEntered({ is_eligible: true });
+      flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Teilnahme fehlgeschlagen");
     } finally {
       setBusy(false);
     }
@@ -417,7 +451,9 @@ export function GiveawayDetailClient({
                 ? "Leider hat es diesmal nicht geklappt"
                 : giveaway.entry_mode === "simple"
                   ? "Glückwunsch, du nimmst nun am Gewinnspiel teil, wir drücken dir die Daumen!"
-                  : "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"}
+                  : giveaway.entry_mode === "question"
+                    ? "Danke — du nimmst am Gewinnspiel teil, wir drücken dir die Daumen!"
+                    : "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"}
             </div>
           ) : phase !== "active" || showWinnerReveal ? null : (
             <p className="text-sm text-slate-600">Noch nicht teilgenommen.</p>
@@ -434,6 +470,47 @@ export function GiveawayDetailClient({
             >
               Jetzt teilnehmen
             </button>
+          ) : null}
+
+          {canParticipate && giveaway.entry_mode === "question" && !localEntered && questions[0] ? (
+            <div className="grid gap-3">
+              <div className="rounded-xl border p-3">
+                <p className="text-sm font-medium text-slate-900">{questions[0].text}</p>
+                <div className="mt-2 grid gap-1.5">
+                  {questions[0].options.map((o) => (
+                    <label
+                      key={o.id}
+                      className="flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1.5 text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name={`q-${questions[0]!.id}`}
+                        checked={quizAnswers[questions[0]!.id] === o.id}
+                        onChange={() =>
+                          setQuizAnswers((m) => ({ ...m, [questions[0]!.id]: o.id }))
+                        }
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={(e) => void onSubmitQuestion(e.currentTarget)}
+                className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
+              >
+                Antwort absenden
+              </button>
+            </div>
+          ) : null}
+
+          {localEntered && giveaway.entry_mode === "question" && questionAnswer ? (
+            <div className="rounded-lg border bg-slate-50 p-3 text-sm">
+              <p className="font-medium text-slate-800">{questionAnswer.questionText}</p>
+              <p className="mt-1 text-slate-600">Deine Antwort: {questionAnswer.optionLabel}</p>
+            </div>
           ) : null}
 
           {canParticipate && giveaway.entry_mode === "quiz" && !localEntered ? (

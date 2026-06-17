@@ -62,7 +62,7 @@ export async function loadGiveawayListItems(
     id: g.id,
     title: g.title,
     description: g.description,
-    entry_mode: g.entry_mode as "simple" | "quiz",
+    entry_mode: g.entry_mode as "simple" | "quiz" | "question",
     ends_at: g.ends_at,
     created_at: g.created_at as string,
     status: g.status,

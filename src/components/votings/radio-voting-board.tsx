@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Check, Copy, ExternalLink, Radio, RotateCcw, Sparkles, Timer } from "lucide-react";
+import { Check, Copy, ExternalLink, Radio, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import type { RadioVotingCampaignView } from "@/lib/votings/radio-campaign-types";
-import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 import { copyVotingLink, openRadioVotingLink } from "@/lib/votings/open-voting-link";
 import { scrollToFocusElement } from "@/lib/navigation/scroll-to-focus";
 import { flyPointsFromElement } from "@/lib/points/fly";
+import { cn } from "@/lib/cn";
+
+const countdownClass = "!px-2 !py-1 !text-[11px]";
 
 function CampaignCard({
   campaign,
@@ -18,18 +21,11 @@ function CampaignCard({
   campaign: RadioVotingCampaignView;
   onParticipated: (id: string) => void;
 }) {
-  const endsAt = useMemo(() => new Date(campaign.endsAt).getTime(), [campaign.endsAt]);
-  const [now, setNow] = useState(() => Date.now());
   const [copied, setCopied] = useState(false);
   const [openedHint, setOpenedHint] = useState<string | null>(null);
   const [participated, setParticipated] = useState(campaign.participated ?? false);
   const [recording, setRecording] = useState(false);
   const voteBtnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
 
   useEffect(() => {
     if (!copied) return;
@@ -43,12 +39,6 @@ function CampaignCard({
     return () => window.clearTimeout(id);
   }, [openedHint]);
 
-  const secondsLeft = Math.max(0, Math.floor((endsAt - now) / 1000));
-  const endLabel = new Date(campaign.endsAt).toLocaleString("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-
   async function recordParticipation() {
     if (recording || participated) return;
     setRecording(true);
@@ -60,9 +50,7 @@ function CampaignCard({
       });
       const data = (await res.json()) as {
         ok?: boolean;
-        alreadyParticipated?: boolean;
         starsAwarded?: number;
-        error?: string;
       };
       if (data.ok) {
         setParticipated(true);
@@ -83,7 +71,7 @@ function CampaignCard({
     const mode = openRadioVotingLink(campaign.votingUrl, campaign.id);
     setOpenedHint(
       mode === "popup"
-        ? "Voting-Fenster geöffnet — Fanclub bleibt hier offen. Nach dem Abstimmen einfach das kleine Fenster schließen."
+        ? "Voting-Fenster geöffnet — Fanclub bleibt hier offen."
         : "Voting im neuen Tab geöffnet — danach hierher zurückwechseln.",
     );
   }
@@ -96,31 +84,28 @@ function CampaignCard({
   return (
     <Card id={`voting-${campaign.id}`} className="overflow-hidden scroll-mt-24">
       <CardHeader className="space-y-2 border-b border-fc-ice/80 bg-gradient-to-r from-fc-ice/40 via-white to-rose-50/30 pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-          <div className="flex min-w-0 flex-1 items-start gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-1 gap-2">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
               <Radio className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0">
               <CardTitle className="text-base leading-snug">{campaign.station}</CardTitle>
+              {participated ? (
+                <Badge variant="success" className="mt-1">
+                  <Check className="mr-1 h-3 w-3" aria-hidden />
+                  Mitgemacht
+                </Badge>
+              ) : null}
             </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end text-right">
-            <div className="flex items-center justify-end gap-1 text-xs font-semibold uppercase tracking-wide text-amber-900/80">
-              <Timer className="h-3.5 w-3.5" aria-hidden />
-              Voting endet in
-            </div>
-            <p className="mt-0.5 text-sm font-semibold text-amber-950">
-              {formatCountdownVerbose(secondsLeft)}
-            </p>
-            <p className="text-[11px] text-amber-900/70">bis {endLabel}</p>
-            {participated ? (
-              <Badge variant="success" className="mt-1.5">
-                <Check className="mr-1 h-3 w-3" aria-hidden />
-                Mitgemacht
-              </Badge>
-            ) : null}
-          </div>
+          <RunningCountdownBadge
+            endsAt={campaign.endsAt}
+            endedLabel="Beendet"
+            runningPrefix="Endet in"
+            inline
+            className={cn(countdownClass, "shrink-0")}
+          />
         </div>
         <p className="text-sm font-medium text-fc-navy">{campaign.songTitle}</p>
       </CardHeader>
@@ -164,7 +149,7 @@ function CampaignCard({
             type="button"
             onClick={() => void handleCopy()}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border bg-white px-4 text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
-            title="Link kopieren — z. B. für tägliches Voting"
+            title="Link kopieren"
           >
             {copied ? (
               <>
@@ -179,15 +164,6 @@ function CampaignCard({
             )}
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => void handleOpen()}
-          className="inline-flex h-9 items-center justify-center gap-1.5 text-xs font-medium text-fc-blue hover:underline"
-        >
-          <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-          Erneut abstimmen (z. B. morgen wieder)
-        </button>
       </CardContent>
     </Card>
   );
