@@ -57,11 +57,26 @@ async function metricValue(
       return count ?? 0;
     }
     case "poll_votes": {
-      const { count } = await admin
+      const { count: pollCount } = await admin
         .from("poll_votes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId);
-      return count ?? 0;
+      const { count: radioCount } = await admin
+        .from("radio_voting_participations")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      return (pollCount ?? 0) + (radioCount ?? 0);
+    }
+    case "voting_engagement": {
+      const { count: pollCount } = await admin
+        .from("poll_votes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      const { count: radioCount } = await admin
+        .from("radio_voting_participations")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      return (pollCount ?? 0) + (radioCount ?? 0);
     }
     case "birthday_comments": {
       const { count } = await admin

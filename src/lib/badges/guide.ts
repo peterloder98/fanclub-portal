@@ -43,8 +43,8 @@ export const BADGE_CATALOG = [
     slug: "voting_hero",
     name: "Votingheld",
     iconKey: "vote",
-    description: "Teilnahmen an Umfragen in der App.",
-    unit: { singular: "Umfrage", plural: "Umfragen" },
+    description: "Radio-Hörervotings und Umfragen in der App.",
+    unit: { singular: "Teilnahme", plural: "Teilnahmen" },
     thresholds: { bronze: 5, silver: 10, gold: 25, platinum: 50 },
   },
   {

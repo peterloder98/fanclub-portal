@@ -33,6 +33,13 @@ export const POINTS_RULES: PointsRule[] = [
     note: "Einmal pro Empfänger-E-Mail-Adresse.",
   },
   {
+    id: "radio_voting",
+    label: "Radio-Hörervoting (extern)",
+    points: POINT_VALUES.radioVoting,
+    how: "Bei einem Radio-Voting auf „Jetzt für Anni abstimmen“ tippen und extern abstimmen.",
+    note: "Ein Anni-Star pro Sender und Voting-Runde. Badge „Votingheld“ zählt Radio-Votings und Umfragen.",
+  },
+  {
     id: "poll_vote",
     label: "An Umfrage teilgenommen",
     points: POINT_VALUES.pollVote,

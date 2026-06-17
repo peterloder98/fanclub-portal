@@ -22,6 +22,7 @@ export const NOTIFICATION_KINDS = {
   postComment: "post_comment",
   referralCompleted: "referral_completed",
   badgeUnlocked: "badge_unlocked",
+  radioVotingLastChance: "radio_voting_last_chance",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

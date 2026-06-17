@@ -11,6 +11,7 @@ export const POINT_VALUES = {
   giveawayLike: 1,
   giveawayComment: 1,
   eventParticipation: 1,
+  radioVoting: 1,
 } as const;
 
 export const POINTS_RANKS = [

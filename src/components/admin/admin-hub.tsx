@@ -13,6 +13,7 @@ import {
   Train,
   Music2,
   PenLine,
+  Radio,
   ScrollText,
   Shield,
   Users,
@@ -122,6 +123,19 @@ const SECTIONS: AdminHubSection[] = [
         title: "E-Mail-Historie",
         description: "Gesendet, fehlgeschlagen — erneut senden.",
         icon: Mail,
+      },
+    ],
+  },
+  {
+    id: "community",
+    title: "Community & Engagement",
+    subtitle: "Votings, Umfragen und Mitglieder-Aktivität.",
+    items: [
+      {
+        href: "/admin/radio-votings",
+        title: "Radio-Votings",
+        description: "Hörer-Charts pflegen, Enddaten, neue Runden starten.",
+        icon: Radio,
       },
     ],
   },

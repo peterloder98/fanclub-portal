@@ -5,6 +5,7 @@ import {
   Gift,
   MessageCircle,
   PartyPopper,
+  Radio,
   Reply,
   ShieldAlert,
   ShoppingBag,
@@ -79,6 +80,8 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
       return typeof m.giveaway_id === "string" ? `/giveaways/${m.giveaway_id}` : n.link_url;
     case NOTIFICATION_KINDS.pollStarted:
       return typeof m.poll_id === "string" ? `/polls/${m.poll_id}` : n.link_url;
+    case NOTIFICATION_KINDS.radioVotingLastChance:
+      return "/votings";
     case NOTIFICATION_KINDS.clubMeetingPublished:
     case NOTIFICATION_KINDS.contributionOpen:
       return typeof m.meeting_id === "string" ? `/treffen/${m.meeting_id}` : n.link_url;
@@ -125,6 +128,8 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
       return { icon: Gift, iconClass: "bg-amber-50 text-amber-700" };
     case NOTIFICATION_KINDS.pollStarted:
       return { icon: Vote, iconClass: "bg-sky-50 text-fc-blue" };
+    case NOTIFICATION_KINDS.radioVotingLastChance:
+      return { icon: Radio, iconClass: "bg-rose-50 text-rose-700" };
     case NOTIFICATION_KINDS.clubMeetingPublished:
     case NOTIFICATION_KINDS.contributionOpen:
       return { icon: Users, iconClass: "bg-emerald-50 text-emerald-700" };

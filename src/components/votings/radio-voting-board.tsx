@@ -1,26 +1,102 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Radio, Timer } from "lucide-react";
+import { Check, Copy, ExternalLink, Radio, RotateCcw, Sparkles, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { activeRadioCampaigns, type RadioVotingCampaign } from "@/lib/votings/radio-campaigns";
+import type { RadioVotingCampaignView } from "@/lib/votings/radio-campaign-types";
 import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
+import { copyVotingLink, openRadioVotingLink } from "@/lib/votings/open-voting-link";
 
-function CampaignCard({ campaign }: { campaign: RadioVotingCampaign }) {
+function CampaignCard({
+  campaign,
+  onParticipated,
+}: {
+  campaign: RadioVotingCampaignView;
+  onParticipated: (id: string) => void;
+}) {
   const endsAt = useMemo(() => new Date(campaign.endsAt).getTime(), [campaign.endsAt]);
   const [now, setNow] = useState(() => Date.now());
+  const [copied, setCopied] = useState(false);
+  const [openedHint, setOpenedHint] = useState<string | null>(null);
+  const [participated, setParticipated] = useState(campaign.participated ?? false);
+  const [starHint, setStarHint] = useState<string | null>(null);
+  const [recording, setRecording] = useState(false);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    if (!copied) return;
+    const id = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(id);
+  }, [copied]);
+
+  useEffect(() => {
+    if (!openedHint) return;
+    const id = window.setTimeout(() => setOpenedHint(null), 5000);
+    return () => window.clearTimeout(id);
+  }, [openedHint]);
+
+  useEffect(() => {
+    if (!starHint) return;
+    const id = window.setTimeout(() => setStarHint(null), 6000);
+    return () => window.clearTimeout(id);
+  }, [starHint]);
+
   const secondsLeft = Math.max(0, Math.floor((endsAt - now) / 1000));
   const endLabel = new Date(campaign.endsAt).toLocaleString("de-DE", {
     dateStyle: "medium",
     timeStyle: "short",
   });
+
+  async function recordParticipation() {
+    if (recording || participated) return;
+    setRecording(true);
+    try {
+      const res = await fetch("/api/radio-voting/participate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaignId: campaign.id }),
+      });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        alreadyParticipated?: boolean;
+        starsAwarded?: number;
+        error?: string;
+      };
+      if (data.ok) {
+        setParticipated(true);
+        onParticipated(campaign.id);
+        if (data.starsAwarded && data.starsAwarded > 0) {
+          setStarHint(`+${data.starsAwarded} Anni-Star für deine Teilnahme — danke!`);
+        } else if (data.alreadyParticipated) {
+          setStarHint("Du hast in dieser Runde schon mitgemacht — danke!");
+        }
+      }
+    } catch {
+      /* Link öffnen trotzdem möglich */
+    } finally {
+      setRecording(false);
+    }
+  }
+
+  async function handleOpen() {
+    void recordParticipation();
+    const mode = openRadioVotingLink(campaign.votingUrl, campaign.id);
+    setOpenedHint(
+      mode === "popup"
+        ? "Voting-Fenster geöffnet — Fanclub bleibt hier offen. Nach dem Abstimmen einfach das kleine Fenster schließen."
+        : "Voting im neuen Tab geöffnet — danach hierher zurückwechseln.",
+    );
+  }
+
+  async function handleCopy() {
+    const ok = await copyVotingLink(campaign.votingUrl);
+    setCopied(ok);
+  }
 
   return (
     <Card className="overflow-hidden">
@@ -37,12 +113,31 @@ function CampaignCard({ campaign }: { campaign: RadioVotingCampaign }) {
               </div>
             </div>
           </div>
-          <Badge variant="brand">{campaign.chartName}</Badge>
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="brand">{campaign.chartName}</Badge>
+            {participated ? (
+              <Badge variant="success">
+                <Check className="mr-1 h-3 w-3" aria-hidden />
+                Mitgemacht
+              </Badge>
+            ) : null}
+          </div>
         </div>
         <p className="text-sm font-medium text-fc-navy">{campaign.songTitle}</p>
       </CardHeader>
       <CardContent className="grid gap-3 pt-4">
         <p className="text-sm leading-relaxed text-slate-700">{campaign.instructions}</p>
+
+        <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/40 px-3 py-2.5 text-sm text-fc-navy">
+          <div className="flex items-center gap-1.5 font-semibold">
+            <Sparkles className="h-4 w-4 text-amber-500" aria-hidden />
+            +1 Anni-Star pro Runde
+          </div>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Einmal pro Voting-Runde, wenn du auf „Jetzt für Anni abstimmen“ klickst — zählt für
+            das Votingheld-Badge.
+          </p>
+        </div>
 
         <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-900/80">
@@ -60,30 +155,76 @@ function CampaignCard({ campaign }: { campaign: RadioVotingCampaign }) {
             So machst du mit
           </p>
           <ol className="mt-2 list-decimal space-y-1.5 pl-4 text-sm text-slate-700">
-            {campaign.steps.map((step) => (
-              <li key={step}>{step}</li>
+            {campaign.steps.map((step, i) => (
+              <li key={`${campaign.id}-step-${i}`}>{step}</li>
             ))}
           </ol>
         </div>
 
-        <a
-          href={campaign.votingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue"
+        {starHint ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
+            {starHint}
+          </p>
+        ) : null}
+
+        {openedHint ? (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-relaxed text-emerald-900">
+            {openedHint}
+          </p>
+        ) : null}
+
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <button
+            type="button"
+            onClick={() => void handleOpen()}
+            disabled={recording}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue disabled:opacity-70"
+          >
+            Jetzt für Anni abstimmen
+            <ExternalLink className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleCopy()}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border bg-white px-4 text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition hover:bg-slate-50"
+            title="Link kopieren — z. B. für tägliches Voting"
+          >
+            {copied ? (
+              <>
+                <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+                Kopiert
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" aria-hidden />
+                Link kopieren
+              </>
+            )}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void handleOpen()}
+          className="inline-flex h-9 items-center justify-center gap-1.5 text-xs font-medium text-fc-blue hover:underline"
         >
-          Jetzt für Anni abstimmen
-          <ExternalLink className="h-4 w-4" aria-hidden />
-        </a>
+          <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+          Erneut abstimmen (z. B. morgen wieder)
+        </button>
       </CardContent>
     </Card>
   );
 }
 
-export function RadioVotingBoard() {
-  const campaigns = activeRadioCampaigns();
+export function RadioVotingBoard({ campaigns }: { campaigns: RadioVotingCampaignView[] }) {
+  const [localParticipated, setLocalParticipated] = useState<Record<string, boolean>>({});
 
-  if (!campaigns.length) {
+  const merged = campaigns.map((c) => ({
+    ...c,
+    participated: localParticipated[c.id] ?? c.participated,
+  }));
+
+  if (!merged.length) {
     return (
       <div className="rounded-2xl border bg-slate-50 px-4 py-6 text-sm text-slate-700">
         Aktuell läuft kein Radio-Voting. Schau bald wieder vorbei — neue Hörer-Charts werden
@@ -94,8 +235,12 @@ export function RadioVotingBoard() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      {campaigns.map((c) => (
-        <CampaignCard key={c.id} campaign={c} />
+      {merged.map((c) => (
+        <CampaignCard
+          key={c.id}
+          campaign={c}
+          onParticipated={(id) => setLocalParticipated((prev) => ({ ...prev, [id]: true }))}
+        />
       ))}
     </div>
   );

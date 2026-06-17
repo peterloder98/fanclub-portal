@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { RadioVotingBoard } from "@/components/votings/radio-voting-board";
+import { loadActiveRadioCampaigns } from "@/lib/votings/load-radio-campaigns";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -9,6 +10,8 @@ export default async function VotingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const campaigns = await loadActiveRadioCampaigns(supabase, user.id);
 
   return (
     <div className="min-h-screen">
@@ -24,12 +27,14 @@ export default async function VotingsPage() {
             zählt!
           </p>
           <p className="mt-2 text-xs text-slate-600">
-            Tipp: Viele Sendungen erlauben tägliches Voting — am besten Link merken und regelmäßig
-            abstimmen.
+            Am Computer öffnet sich das Voting in einem <strong>kleinen Fenster</strong> — die
+            Fanclub-App bleibt im Hintergrund. Auf dem Handy öffnet sich ein neuer Tab. Viele
+            Sendungen erlauben tägliches Voting: Link kopieren oder „Erneut abstimmen“ nutzen.
+            Pro Runde gibt es <strong>+1 Anni-Star</strong>, wenn du aktiv mitmachst.
           </p>
         </div>
 
-        <RadioVotingBoard />
+        <RadioVotingBoard campaigns={campaigns} />
       </main>
     </div>
   );
