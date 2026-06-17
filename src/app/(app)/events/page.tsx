@@ -13,8 +13,14 @@ import { loadPublishedMeetings } from "@/lib/meetings/load";
 import { filterVisibleEvents } from "@/lib/events/event-schedule";
 import { pickNextEvent } from "@/lib/events/pick-next-event";
 
-export default async function EventsPage() {
+export default async function EventsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ focus?: string }>;
+}) {
   after(() => maybeSyncArtistflowIfStale());
+
+  const { focus: focusEventId } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -144,6 +150,7 @@ export default async function EventsPage() {
             participationByEventId={participationByEventId}
             travelNotesByEventId={travelNotesByEventId}
             isAdmin={isAdmin}
+            focusEventId={focusEventId ?? null}
           />
         </div>
       </main>

@@ -72,10 +72,11 @@ export function EventListItem({
 
   return (
     <article
+      id={`event-${e.id}`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        "overflow-hidden rounded-xl border bg-white px-2 py-2 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 sm:px-3 sm:py-2.5",
+        "scroll-mt-24 overflow-hidden rounded-xl border bg-white px-2 py-2 shadow-sm shadow-slate-900/5 transition hover:border-slate-300 sm:px-3 sm:py-2.5",
         active && "border-2 border-blue-400 bg-fc-ice/50",
       )}
     >

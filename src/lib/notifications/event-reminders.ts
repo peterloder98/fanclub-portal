@@ -59,7 +59,7 @@ export async function runEventParticipationReminders(admin: SupabaseClient) {
       kind,
       title,
       body: [date, location].filter(Boolean).join(" · "),
-      linkUrl: base ? `${base}/events` : "/events",
+      linkUrl: base ? `${base}/events?focus=${part.event_id}` : `/events?focus=${part.event_id}`,
       linkLabel: "Zum Event",
       metadata: { event_id: part.event_id, days_before: days, dedupe_key: dedupeKey },
     });

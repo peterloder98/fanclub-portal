@@ -61,17 +61,30 @@ create unique index if not exists points_transactions_radio_voting_once
   on public.points_transactions (user_id, entity_id)
   where reason = 'radio_voting';
 
--- Votingheld: Radio-Votings + Umfragen
-update public.achievement_definitions
-set
-  description = 'Radio-Hörervotings und Umfragen in der App.',
-  metric = 'voting_engagement'
-where slug = 'voting_hero';
+-- Votingheld: Radio-Votings + Umfragen (nur wenn Badge-System aus 070 existiert)
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.tables
+    where table_schema = 'public'
+      and table_name = 'achievement_definitions'
+  ) then
+    update public.achievement_definitions
+    set
+      description = 'Radio-Hörervotings und Umfragen in der App.',
+      metric = 'voting_engagement'
+    where slug = 'voting_hero';
+  end if;
+end $$;
 
--- Startdaten (fiktive Beispiel-Votings)
-insert into public.radio_voting_campaigns (
-  station, region, chart_name, voting_url, ends_at, song_title, instructions, steps, sort_order
-) values
+-- Startdaten (fiktive Beispiel-Votings) — nur wenn noch leer
+do $$
+begin
+  if not exists (select 1 from public.radio_voting_campaigns limit 1) then
+    insert into public.radio_voting_campaigns (
+      station, region, chart_name, voting_url, ends_at, song_title, instructions, steps, sort_order
+    ) values
 (
   'Radio Hamburg',
   'Hamburg & Schleswig-Holstein',
@@ -150,3 +163,5 @@ insert into public.radio_voting_campaigns (
   ],
   50
 );
+  end if;
+end $$;

@@ -42,7 +42,6 @@ export async function runRadioVotingLastChanceReminders(admin: SupabaseClient) {
     /\/$/,
     "",
   );
-  const linkUrl = base ? `${base}/votings` : "/votings";
 
   const { data: campaigns, error: cErr } = await admin
     .from("radio_voting_campaigns")
@@ -101,7 +100,7 @@ export async function runRadioVotingLastChanceReminders(admin: SupabaseClient) {
         kind: NOTIFICATION_KINDS.radioVotingLastChance,
         title: `Letzte Chance: ${campaign.station}`,
         body: `Heute endet ${campaign.chart_name} (${endTime} Uhr). Stimme jetzt für Anni ab — +1 Anni-Star für deine Teilnahme!`,
-        linkUrl,
+        linkUrl: base ? `${base}/votings?focus=${campaign.id}` : `/votings?focus=${campaign.id}`,
         linkLabel: "Zum Voting",
         metadata: {
           campaign_id: campaign.id,

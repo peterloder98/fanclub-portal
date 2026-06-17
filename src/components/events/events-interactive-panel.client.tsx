@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Map } from "lucide-react";
 import { EventsMapClient } from "@/components/events/events-map.client";
 import { EventsCountdown } from "@/components/events/events-countdown";
@@ -11,6 +11,7 @@ import type { ClubMeetingListItem } from "@/lib/meetings/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { EventTravelNoteRow } from "@/lib/events/admin-notes";
 import { cn } from "@/lib/cn";
+import { scrollToFocusElement } from "@/lib/navigation/scroll-to-focus";
 
 export type { EventListRow, EventParticipationMeta } from "@/components/events/events-map.types";
 
@@ -22,6 +23,7 @@ export function EventsInteractivePanel({
   travelNotesByEventId,
   clubMeetings = [],
   isAdmin,
+  focusEventId = null,
   className,
 }: {
   events: EventListRow[];
@@ -31,10 +33,19 @@ export function EventsInteractivePanel({
   participationByEventId: Record<string, EventParticipationMeta>;
   travelNotesByEventId?: Record<string, EventTravelNoteRow>;
   isAdmin?: boolean;
+  focusEventId?: string | null;
   className?: string;
 }) {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
+
+  useEffect(() => {
+    if (!focusEventId || !events.some((e) => e.id === focusEventId)) return;
+    setHighlightedId(focusEventId);
+    return scrollToFocusElement(`event-${focusEventId}`, {
+      highlightClass: "ring-2 ring-blue-400 ring-offset-2 shadow-md",
+    });
+  }, [focusEventId, events]);
 
   const scheduleItems = [
     ...events.map((e) => ({

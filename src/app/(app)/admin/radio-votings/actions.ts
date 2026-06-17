@@ -4,6 +4,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  notifyMembersRadioVotingAvailable,
+  notifyMembersRadioVotingNewCycle,
+} from "@/lib/notifications/radio-voting-notify";
+
+const campaignSelect =
+  "id,station,chart_name,song_title,is_active" as const;
 
 const campaignSchema = z.object({
   station: z.string().min(1),
@@ -76,20 +83,34 @@ export async function saveRadioVotingCampaign(formData: FormData) {
       cycleKey = `${Date.now()}`;
     }
 
-    const { error } = await admin
+    const { data: updated, error } = await admin
       .from("radio_voting_campaigns")
       .update({
         ...payload,
         ...(cycleKey ? { cycle_key: cycleKey } : {}),
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select(campaignSelect)
+      .maybeSingle();
     if (error) throw new Error(error.message);
+
+    if (updated?.is_active && cycleKey) {
+      await notifyMembersRadioVotingNewCycle(updated);
+    }
   } else {
-    const { error } = await admin.from("radio_voting_campaigns").insert({
-      ...payload,
-      cycle_key: "1",
-    });
+    const { data: created, error } = await admin
+      .from("radio_voting_campaigns")
+      .insert({
+        ...payload,
+        cycle_key: "1",
+      })
+      .select(campaignSelect)
+      .single();
     if (error) throw new Error(error.message);
+
+    if (created.is_active) {
+      await notifyMembersRadioVotingAvailable(created);
+    }
   }
 
   revalidatePath("/votings");
@@ -132,6 +153,15 @@ export async function startNewRadioVotingCycle(formData: FormData) {
   if (!id) throw new Error("ID fehlt");
 
   const admin = createSupabaseAdminClient();
+
+  const { data: campaign, error: loadErr } = await admin
+    .from("radio_voting_campaigns")
+    .select(campaignSelect)
+    .eq("id", id)
+    .maybeSingle();
+  if (loadErr) throw new Error(loadErr.message);
+  if (!campaign) throw new Error("Voting nicht gefunden.");
+
   const { error } = await admin
     .from("radio_voting_campaigns")
     .update({
@@ -140,6 +170,10 @@ export async function startNewRadioVotingCycle(formData: FormData) {
     })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  if (campaign.is_active) {
+    await notifyMembersRadioVotingNewCycle(campaign);
+  }
 
   revalidatePath("/votings");
   revalidatePath("/admin/radio-votings");

@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Check, Copy, ExternalLink, Radio, RotateCcw, Sparkles, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { RadioVotingCampaignView } from "@/lib/votings/radio-campaign-types";
 import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 import { copyVotingLink, openRadioVotingLink } from "@/lib/votings/open-voting-link";
+import { scrollToFocusElement } from "@/lib/navigation/scroll-to-focus";
 
 function CampaignCard({
   campaign,
@@ -99,7 +101,7 @@ function CampaignCard({
   }
 
   return (
-    <Card className="overflow-hidden">
+    <Card id={`voting-${campaign.id}`} className="overflow-hidden scroll-mt-24">
       <CardHeader className="space-y-2 border-b border-fc-ice/80 bg-gradient-to-r from-fc-ice/40 via-white to-rose-50/30 pb-3">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
@@ -217,12 +219,19 @@ function CampaignCard({
 }
 
 export function RadioVotingBoard({ campaigns }: { campaigns: RadioVotingCampaignView[] }) {
+  const searchParams = useSearchParams();
+  const focusId = searchParams.get("focus");
   const [localParticipated, setLocalParticipated] = useState<Record<string, boolean>>({});
 
   const merged = campaigns.map((c) => ({
     ...c,
     participated: localParticipated[c.id] ?? c.participated,
   }));
+
+  useEffect(() => {
+    if (!focusId || !campaigns.some((c) => c.id === focusId)) return;
+    return scrollToFocusElement(`voting-${focusId}`);
+  }, [focusId, campaigns]);
 
   if (!merged.length) {
     return (

@@ -84,7 +84,9 @@ export async function sendEventAvailableNotices(
       kind: NOTIFICATION_KINDS.eventAvailable,
       title: notice.kind === "tv" ? "Neuer TV-Auftritt" : "Neues Event",
       body: `${notice.title} — ${dateLabel}${location ? `, ${location}` : ""}`,
-      linkUrl: base ? `${base}/events` : "/events",
+      linkUrl: base
+        ? `${base}/events?focus=${notice.eventId}`
+        : `/events?focus=${notice.eventId}`,
       linkLabel: "Zur Eventliste",
       metadata: { event_id: notice.eventId },
     }).catch(console.error);
