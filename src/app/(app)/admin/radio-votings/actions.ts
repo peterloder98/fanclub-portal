@@ -14,7 +14,7 @@ const campaignSelect =
 
 const campaignSchema = z.object({
   station: z.string().min(1),
-  region: z.string().min(1),
+  region: z.string().optional().default(""),
   chart_name: z.string().min(1),
   voting_url: z.string().url(),
   ends_at: z.string().min(1),
@@ -65,7 +65,7 @@ export async function saveRadioVotingCampaign(formData: FormData) {
   const admin = createSupabaseAdminClient();
   const payload = {
     station: input.station.trim(),
-    region: input.region.trim(),
+    region: (input.region ?? "").trim(),
     chart_name: input.chart_name.trim(),
     voting_url: input.voting_url.trim(),
     ends_at: parseEndsAt(input.ends_at),

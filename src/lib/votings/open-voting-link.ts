@@ -1,5 +1,5 @@
-const POPUP_WIDTH = 480;
-const POPUP_HEIGHT = 820;
+const POPUP_WIDTH = 240;
+const POPUP_HEIGHT = 410;
 
 function isMobileDevice() {
   if (typeof window === "undefined") return false;
@@ -7,8 +7,9 @@ function isMobileDevice() {
   return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
-function centeredPopupFeatures(width: number, height: number) {
-  const left = Math.max(0, Math.round((window.screen.availWidth - width) / 2));
+/** Rechts am Bildschirm — halbe Größe, Fanclub bleibt links sichtbar. */
+function desktopPopupFeatures(width: number, height: number) {
+  const left = Math.max(0, window.screen.availWidth - width - 16);
   const top = Math.max(0, Math.round((window.screen.availHeight - height) / 2));
   return [
     `width=${width}`,
@@ -25,7 +26,7 @@ function centeredPopupFeatures(width: number, height: number) {
 export type OpenVotingResult = "popup" | "tab";
 
 /**
- * Desktop: schmales Popup — Fanclub bleibt sichtbar dahinter.
+ * Desktop: kleines Popup rechts — Fanclub bleibt sichtbar.
  * Mobil: neuer Tab (Popups funktionieren dort kaum zuverlässig).
  */
 export function openRadioVotingLink(url: string, campaignId: string): OpenVotingResult {
@@ -35,7 +36,7 @@ export function openRadioVotingLink(url: string, campaignId: string): OpenVoting
   }
 
   const windowName = `fanclub-radio-voting-${campaignId}`;
-  const popup = window.open(url, windowName, centeredPopupFeatures(POPUP_WIDTH, POPUP_HEIGHT));
+  const popup = window.open(url, windowName, desktopPopupFeatures(POPUP_WIDTH, POPUP_HEIGHT));
   if (!popup) {
     window.open(url, "_blank", "noopener,noreferrer");
     return "tab";

@@ -111,35 +111,25 @@ function CampaignCard({
               </span>
               <div className="min-w-0">
                 <CardTitle className="text-base leading-snug">{campaign.station}</CardTitle>
-                <p className="text-xs text-slate-500">{campaign.region}</p>
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Badge variant="brand">{campaign.chartName}</Badge>
-            {participated ? (
-              <Badge variant="success">
-                <Check className="mr-1 h-3 w-3" aria-hidden />
-                Mitgemacht
-              </Badge>
-            ) : null}
-          </div>
+          {participated ? (
+            <Badge variant="success">
+              <Check className="mr-1 h-3 w-3" aria-hidden />
+              Mitgemacht
+            </Badge>
+          ) : null}
         </div>
         <p className="text-sm font-medium text-fc-navy">{campaign.songTitle}</p>
       </CardHeader>
       <CardContent className="grid gap-3 pt-4">
         <p className="text-sm leading-relaxed text-slate-700">{campaign.instructions}</p>
 
-        <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/40 px-3 py-2.5 text-sm text-fc-navy">
-          <div className="flex items-center gap-1.5 font-semibold">
-            <Sparkles className="h-4 w-4 text-amber-500" aria-hidden />
-            +1 Anni-Star pro Runde
-          </div>
-          <p className="mt-0.5 text-xs text-slate-600">
-            Einmal pro Voting-Runde, wenn du auf „Jetzt für Anni abstimmen“ klickst — zählt für
-            das Votingheld-Badge.
-          </p>
-        </div>
+        <p className="text-xs text-slate-500">
+          <Sparkles className="mr-1 inline h-3 w-3 text-amber-500" aria-hidden />
+          +1 Anni-Star pro Runde beim Abstimmen · zählt für Votingheld
+        </p>
 
         <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2.5">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-900/80">

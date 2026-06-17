@@ -85,15 +85,7 @@ export function RadioVotingsAdmin({ campaigns }: { campaigns: RadioVotingCampaig
                 className="h-11 rounded-xl border bg-white px-3 text-sm"
               />
             </label>
-            <label className="grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Region *</span>
-              <input
-                name="region"
-                required
-                defaultValue={form.region}
-                className="h-11 rounded-xl border bg-white px-3 text-sm"
-              />
-            </label>
+            <input type="hidden" name="region" value="" />
             <label className="grid gap-1">
               <span className="text-sm font-medium text-slate-700">Chart-Name *</span>
               <input
@@ -216,7 +208,6 @@ export function RadioVotingsAdmin({ campaigns }: { campaigns: RadioVotingCampaig
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-semibold text-fc-navy">{c.station}</h3>
-                  <Badge variant="brand">{c.chart_name}</Badge>
                   {c.is_active ? (
                     <Badge variant="success">Aktiv</Badge>
                   ) : (

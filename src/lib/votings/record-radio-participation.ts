@@ -44,11 +44,15 @@ export async function recordRadioVotingParticipation(
     return { ok: true, alreadyParticipated: true, starsAwarded: 0 };
   }
 
-  const { error: insErr } = await admin.from("radio_voting_participations").insert({
-    campaign_id: campaignId,
-    user_id: userId,
-    cycle_key: cycleKey,
-  });
+  const { data: participation, error: insErr } = await admin
+    .from("radio_voting_participations")
+    .insert({
+      campaign_id: campaignId,
+      user_id: userId,
+      cycle_key: cycleKey,
+    })
+    .select("id")
+    .single();
 
   if (insErr) {
     if (/duplicate|unique/i.test(insErr.message)) {
@@ -57,15 +61,14 @@ export async function recordRadioVotingParticipation(
     return { ok: false, alreadyParticipated: false, starsAwarded: 0, error: insErr.message };
   }
 
-  const entityId = `${campaignId}:${cycleKey}`;
   const pointsBefore = await sumUserPointsThisYear(userId);
 
   const { error: ptErr } = await admin.from("points_transactions").insert({
     user_id: userId,
     points: POINT_VALUES.radioVoting,
     reason: "radio_voting",
-    entity_type: "radio_voting_campaign",
-    entity_id: entityId,
+    entity_type: "radio_voting_participation",
+    entity_id: participation.id,
   });
 
   let starsAwarded = 0;

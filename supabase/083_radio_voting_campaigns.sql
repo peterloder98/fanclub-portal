@@ -90,7 +90,7 @@ begin
   'Hamburg & Schleswig-Holstein',
   'TOP 845',
   'https://www.radiohamburg.de/charts/top-845/voting',
-  '2026-06-15 20:00:00+02',
+  '2026-12-31 23:59:00+01',
   'Anni Perka — aktueller Titel',
   'Stimme für Anni in der TOP 845 ab — je höher der Platz, desto öfter läuft der Song im Programm.',
   array[
@@ -106,7 +106,7 @@ begin
   'Norddeutschland',
   'Soundcheck',
   'https://www.ndr.de/radio/ndr2/sendungen/soundcheck/voting',
-  '2026-06-12 18:00:00+02',
+  '2026-12-31 23:59:00+01',
   'Anni Perka — Soundcheck-Kandidatin',
   'Im NDR-2-Soundcheck entscheidet das Publikum über neue Titel — Anni braucht deine Stimme für Rotation.',
   array[
@@ -122,7 +122,7 @@ begin
   'Bayern',
   'Bayern 3 Votes',
   'https://www.bayern3.de/bayern3votes',
-  '2026-06-20 23:59:00+02',
+  '2026-12-31 23:59:00+01',
   'Anni Perka — Bayern 3 Votes',
   'Bayern 3 Votes ist das Hörer-Voting des Senders — gute Platzierungen bringen mehr Airplay.',
   array[
@@ -137,7 +137,7 @@ begin
   'Baden-Württemberg',
   'TOP 25',
   'https://www.regenbogen.de/charts/top-25/voting',
-  '2026-06-18 21:00:00+02',
+  '2026-12-31 23:59:00+01',
   'Anni Perka — TOP-25-Kandidatin',
   'In der Radio-Regenbogen-TOP-25 kannst du Anni nach oben voten — Top-Plätze bedeuten häufigere Plays.',
   array[
@@ -152,7 +152,7 @@ begin
   'Mitteldeutschland',
   'Live-Charts',
   'https://www.mdrjump.de/charts/live-charts/voting',
-  '2026-06-14 19:00:00+02',
+  '2026-12-31 23:59:00+01',
   'Anni Perka — Live-Charts',
   'MDR Jump Live-Charts: Hörerstimmen bestimmen die Playlist — hilf Anni in die vorderen Ränge.',
   array[
