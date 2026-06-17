@@ -103,24 +103,32 @@ function CampaignCard({
   return (
     <Card id={`voting-${campaign.id}`} className="overflow-hidden scroll-mt-24">
       <CardHeader className="space-y-2 border-b border-fc-ice/80 bg-gradient-to-r from-fc-ice/40 via-white to-rose-50/30 pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
-                <Radio className="h-4 w-4" aria-hidden />
-              </span>
-              <div className="min-w-0">
-                <CardTitle className="text-base leading-snug">{campaign.station}</CardTitle>
-              </div>
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+          <div className="flex min-w-0 flex-1 items-start gap-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
+              <Radio className="h-4 w-4" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <CardTitle className="text-base leading-snug">{campaign.station}</CardTitle>
             </div>
           </div>
-          {participated ? (
-            <Badge variant="success">
-              <Check className="mr-1 h-3 w-3" aria-hidden />
-              Mitgemacht
-            </Badge>
-          ) : null}
+          <div className="shrink-0 text-right">
+            <div className="flex items-center justify-end gap-1 text-xs font-semibold uppercase tracking-wide text-amber-900/80">
+              <Timer className="h-3.5 w-3.5" aria-hidden />
+              Voting endet in
+            </div>
+            <p className="mt-0.5 text-sm font-semibold text-amber-950">
+              {formatCountdownVerbose(secondsLeft)}
+            </p>
+            <p className="text-[11px] text-amber-900/70">bis {endLabel}</p>
+          </div>
         </div>
+        {participated ? (
+          <Badge variant="success" className="w-fit">
+            <Check className="mr-1 h-3 w-3" aria-hidden />
+            Mitgemacht
+          </Badge>
+        ) : null}
         <p className="text-sm font-medium text-fc-navy">{campaign.songTitle}</p>
       </CardHeader>
       <CardContent className="grid gap-3 pt-4">
@@ -130,17 +138,6 @@ function CampaignCard({
           <Sparkles className="mr-1 inline h-3 w-3 text-amber-500" aria-hidden />
           +1 Anni-Star pro Runde beim Abstimmen · zählt für Votingheld
         </p>
-
-        <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3 py-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-900/80">
-            <Timer className="h-3.5 w-3.5" aria-hidden />
-            Voting endet in
-          </div>
-          <p className="mt-1 text-sm font-semibold text-amber-950">
-            {formatCountdownVerbose(secondsLeft)}
-          </p>
-          <p className="mt-0.5 text-xs text-amber-900/70">bis {endLabel}</p>
-        </div>
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
