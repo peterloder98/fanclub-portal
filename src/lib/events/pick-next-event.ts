@@ -1,14 +1,12 @@
+import { eventStartMs, isEventUpcoming } from "@/lib/events/event-schedule";
+
 export function pickNextEvent<T extends { start_at: string | null; title: string }>(
   events: T[],
+  now = Date.now(),
 ): T | null {
-  const now = Date.now();
-  const withDate = events.filter(
-    (e) => e.start_at && !Number.isNaN(new Date(e.start_at).getTime()),
-  );
+  const upcoming = events
+    .filter((e) => isEventUpcoming(e, now))
+    .sort((a, b) => eventStartMs(a.start_at)! - eventStartMs(b.start_at)!);
 
-  const upcoming = withDate
-    .filter((e) => new Date(e.start_at!).getTime() > now)
-    .sort((a, b) => new Date(a.start_at!).getTime() - new Date(b.start_at!).getTime());
-
-  return upcoming[0] ?? withDate[0] ?? null;
+  return upcoming[0] ?? null;
 }

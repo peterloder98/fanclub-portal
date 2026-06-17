@@ -10,6 +10,8 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { maybeSyncArtistflowIfStale } from "@/lib/artistflow/maybe-sync-if-stale";
 import { loadPublishedMeetings } from "@/lib/meetings/load";
+import { filterVisibleEvents } from "@/lib/events/event-schedule";
+import { pickNextEvent } from "@/lib/events/pick-next-event";
 
 export default async function EventsPage() {
   after(() => maybeSyncArtistflowIfStale());
@@ -33,10 +35,11 @@ export default async function EventsPage() {
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false });
 
-  const nextEventWithDate =
-    (events ?? []).find((e) => Boolean(e.start_at)) ?? null;
+  const allEvents = events ?? [];
+  const visibleEvents = filterVisibleEvents(allEvents);
+  const nextEvent = pickNextEvent(allEvents);
 
-  const eventIds = (events ?? []).map((e) => e.id);
+  const eventIds = visibleEvents.map((e) => e.id);
   const participationByEventId: Record<string, EventParticipationMeta> = {};
 
   if (eventIds.length) {
@@ -134,10 +137,10 @@ export default async function EventsPage() {
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <EventsInteractivePanel
-            events={(events ?? []) as never[]}
+            events={visibleEvents as never[]}
             clubMeetings={clubMeetings}
-            nextStartAt={nextEventWithDate?.start_at ?? null}
-            nextTitle={nextEventWithDate?.title ?? null}
+            nextStartAt={nextEvent?.start_at ?? null}
+            nextTitle={nextEvent?.title ?? null}
             participationByEventId={participationByEventId}
             travelNotesByEventId={travelNotesByEventId}
             isAdmin={isAdmin}

@@ -81,11 +81,15 @@ export function EventsInteractivePanel({
     return a.sortAt.localeCompare(b.sortAt);
   });
 
-  const eventItems = (
+  const eventItems = scheduleItems.length ? (
     <div className="grid gap-2 sm:gap-3">
       {scheduleItems.map((item) => (
         <div key={item.key}>{item.node}</div>
       ))}
+    </div>
+  ) : (
+    <div className="px-3 py-8 text-center text-sm text-slate-600">
+      Keine anstehenden Termine — abgelaufene Auftritte werden automatisch ausgeblendet.
     </div>
   );
 

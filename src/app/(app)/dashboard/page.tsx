@@ -5,6 +5,7 @@ import type { MapEvent } from "@/components/events/events-map";
 import { EventsMap } from "@/components/events/events-map";
 import { EventsCountdown } from "@/components/events/events-countdown";
 import { pickNextEvent } from "@/lib/events/pick-next-event";
+import { filterVisibleEvents } from "@/lib/events/event-schedule";
 import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-giveaways-inline";
 import { DashboardMeetingHighlight } from "@/components/meetings/dashboard-meeting-highlight";
 import { loadPublishedMeetings, pickNextMeeting } from "@/lib/meetings/load";
@@ -30,9 +31,11 @@ export default async function DashboardPage() {
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(50);
 
-  const nextEvent = pickNextEvent(events ?? []);
+  const allEvents = events ?? [];
+  const visibleEvents = filterVisibleEvents(allEvents);
+  const nextEvent = pickNextEvent(allEvents);
 
-  const mapEvents: MapEvent[] = (events ?? []).map((e) => ({
+  const mapEvents: MapEvent[] = visibleEvents.map((e) => ({
     id: e.id,
     title: e.title,
     start_at: e.start_at,

@@ -25,7 +25,9 @@ export function EventsCountdown({
   }, []);
 
   const secondsLeft =
-    target && Number.isFinite(target) ? Math.max(0, Math.floor((target - now) / 1000)) : null;
+    target && Number.isFinite(target) && target > now
+      ? Math.max(0, Math.floor((target - now) / 1000))
+      : null;
 
   const dateLabel =
     nextStartAt && !Number.isNaN(new Date(nextStartAt).getTime())
@@ -42,7 +44,7 @@ export function EventsCountdown({
         <div className="bg-gradient-to-r from-blue-600/10 via-white to-rose-500/10 px-3 py-3">
           <div className="text-xs font-semibold text-slate-600">Nächster Auftritt</div>
           {secondsLeft === null ? (
-            <div className="mt-1 text-xs text-slate-600">Kein Termin mit Datum.</div>
+            <div className="mt-1 text-xs text-slate-600">Kein anstehender Termin.</div>
           ) : (
             <>
               <div className="mt-1 text-sm font-semibold leading-snug text-slate-900">
@@ -70,7 +72,7 @@ export function EventsCountdown({
         </CardHeader>
         <CardContent className="pt-1">
           {secondsLeft === null ? (
-            <div className="text-sm text-slate-600">Noch kein Termin mit Datum vorhanden.</div>
+            <div className="text-sm text-slate-600">Kein anstehender Termin.</div>
           ) : (
             <div className="grid gap-1">
               <div className="flex items-baseline gap-3">
