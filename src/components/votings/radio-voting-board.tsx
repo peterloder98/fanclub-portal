@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, Copy, ExternalLink, Radio, RotateCcw, Sparkles, Timer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import type { RadioVotingCampaignView } from "@/lib/votings/radio-campaign-types
 import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
 import { copyVotingLink, openRadioVotingLink } from "@/lib/votings/open-voting-link";
 import { scrollToFocusElement } from "@/lib/navigation/scroll-to-focus";
+import { flyPointsFromElement } from "@/lib/points/fly";
 
 function CampaignCard({
   campaign,
@@ -22,8 +23,8 @@ function CampaignCard({
   const [copied, setCopied] = useState(false);
   const [openedHint, setOpenedHint] = useState<string | null>(null);
   const [participated, setParticipated] = useState(campaign.participated ?? false);
-  const [starHint, setStarHint] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
+  const voteBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -41,12 +42,6 @@ function CampaignCard({
     const id = window.setTimeout(() => setOpenedHint(null), 5000);
     return () => window.clearTimeout(id);
   }, [openedHint]);
-
-  useEffect(() => {
-    if (!starHint) return;
-    const id = window.setTimeout(() => setStarHint(null), 6000);
-    return () => window.clearTimeout(id);
-  }, [starHint]);
 
   const secondsLeft = Math.max(0, Math.floor((endsAt - now) / 1000));
   const endLabel = new Date(campaign.endsAt).toLocaleString("de-DE", {
@@ -73,9 +68,7 @@ function CampaignCard({
         setParticipated(true);
         onParticipated(campaign.id);
         if (data.starsAwarded && data.starsAwarded > 0) {
-          setStarHint(`+${data.starsAwarded} Anni-Star für deine Teilnahme — danke!`);
-        } else if (data.alreadyParticipated) {
-          setStarHint("Du hast in dieser Runde schon mitgemacht — danke!");
+          flyPointsFromElement({ fromEl: voteBtnRef.current, delta: data.starsAwarded });
         }
       }
     } catch {
@@ -150,12 +143,6 @@ function CampaignCard({
           </ol>
         </div>
 
-        {starHint ? (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950">
-            {starHint}
-          </p>
-        ) : null}
-
         {openedHint ? (
           <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-relaxed text-emerald-900">
             {openedHint}
@@ -164,6 +151,7 @@ function CampaignCard({
 
         <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <button
+            ref={voteBtnRef}
             type="button"
             onClick={() => void handleOpen()}
             disabled={recording}
