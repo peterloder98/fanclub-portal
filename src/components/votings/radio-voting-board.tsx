@@ -105,7 +105,7 @@ function CampaignCard({
               <CardTitle className="text-base leading-snug">{campaign.station}</CardTitle>
             </div>
           </div>
-          <div className="shrink-0 text-right">
+          <div className="flex shrink-0 flex-col items-end text-right">
             <div className="flex items-center justify-end gap-1 text-xs font-semibold uppercase tracking-wide text-amber-900/80">
               <Timer className="h-3.5 w-3.5" aria-hidden />
               Voting endet in
@@ -114,14 +114,14 @@ function CampaignCard({
               {formatCountdownVerbose(secondsLeft)}
             </p>
             <p className="text-[11px] text-amber-900/70">bis {endLabel}</p>
+            {participated ? (
+              <Badge variant="success" className="mt-1.5">
+                <Check className="mr-1 h-3 w-3" aria-hidden />
+                Mitgemacht
+              </Badge>
+            ) : null}
           </div>
         </div>
-        {participated ? (
-          <Badge variant="success" className="w-fit">
-            <Check className="mr-1 h-3 w-3" aria-hidden />
-            Mitgemacht
-          </Badge>
-        ) : null}
         <p className="text-sm font-medium text-fc-navy">{campaign.songTitle}</p>
       </CardHeader>
       <CardContent className="grid gap-3 pt-4">
