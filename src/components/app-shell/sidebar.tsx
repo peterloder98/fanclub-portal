@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, PanelLeftOpen, UserPlus } from "lucide-react";
+import { ChevronLeft, UserPlus } from "lucide-react";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { appNav, NavList } from "@/components/app-shell/nav";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
@@ -42,16 +42,21 @@ export function Sidebar({ user }: { user: SidebarUser }) {
     };
   }, [collapsed]);
 
-  function toggle() {
-    setCollapsed((v) => {
-      const next = !v;
-      try {
-        window.localStorage.setItem("fanclub-sidebar-collapsed", next ? "1" : "0");
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
+  function setCollapsedPersist(next: boolean) {
+    setCollapsed(next);
+    try {
+      window.localStorage.setItem("fanclub-sidebar-collapsed", next ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function expand() {
+    setCollapsedPersist(false);
+  }
+
+  function collapse() {
+    setCollapsedPersist(true);
   }
 
   return (
@@ -63,30 +68,24 @@ export function Sidebar({ user }: { user: SidebarUser }) {
     >
       {collapsed ? (
         <>
-          <div className="flex shrink-0 flex-col items-center gap-2 border-b px-2 py-3">
-            <Link
-              href="/dashboard"
-              className="block rounded-xl shadow-sm shadow-slate-900/10"
-              title="Dashboard"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/images/fanclub-logo.png"
-                alt="Anni Perka Fanclub"
-                width={44}
-                height={44}
-                className="h-11 w-11 rounded-xl object-cover"
-              />
-            </Link>
-            <button
-              type="button"
-              onClick={toggle}
-              className="grid h-10 w-10 place-items-center rounded-xl border border-fc-ice bg-white text-fc-blue shadow-sm transition hover:border-fc-sky/40 hover:bg-fc-ice"
-              aria-label="Menü ausklappen"
-              title="Menü ausklappen"
-            >
-              <PanelLeftOpen className="h-4 w-4" aria-hidden />
-            </button>
+          <div className="flex shrink-0 flex-col items-center border-b px-2 py-3">
+            <SidebarNavTooltip label="Menü ausklappen">
+              <button
+                type="button"
+                onClick={expand}
+                className="rounded-xl transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-sky/50"
+                aria-label="Menü ausklappen"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/images/fanclub-logo.png"
+                  alt=""
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-xl object-cover shadow-sm shadow-slate-900/10"
+                />
+              </button>
+            </SidebarNavTooltip>
           </div>
           <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-visible px-2 py-3">
             <NavList items={appNav} isAdmin={isAdmin} collapsed />
@@ -113,7 +112,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
             />
             <button
               type="button"
-              onClick={toggle}
+              onClick={collapse}
               className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
               aria-label="Menü einklappen"
               title="Menü einklappen"
