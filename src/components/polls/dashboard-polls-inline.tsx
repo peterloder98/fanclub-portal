@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
+import { captureFlyRect } from "@/lib/points/fly";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
@@ -129,6 +130,7 @@ export function DashboardPollsInline() {
     if (!userId) return;
     const ended = new Date(poll.ends_at).getTime() < Date.now();
     if (ended || busyKey) return;
+    const fromRect = captureFlyRect(fromEl);
     setBusyKey(`${poll.id}:${optionId}`);
     const supabase = createSupabaseBrowserClient();
     const mine = myOptionIdsByPoll.get(poll.id) ?? new Set<string>();
@@ -166,7 +168,7 @@ export function DashboardPollsInline() {
         .eq("poll_id", poll.id)
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
-      applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
+      applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
       await load();
     } finally {
       setBusyKey(null);

@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp, Heart, MessageCircle, SendHorizontal } from "lu
 import { cn } from "@/lib/cn";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { flyPointsFromElement } from "@/lib/points/fly";
+import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import { POINT_VALUES } from "@/lib/points/values";
 import {
   canAdminDrawGiveaway,
@@ -169,12 +169,13 @@ export function GiveawayDetailClient({
   }, [quizResult, questions]);
 
   async function onParticipateSimple(fromEl: HTMLElement) {
+    const fromRect = captureFlyRect(fromEl);
     setBusy(true);
     setError(null);
     try {
       await participateSimple(giveaway.id);
       setLocalEntered({ is_eligible: true });
-      flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
+      flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Teilnahme fehlgeschlagen");
     } finally {
@@ -187,6 +188,7 @@ export function GiveawayDetailClient({
       setError("Bitte jede Frage beantworten.");
       return;
     }
+    const fromRect = captureFlyRect(fromEl);
     setBusy(true);
     setError(null);
     try {
@@ -197,7 +199,7 @@ export function GiveawayDetailClient({
       const result = await participateQuiz(giveaway.id, JSON.stringify(payload));
       setQuizResult(result);
       setLocalEntered({ is_eligible: result.eligible });
-      if (result.eligible) flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
+      if (result.eligible) flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Quiz fehlgeschlagen");
     } finally {
@@ -211,6 +213,7 @@ export function GiveawayDetailClient({
       setError("Bitte eine Antwort wählen.");
       return;
     }
+    const fromRect = captureFlyRect(fromEl);
     setBusy(true);
     setError(null);
     try {
@@ -224,7 +227,7 @@ export function GiveawayDetailClient({
         optionLabel: chosen?.label ?? "",
       });
       setLocalEntered({ is_eligible: true });
-      flyPointsFromElement({ fromEl, delta: +POINT_VALUES.giveawayEntry });
+      flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Teilnahme fehlgeschlagen");
     } finally {
@@ -271,6 +274,7 @@ export function GiveawayDetailClient({
 
   async function toggleLike(fromEl: HTMLElement) {
     if (!userId) return;
+    const fromRect = captureFlyRect(fromEl);
     const supabase = createSupabaseBrowserClient();
     const next = !likes.mine;
     setLikes((l) => ({
@@ -283,14 +287,14 @@ export function GiveawayDetailClient({
           giveaway_id: giveaway.id,
           user_id: userId,
         });
-        flyPointsFromElement({ fromEl, delta: +1 });
+        flyPointsFromElement({ fromRect, delta: +1 });
       } else {
         await supabase
           .from("giveaway_likes")
           .delete()
           .eq("giveaway_id", giveaway.id)
           .eq("user_id", userId);
-        flyPointsFromElement({ fromEl, delta: -1 });
+        flyPointsFromElement({ fromRect, delta: -1 });
       }
     } catch {
       setLikes((l) => ({

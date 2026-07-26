@@ -1,4 +1,4 @@
-import { flyPointsFromElement } from "@/lib/points/fly";
+import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import { POINT_VALUES } from "@/lib/points/values";
 
 /**
@@ -8,17 +8,19 @@ import { POINT_VALUES } from "@/lib/points/values";
 export function applyPollVotePointsFx(params: {
   votesBefore: number;
   votesAfter: number;
-  fromEl: HTMLElement;
+  fromEl?: HTMLElement | null;
+  fromRect?: { left: number; top: number; width: number; height: number } | null;
 }) {
-  const { votesBefore, votesAfter, fromEl } = params;
+  const { votesBefore, votesAfter, fromEl, fromRect } = params;
   const before = Math.max(0, votesBefore);
   const after = Math.max(0, votesAfter);
+  const rect = fromRect ?? captureFlyRect(fromEl ?? null);
 
   if (before === 0 && after > 0) {
-    flyPointsFromElement({ fromEl, delta: +POINT_VALUES.pollVote });
+    flyPointsFromElement({ fromRect: rect, fromEl, delta: +POINT_VALUES.pollVote });
     return;
   }
   if (before > 0 && after === 0) {
-    flyPointsFromElement({ fromEl, delta: -POINT_VALUES.pollVote });
+    flyPointsFromElement({ fromRect: rect, fromEl, delta: -POINT_VALUES.pollVote });
   }
 }

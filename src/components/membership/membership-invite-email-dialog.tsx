@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { flyPointsFromElement } from "@/lib/points/fly";
+import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import {
   getMembershipFormInviteDraft,
   sendMembershipFormInviteEmail,
@@ -143,6 +143,7 @@ export function MembershipInviteEmailDialog({
       disabled={pending || loading || !canSend}
       className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white disabled:opacity-50"
       onClick={() => {
+        const fromRect = captureFlyRect(sendBtnRef.current);
         startTransition(async () => {
           try {
             if (isAdmin) {
@@ -164,7 +165,7 @@ export function MembershipInviteEmailDialog({
               });
               if (result.pointsAwarded > 0) {
                 flyPointsFromElement({
-                  fromEl: sendBtnRef.current,
+                  fromRect,
                   delta: result.pointsAwarded,
                 });
               }

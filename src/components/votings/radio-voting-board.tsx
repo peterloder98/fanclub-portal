@@ -9,7 +9,7 @@ import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import type { RadioVotingCampaignView } from "@/lib/votings/radio-campaign-types";
 import { copyVotingLink, openRadioVotingLink } from "@/lib/votings/open-voting-link";
 import { scrollToFocusElement } from "@/lib/navigation/scroll-to-focus";
-import { flyPointsFromElement } from "@/lib/points/fly";
+import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import { cn } from "@/lib/cn";
 
 const countdownClass = "!px-2 !py-1 !text-[11px]";
@@ -41,6 +41,7 @@ function CampaignCard({
 
   async function recordParticipation() {
     if (recording || participated) return;
+    const fromRect = captureFlyRect(voteBtnRef.current);
     setRecording(true);
     try {
       const res = await fetch("/api/radio-voting/participate", {
@@ -56,7 +57,7 @@ function CampaignCard({
         setParticipated(true);
         onParticipated(campaign.id);
         if (data.starsAwarded && data.starsAwarded > 0) {
-          flyPointsFromElement({ fromEl: voteBtnRef.current, delta: data.starsAwarded });
+          flyPointsFromElement({ fromRect, delta: data.starsAwarded });
         }
       }
     } catch {

@@ -12,7 +12,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
 import { optimizePostImage } from "@/lib/posts/optimize-image";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
-import { flyPointsFromElement } from "@/lib/points/fly";
+import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import { POINT_VALUES } from "@/lib/points/values";
 import {
   deltaAfterCommentDelete,
@@ -1127,6 +1127,7 @@ function PostFeedInner({
     const ended = new Date(poll.ends_at).getTime() < Date.now();
     if (ended || pollBusyKey) return;
 
+    const fromRect = captureFlyRect(fromEl);
     setPollBusyKey(`${pollId}:${optionId}`);
     const supabase = createSupabaseBrowserClient();
     const mine = myPollOptionsByPoll.get(pollId) ?? new Set<string>();
@@ -1173,7 +1174,7 @@ function PostFeedInner({
       );
       const votesAfter = mineSet.size;
 
-      applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
+      applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
 
       const nowIso = new Date().toISOString();
       setFeedPolls((prev) =>
@@ -1645,7 +1646,7 @@ function PostFeedInner({
                 disabled={Boolean(likeBusy[post.id])}
                 onClick={(e) => {
                   if (!me) return;
-                  const btn = e.currentTarget;
+                  const fromRect = captureFlyRect(e.currentTarget);
                   const nextLiked = !post.likedByMe;
                   toggleLike(post.id);
                   void (async () => {
@@ -1657,7 +1658,7 @@ function PostFeedInner({
                           .from("post_likes")
                           .insert({ post_id: post.id, user_id: me.id });
                         if (error) throw error;
-                        flyPointsFromElement({ fromEl: btn, delta: +1 });
+                        flyPointsFromElement({ fromRect, delta: +1 });
                       } else {
                         const { error } = await supabase
                           .from("post_likes")
@@ -1665,7 +1666,7 @@ function PostFeedInner({
                           .eq("post_id", post.id)
                           .eq("user_id", me.id);
                         if (error) throw error;
-                        flyPointsFromElement({ fromEl: btn, delta: -1 });
+                        flyPointsFromElement({ fromRect, delta: -1 });
                       }
                     } catch (e) {
                       toggleLike(post.id);

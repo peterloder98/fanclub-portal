@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
+import { captureFlyRect } from "@/lib/points/fly";
 import { profileToUserListEntry } from "@/lib/profiles/display";
 import { PieChart } from "lucide-react";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
@@ -211,6 +212,7 @@ export function PollBoard({
     if (ended) return;
     const key = `${poll.id}:${optionId}`;
     if (busyKey) return;
+    const fromRect = captureFlyRect(fromEl);
     setBusyKey(key);
     setError(null);
 
@@ -261,7 +263,7 @@ export function PollBoard({
         .eq("poll_id", poll.id)
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
-      applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
+      applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
       const optionIdsForPoll = options.filter((o) => o.poll_id === poll.id).map((o) => o.id);
       invalidatePollVoterCache(setVotersByOptionId, optionIdsForPoll);
       setParticipantsByPollId((m) => {

@@ -8,6 +8,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { applyPollVotePointsFx } from "@/lib/points/poll-vote-fx";
+import { captureFlyRect } from "@/lib/points/fly";
 import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
@@ -184,6 +185,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
     if (!poll || !userId || ended) return;
     if (busyOptionId) return;
 
+    const fromRect = captureFlyRect(fromEl);
     setBusyOptionId(optionId);
     setError(null);
     const supabase = createSupabaseBrowserClient();
@@ -238,8 +240,8 @@ export function PollDetail({ pollId }: { pollId: string }) {
         .eq("poll_id", pollId)
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
-      if (fromEl) {
-        applyPollVotePointsFx({ votesBefore, votesAfter, fromEl });
+      if (fromRect || fromEl) {
+        applyPollVotePointsFx({ votesBefore, votesAfter, fromRect, fromEl });
       }
 
       await load();

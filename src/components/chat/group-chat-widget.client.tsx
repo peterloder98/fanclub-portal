@@ -247,7 +247,7 @@ export function GroupChatWidget() {
     if (!latest) return { name: "Gruppenchat", body: "Noch keine Nachrichten" };
     return {
       name: latest.author.name,
-      body: truncate(mentionTextToPlain(latest.body), 42),
+      body: truncate(mentionTextToPlain(latest.body), 28),
     };
   }, [latest]);
 
@@ -551,19 +551,19 @@ export function GroupChatWidget() {
           type="button"
           onClick={() => toggleExpanded(true)}
           className={cn(
-            "pointer-events-auto flex w-[min(17.5rem,100vw)] items-center gap-2.5",
-            "rounded-tl-2xl border-2 border-fc-blue bg-white",
-            "px-3 py-2.5 text-left shadow-[0_-6px_24px_rgba(44,100,163,0.28)]",
+            "pointer-events-auto flex w-[min(11.5rem,calc(100vw-0.5rem))] items-center gap-2",
+            "rounded-tl-xl border-2 border-fc-blue bg-white",
+            "px-2 py-1.5 text-left shadow-[0_-4px_18px_rgba(44,100,163,0.22)]",
             "transition hover:bg-fc-ice/60",
           )}
           aria-label="Gruppenchat öffnen"
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm shadow-fc-navy/30">
-            <MessageCircle className="h-4 w-4" />
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-fc-navy to-fc-blue text-white">
+            <MessageCircle className="h-3.5 w-3.5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-xs font-semibold text-fc-navy">{preview.name}</span>
-            <span className="block truncate text-[11px] text-slate-600">{preview.body}</span>
+            <span className="block truncate text-[11px] font-semibold text-fc-navy">{preview.name}</span>
+            <span className="block truncate text-[10px] text-slate-600">{preview.body}</span>
           </span>
         </button>
       )}

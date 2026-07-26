@@ -8,6 +8,26 @@ function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+type FlyRect = { left: number; top: number; width: number; height: number };
+
+function isUsableRect(r: FlyRect | DOMRect | null | undefined): r is FlyRect | DOMRect {
+  if (!r) return false;
+  // Detachierte Elemente liefern nach Re-Render oft 0×0 bei (0,0)
+  return r.width > 0 || r.height > 0;
+}
+
+function resolveStartRect(
+  fromEl?: HTMLElement | null,
+  fromRect?: FlyRect | DOMRect | null,
+): FlyRect | DOMRect | null {
+  if (isUsableRect(fromRect)) return fromRect;
+  if (fromEl?.isConnected) {
+    const r = fromEl.getBoundingClientRect();
+    if (isUsableRect(r)) return r;
+  }
+  return null;
+}
+
 function spawnPopAt(x: number, y: number, positive: boolean) {
   const colors = positive
     ? ["#34d399", "#10b981", "#059669", "#c9a227"]
@@ -25,7 +45,7 @@ function spawnPopAt(x: number, y: number, positive: boolean) {
     dot.style.borderRadius = "999px";
     dot.style.pointerEvents = "none";
     dot.style.zIndex = "10000";
-    dot.style.background = colors[i % colors.length];
+    dot.style.background = colors[i % colors.length]!;
     dot.style.transform = "translate(-50%, -50%) scale(1)";
     dot.style.transition = "transform 280ms ease-out, opacity 280ms ease-out";
     document.body.appendChild(dot);
@@ -37,7 +57,13 @@ function spawnPopAt(x: number, y: number, positive: boolean) {
   }
 }
 
-type FlyRect = { left: number; top: number; width: number; height: number };
+/** Sofort BoundingClientRect sichern (vor await/Re-Render), sonst fliegt die Animation nicht. */
+export function captureFlyRect(el: HTMLElement | null | undefined): FlyRect | null {
+  if (!el?.isConnected) return null;
+  const r = el.getBoundingClientRect();
+  if (!isUsableRect(r)) return null;
+  return { left: r.left, top: r.top, width: r.width, height: r.height };
+}
 
 export function flyPointsFromElement(params: {
   fromEl?: HTMLElement | null;
@@ -48,13 +74,13 @@ export function flyPointsFromElement(params: {
   const { fromEl, fromRect, delta } = params;
   if (!delta) return;
 
-  const target = getPointsTargetElement();
-  const from = fromRect ?? fromEl?.getBoundingClientRect();
+  const from = resolveStartRect(fromEl, fromRect);
   if (!from) {
     emitPointsDelta(delta);
     return;
   }
 
+  const target = getPointsTargetElement();
   const to = target?.getBoundingClientRect();
   const endX = to
     ? to.left + to.width / 2
@@ -70,7 +96,8 @@ export function flyPointsFromElement(params: {
   el.style.top = "0px";
   el.style.zIndex = "9999";
   el.style.pointerEvents = "none";
-  el.style.transform = `translate(${startX}px, ${startY}px)`;
+  el.style.willChange = "transform, opacity";
+  el.style.transform = `translate(${startX}px, ${startY}px) translate(-50%, -50%)`;
 
   const badge = document.createElement("div");
   badge.innerHTML = anniStarsDeltaHtml(delta);
@@ -80,7 +107,7 @@ export function flyPointsFromElement(params: {
   const duration = 1550;
   const start = performance.now();
   const midX = startX + (endX - startX) * 0.5;
-  const lift = clamp(Math.abs(endX - startX) * 0.15, 40, 120);
+  const lift = clamp(Math.abs(endX - startX) * 0.15 + Math.abs(endY - startY) * 0.2, 48, 140);
   const midY = Math.min(startY, endY) - lift;
 
   const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -94,9 +121,9 @@ export function flyPointsFromElement(params: {
     const e = easeOutCubic(t);
     const x = bezier(e, startX, midX, endX);
     const y = bezier(e, startY, midY, endY);
-    const s = 1 - t * 0.1;
+    const s = 1 - t * 0.12;
     el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${s})`;
-    el.style.opacity = t < 0.92 ? "1" : String(1 - (t - 0.92) / 0.08);
+    el.style.opacity = t < 0.9 ? "1" : String(1 - (t - 0.9) / 0.1);
 
     if (t < 1) {
       requestAnimationFrame(tick);
