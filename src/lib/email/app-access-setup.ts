@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
+import { normalizeGender, salutation } from "@/lib/person/gender";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -13,12 +14,23 @@ function appBaseUrl() {
 export async function sendAppAccessSetupEmail(input: {
   email: string;
   firstName: string;
+  gender?: string | null;
   userId?: string;
 }) {
   const admin = createSupabaseAdminClient();
   const base = appBaseUrl();
   if (!base) {
     throw new Error("APP_BASE_URL / NEXT_PUBLIC_APP_URL fehlt.");
+  }
+
+  let genderRaw = input.gender;
+  if (genderRaw == null && input.userId) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("gender")
+      .eq("id", input.userId)
+      .maybeSingle();
+    genderRaw = profile?.gender ?? null;
   }
 
   // generateLink action_link ist mit PKCE (@supabase/ssr) unzuverlässig.
@@ -33,9 +45,11 @@ export async function sendAppAccessSetupEmail(input: {
   if (!hashedToken) throw new Error("Kein Setup-Token erzeugt.");
 
   const setupUrl = `${base}/setup-account?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
+  const greeting = salutation(input.firstName, normalizeGender(genderRaw));
 
   const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.appAccessSetup, {
     first_name: input.firstName,
+    salutation: greeting,
     setup_url: setupUrl,
   });
 

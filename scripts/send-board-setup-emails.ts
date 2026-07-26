@@ -90,7 +90,7 @@ async function main() {
     console.log(`\n=== ${member.first_name} ${member.last_name} ===`);
     const { data: profile, error } = await admin
       .from("profiles")
-      .select("id,email,first_name,last_name,birthdate,role")
+      .select("id,email,first_name,last_name,birthdate,role,gender")
       .ilike("first_name", member.first_name)
       .ilike("last_name", member.last_name)
       .maybeSingle();
@@ -117,6 +117,7 @@ async function main() {
 
     console.log(`  E-Mail: ${profile.email}`);
     console.log(`  Rolle: ${profile.role ?? "member"}`);
+    console.log(`  Geschlecht: ${profile.gender ?? "—"}`);
 
     try {
       await ensureAuthUser({
@@ -129,6 +130,7 @@ async function main() {
       const result = await sendAppAccessSetupEmail({
         email: profile.email,
         firstName: profile.first_name ?? member.first_name,
+        gender: profile.gender,
         userId: profile.id,
       });
 

@@ -84,6 +84,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "admin_signature_block", label: "Fanclub-Signatur (HTML mit Bild)" },
   ],
   [EMAIL_TEMPLATE_KEYS.appAccessSetup]: [
+    { key: "salutation", label: "Anrede (Liebe/Lieber …)" },
     { key: "first_name", label: "Vorname" },
     { key: "setup_url", label: "Link Zugang einrichten" },
     { key: "admin_signature_text", label: "Fanclub-Signatur (Text)" },
