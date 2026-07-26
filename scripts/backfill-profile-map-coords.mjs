@@ -1,6 +1,8 @@
 /**
- * Geocodiert alle Profile (Straße + PLZ + Ort) und speichert map_lat/map_lng.
+ * Geocodiert Profile ohne map_lat/map_lng (Straße + PLZ + Ort).
+ * Mit --all auch bereits gesetzte Koordinaten neu berechnen.
  * node --env-file=.env.local scripts/backfill-profile-map-coords.mjs
+ * node --env-file=.env.local scripts/backfill-profile-map-coords.mjs --all
  */
 import { createClient } from "@supabase/supabase-js";
 import { geocodeProfileAddress, isGermanCountry, sleep } from "./lib/geocode-profile.mjs";
@@ -12,12 +14,20 @@ if (!url || !key) {
   process.exit(1);
 }
 
+const forceAll = process.argv.includes("--all");
 const admin = createClient(url, key);
 
-const { data: profiles, error } = await admin
+let query = admin
   .from("profiles")
-  .select("id,first_name,last_name,street,postal_code,city,country");
+  .select("id,first_name,last_name,street,postal_code,city,country,map_lat");
+if (!forceAll) query = query.is("map_lat", null);
+
+const { data: profiles, error } = await query;
 if (error) throw error;
+
+console.log(
+  `${profiles?.length ?? 0} Profile zu geocodieren${forceAll ? " (--all)" : " (ohne map_lat)"}…`,
+);
 
 let ok = 0;
 let skip = 0;

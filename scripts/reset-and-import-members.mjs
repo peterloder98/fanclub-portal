@@ -10,6 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { createRequire } from "node:module";
+import { geocodeProfileAddress, sleep } from "./lib/geocode-profile.mjs";
 
 const require = createRequire(import.meta.url);
 const XLSX = require("xlsx");
@@ -303,6 +304,22 @@ async function importMembers(members) {
       status: m.status,
     });
     if (memErr) console.warn(`  Membership-Fehler: ${memErr.message}`);
+
+    const coords = await geocodeProfileAddress({
+      street: m.street,
+      postal_code: m.postal_code,
+      city: m.city,
+      country: m.country,
+    });
+    await sleep(1100);
+    if (coords) {
+      await admin
+        .from("profiles")
+        .update({ map_lat: coords.lat, map_lng: coords.lng })
+        .eq("id", userId);
+    } else {
+      console.warn(`  Keine Geo-Koordinaten für #${m.membership_number}`);
+    }
 
     await admin.from("points_transactions").delete().eq("user_id", userId);
     ok += 1;

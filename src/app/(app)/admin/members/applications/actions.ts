@@ -94,6 +94,13 @@ async function activateApplication(
 
   await admin.auth.admin.updateUserById(app.user_id, { email_confirm: true });
 
+  try {
+    const { syncProfileMapCoords } = await import("@/lib/members/geocode-profile");
+    await syncProfileMapCoords(admin, app.user_id);
+  } catch (e) {
+    console.error("[membership] Geocoding nach Freigabe fehlgeschlagen:", e);
+  }
+
   const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
   await logMemberActivity({
     userId: app.user_id,

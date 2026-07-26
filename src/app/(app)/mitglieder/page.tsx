@@ -12,8 +12,11 @@ import { groupMembersByMapLocation, type MemberMapCluster } from "@/lib/members/
 import { profileDisplayName } from "@/lib/profiles/display";
 import { buildUpcomingBirthdays } from "@/lib/members/upcoming-birthdays";
 import { redirect } from "next/navigation";
+import { scheduleMissingProfileGeocode } from "@/lib/members/maybe-geocode-missing";
 
 export default async function MitgliederPage() {
+  scheduleMissingProfileGeocode();
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
