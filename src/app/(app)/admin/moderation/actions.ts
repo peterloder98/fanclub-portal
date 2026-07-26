@@ -14,9 +14,10 @@ import {
 } from "@/lib/membership/activity-log";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 
 export type CommentWarningInput = {
-  commentType: "post" | "poll" | "giveaway";
+  commentType: "post" | "poll" | "giveaway" | "chat";
   commentId: string;
 };
 
@@ -35,7 +36,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   let commentCreatedAt: string;
   let contextTitle: string;
   let contextAuthorName: string;
-  let contextKind: "post" | "poll" | "giveaway";
+  let contextKind: "post" | "poll" | "giveaway" | "chat";
   let memberEmail: string | null;
   let memberFirstName: string;
 
@@ -101,6 +102,36 @@ export async function issueCommentWarning(input: CommentWarningInput) {
 
     const { error: delErr } = await admin.from("poll_comments").delete().eq("id", c.id);
     if (delErr) throw new Error(delErr.message);
+  } else if (input.commentType === "chat") {
+    const { data: c, error } = await admin
+      .from("group_chat_messages")
+      .select("id,body,created_at,author_id")
+      .eq("id", input.commentId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!c) throw new Error("Nachricht nicht gefunden.");
+    memberId = c.author_id;
+    commentText = c.body;
+    commentCreatedAt = c.created_at;
+    contextKind = "chat";
+    contextTitle = "Gruppenchat";
+
+    const { data: author } = await admin
+      .from("profiles")
+      .select("first_name,last_name,email")
+      .eq("id", c.author_id)
+      .maybeSingle();
+    contextAuthorName =
+      author?.first_name && author?.last_name
+        ? `${author.first_name} ${author.last_name}`
+        : (author?.email ?? "Mitglied");
+
+    const { error: delErr } = await admin
+      .from("group_chat_messages")
+      .delete()
+      .eq("id", c.id);
+    if (delErr) throw new Error(delErr.message);
+    await deleteNotificationsByMetadata("chat_message_id", c.id).catch(() => null);
   } else {
     const { data: c, error } = await admin
       .from("giveaway_comments")
@@ -178,7 +209,9 @@ export async function issueCommentWarning(input: CommentWarningInput) {
       ? "Umfrage"
       : contextKind === "giveaway"
         ? "Gewinnspiel"
-        : "Beitrag";
+        : contextKind === "chat"
+          ? "Gruppenchat"
+          : "Beitrag";
   const commentSnippet =
     commentText.length > 160 ? `${commentText.slice(0, 160)}…` : commentText;
 
@@ -201,10 +234,11 @@ export async function issueCommentWarning(input: CommentWarningInput) {
     eventType: MEMBER_ACTIVITY_TYPES.warningIssued,
     title: `Verwarnung ausgesprochen (${newCount}. Verwarnung)`,
     details: [
-      `Kommentar: „${commentSnippet}"`,
+      `${contextKind === "chat" ? "Nachricht" : "Kommentar"}: „${commentSnippet}"`,
       `vom ${formatDE(commentCreatedAt)}`,
-      `unter ${contextLabel} „${contextTitle}"`,
-      `von ${contextAuthorName}.`,
+      contextKind === "chat"
+        ? `im ${contextLabel}.`
+        : `unter ${contextLabel} „${contextTitle}" von ${contextAuthorName}.`,
       `Ausgesprochen von ${adminName}.`,
     ].join(" "),
     createdBy: user.id,
@@ -252,6 +286,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   revalidatePath(`/admin/members/${memberId}`);
   revalidatePath("/polls");
   revalidatePath("/giveaways");
+  revalidatePath("/chat");
 
   return {
     ok: true,

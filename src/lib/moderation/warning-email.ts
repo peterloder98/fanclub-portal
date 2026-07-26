@@ -3,22 +3,32 @@ export function buildCommentWarningEmail(input: {
   commentText: string;
   commentDateLabel: string;
   contextTitle: string;
-  contextKind: "post" | "poll" | "giveaway";
+  contextKind: "post" | "poll" | "giveaway" | "chat";
   contextAuthorName: string;
   adminSignature: string;
 }): { subject: string; text: string } {
+  const isChat = input.contextKind === "chat";
   const contextLabel =
     input.contextKind === "poll"
       ? "Umfrage"
       : input.contextKind === "giveaway"
         ? "Gewinnspiel"
-        : "Beitrag";
+        : input.contextKind === "chat"
+          ? "Gruppenchat"
+          : "Beitrag";
 
-  const subject = "Verwarnung aufgrund eines Kommentars";
+  const subject = isChat
+    ? "Verwarnung aufgrund einer Chat-Nachricht"
+    : "Verwarnung aufgrund eines Kommentars";
+
+  const deletedLine = isChat
+    ? `leider mussten wir deine Nachricht "${input.commentText}" vom ${input.commentDateLabel} im ${contextLabel} löschen.`
+    : `leider mussten wir deinen Kommentar "${input.commentText}" vom ${input.commentDateLabel} unter der ${contextLabel} "${input.contextTitle}" von ${input.contextAuthorName} löschen.`;
+
   const text = [
     `Liebe/r ${input.firstName},`,
     "",
-    `leider mussten wir deinen Kommentar "${input.commentText}" vom ${input.commentDateLabel} unter der ${contextLabel} "${input.contextTitle}" von ${input.contextAuthorName} löschen.`,
+    deletedLine,
     "",
     "Hierfür müssen wir leider eine Verwarnung aussprechen.",
     "",

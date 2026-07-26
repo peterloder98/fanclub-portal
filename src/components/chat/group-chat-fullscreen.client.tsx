@@ -27,6 +27,7 @@ export function GroupChatFullscreenPage() {
             onDraftChange={chat.onDraftChange}
             onSend={chat.onSend}
             onDelete={chat.onDelete}
+            onRemoveLocal={chat.onRemoveLocal}
           />
         </div>
       </div>

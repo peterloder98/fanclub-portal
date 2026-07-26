@@ -11,7 +11,7 @@ export function CommentWarningButton({
   commentId,
   onRemoved,
 }: {
-  commentType: "post" | "poll" | "giveaway";
+  commentType: "post" | "poll" | "giveaway" | "chat";
   commentId: string;
   /** Sofort aus der UI entfernen (vor Server-Antwort). */
   onRemoved: () => void;
@@ -19,6 +19,10 @@ export function CommentWarningButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const confirmLabel =
+    commentType === "chat"
+      ? "Nachricht löschen und automatische Verwarnung per E-Mail senden?"
+      : "Kommentar löschen und automatische Verwarnung per E-Mail senden?";
 
   return (
     <>
@@ -31,9 +35,7 @@ export function CommentWarningButton({
         className="!h-7 !w-7 !rounded-md !shadow-none"
         onClick={() => {
           setError(null);
-          const ok = window.confirm(
-            "Kommentar löschen und automatische Verwarnung per E-Mail senden?",
-          );
+          const ok = window.confirm(confirmLabel);
           if (!ok) return;
           onRemoved();
           startTransition(async () => {

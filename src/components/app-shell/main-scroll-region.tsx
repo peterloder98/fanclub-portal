@@ -12,10 +12,16 @@ export function MainScrollRegion({ children }: { children: ReactNode }) {
     ref.current?.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
+  const fillViewport = pathname === "/events";
+
   return (
     <div
       ref={ref}
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--fanclub-chat-dock,0px)]"
+      className={
+        fillViewport
+          ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+          : "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--fanclub-chat-dock,0px)]"
+      }
     >
       {children}
     </div>

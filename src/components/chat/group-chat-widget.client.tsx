@@ -91,6 +91,7 @@ export function GroupChatWidget() {
               onDraftChange={chat.onDraftChange}
               onSend={chat.onSend}
               onDelete={chat.onDelete}
+              onRemoveLocal={chat.onRemoveLocal}
               onCollapse={() => setOpen(false)}
             />
           </div>

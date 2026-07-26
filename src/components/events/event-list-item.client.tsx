@@ -12,15 +12,41 @@ import { EventTvBadge } from "@/components/events/event-tv-badge";
 import type { EventListRow, EventParticipationMeta } from "@/components/events/events-map.types";
 import type { EventTravelNoteRow } from "@/lib/events/admin-notes";
 import {
-  formatEventCity,
-  formatEventListDate,
+  formatEventListDateParts,
   formatEventListTime,
   formatEventVenueCityLine,
   formatTvBroadcaster,
-  formatVenueName,
 } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import { cn } from "@/lib/cn";
+
+function EventListDateBlock({
+  startAt,
+  endAt,
+}: {
+  startAt: string | null;
+  endAt?: string | null;
+}) {
+  const { weekday, date } = formatEventListDateParts(startAt, endAt);
+  return (
+    <div className="leading-tight">
+      {weekday ? (
+        <div className="text-[11px] font-semibold capitalize text-slate-600 sm:text-xs">
+          {weekday}
+        </div>
+      ) : null}
+      <div
+        className={cn(
+          "font-medium tabular-nums text-slate-800",
+          weekday ? "text-[11px] sm:text-xs" : "text-xs",
+          date.startsWith("von ") && "leading-snug",
+        )}
+      >
+        {date}
+      </div>
+    </div>
+  );
+}
 
 function formatLocationLine(e: EventListRow, isTv: boolean): string | null {
   if (isTv) {
@@ -65,7 +91,6 @@ export function EventListItem({
 }) {
   const [travelOpen, setTravelOpen] = useState(false);
   const isTv = e.kind === "tv";
-  const listDate = formatEventListDate(e.start_at, e.end_at);
   const locationLine = formatLocationLine(e, isTv);
   const ticket = ticketDisplay(e.ticket_url);
   const showAdminTravel = isAdmin && !isTv;
@@ -82,8 +107,8 @@ export function EventListItem({
     >
       <div className={cn("relative min-w-0", showAdminTravel && "lg:pr-24")}>
         <div className="flex min-w-0 items-start gap-2 sm:gap-3">
-          <div className="w-[4.75rem] shrink-0 text-xs font-medium tabular-nums text-slate-800 sm:w-[5.75rem]">
-            {listDate}
+          <div className="w-[5.25rem] shrink-0 sm:w-[6.25rem]">
+            <EventListDateBlock startAt={e.start_at} endAt={e.end_at} />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-1.5">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronDown, Map } from "lucide-react";
 import { EventsMapClient } from "@/components/events/events-map.client";
 import { EventsCountdown } from "@/components/events/events-countdown";
@@ -36,16 +37,21 @@ export function EventsInteractivePanel({
   focusEventId?: string | null;
   className?: string;
 }) {
+  const searchParams = useSearchParams();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [mapOpen, setMapOpen] = useState(false);
 
+  const effectiveFocusId = focusEventId ?? searchParams.get("focus");
+
   useEffect(() => {
-    if (!focusEventId || !events.some((e) => e.id === focusEventId)) return;
-    setHighlightedId(focusEventId);
-    return scrollToFocusElement(`event-${focusEventId}`, {
+    if (!effectiveFocusId || !events.some((e) => e.id === effectiveFocusId)) return;
+    setHighlightedId(effectiveFocusId);
+    return scrollToFocusElement(`event-${effectiveFocusId}`, {
       highlightClass: "ring-2 ring-blue-400 ring-offset-2 shadow-md",
+      delayMs: 300,
+      maxAttempts: 12,
     });
-  }, [focusEventId, events]);
+  }, [effectiveFocusId, events]);
 
   const scheduleItems = [
     ...events.map((e) => ({
@@ -105,13 +111,13 @@ export function EventsInteractivePanel({
   );
 
   const list = (
-    <Card className="rounded-2xl lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:overflow-hidden">
+    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl lg:h-full">
       <CardHeader className="shrink-0 border-b border-fc-ice pb-2 pt-4">
         <CardTitle className="text-base">Alle Termine</CardTitle>
       </CardHeader>
-      <CardContent className="p-0 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+      <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
         <div
-          className="px-1 py-2 sm:px-2 sm:py-3 lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:px-3"
+          className="h-full overflow-y-auto overscroll-contain px-1 py-2 sm:px-2 sm:py-3 lg:px-3"
           role="region"
           aria-label="Eventliste"
         >
@@ -122,7 +128,7 @@ export function EventsInteractivePanel({
   );
 
   const mapInner = (
-    <div className="h-[200px] w-full lg:h-full lg:min-h-[180px]">
+    <div className="h-[220px] w-full lg:h-full lg:min-h-0">
       <EventsMapClient
         events={events}
         highlightedEventId={highlightedId}
@@ -136,16 +142,16 @@ export function EventsInteractivePanel({
 
   const map = (
     <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-      <CardContent className="min-h-0 flex-1 p-2">{mapInner}</CardContent>
+      <CardContent className="min-h-0 flex-1 p-1.5 sm:p-2">{mapInner}</CardContent>
     </Card>
   );
 
   return (
     <>
-      <div className={cn("flex flex-col gap-3 lg:hidden", className)}>
+      <div className={cn("flex min-h-0 flex-1 flex-col gap-3 lg:hidden", className)}>
         <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-        {list}
-        <Card className="rounded-2xl">
+        <div className="min-h-0 flex-1">{list}</div>
+        <Card className="shrink-0 rounded-2xl">
           <button
             type="button"
             onClick={() => setMapOpen((v) => !v)}
@@ -166,7 +172,7 @@ export function EventsInteractivePanel({
 
       <div
         className={cn(
-          "hidden min-h-0 flex-1 gap-4 lg:grid lg:h-full lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,360px)]",
+          "hidden min-h-0 h-full flex-1 gap-3 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,1fr)] lg:gap-4",
           className,
         )}
       >

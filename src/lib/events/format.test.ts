@@ -51,3 +51,12 @@ describe("formatCalendarLocation", () => {
     ).toBe("Rhein-Mosel-Halle, Rheingoldstraße 1, 56068 Koblenz");
   });
 });
+
+describe("formatEventListDateParts", () => {
+  it("returns weekday and date on separate fields", async () => {
+    const { formatEventListDateParts } = await import("./format");
+    const parts = formatEventListDateParts("2026-07-26T18:00:00+02:00");
+    expect(parts.weekday?.toLowerCase()).toContain("sonntag");
+    expect(parts.date).toBe("26.07.2026");
+  });
+});

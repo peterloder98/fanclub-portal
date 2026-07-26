@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { MentionInput } from "@/components/feed/mention-input";
 import { MentionText } from "@/components/feed/mention-text";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import { formatChatTime, type OnlineMember } from "@/lib/chat/types";
 import { GROUP_CHAT_MAX_LEN } from "@/lib/chat/constants";
 import type { ChatMessage } from "@/lib/chat/use-group-chat";
@@ -94,6 +95,7 @@ type PanelProps = {
   onDraftChange: (v: string) => void;
   onSend: () => void;
   onDelete: (id: string) => void;
+  onRemoveLocal?: (id: string) => void;
   onCollapse?: () => void;
   className?: string;
 };
@@ -113,6 +115,7 @@ export function GroupChatPanel({
   onDraftChange,
   onSend,
   onDelete,
+  onRemoveLocal,
   onCollapse,
   className,
 }: PanelProps) {
@@ -205,6 +208,7 @@ export function GroupChatPanel({
           <ul className="divide-y divide-fc-navy/5">
             {messages.map((m, i) => {
               const canDelete = isAdmin || m.author_id === userId;
+              const canWarn = isAdmin && m.author_id !== userId;
               return (
                 <li
                   key={m.id}
@@ -229,6 +233,13 @@ export function GroupChatPanel({
                         >
                           {formatChatTime(m.created_at)}
                         </time>
+                        {canWarn ? (
+                          <CommentWarningButton
+                            commentType="chat"
+                            commentId={m.id}
+                            onRemoved={() => (onRemoveLocal ?? onDelete)(m.id)}
+                          />
+                        ) : null}
                         {canDelete ? (
                           <button
                             type="button"

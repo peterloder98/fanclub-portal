@@ -271,6 +271,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     }
   }
 
+  function onRemoveLocal(id: string) {
+    setMessages((m) => m.filter((x) => x.id !== id));
+  }
+
   return {
     messages,
     draft,
@@ -286,5 +290,6 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     onDraftChange,
     onSend,
     onDelete,
+    onRemoveLocal,
   };
 }

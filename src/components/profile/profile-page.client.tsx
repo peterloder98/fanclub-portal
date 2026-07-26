@@ -70,6 +70,7 @@ function formatWhen(iso: string) {
 function contextKindLabel(kind: string) {
   if (kind === "poll") return "Umfrage";
   if (kind === "giveaway") return "Gewinnspiel";
+  if (kind === "chat") return "Gruppenchat";
   return "Beitrag";
 }
 

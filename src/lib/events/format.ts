@@ -57,6 +57,11 @@ const listDateFmt = new Intl.DateTimeFormat("de-DE", {
   timeZone: BERLIN_TZ,
 });
 
+const listWeekdayFmt = new Intl.DateTimeFormat("de-DE", {
+  weekday: "long",
+  timeZone: BERLIN_TZ,
+});
+
 function sameBerlinDay(a: string, b: string): boolean {
   const fa = new Intl.DateTimeFormat("en-CA", {
     timeZone: BERLIN_TZ,
@@ -95,15 +100,29 @@ export function formatEventListDate(
   startAt: string | null,
   endAt?: string | null,
 ): string {
-  if (!startAt) return "Datum folgt";
+  return formatEventListDateParts(startAt, endAt).date;
+}
+
+/** Terminliste: Zeile 1 Wochentag, Zeile 2 Datum. */
+export function formatEventListDateParts(
+  startAt: string | null,
+  endAt?: string | null,
+): { weekday: string | null; date: string } {
+  if (!startAt) return { weekday: null, date: "Datum folgt" };
   const d = new Date(startAt);
-  if (Number.isNaN(d.getTime())) return "Datum folgt";
+  if (Number.isNaN(d.getTime())) return { weekday: null, date: "Datum folgt" };
+  const weekday = listWeekdayFmt.format(d);
   if (!endAt || sameBerlinDay(startAt, endAt)) {
-    return listDateFmt.format(d);
+    return { weekday, date: listDateFmt.format(d) };
   }
   const end = new Date(endAt);
-  if (Number.isNaN(end.getTime())) return listDateFmt.format(d);
-  return `von ${listDateFmt.format(d)} bis ${listDateFmt.format(end)}`;
+  if (Number.isNaN(end.getTime())) {
+    return { weekday, date: listDateFmt.format(d) };
+  }
+  return {
+    weekday,
+    date: `von ${listDateFmt.format(d)} bis ${listDateFmt.format(end)}`,
+  };
 }
 
 /** Uhrzeit für TV-Zeile in der Terminliste. */

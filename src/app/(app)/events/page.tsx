@@ -196,12 +196,12 @@ export default async function EventsPage({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:overflow-hidden">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <Topbar
         title="Events"
         subtitle="Konzerte und TV-Auftritte von Anni"
       />
-      <main className="flex flex-col px-1.5 py-2 sm:px-3 sm:py-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:px-6">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden px-1.5 pt-2 sm:px-3 sm:pt-3 lg:px-6 lg:pt-3 lg:pb-0 pb-0">
         {error ? (
           <div className="mb-3 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("end_at") || error.message.includes("date_label")
