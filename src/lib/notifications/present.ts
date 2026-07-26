@@ -93,15 +93,27 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.birthdayPost:
     case NOTIFICATION_KINDS.mention:
     case NOTIFICATION_KINDS.postApproved: {
-      if (m.context === "chat" || n.link_url?.includes("chat=1")) return "/dashboard?chat=1";
+      if (m.context === "chat" || n.link_url?.includes("/chat") || n.link_url?.includes("chat=1")) {
+        return "/chat";
+      }
+      if (typeof m.poll_id === "string") return `/polls/${m.poll_id}`;
+      if (typeof m.giveaway_id === "string") return `/giveaways/${m.giveaway_id}`;
+      if (typeof m.voting_id === "string") return `/votings/${m.voting_id}`;
       if (typeof m.post_id === "string") return `/dashboard?post=${m.post_id}`;
       const fromLink = postIdFromLinkUrl(n.link_url);
-      return fromLink ? `/dashboard?post=${fromLink}` : null;
+      return fromLink ? `/dashboard?post=${fromLink}` : n.link_url;
     }
     case NOTIFICATION_KINDS.postRejected:
       return "/posts";
     case NOTIFICATION_KINDS.postPendingReview:
       return "/admin/posts";
+    case NOTIFICATION_KINDS.profileChangePending:
+      return typeof m.request_id === "string"
+        ? `/admin/members/profile-changes?focus=${m.request_id}`
+        : "/admin/members/profile-changes";
+    case NOTIFICATION_KINDS.profileChangeApproved:
+    case NOTIFICATION_KINDS.profileChangeRejected:
+      return "/profile";
     case NOTIFICATION_KINDS.giveawayWon:
     case NOTIFICATION_KINDS.giveawayEnded:
     case NOTIFICATION_KINDS.giveawayAvailable:
@@ -150,10 +162,13 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
     case NOTIFICATION_KINDS.postComment:
       return { icon: MessageCircle, iconClass: "bg-fc-ice text-fc-blue" };
     case NOTIFICATION_KINDS.postPendingReview:
+    case NOTIFICATION_KINDS.profileChangePending:
       return { icon: FileCheck, iconClass: "bg-amber-50 text-amber-800" };
     case NOTIFICATION_KINDS.postApproved:
+    case NOTIFICATION_KINDS.profileChangeApproved:
       return { icon: FileCheck, iconClass: "bg-emerald-50 text-emerald-700" };
     case NOTIFICATION_KINDS.postRejected:
+    case NOTIFICATION_KINDS.profileChangeRejected:
       return { icon: FileCheck, iconClass: "bg-rose-50 text-rose-700" };
     case NOTIFICATION_KINDS.commentReply:
       return { icon: Reply, iconClass: "bg-violet-50 text-violet-700" };

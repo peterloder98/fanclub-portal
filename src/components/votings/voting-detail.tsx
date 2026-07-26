@@ -7,6 +7,9 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
+import { MentionInput } from "@/components/feed/mention-input";
+import { MentionText } from "@/components/feed/mention-text";
+import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 
 type Voting = {
   id: string;
@@ -203,6 +206,13 @@ export function VotingDetail({ votingId }: { votingId: string }) {
       return;
     }
     setCommentDraft("");
+    void notifyMentionsFromText({
+      text,
+      context: "voting",
+      linkUrl: `/votings/${votingId}`,
+      linkLabel: "Zum Voting",
+      metadata: { voting_id: votingId },
+    });
     await load();
   }
 
@@ -300,11 +310,12 @@ export function VotingDetail({ votingId }: { votingId: string }) {
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="flex gap-2">
-            <input
+            <MentionInput
               value={commentDraft}
-              onChange={(e) => setCommentDraft(e.target.value)}
-              placeholder="Kommentar schreiben…"
-              className="h-10 flex-1 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+              onChange={setCommentDraft}
+              placeholder="Kommentar schreiben… @ für Markierung"
+              className="min-w-0 flex-1"
+              inputClassName="h-10 w-full rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
             />
             <button
               type="button"
@@ -337,7 +348,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
                     })}
                   </span>
                 </div>
-                <div className="mt-1 text-sm text-slate-800">{c.body}</div>
+                <MentionText text={c.body} className="mt-1 block text-sm text-slate-800" />
               </div>
             ))}
             {!comments.length ? <div className="text-sm text-slate-500">Noch keine Kommentare.</div> : null}

@@ -43,6 +43,11 @@ import {
   type MyWarningRow,
 } from "@/app/(app)/profile/actions";
 import type { MemberActivityRow } from "@/lib/membership/activity-log";
+import {
+  formatProfileChangeValue,
+  PROFILE_CHANGE_FIELD_LABELS,
+  type ProfileChangeField,
+} from "@/lib/profile/change-requests";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -339,6 +344,7 @@ export function ProfilePageClient() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
+  const [savePendingReview, setSavePendingReview] = useState(false);
   const [pending, startTransition] = useTransition();
   const [busyAvatar, setBusyAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -414,10 +420,15 @@ export function ProfilePageClient() {
   function handleProfileSave(formData: FormData) {
     setSaveError(null);
     setSaveOk(false);
+    setSavePendingReview(false);
     startTransition(async () => {
       try {
-        await updateMyProfile(formData);
-        setSaveOk(true);
+        const result = await updateMyProfile(formData);
+        if (result?.pending) {
+          setSavePendingReview(true);
+        } else {
+          setSaveOk(true);
+        }
         reload();
       } catch (e) {
         setSaveError(e instanceof Error ? e.message : "Speichern fehlgeschlagen.");
@@ -449,7 +460,7 @@ export function ProfilePageClient() {
     );
   }
 
-  const { profile, membership, contribution, warnings, activity } = bundle;
+  const { profile, membership, contribution, warnings, activity, pendingProfileChange } = bundle;
   const initials = displayName
     .split(" ")
     .filter(Boolean)
@@ -492,8 +503,34 @@ export function ProfilePageClient() {
             <ProfileSection
               icon={UserRound}
               title="Stammdaten"
-              description="Diese Angaben nutzt der Club für Kommunikation und Versand."
+              description="Änderungen werden vom Vorstand geprüft und freigegeben, bevor sie übernommen werden."
             >
+              {pendingProfileChange ? (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                  <p className="font-semibold">Änderung wartet auf Freigabe</p>
+                  <p className="mt-0.5 text-amber-900/90">
+                    Eingereicht am{" "}
+                    {new Date(pendingProfileChange.created_at).toLocaleString("de-DE", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                    . Bis zur Entscheidung bleiben die bisherigen Stammdaten aktiv.
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    {(Object.keys(pendingProfileChange.proposed) as ProfileChangeField[]).map(
+                      (field) => (
+                        <li key={field}>
+                          <span className="font-semibold">
+                            {PROFILE_CHANGE_FIELD_LABELS[field]}:
+                          </span>{" "}
+                          {formatProfileChangeValue(field, pendingProfileChange.previous[field])} →{" "}
+                          {formatProfileChangeValue(field, pendingProfileChange.proposed[field])}
+                        </li>
+                      ),
+                    )}
+                  </ul>
+                </div>
+              ) : null}
               <form action={handleProfileSave} className="grid gap-3 md:grid-cols-2">
                 <label className="grid gap-1">
                   <span className={fieldLabelClass}>Vorname</span>
@@ -596,6 +633,12 @@ export function ProfilePageClient() {
                   </select>
                 </label>
 
+                {savePendingReview ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 md:col-span-2">
+                    Änderung eingereicht — der Vorstand wurde per E-Mail benachrichtigt und muss
+                    freigeben.
+                  </div>
+                ) : null}
                 {saveOk ? (
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900 md:col-span-2">
                     Stammdaten gespeichert.
@@ -609,7 +652,11 @@ export function ProfilePageClient() {
 
                 <div className="md:col-span-2">
                   <button type="submit" disabled={pending} className={primaryButtonClass}>
-                    {pending ? "Speichern…" : "Stammdaten speichern"}
+                    {pending
+                      ? "Senden…"
+                      : profile.role === "admin"
+                        ? "Stammdaten speichern"
+                        : "Änderung zur Freigabe senden"}
                   </button>
                 </div>
               </form>

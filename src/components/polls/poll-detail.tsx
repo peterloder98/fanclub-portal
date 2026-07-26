@@ -16,6 +16,9 @@ import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { PollAdminControls } from "@/components/polls/poll-admin-controls";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
+import { MentionInput } from "@/components/feed/mention-input";
+import { MentionText } from "@/components/feed/mention-text";
+import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 type Poll = {
   id: string;
   question: string;
@@ -306,6 +309,13 @@ export function PollDetail({ pollId }: { pollId: string }) {
       return;
     }
     setCommentDraft("");
+    void notifyMentionsFromText({
+      text,
+      context: "poll",
+      linkUrl: `/polls/${pollId}`,
+      linkLabel: "Zur Umfrage",
+      metadata: { poll_id: pollId },
+    });
     await load();
   }
 
@@ -405,11 +415,12 @@ export function PollDetail({ pollId }: { pollId: string }) {
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="flex gap-2">
-            <input
+            <MentionInput
               value={commentDraft}
-              onChange={(e) => setCommentDraft(e.target.value)}
-              placeholder="Kommentar schreiben…"
-              className="h-10 flex-1 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+              onChange={setCommentDraft}
+              placeholder="Kommentar schreiben… @ für Markierung"
+              className="min-w-0 flex-1"
+              inputClassName="h-10 w-full rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
             />
             <button
               type="button"
@@ -449,7 +460,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
                     </div>
                   ) : null}
                 </div>
-                <div className="mt-1 text-sm text-slate-800">{c.body}</div>
+                <MentionText text={c.body} className="mt-1 block text-sm text-slate-800" />
               </div>
             ))}
             {!comments.length ? (

@@ -60,6 +60,12 @@ const SECTIONS: AdminHubSection[] = [
         icon: Users,
       },
       {
+        href: "/admin/members/profile-changes",
+        title: "Stammdaten freigeben",
+        description: "Mitglieder-Änderungen prüfen und bestätigen.",
+        icon: FileCheck,
+      },
+      {
         href: "/admin/membership-form",
         title: "Antragsformular",
         description: "Öffentlicher Link, E-Mail-Versand an Interessenten.",

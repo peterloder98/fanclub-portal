@@ -29,6 +29,9 @@ export const NOTIFICATION_KINDS = {
   postApproved: "post_approved",
   postRejected: "post_rejected",
   mention: "mention",
+  profileChangePending: "profile_change_pending",
+  profileChangeApproved: "profile_change_approved",
+  profileChangeRejected: "profile_change_rejected",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

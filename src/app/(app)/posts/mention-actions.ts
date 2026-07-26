@@ -8,9 +8,14 @@ import { extractMentionUserIds } from "@/lib/mentions/format";
 /** In-App-Benachrichtigung für @-Markierungen (keine E-Mail). */
 export async function notifyMentionsFromText(input: {
   text: string;
-  postId: string;
   excludeUserId?: string | null;
-  context: "post" | "comment";
+  /** Legacy: Post-Kontext */
+  postId?: string;
+  context?: "post" | "comment" | "poll" | "giveaway" | "voting" | "chat" | string;
+  linkUrl?: string;
+  linkLabel?: string;
+  body?: string;
+  metadata?: Record<string, unknown>;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -33,20 +38,37 @@ export async function notifyMentionsFromText(input: {
   );
   if (!ids.length) return;
 
-  const linkUrl = `/posts?focus=${input.postId}`;
+  const context = input.context ?? (input.postId ? "comment" : "comment");
+  const linkUrl =
+    input.linkUrl ??
+    (input.postId ? `/posts?focus=${input.postId}` : "/dashboard");
+  const linkLabel = input.linkLabel ?? "Ansehen";
+  const body =
+    input.body ??
+    (context === "post"
+      ? "Du wurdest in einem Beitrag erwähnt."
+      : context === "poll"
+        ? "Du wurdest in einem Umfrage-Kommentar erwähnt."
+        : context === "giveaway"
+          ? "Du wurdest in einem Gewinnspiel-Kommentar erwähnt."
+          : context === "voting"
+            ? "Du wurdest in einem Voting-Kommentar erwähnt."
+            : "Du wurdest in einem Kommentar erwähnt.");
+
   await Promise.all(
     ids.map((userId) =>
       createUserNotification({
         userId,
         kind: NOTIFICATION_KINDS.mention,
         title: `${actorName} hat dich markiert`,
-        body:
-          input.context === "comment"
-            ? "Du wurdest in einem Kommentar erwähnt."
-            : "Du wurdest in einem Beitrag erwähnt.",
+        body,
         linkUrl,
-        linkLabel: "Zum Beitrag",
-        metadata: { post_id: input.postId, context: input.context },
+        linkLabel,
+        metadata: {
+          ...(input.postId ? { post_id: input.postId } : {}),
+          context,
+          ...(input.metadata ?? {}),
+        },
       }).catch(() => null),
     ),
   );

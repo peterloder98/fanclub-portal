@@ -21,6 +21,9 @@ import { GiveawayDrawStatus } from "@/components/giveaways/giveaway-draw-status"
 import { GiveawayWinnerReveal } from "@/components/giveaways/giveaway-winner-reveal";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
+import { MentionInput } from "@/components/feed/mention-input";
+import { MentionText } from "@/components/feed/mention-text";
+import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import {
   drawGiveawayWinners,
   participateQuiz,
@@ -318,6 +321,13 @@ export function GiveawayDetailClient({
       return;
     }
     setCommentDraft("");
+    void notifyMentionsFromText({
+      text,
+      context: "giveaway",
+      linkUrl: `/giveaways/${giveaway.id}`,
+      linkLabel: "Zum Gewinnspiel",
+      metadata: { giveaway_id: giveaway.id },
+    });
     setCommentList((c) => [
       {
         id: data.id,
@@ -640,11 +650,12 @@ export function GiveawayDetailClient({
               </div>
 
               <div className="flex gap-2">
-                <input
+                <MentionInput
                   value={commentDraft}
-                  onChange={(e) => setCommentDraft(e.target.value)}
-                  placeholder="Kommentieren…"
-                  className="h-9 flex-1 rounded-lg border px-2 text-sm"
+                  onChange={setCommentDraft}
+                  placeholder="Kommentieren… @ für Markierung"
+                  className="min-w-0 flex-1"
+                  inputClassName="h-9 w-full rounded-lg border px-2 text-sm"
                 />
                 <button
                   type="button"
@@ -682,7 +693,7 @@ export function GiveawayDetailClient({
                             </div>
                           ) : null}
                         </div>
-                        <p className="text-slate-700">{c.body}</p>
+                        <MentionText text={c.body} className="block text-slate-700" />
                       </div>
                     </div>
                   ))}

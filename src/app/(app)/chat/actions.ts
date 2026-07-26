@@ -38,7 +38,7 @@ async function notifyChatMentions(text: string, messageId: string) {
         kind: NOTIFICATION_KINDS.mention,
         title: `${actorName} hat dich markiert`,
         body: "Du wurdest im Gruppenchat erwähnt.",
-        linkUrl: "/dashboard?chat=1",
+        linkUrl: "/chat",
         linkLabel: "Zum Chat",
         metadata: { chat_message_id: messageId, context: "chat" },
       }).catch(() => null),

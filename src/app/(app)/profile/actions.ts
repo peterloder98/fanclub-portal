@@ -15,6 +15,12 @@ import {
 } from "@/lib/membership/activity-log";
 import { getMemberContributionInfo } from "@/lib/club/membership-contribution";
 import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
+import {
+  diffProfileChanges,
+  type ProfileChangeField,
+  type ProfileChangeValues,
+} from "@/lib/profile/change-requests";
+import { notifyAdminsProfileChangeRequest } from "@/lib/email/profile-change-notify";
 
 export type MyWarningRow = {
   id: string;
@@ -23,6 +29,13 @@ export type MyWarningRow = {
   context_title: string | null;
   context_author_name: string | null;
   context_kind: string;
+  created_at: string;
+};
+
+export type PendingProfileChange = {
+  id: string;
+  previous: Partial<ProfileChangeValues>;
+  proposed: Partial<ProfileChangeValues>;
   created_at: string;
 };
 
@@ -54,6 +67,7 @@ export type MyProfileBundle = {
   contribution: MemberContributionInfo | null;
   warnings: MyWarningRow[];
   activity: MemberActivityRow[];
+  pendingProfileChange: PendingProfileChange | null;
 };
 
 const updateSchema = z.object({
@@ -155,6 +169,26 @@ export async function loadMyProfileBundle(): Promise<MyProfileBundle> {
     contribution = null;
   }
 
+  let pendingProfileChange: PendingProfileChange | null = null;
+  {
+    const { data: pendingRow, error: pendingErr } = await supabase
+      .from("profile_change_requests")
+      .select("id,previous,proposed,created_at")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!pendingErr && pendingRow) {
+      pendingProfileChange = {
+        id: pendingRow.id,
+        previous: (pendingRow.previous ?? {}) as Partial<ProfileChangeValues>,
+        proposed: (pendingRow.proposed ?? {}) as Partial<ProfileChangeValues>,
+        created_at: pendingRow.created_at,
+      };
+    }
+  }
+
   return {
     profile: {
       ...profile,
@@ -164,39 +198,123 @@ export async function loadMyProfileBundle(): Promise<MyProfileBundle> {
     contribution,
     warnings: (warnings ?? []) as MyWarningRow[],
     activity,
+    pendingProfileChange,
   };
 }
 
 export async function updateMyProfile(formData: FormData) {
   const { supabase, user } = await requireAuthenticatedUser();
   const input = updateSchema.parse(Object.fromEntries(formData.entries()));
+  const country = normalizeMemberCountryCode(input.country);
 
-  const { error } = await supabase
+  const { data: current, error: curErr } = await supabase
     .from("profiles")
-    .update({
-      first_name: input.first_name,
-      last_name: input.last_name,
-      phone: input.phone || null,
-      birthdate: input.birthdate || null,
-      gender: input.gender,
-      street: input.street || null,
-      postal_code: input.postal_code || null,
-      city: input.city || null,
-      country: normalizeMemberCountryCode(input.country),
-    })
-    .eq("id", user.id);
-  if (error) throw new Error(error.message);
+    .select(
+      "first_name,last_name,phone,birthdate,gender,street,postal_code,city,country,membership_number,role",
+    )
+    .eq("id", user.id)
+    .maybeSingle();
+  if (curErr) throw new Error(curErr.message);
+  if (!current) throw new Error("Profil nicht gefunden.");
+
+  const after: Partial<Record<ProfileChangeField, string | null>> = {
+    first_name: input.first_name,
+    last_name: input.last_name,
+    phone: input.phone || null,
+    birthdate: input.birthdate || null,
+    gender: input.gender,
+    street: input.street || null,
+    postal_code: input.postal_code || null,
+    city: input.city || null,
+    country,
+  };
+
+  const { previous, proposed } = diffProfileChanges(current, after);
+  if (!Object.keys(proposed).length) {
+    revalidatePath("/profile");
+    return { ok: true as const, unchanged: true };
+  }
+
+  // Admins dürfen Stammdaten direkt speichern (kein Freigabe-Workflow).
+  if (current.role === "admin") {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: input.first_name,
+        last_name: input.last_name,
+        phone: input.phone || null,
+        birthdate: input.birthdate || null,
+        gender: input.gender,
+        street: input.street || null,
+        postal_code: input.postal_code || null,
+        city: input.city || null,
+        country,
+      })
+      .eq("id", user.id);
+    if (error) throw new Error(error.message);
+
+    const admin = createSupabaseAdminClient();
+    await syncProfileMapCoords(admin, user.id);
+
+    await logMemberActivity({
+      userId: user.id,
+      eventType: MEMBER_ACTIVITY_TYPES.profileSelfUpdated,
+      title: "Profildaten aktualisiert",
+      details: "Stammdaten im Mitgliederbereich geändert.",
+      createdBy: user.id,
+    });
+
+    revalidatePath("/profile");
+    return { ok: true as const, unchanged: false, pending: false };
+  }
 
   const admin = createSupabaseAdminClient();
-  await syncProfileMapCoords(admin, user.id);
+
+  // Bestehende offene Anfrage ersetzen
+  await admin
+    .from("profile_change_requests")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("status", "pending");
+
+  const { data: request, error: insErr } = await admin
+    .from("profile_change_requests")
+    .insert({
+      user_id: user.id,
+      previous,
+      proposed,
+      status: "pending",
+    })
+    .select("id,created_at")
+    .single();
+
+  if (insErr || !request) {
+    throw new Error(
+      /profile_change_requests|does not exist/i.test(insErr?.message ?? "")
+        ? "Freigabe-Tabelle fehlt — bitte SQL 097 in Supabase ausführen."
+        : insErr?.message ?? "Änderungsantrag konnte nicht gespeichert werden.",
+    );
+  }
+
+  const memberName = `${input.first_name} ${input.last_name}`.trim() || "Mitglied";
 
   await logMemberActivity({
     userId: user.id,
-    eventType: MEMBER_ACTIVITY_TYPES.profileSelfUpdated,
-    title: "Profildaten aktualisiert",
-    details: "Stammdaten im Mitgliederbereich geändert.",
+    eventType: MEMBER_ACTIVITY_TYPES.profileChangeRequested,
+    title: "Stammdaten-Änderung eingereicht",
+    details: "Wartet auf Freigabe durch den Vorstand.",
     createdBy: user.id,
+    metadata: { request_id: request.id, fields: Object.keys(proposed) },
+  });
+
+  void notifyAdminsProfileChangeRequest({
+    requestId: request.id,
+    membershipNumber: current.membership_number,
+    memberName,
+    createdAt: request.created_at,
   });
 
   revalidatePath("/profile");
+  revalidatePath("/admin/members/profile-changes");
+  return { ok: true as const, unchanged: false, pending: true };
 }
