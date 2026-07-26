@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function LoginClient() {
@@ -42,15 +41,26 @@ export function LoginClient() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-lg">Login</CardTitle>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Badge variant="brand">Fanclub Portal</Badge>
-          <Badge variant="neutral">Supabase Auth</Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
+    <Card className="w-full overflow-hidden border-fc-navy/10 shadow-lg shadow-fc-navy/10">
+      <div className="bg-gradient-to-br from-fc-navy via-fc-navy to-fc-blue px-6 pb-6 pt-7 text-center text-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/fanclub-logo.png"
+          alt="Anni Perka offizieller Fanclub"
+          width={72}
+          height={72}
+          className="mx-auto h-[72px] w-[72px] rounded-2xl object-cover shadow-lg shadow-black/25 ring-2 ring-white/25"
+        />
+        <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/75">
+          Anni Perka Fanclub
+        </p>
+        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight">Willkommen zurück</h1>
+        <p className="mx-auto mt-2 max-w-[18rem] text-sm leading-relaxed text-white/85">
+          Schön, dass du da bist — melde dich an, um ins Mitgliederportal zu gelangen.
+        </p>
+      </div>
+
+      <CardContent className="pt-5">
         {setupDone ? (
           <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
             Zugang eingerichtet — bitte jetzt mit E-Mail und Passwort anmelden.
@@ -115,4 +125,3 @@ export function LoginClient() {
     </Card>
   );
 }
-
