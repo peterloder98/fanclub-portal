@@ -202,13 +202,28 @@ function ProductDetailView({
       <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div className="grid gap-0 lg:grid-cols-2">
           <div className="relative aspect-square bg-slate-100 lg:aspect-auto lg:min-h-[420px]">
-            {product.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
+            {product.image_urls.length > 0 ? (
+              <div className="flex h-full min-h-[280px] flex-col">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={product.image_urls[0]}
+                  alt={product.name}
+                  className="h-full w-full flex-1 object-cover"
+                />
+                {product.image_urls.length > 1 ? (
+                  <div className="flex gap-1 border-t bg-white p-2">
+                    {product.image_urls.map((url, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={url}
+                        src={url}
+                        alt=""
+                        className="h-14 w-14 rounded-lg border object-cover"
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             ) : (
               <div className="grid h-full min-h-[280px] place-items-center text-sm text-slate-400">
                 Kein Produktfoto
@@ -440,10 +455,7 @@ export function MerchandiseShop() {
   }
 
   function placeOrder() {
-    if (
-      !paymentMethod ||
-      !["bank_transfer", "paypal", "stripe"].includes(paymentMethod)
-    ) {
+    if (paymentMethod !== "bank_transfer") {
       setError("Bitte Zahlungsart wählen.");
       return;
     }
@@ -464,7 +476,7 @@ export function MerchandiseShop() {
           buyerStreet: street,
           buyerPostalCode: postalCode,
           buyerCity: city,
-          paymentMethod: paymentMethod as "bank_transfer" | "paypal" | "stripe",
+          paymentMethod: "bank_transfer",
         });
         updateCart([]);
         setPaymentResult(res.payment);

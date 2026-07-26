@@ -7,7 +7,7 @@ import { createPaymentWithAccounting } from "@/lib/payments/payment-service";
 import { listEnabledPaymentMethods } from "@/lib/payments/config";
 import type { PaymentMethod } from "@/lib/payments/types";
 
-const methodSchema = z.enum(["bank_transfer", "paypal", "stripe"]);
+const methodSchema = z.enum(["bank_transfer"]);
 
 export async function listPaymentMethodsAction() {
   const methods = await listEnabledPaymentMethods();

@@ -14,7 +14,7 @@ import { createPaymentWithAccounting } from "@/lib/payments/payment-service";
 import type { PaymentMethod } from "@/lib/payments/types";
 import { quoteShopShipping } from "@/lib/shop/shipping";
 
-const paymentMethodSchema = z.enum(["bank_transfer", "paypal", "stripe"]);
+const paymentMethodSchema = z.enum(["bank_transfer"]);
 
 const cartLineSchema = z.object({
   productId: z.string().uuid(),

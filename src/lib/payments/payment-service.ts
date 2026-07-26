@@ -52,9 +52,12 @@ export async function createPaymentWithAccounting(input: {
 }): Promise<PaymentCheckoutResult> {
   const admin = createSupabaseAdminClient();
   const methods = await listEnabledPaymentMethods();
-  const enabled = methods.find((m) => m.provider === input.paymentMethod);
+  if (input.paymentMethod !== "bank_transfer") {
+    throw new Error("Derzeit ist nur Banküberweisung möglich.");
+  }
+  const enabled = methods.find((m) => m.provider === "bank_transfer");
   if (!enabled?.is_enabled) {
-    throw new Error("Diese Zahlungsart ist derzeit nicht verfügbar.");
+    throw new Error("Banküberweisung ist derzeit nicht verfügbar.");
   }
 
   const internalReference = await nextInternalReference(admin, input.paymentType);

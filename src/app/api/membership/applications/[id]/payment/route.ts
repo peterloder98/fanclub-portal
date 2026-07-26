@@ -4,7 +4,7 @@ import { createApplicationMembershipPayment } from "@/lib/payments/application-p
 
 const schema = z.object({
   token: z.string().min(1),
-  paymentMethod: z.enum(["bank_transfer", "paypal", "stripe"]),
+  paymentMethod: z.enum(["bank_transfer"]),
 });
 
 export async function POST(

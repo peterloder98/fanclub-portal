@@ -14,25 +14,7 @@ const BANK_PUBLIC_CONFIG: BankTransferPublicConfig = {
   bank_name: CLUB_BANK.bank_name,
 };
 
-/** Öffentliche Zahlungsarten für Checkout (keine Secrets). */
-export async function listEnabledPaymentMethods(): Promise<PaymentSettingsRow[]> {
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("payment_settings")
-    .select("provider,is_enabled,is_test_mode,public_config_json")
-    .eq("is_enabled", true)
-    .order("provider");
-
-  if (error) {
-    if (/payment_settings|does not exist/i.test(error.message)) return fallbackMethods();
-    throw new Error(error.message);
-  }
-
-  if (!data?.length) return fallbackMethods();
-  return data as PaymentSettingsRow[];
-}
-
-function fallbackMethods(): PaymentSettingsRow[] {
+function bankOnlyFallback(): PaymentSettingsRow[] {
   return [
     {
       provider: "bank_transfer",
@@ -40,19 +22,36 @@ function fallbackMethods(): PaymentSettingsRow[] {
       is_test_mode: false,
       public_config_json: { ...BANK_PUBLIC_CONFIG },
     },
-    {
-      provider: "paypal",
-      is_enabled: true,
-      is_test_mode: true,
-      public_config_json: {},
-    },
-    {
-      provider: "stripe",
-      is_enabled: true,
-      is_test_mode: true,
-      public_config_json: {},
-    },
   ];
+}
+
+/**
+ * Öffentliche Zahlungsarten für Checkout.
+ * Derzeit bewusst nur Banküberweisung — andere Anbieter bleiben im Code, sind aber deaktiviert.
+ */
+export async function listEnabledPaymentMethods(): Promise<PaymentSettingsRow[]> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("payment_settings")
+    .select("provider,is_enabled,is_test_mode,public_config_json")
+    .eq("provider", "bank_transfer")
+    .eq("is_enabled", true)
+    .order("provider");
+
+  if (error) {
+    if (/payment_settings|does not exist/i.test(error.message)) return bankOnlyFallback();
+    throw new Error(error.message);
+  }
+
+  if (!data?.length) return bankOnlyFallback();
+
+  return (data as PaymentSettingsRow[]).map((row) => ({
+    ...row,
+    public_config_json: {
+      ...BANK_PUBLIC_CONFIG,
+      ...(row.public_config_json as BankTransferPublicConfig),
+    },
+  }));
 }
 
 export async function getBankTransferDetails(): Promise<BankTransferPublicConfig> {
@@ -67,7 +66,7 @@ export async function getBankTransferDetails(): Promise<BankTransferPublicConfig
   };
 }
 
-/** Nur serverseitig — niemals an Client senden. */
+/** Nur serverseitig — niemals an Client senden. (Legacy für spätere Reaktivierung.) */
 export function getProviderSecrets(provider: PaymentProvider) {
   switch (provider) {
     case "stripe":
