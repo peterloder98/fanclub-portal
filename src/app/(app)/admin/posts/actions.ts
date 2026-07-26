@@ -1,7 +1,9 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -111,5 +113,35 @@ export async function deletePostAdmin(formData: FormData) {
   const { error } = await admin.from("posts").delete().eq("id", postId);
   if (error) throw new Error(error.message);
   redirect("/admin/posts");
+}
+
+/** Fixiert einen Post oben im Feed bzw. löst die Fixierung (nur Admin). */
+export async function setPostPinned(postId: string, pinned: boolean) {
+  const { user } = await requireAdminAction();
+  const id = postId.trim();
+  if (!id) throw new Error("Post fehlt.");
+
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("posts")
+    .update(
+      pinned
+        ? {
+            is_pinned: true,
+            pinned_at: new Date().toISOString(),
+            pinned_by: user.id,
+          }
+        : {
+            is_pinned: false,
+            pinned_at: null,
+            pinned_by: null,
+          },
+    )
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/dashboard");
+  revalidatePath("/posts");
+  return { ok: true as const };
 }
 

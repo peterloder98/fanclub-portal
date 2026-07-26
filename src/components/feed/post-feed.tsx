@@ -2,10 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Heart, MessageCircle, Pencil, Reply, SendHorizontal, Trash2, X } from "lucide-react";
+import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { setPostPinned } from "@/app/(app)/admin/posts/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
@@ -47,6 +48,8 @@ type FeedPost = {
   body: string;
   status?: "pending" | "approved" | "rejected" | "deleted";
   lastActivityAt?: string | null;
+  isPinned?: boolean;
+  pinnedAt?: string | null;
   isBirthday?: boolean;
   birthdayDate?: string | null;
   media: Array<{ id: string; url: string }>;
@@ -201,6 +204,7 @@ function PostFeedInner({
   const [pollBusyKey, setPollBusyKey] = useState<string | null>(null);
   const [likersByPostId, setLikersByPostId] = useState<Record<string, UserListEntry[]>>({});
   const [likersLoadingPostId, setLikersLoadingPostId] = useState<string | null>(null);
+  const [pinBusyId, setPinBusyId] = useState<string | null>(null);
 
   async function ensureLikers(postId: string) {
     if (postId in likersByPostId) return;
@@ -267,10 +271,17 @@ function PostFeedInner({
       return Number.isFinite(t) ? t : 0;
     };
 
+    const isAdminPinned = (p: FeedPost) => Boolean(p.isPinned);
     const isPinnedBirthday = (p: FeedPost) =>
       Boolean(p.isBirthday) && Boolean(p.birthdayDate) && p.birthdayDate === todayBerlin;
 
     return items.sort((a, b) => {
+      const aAdminPin = a.kind === "post" && isAdminPinned(a.post);
+      const bAdminPin = b.kind === "post" && isAdminPinned(b.post);
+      if (aAdminPin !== bAdminPin) return aAdminPin ? -1 : 1;
+      if (aAdminPin && bAdminPin) {
+        return score(b.post.pinnedAt ?? b.activityAt) - score(a.post.pinnedAt ?? a.activityAt);
+      }
       const ap = a.kind === "post" && isPinnedBirthday(a.post);
       const bp = b.kind === "post" && isPinnedBirthday(b.post);
       if (ap !== bp) return ap ? -1 : 1;
@@ -326,14 +337,46 @@ function PostFeedInner({
           initials: initials.toUpperCase(),
         });
 
-        // Load posts (v1)
-        const { data: postsData, error: postsErr } = await supabase
-          .from("posts")
-          .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date")
-          .order("last_activity_at", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false })
-          .limit(20);
-        if (postsErr) throw postsErr;
+        // Load posts (v1) — is_pinned optional until migration 088 is applied
+        type PostRow = {
+          id: string;
+          title: string;
+          body: string;
+          author_id: string | null;
+          author_role: "admin" | "anni" | "member";
+          created_at: string;
+          status?: string | null;
+          last_activity_at?: string | null;
+          is_birthday?: boolean | null;
+          birthday_date?: string | null;
+          is_pinned?: boolean | null;
+          pinned_at?: string | null;
+        };
+        let postsData: PostRow[] | null = null;
+        {
+          const withPin = await supabase
+            .from("posts")
+            .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,is_pinned,pinned_at")
+            .order("is_pinned", { ascending: false, nullsFirst: false })
+            .order("pinned_at", { ascending: false, nullsFirst: false })
+            .order("last_activity_at", { ascending: false, nullsFirst: false })
+            .order("created_at", { ascending: false })
+            .limit(20);
+          if (withPin.error && /is_pinned|pinned_at/i.test(withPin.error.message)) {
+            const withoutPin = await supabase
+              .from("posts")
+              .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date")
+              .order("last_activity_at", { ascending: false, nullsFirst: false })
+              .order("created_at", { ascending: false })
+              .limit(20);
+            if (withoutPin.error) throw withoutPin.error;
+            postsData = withoutPin.data as PostRow[] | null;
+          } else if (withPin.error) {
+            throw withPin.error;
+          } else {
+            postsData = withPin.data as PostRow[] | null;
+          }
+        }
 
         const postIds = (postsData ?? []).map((p) => p.id);
         const postAuthorIds = Array.from(
@@ -503,6 +546,8 @@ function PostFeedInner({
               body: p.body,
               status: (p as any).status ?? "approved",
               lastActivityAt: computed ? new Date(computed).toISOString() : p.created_at,
+              isPinned: Boolean((p as any).is_pinned),
+              pinnedAt: (p as any).pinned_at ?? null,
               isBirthday,
               birthdayDate: (p as any).birthday_date ?? null,
               media: mediaByPost.get(p.id) ?? [],
@@ -851,6 +896,38 @@ function PostFeedInner({
       return;
     }
     setPosts((prev) => prev.filter((p) => p.id !== postId));
+  }
+
+  async function togglePostPinned(post: FeedPost) {
+    if (!me || me.role !== "admin") return;
+    const next = !post.isPinned;
+    setPinBusyId(post.id);
+    setLoadError(null);
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === post.id
+          ? {
+              ...p,
+              isPinned: next,
+              pinnedAt: next ? new Date().toISOString() : null,
+            }
+          : p,
+      ),
+    );
+    try {
+      await setPostPinned(post.id, next);
+    } catch (e) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === post.id
+            ? { ...p, isPinned: post.isPinned, pinnedAt: post.pinnedAt ?? null }
+            : p,
+        ),
+      );
+      setLoadError(e instanceof Error ? e.message : "Fixieren fehlgeschlagen.");
+    } finally {
+      setPinBusyId(null);
+    }
   }
 
   async function submitNewPost() {
@@ -1361,28 +1438,58 @@ function PostFeedInner({
                 <span className="truncate text-xs text-slate-600">
                   <span className="font-semibold text-slate-800">{post.authorName}</span>
                   <span className="text-slate-400"> · {post.createdAtLabel}</span>
+                  {post.isPinned ? (
+                    <Badge variant="brand" className="ml-1.5 px-1.5 py-0 text-[10px]">
+                      Fixiert
+                    </Badge>
+                  ) : null}
                 </span>
               </HoverEnlargeAvatar>
-              {canManagePost(post) ? (
+              {me?.role === "admin" || canManagePost(post) ? (
                 <div className="flex shrink-0 items-center gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(post)}
-                    className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
-                    title="Bearbeiten"
-                    aria-label="Bearbeiten"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void deletePost(post.id)}
-                    className="grid h-7 w-7 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
-                    title="Löschen"
-                    aria-label="Löschen"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {me?.role === "admin" ? (
+                    <button
+                      type="button"
+                      disabled={pinBusyId === post.id}
+                      onClick={() => void togglePostPinned(post)}
+                      className={cn(
+                        "grid h-7 w-7 place-items-center rounded-lg border hover:bg-slate-50",
+                        post.isPinned
+                          ? "border-fc-sky/50 text-fc-blue bg-fc-ice/60"
+                          : "text-slate-600",
+                      )}
+                      title={post.isPinned ? "Fixierung lösen" : "Oben fixieren"}
+                      aria-label={post.isPinned ? "Fixierung lösen" : "Oben fixieren"}
+                    >
+                      {post.isPinned ? (
+                        <PinOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Pin className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  ) : null}
+                  {canManagePost(post) ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(post)}
+                        className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
+                        title="Bearbeiten"
+                        aria-label="Bearbeiten"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void deletePost(post.id)}
+                        className="grid h-7 w-7 place-items-center rounded-lg border border-rose-200 text-rose-700 hover:bg-rose-50"
+                        title="Löschen"
+                        aria-label="Löschen"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  ) : null}
                 </div>
               ) : null}
             </div>
