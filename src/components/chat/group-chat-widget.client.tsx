@@ -63,14 +63,14 @@ export function GroupChatWidget() {
     <>
       <div
         className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-0 z-[60] transition-[padding] duration-200",
+          "pointer-events-none fixed inset-x-0 bottom-0 z-[1100] transition-[padding] duration-200",
           open ? "pb-[min(28rem,70vh)]" : "pb-16",
         )}
         aria-hidden
       />
       <div
         className={cn(
-          "fixed bottom-3 right-3 z-[70] flex flex-col items-end gap-2",
+          "fixed bottom-3 right-3 z-[1100] flex flex-col items-end gap-2",
           "max-sm:left-3 max-sm:right-3 max-sm:items-stretch",
         )}
       >

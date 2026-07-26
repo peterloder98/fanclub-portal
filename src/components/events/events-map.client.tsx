@@ -221,7 +221,7 @@ export function EventsMapClient({
           : { minHeight, height: minHeight }
       }
     >
-      <div className="relative min-h-0 flex-1">
+      <div className="relative z-0 min-h-0 flex-1">
         <MapContainer
           className="h-full w-full"
           style={heightStyle}

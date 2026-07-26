@@ -103,7 +103,7 @@ export function formatEventListDate(
   return formatEventListDateParts(startAt, endAt).date;
 }
 
-/** Terminliste: Zeile 1 Wochentag, Zeile 2 Datum. */
+/** Terminliste: Zeile 1 Wochentag (nur Einzeltermin), Zeile 2 Datum. */
 export function formatEventListDateParts(
   startAt: string | null,
   endAt?: string | null,
@@ -111,17 +111,22 @@ export function formatEventListDateParts(
   if (!startAt) return { weekday: null, date: "Datum folgt" };
   const d = new Date(startAt);
   if (Number.isNaN(d.getTime())) return { weekday: null, date: "Datum folgt" };
-  const weekday = listWeekdayFmt.format(d);
-  if (!endAt || sameBerlinDay(startAt, endAt)) {
-    return { weekday, date: listDateFmt.format(d) };
+
+  const isRange = Boolean(endAt && !sameBerlinDay(startAt, endAt));
+  if (isRange) {
+    const end = new Date(endAt!);
+    if (Number.isNaN(end.getTime())) {
+      return { weekday: listWeekdayFmt.format(d), date: listDateFmt.format(d) };
+    }
+    return {
+      weekday: null,
+      date: `von ${listDateFmt.format(d)} bis ${listDateFmt.format(end)}`,
+    };
   }
-  const end = new Date(endAt);
-  if (Number.isNaN(end.getTime())) {
-    return { weekday, date: listDateFmt.format(d) };
-  }
+
   return {
-    weekday,
-    date: `von ${listDateFmt.format(d)} bis ${listDateFmt.format(end)}`,
+    weekday: listWeekdayFmt.format(d),
+    date: listDateFmt.format(d),
   };
 }
 

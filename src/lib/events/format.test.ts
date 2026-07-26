@@ -53,10 +53,21 @@ describe("formatCalendarLocation", () => {
 });
 
 describe("formatEventListDateParts", () => {
-  it("returns weekday and date on separate fields", async () => {
+  it("returns weekday and date for single-day events", async () => {
     const { formatEventListDateParts } = await import("./format");
     const parts = formatEventListDateParts("2026-07-26T18:00:00+02:00");
     expect(parts.weekday?.toLowerCase()).toContain("sonntag");
     expect(parts.date).toBe("26.07.2026");
+  });
+
+  it("omits weekday for multi-day ranges", async () => {
+    const { formatEventListDateParts } = await import("./format");
+    const parts = formatEventListDateParts(
+      "2026-10-08T00:00:00+02:00",
+      "2026-10-11T00:00:00+02:00",
+    );
+    expect(parts.weekday).toBeNull();
+    expect(parts.date).toContain("von");
+    expect(parts.date).toContain("bis");
   });
 });
