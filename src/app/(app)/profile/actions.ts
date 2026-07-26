@@ -6,6 +6,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
+import { normalizeMemberCountryCode } from "@/lib/members/country";
 import {
   isMemberVisibleActivity,
   logMemberActivity,
@@ -64,7 +65,7 @@ const updateSchema = z.object({
   street: z.string().optional().default(""),
   postal_code: z.string().optional().default(""),
   city: z.string().optional().default(""),
-  country: z.string().optional().default("DE"),
+  country: z.string().min(1, "Land ist Pflichtfeld."),
 });
 
 async function requireAuthenticatedUser() {
@@ -181,7 +182,7 @@ export async function updateMyProfile(formData: FormData) {
       street: input.street || null,
       postal_code: input.postal_code || null,
       city: input.city || null,
-      country: input.country || null,
+      country: normalizeMemberCountryCode(input.country),
     })
     .eq("id", user.id);
   if (error) throw new Error(error.message);

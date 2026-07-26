@@ -11,7 +11,11 @@ import { createMembershipDownloadToken } from "@/lib/membership/download-token";
 import { cacheApplicationPdf } from "@/lib/membership/application-pdf-service";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
 import { provisionMembershipApplicant } from "@/lib/membership/provision-applicant";
-import { isValidPostalCode } from "@/lib/postal-code";
+import {
+  isValidPostalCode,
+  postalCodeErrorMessage,
+} from "@/lib/postal-code";
+import { normalizeMemberCountryCode } from "@/lib/members/country";
 import {
   prepareSmtpForSend,
 } from "@/lib/smtp/prepare-send";
@@ -21,7 +25,6 @@ import { notifyReferrerApplicationSubmitted } from "@/lib/email/referrer-applica
 import { cropSignaturePng } from "@/lib/images/crop-signature-png";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
-const postalCode = z.string().regex(/^\d{5}$/, "PLZ muss genau 5 Ziffern haben");
 
 const schema = z
   .object({
@@ -32,10 +35,13 @@ const schema = z
       message: "Bitte Geschlecht wählen (für Anrede).",
     }),
     street: z.string().min(1),
-    postal_code: postalCode,
+    postal_code: z.string().min(1),
     city: z.string().min(1),
-    country: z.string().min(1),
-    country_code: z.string().length(2).optional(),
+    country: z.string().min(1, "Land ist Pflichtfeld."),
+    country_code: z
+      .string()
+      .length(2, "Land ist Pflichtfeld.")
+      .transform((s) => s.toUpperCase()),
     phone: z.string().min(1),
     mobile_dial_code: z.string().min(1),
     mobile_number: digitsOnly.min(5),
@@ -55,6 +61,13 @@ const schema = z
     facebook: z.string().max(120).optional(),
   })
   .superRefine((data, ctx) => {
+    if (!isValidPostalCode(data.postal_code, data.country_code)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: postalCodeErrorMessage(data.country_code),
+        path: ["postal_code"],
+      });
+    }
     if (data.whatsapp_opt_in) {
       const parsed = digitsOnly.safeParse(data.whatsapp_number ?? "");
       if (!parsed.success) {
@@ -105,8 +118,9 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
-  if (!isValidPostalCode(input.postal_code)) {
-    return NextResponse.json({ error: "PLZ muss genau 5 Ziffern haben." }, { status: 400 });
+  const countryCode = normalizeMemberCountryCode(input.country_code, "");
+  if (!countryCode || countryCode.length !== 2) {
+    return NextResponse.json({ error: "Land ist Pflichtfeld." }, { status: 400 });
   }
 
   const birth = new Date(input.birthdate);
@@ -146,8 +160,8 @@ export async function POST(request: Request) {
       street: input.street,
       postal_code: input.postal_code,
       city: input.city,
-      country: input.country,
-      country_code: input.country_code,
+      country: countryCode,
+      country_code: countryCode,
       phone: input.phone,
       membership_start_date: input.membership_start_date,
     });
@@ -177,7 +191,7 @@ export async function POST(request: Request) {
       postal_code: input.postal_code.trim(),
       city: input.city.trim(),
       country: input.country.trim(),
-      country_code: input.country_code?.trim().toUpperCase() || null,
+      country_code: countryCode,
       phone: input.phone.trim(),
       mobile_dial_code: input.mobile_dial_code.trim(),
       mobile_number: input.mobile_number.trim(),

@@ -103,9 +103,10 @@ export function CreateMemberSection() {
                 />
               </label>
               <label className="grid gap-1">
-                <span className="text-sm font-medium text-slate-700">Land</span>
+                <span className="text-sm font-medium text-slate-700">Land *</span>
                 <select
                   name="country"
+                  required
                   defaultValue="DE"
                   className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
                 >

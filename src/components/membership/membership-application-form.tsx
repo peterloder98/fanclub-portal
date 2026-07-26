@@ -12,7 +12,7 @@ import {
   PHONE_COUNTRIES,
 } from "@/components/ui/phone-input";
 import { DEFAULT_COUNTRY } from "@/lib/countries";
-import { isValidPostalCode } from "@/lib/postal-code";
+import { isValidPostalCode, postalCodeErrorMessage } from "@/lib/postal-code";
 import {
   MEMBERSHIP_REFERRER_STORAGE_KEY,
   readReferrerIdFromSearchParams,
@@ -139,8 +139,16 @@ export function MembershipApplicationForm() {
 
   async function submit() {
     setError(null);
-    if (!isValidPostalCode(form.postal_code)) {
-      setError("PLZ muss genau 5 Ziffern haben.");
+    if (!countryCode || countryCode.length !== 2) {
+      setError("Bitte ein Land auswählen — Pflichtfeld für Adresse und Karte.");
+      return;
+    }
+    if (!form.country.trim()) {
+      setError("Bitte ein Land auswählen — Pflichtfeld für Adresse und Karte.");
+      return;
+    }
+    if (!isValidPostalCode(form.postal_code, countryCode)) {
+      setError(postalCodeErrorMessage(countryCode));
       return;
     }
     if (!mobileNumber || mobileNumber.length < 5) {
@@ -372,6 +380,7 @@ export function MembershipApplicationForm() {
           <PostalCodeInput
             label="PLZ"
             required
+            countryCode={countryCode}
             value={form.postal_code}
             onChange={(postal_code) => setForm((f) => ({ ...f, postal_code }))}
           />
@@ -390,7 +399,11 @@ export function MembershipApplicationForm() {
             valueCode={countryCode}
             onChange={(c) => {
               setCountryCode(c.code);
-              setForm((f) => ({ ...f, country: c.name }));
+              setForm((f) => ({
+                ...f,
+                country: c.name,
+                postal_code: "",
+              }));
             }}
           />
           <PhoneInput

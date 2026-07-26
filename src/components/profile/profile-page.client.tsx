@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { UploadDropzone } from "@/components/ui/upload-dropzone";
 import { GenderSelect } from "@/components/ui/gender-select";
+import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
@@ -576,12 +577,23 @@ export function ProfilePageClient() {
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className={fieldLabelClass}>Land</span>
-                  <input
+                  <span className={fieldLabelClass}>Land *</span>
+                  <select
                     name="country"
+                    required
                     defaultValue={profile.country ?? "DE"}
                     className={fieldInputClass}
-                  />
+                  >
+                    {MEMBER_COUNTRY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                    {profile.country &&
+                    !MEMBER_COUNTRY_OPTIONS.some((o) => o.value === profile.country) ? (
+                      <option value={profile.country}>{profile.country}</option>
+                    ) : null}
+                  </select>
                 </label>
 
                 {saveOk ? (

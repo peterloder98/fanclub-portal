@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeMemberCountryCode } from "@/lib/members/country";
 
 function baseUsername(first: string, last: string) {
   const slug = `${first}.${last}`
@@ -135,7 +136,7 @@ async function syncApplicantProfile(
       street: input.street.trim(),
       postal_code: input.postal_code.trim(),
       city: input.city.trim(),
-      country: input.country.trim(),
+      country: normalizeMemberCountryCode(input.country_code ?? input.country),
       phone: input.phone.trim(),
     },
     { onConflict: "id" },
