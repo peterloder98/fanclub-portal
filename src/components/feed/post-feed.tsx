@@ -1384,10 +1384,10 @@ function PostFeedInner({
                 placeholder="Schreib etwas…"
                 rows={composerExpanded ? 3 : 1}
                 inputClassName={cn(
-                  "w-full resize-none rounded-2xl border px-3 py-2.5 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400",
+                  "w-full resize-none rounded-2xl border px-3 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400",
                   composerExpanded
-                    ? "min-h-[88px] border-fc-sky/30/80 bg-white shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
-                    : "min-h-[40px] border-slate-200/90 bg-white/90 focus:border-fc-sky/30 focus:ring-2 focus:ring-blue-500/10",
+                    ? "min-h-[88px] items-start border-fc-sky/30 bg-white py-2.5 shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
+                    : "h-10 items-center border-slate-200/90 bg-white/90 py-0 focus:border-fc-sky/30 focus:ring-2 focus:ring-blue-500/10",
                 )}
               />
 
@@ -1441,7 +1441,7 @@ function PostFeedInner({
                         type="button"
                         disabled={!me || submitting || !newText.trim()}
                         onClick={submitNewPost}
-                        className="h-9 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/15 transition hover:from-slate-700 hover:to-slate-800 disabled:opacity-60"
+                        className="h-9 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-fc-blue disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {submitting
                           ? "Sende…"
@@ -1738,7 +1738,7 @@ function PostFeedInner({
                       : "Kommentieren…"
                   }
                   className="min-w-0 flex-1"
-                  inputClassName="h-7 min-w-0 w-full rounded-md border bg-white px-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                  inputClassName="box-border flex h-8 min-w-0 w-full items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs leading-none text-slate-900 outline-none placeholder:text-slate-400 focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
                 />
                 {replyingTo?.postId === post.id ? (
                   <button
@@ -1747,7 +1747,7 @@ function PostFeedInner({
                       setReplyingTo(null);
                       setDraftByPostId((d) => ({ ...d, [post.id]: "" }));
                     }}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border text-slate-500 hover:bg-slate-50"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md border text-slate-500 hover:bg-slate-50"
                     aria-label="Antwort abbrechen"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -1756,7 +1756,7 @@ function PostFeedInner({
                 <button
                   type="button"
                   onClick={(e) => addComment(post.id, e.currentTarget)}
-                  className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-fc-navy text-white hover:bg-fc-blue"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-fc-navy text-white transition-colors hover:bg-fc-blue"
                   aria-label="Kommentar senden"
                 >
                   <SendHorizontal className="h-3.5 w-3.5" />

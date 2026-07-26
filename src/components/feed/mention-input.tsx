@@ -319,12 +319,20 @@ export function MentionInput({
   }
 
   const minHeight = multiline ? `${Math.max(rows, 1) * 1.5}rem` : undefined;
+  const singleLineLike = !multiline || rows <= 1;
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      <div className="relative">
-        {!value ? (
-          <span className="pointer-events-none absolute left-3 top-2 text-sm text-slate-400">
+      <div className={cn("relative", singleLineLike && "flex items-stretch")}>
+        {!value && placeholder ? (
+          <span
+            className={cn(
+              "pointer-events-none absolute z-[1] text-slate-400",
+              singleLineLike
+                ? "left-2 top-1/2 -translate-y-1/2 text-xs sm:left-3 sm:text-sm"
+                : "left-3 top-2.5 text-sm",
+            )}
+          >
             {placeholder}
           </span>
         ) : null}
@@ -346,12 +354,14 @@ export function MentionInput({
             document.execCommand("insertText", false, text);
           }}
           className={cn(
-            "w-full overflow-y-auto whitespace-pre-wrap break-words text-left text-sm text-fc-navy outline-none",
-            !multiline && "overflow-x-auto whitespace-nowrap",
+            "w-full text-left text-fc-navy outline-none",
+            singleLineLike
+              ? "flex items-center overflow-x-auto overflow-y-hidden whitespace-nowrap leading-none"
+              : "overflow-y-auto whitespace-pre-wrap break-words leading-snug",
             disabled && "cursor-not-allowed opacity-60",
             inputClassName,
           )}
-          style={{ minHeight }}
+          style={{ minHeight: singleLineLike ? undefined : minHeight }}
         />
       </div>
       {open && filtered.length ? (

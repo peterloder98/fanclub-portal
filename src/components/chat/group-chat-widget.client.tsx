@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, MessageCircle, SendHorizontal, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -74,6 +74,7 @@ export function GroupChatWidget() {
   const [loaded, setLoaded] = useState(false);
   const [onlineCount, setOnlineCount] = useState(1);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
+  const dockRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -340,24 +341,56 @@ export function GroupChatWidget() {
     }
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    if (!userId) {
+    const clearDock = () => {
       root.style.setProperty("--fanclub-chat-dock", "0px");
-      return;
-    }
-    if (expanded) {
-      root.style.setProperty("--fanclub-chat-dock", "0px");
-    } else {
-      root.style.setProperty(
-        "--fanclub-chat-dock",
-        "calc(3.75rem + env(safe-area-inset-bottom, 0px))",
-      );
-    }
-    return () => {
-      root.style.setProperty("--fanclub-chat-dock", "0px");
+      root.style.setProperty("--fanclub-chat-dock-right", "0px");
     };
-  }, [expanded, userId]);
+
+    if (!userId || expanded) {
+      clearDock();
+      return clearDock;
+    }
+
+    let ro: ResizeObserver | null = null;
+    let cancelled = false;
+    let onResize: (() => void) | null = null;
+
+    const bind = () => {
+      if (cancelled) return;
+      const el = dockRef.current;
+      if (!el) {
+        requestAnimationFrame(bind);
+        return;
+      }
+      const apply = () => {
+        const r = el.getBoundingClientRect();
+        root.style.setProperty(
+          "--fanclub-chat-dock",
+          `${Math.ceil(r.height) + 16}px`,
+        );
+        root.style.setProperty(
+          "--fanclub-chat-dock-right",
+          `${Math.ceil(r.width) + 12}px`,
+        );
+      };
+      apply();
+      onResize = apply;
+      ro = new ResizeObserver(apply);
+      ro.observe(el);
+      window.addEventListener("resize", apply);
+    };
+
+    bind();
+
+    return () => {
+      cancelled = true;
+      ro?.disconnect();
+      if (onResize) window.removeEventListener("resize", onResize);
+      clearDock();
+    };
+  }, [expanded, userId, loaded, preview.name, preview.body]);
 
   if (!userId && loaded) return null;
   if (!loaded && !userId) return null;
@@ -506,13 +539,14 @@ export function GroupChatWidget() {
         </div>
       ) : (
         <button
+          ref={dockRef}
           type="button"
           onClick={() => toggleExpanded(true)}
           className={cn(
-            "pointer-events-auto flex w-[min(18rem,100vw)] items-center gap-2.5",
-            "rounded-tl-2xl border-l-2 border-t-2 border-fc-navy/40 bg-gradient-to-r from-white via-white to-fc-ice",
-            "px-3 py-2.5 text-left shadow-[0_-4px_24px_rgba(20,49,101,0.22)]",
-            "ring-1 ring-fc-navy/10 transition hover:border-fc-blue",
+            "pointer-events-auto flex w-[min(17.5rem,100vw)] items-center gap-2.5",
+            "rounded-tl-2xl border-2 border-fc-blue bg-white",
+            "px-3 py-2.5 text-left shadow-[0_-6px_24px_rgba(44,100,163,0.28)]",
+            "transition hover:bg-fc-ice/60",
           )}
           aria-label="Gruppenchat öffnen"
         >
