@@ -112,8 +112,17 @@ export async function deleteGroupChatMessage(messageId: string): Promise<{
     .select("role")
     .eq("id", user.id)
     .maybeSingle();
-  if (me?.role !== "admin") {
-    return { ok: false, error: "Nur Admins können Nachrichten löschen." };
+
+  const { data: row } = await supabase
+    .from("group_chat_messages")
+    .select("author_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!row) return { ok: false, error: "Nachricht nicht gefunden." };
+
+  const canDelete = row.author_id === user.id || me?.role === "admin";
+  if (!canDelete) {
+    return { ok: false, error: "Keine Berechtigung zum Löschen." };
   }
 
   const { error } = await supabase.from("group_chat_messages").delete().eq("id", id);

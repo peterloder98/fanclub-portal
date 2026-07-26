@@ -22,6 +22,7 @@ import {
 
 const STORAGE_KEY = "fanclub.groupChat.expanded";
 const PAGE_SIZE = 80;
+const PRESENCE_CHANNEL = "fanclub-online";
 
 type ChatAuthor = {
   id: string;
@@ -71,6 +72,7 @@ export function GroupChatWidget() {
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [nowTick, setNowTick] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(1);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -78,7 +80,7 @@ export function GroupChatWidget() {
 
   const cooldownLeftMs = Math.max(0, cooldownUntil - nowTick);
   const cooldownActive = cooldownLeftMs > 0;
-  const cooldownSecs = Math.ceil(cooldownLeftMs / 1000);
+  const overLimit = draft.length > GROUP_CHAT_MAX_LEN;
 
   useEffect(() => {
     try {
@@ -190,7 +192,6 @@ export function GroupChatWidget() {
     }
 
     setMessages(await hydrate((data ?? []) as GroupChatMessageRow[]));
-    setError(null);
     setLoaded(true);
   }, [hydrate]);
 
@@ -201,16 +202,40 @@ export function GroupChatWidget() {
   useEffect(() => {
     if (!userId) return;
     const supabase = createSupabaseBrowserClient();
-    const channel = supabase
-      .channel("group-chat")
+    const messagesChannel = supabase
+      .channel("group-chat-messages")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "group_chat_messages" },
         () => void refresh(),
       )
       .subscribe();
+
+    const presenceChannel = supabase.channel(PRESENCE_CHANNEL, {
+      config: { presence: { key: userId } },
+    });
+
+    const syncPresence = () => {
+      const state = presenceChannel.presenceState();
+      setOnlineCount(Math.max(1, Object.keys(state).length));
+    };
+
+    presenceChannel
+      .on("presence", { event: "sync" }, syncPresence)
+      .on("presence", { event: "join" }, syncPresence)
+      .on("presence", { event: "leave" }, syncPresence)
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({
+            user_id: userId,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
     return () => {
-      void supabase.removeChannel(channel);
+      void supabase.removeChannel(messagesChannel);
+      void supabase.removeChannel(presenceChannel);
     };
   }, [userId, refresh]);
 
@@ -224,6 +249,11 @@ export function GroupChatWidget() {
     };
   }, [latest]);
 
+  const onlineLabel =
+    onlineCount === 1
+      ? "1 Mitglied online"
+      : `${onlineCount} Mitglieder online`;
+
   function toggleExpanded(next: boolean) {
     setExpanded(next);
     try {
@@ -233,9 +263,33 @@ export function GroupChatWidget() {
     }
   }
 
+  function onDraftChange(next: string) {
+    setDraft(next);
+    if (next.length > GROUP_CHAT_MAX_LEN) {
+      setError(
+        `Zeichenlimit überschritten. Maximal ${GROUP_CHAT_MAX_LEN} Zeichen erlaubt.`,
+      );
+    } else {
+      setError((prev) =>
+        prev?.includes("Zeichenlimit") || prev?.includes("kurz warten") ? null : prev,
+      );
+    }
+  }
+
   async function onSend() {
     const text = draft.trim();
-    if (!text || sending || cooldownActive) return;
+    if (!text || sending || cooldownActive) {
+      if (cooldownActive && text) {
+        setError("Bitte kurz warten, bevor du erneut schreibst.");
+      }
+      return;
+    }
+    if (draft.length > GROUP_CHAT_MAX_LEN) {
+      setError(
+        `Zeichenlimit überschritten. Maximal ${GROUP_CHAT_MAX_LEN} Zeichen erlaubt.`,
+      );
+      return;
+    }
     setSending(true);
     setError(null);
     const result = await sendGroupChatMessage(text);
@@ -277,7 +331,6 @@ export function GroupChatWidget() {
   }
 
   async function onDelete(id: string) {
-    if (!isAdmin) return;
     const prev = messages;
     setMessages((m) => m.filter((x) => x.id !== id));
     const result = await deleteGroupChatMessage(id);
@@ -302,7 +355,7 @@ export function GroupChatWidget() {
         <div
           className={cn(
             "pointer-events-auto flex w-[min(22rem,calc(100vw-1.5rem))] flex-col overflow-hidden",
-            "rounded-2xl border border-fc-navy/15 bg-white shadow-xl shadow-fc-navy/15",
+            "rounded-2xl border border-fc-navy/20 bg-white shadow-2xl shadow-fc-navy/25",
             "h-[min(26rem,55dvh)]",
           )}
           role="dialog"
@@ -311,7 +364,10 @@ export function GroupChatWidget() {
           <header className="flex shrink-0 items-center justify-between gap-2 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2.5 text-white">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-tight">Gruppenchat</p>
-              <p className="truncate text-[11px] text-white/75">Alle Mitglieder · neueste oben</p>
+              <p className="truncate text-[11px] text-white/80">
+                <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald-300 align-middle" />
+                {onlineLabel}
+              </p>
             </div>
             <button
               type="button"
@@ -335,50 +391,55 @@ export function GroupChatWidget() {
               </div>
             ) : (
               <ul className="divide-y divide-fc-navy/5">
-                {messages.map((m, i) => (
-                  <li
-                    key={m.id}
-                    className={cn(
-                      "group relative px-3 py-2.5",
-                      i % 2 === 0 ? "bg-white" : "bg-fc-ice/70",
-                    )}
-                  >
-                    <div className="flex gap-2.5">
-                      <UserAvatar name={m.author.name} avatarUrl={m.author.avatarUrl} size="sm" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <p className="truncate text-xs font-semibold text-fc-navy">
-                            {m.author.name}
-                            {m.author_id === userId ? (
-                              <span className="ml-1 font-normal text-slate-400">(du)</span>
-                            ) : null}
-                          </p>
-                          <time
-                            className="shrink-0 text-[10px] tabular-nums text-slate-400"
-                            dateTime={m.created_at}
-                          >
-                            {formatTime(m.created_at)}
-                          </time>
+                {messages.map((m, i) => {
+                  const canDelete = isAdmin || m.author_id === userId;
+                  return (
+                    <li
+                      key={m.id}
+                      className={cn(
+                        "px-3 py-2.5",
+                        i % 2 === 0 ? "bg-white" : "bg-fc-ice/70",
+                      )}
+                    >
+                      <div className="flex gap-2.5">
+                        <UserAvatar name={m.author.name} avatarUrl={m.author.avatarUrl} size="sm" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
+                              {m.author.name}
+                              {m.author_id === userId ? (
+                                <span className="ml-1 font-normal text-slate-400">(du)</span>
+                              ) : null}
+                            </p>
+                            <time
+                              className="shrink-0 text-[10px] tabular-nums text-slate-400"
+                              dateTime={m.created_at}
+                            >
+                              {formatTime(m.created_at)}
+                            </time>
+                            {canDelete ? (
+                              <button
+                                type="button"
+                                onClick={() => void onDelete(m.id)}
+                                className="grid h-5 w-5 shrink-0 place-items-center rounded text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                                aria-label="Nachricht löschen"
+                                title="Löschen"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            ) : (
+                              <span className="inline-block w-5 shrink-0" aria-hidden />
+                            )}
+                          </div>
+                          <MentionText
+                            text={m.body}
+                            className="mt-0.5 block text-[13px] leading-snug text-slate-700"
+                          />
                         </div>
-                        <MentionText
-                          text={m.body}
-                          className="mt-0.5 block text-[13px] leading-snug text-slate-700"
-                        />
                       </div>
-                      {isAdmin ? (
-                        <button
-                          type="button"
-                          onClick={() => void onDelete(m.id)}
-                          className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-md text-slate-400 opacity-70 transition hover:bg-rose-50 hover:text-rose-600 sm:opacity-0 sm:group-hover:opacity-100"
-                          aria-label="Nachricht löschen"
-                          title="Löschen"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
@@ -392,13 +453,18 @@ export function GroupChatWidget() {
             <div className="flex items-end gap-1.5">
               <MentionInput
                 value={draft}
-                onChange={setDraft}
+                onChange={onDraftChange}
                 multiline
                 rows={2}
                 disabled={sending}
                 placeholder="Nachricht… @ für Markierung"
                 className="min-w-0 flex-1"
-                inputClassName="w-full resize-none rounded-xl border border-fc-navy/15 bg-white px-3 py-2 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
+                inputClassName={cn(
+                  "w-full resize-none rounded-xl border bg-white px-3 py-2 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2",
+                  overLimit
+                    ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200"
+                    : "border-fc-navy/15 focus:border-fc-blue focus:ring-fc-sky/30",
+                )}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -409,19 +475,13 @@ export function GroupChatWidget() {
               <button
                 type="button"
                 onClick={() => void onSend()}
-                disabled={sending || cooldownActive || !draft.trim()}
+                disabled={sending || cooldownActive || !draft.trim() || overLimit}
                 className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white transition hover:bg-fc-blue disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Senden"
-                title={cooldownActive ? `Noch ${cooldownSecs}s` : "Senden"}
               >
                 <SendHorizontal className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-1.5 text-[10px] text-slate-400">
-              {cooldownActive
-                ? `Nächste Nachricht in ${cooldownSecs}s`
-                : `Max. alle 10 Sekunden · ${draft.length}/${GROUP_CHAT_MAX_LEN}`}
-            </p>
           </footer>
         </div>
       ) : (
@@ -430,17 +490,18 @@ export function GroupChatWidget() {
           onClick={() => toggleExpanded(true)}
           className={cn(
             "pointer-events-auto flex w-[min(18rem,calc(100vw-1.5rem))] items-center gap-2.5",
-            "rounded-2xl border border-fc-navy/15 bg-white/95 px-3 py-2.5 text-left",
-            "shadow-lg shadow-fc-navy/12 backdrop-blur-sm transition hover:border-fc-blue/40 hover:shadow-xl",
+            "rounded-2xl border-2 border-fc-navy/35 bg-gradient-to-r from-white via-white to-fc-ice",
+            "px-3 py-2.5 text-left shadow-[0_10px_28px_rgba(20,49,101,0.28)]",
+            "ring-1 ring-fc-navy/10 transition hover:border-fc-blue hover:shadow-[0_12px_32px_rgba(20,49,101,0.35)]",
           )}
           aria-label="Gruppenchat öffnen"
         >
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm shadow-fc-navy/30">
             <MessageCircle className="h-4 w-4" />
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-xs font-semibold text-fc-navy">{preview.name}</span>
-            <span className="block truncate text-[11px] text-slate-500">{preview.body}</span>
+            <span className="block truncate text-[11px] text-slate-600">{preview.body}</span>
           </span>
         </button>
       )}

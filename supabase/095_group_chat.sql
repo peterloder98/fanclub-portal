@@ -30,10 +30,11 @@ for insert to authenticated
 with check (author_id = auth.uid());
 
 drop policy if exists "group_chat_delete_admin" on public.group_chat_messages;
-create policy "group_chat_delete_admin"
+drop policy if exists "group_chat_delete_own_or_admin" on public.group_chat_messages;
+create policy "group_chat_delete_own_or_admin"
 on public.group_chat_messages
 for delete to authenticated
-using (public.is_admin());
+using (author_id = auth.uid() or public.is_admin());
 
 do $$
 begin
