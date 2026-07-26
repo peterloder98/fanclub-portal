@@ -2,6 +2,7 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ANNI_SPOTIFY_OPEN_URL } from "@/lib/spotify/constants";
 
 export default async function AdminSpotifySettingsPage() {
   await requireAdmin();
@@ -10,50 +11,31 @@ export default async function AdminSpotifySettingsPage() {
     <div className="min-h-screen">
       <Topbar
         title="Spotify (Admin)"
-        subtitle="Anleitung im Fanclub-Portal — nicht im Spotify-Dashboard"
+        subtitle="Wie Spotify im Portal für Mitglieder läuft"
       />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
         <div className="mt-4 grid max-w-2xl gap-4">
           <Card className="border-fc-sky/30 bg-fc-ice/40">
             <CardHeader>
-              <CardTitle className="text-base text-fc-navy">Zwei verschiedene Orte</CardTitle>
+              <CardTitle className="text-base text-fc-navy">Aktueller Stand</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-fc-navy">
               <p>
-                <strong>„Admin → Spotify“</strong> ist diese Seite hier im Fanclub-Portal (
-                <code className="text-xs">/admin/settings/spotify</code>
-                ). Im Spotify Developer Dashboard gibt es diesen Menüpunkt{" "}
-                <strong>nicht</strong>.
+                In der Sidebar läuft das <strong>offizielle Spotify-Embed</strong> plus ein Button{" "}
+                <strong>In Spotify öffnen</strong>. Dafür braucht jedes Mitglied{" "}
+                <strong>kein</strong> Developer-Login und keine Test-E-Mail bei Spotify.
               </p>
               <p>
-                Bei Spotify:{" "}
+                Artist-Link:{" "}
                 <a
-                  href="https://developer.spotify.com/dashboard"
+                  href={ANNI_SPOTIFY_OPEN_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium underline"
+                  className="font-medium underline break-all"
                 >
-                  developer.spotify.com/dashboard
-                </a>{" "}
-                → eure App anklicken → dort u. a. <strong>Settings</strong> (Redirect-URI) und{" "}
-                <strong>User Management</strong> (Test-E-Mails im Development-Modus).
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">So funktioniert es in der App</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-700">
-              <p>
-                Mitglieder klicken <strong>Mit Spotify verbinden</strong> und loggen sich mit ihrem
-                eigenen Spotify ein (Premium/Familie). Danach startet der <strong>Web-Player</strong>{" "}
-                automatisch — volle Songs, kein 30-Sek.-Embed.
-              </p>
-              <p>
-                Jeder nutzt <strong>seinen</strong> Account — nicht euer Admin-Spotify.
+                  {ANNI_SPOTIFY_OPEN_URL}
+                </a>
               </p>
             </CardContent>
           </Card>
@@ -61,56 +43,33 @@ export default async function AdminSpotifySettingsPage() {
           <Card className="border-amber-200 bg-amber-50/50">
             <CardHeader>
               <CardTitle className="text-base text-amber-950">
-                Mehr als Testnutzer: Extended Quota (bei Spotify)
+                Warum kein „Mit Spotify verbinden“ mehr?
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-amber-950">
               <p>
-                Im <strong>Development-Modus</strong> funktioniert der Web-Player nur für E-Mails, die
-                ihr unter <strong>User Management</strong> eintragt (begrenzte Anzahl — siehe Spotify-Doku).
+                Spotifys Web Playback / API ist für kleine Apps praktisch tot: Development nur mit
+                wenigen Test-Usern, Extended Quota oft erst ab riesigen Nutzerzahlen (z.&nbsp;B.
+                Hunderttausende). Für den Fanclub ist das nicht machbar.
               </p>
               <p>
-                <strong>Extended Quota</strong> hebt diese Begrenzung auf. Wo der Antrag erscheint,
-                hängt von eurem Spotify-Konto ab:
-              </p>
-              <ul className="list-disc space-y-1 pl-5">
-                <li>
-                  Oft: App öffnen → <strong>Settings</strong> → Tab{" "}
-                  <strong>Quota extension Request</strong> (kann fehlen)
-                </li>
-                <li>
-                  Seit Mai 2025 oft nur für <strong>Organisationen</strong> mit großem Live-Produkt;
-                  Details:{" "}
-                  <a
-                    href="https://developer.spotify.com/documentation/web-api/concepts/quota-modes"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-fc-blue underline"
-                  >
-                    Quota modes (Spotify)
-                  </a>
-                </li>
-              </ul>
-              <p className="text-xs">
-                Bis zur Freigabe: Test-E-Mails unter User Management eintragen. Fehlt der Tab komplett,
-                ist das bei privaten/kleinen Apps aktuell normal — nicht etwas im Fanclub-Admin.
+                Deshalb: Embed + Link in die Spotify-App. Premium-Nutzer, die im Browser bei Spotify
+                eingeloggt sind, können im Embed oft volle Songs hören; alle anderen öffnen Spotify
+                normal.
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Vercel / Technik</CardTitle>
+              <CardTitle className="text-base">Alte Developer-App</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-slate-700">
+            <CardContent className="space-y-2 text-sm text-slate-700">
               <p>
-                <code className="text-xs">SPOTIFY_CLIENT_ID</code>,{" "}
-                <code className="text-xs">SPOTIFY_CLIENT_SECRET</code>,{" "}
-                <code className="text-xs">APP_BASE_URL</code>,{" "}
-                <code className="text-xs">SMTP_SECRET</code> (für Token-Verschlüsselung).
-              </p>
-              <p className="mt-2">
-                Supabase: <code className="text-xs">026_spotify_connections.sql</code>
+                <code className="text-xs">SPOTIFY_CLIENT_ID</code> /{" "}
+                <code className="text-xs">SPOTIFY_CLIENT_SECRET</code> in Vercel werden für den
+                Sidebar-Player aktuell <strong>nicht</strong> mehr gebraucht. Die können drin bleiben
+                (schadet nicht) oder später entfernt werden.
               </p>
             </CardContent>
           </Card>

@@ -1,32 +1,19 @@
-# Spotify Web-Player (Login pro Mitglied)
+# Spotify in der Fanclub-App
 
 ## In der App
 
-1. Sidebar → **Mit Spotify verbinden** (Popup)
-2. Mit **eigenem** Spotify-Konto anmelden (Premium oder Familien-Profil mit Premium-Slot)
-3. Player verbindet automatisch → **▶ Anni Perka abspielen**
+Sidebar → **Spotify-Embed** (Anni Perka) + Button **In Spotify öffnen**.
 
-Kein Embed, keine 30-Sek.-Vorschau.
+Kein OAuth, keine Test-E-Mails, kein Extended Quota nötig.
 
-## Für alle Mitglieder (wichtig)
+- Mit Spotify Premium (im Browser eingeloggt) oft volle Wiedergabe im Embed
+- Sonst: „In Spotify öffnen“ → App / open.spotify.com
 
-Die Spotify-App muss aus dem **Development-Modus** in den **Extended Quota Mode** (Quota Extension bei Spotify beantragen).
+## Warum kein Web Playback mehr?
 
-Sonst funktioniert der Login nur für bis zu 25 manuell eingetragene E-Mails im Developer-Dashboard.
+Spotify erlaubt die Web Playback API / erweiterte Quotas praktisch nur noch für sehr große Produkte.
+Kleine Fanclub-Apps kommen mit wenigen Test-Usern nicht weiter.
 
-Details: **Fanclub-Portal → Admin → Spotify** (`/admin/settings/spotify`) — nicht im Spotify-Dashboard.
+## Artist
 
-## Env (Vercel)
-
-| Variable | Zweck |
-|----------|--------|
-| `SPOTIFY_CLIENT_ID` | Developer App |
-| `SPOTIFY_CLIENT_SECRET` | Developer App |
-| `APP_BASE_URL` | z. B. `https://fanclub-portal-ap.vercel.app` |
-| `SMTP_SECRET` | Refresh-Token verschlüsseln (gleicher Wert wie beim Verbinden) |
-
-Redirect URI im Dashboard: `{APP_BASE_URL}/api/spotify/callback`
-
-## Supabase
-
-`supabase/026_spotify_connections.sql`
+`https://open.spotify.com/intl-de/artist/4MyWwHAAULhyucj8jxwDit`
