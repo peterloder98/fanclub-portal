@@ -166,13 +166,7 @@ export function BirthdateSegmentInput({
           aria-hidden
         />
       </div>
-      {error ? (
-        <p className="text-xs font-medium text-rose-700">{error}</p>
-      ) : (
-        <p className="text-xs text-slate-500">
-          Format TT.MM.JJJJ — Jahr auch zweistellig (z.&nbsp;B. 86). Nur Zahlen.
-        </p>
-      )}
+      {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}
     </div>
   );
 }

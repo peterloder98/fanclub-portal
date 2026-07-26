@@ -15,12 +15,15 @@ export function MapHoverOverlay({
   lat,
   lng,
   pinOffsetY = 48,
+  interactive = false,
   children,
 }: {
   lat: number;
   lng: number;
   /** Höhe des Pins über dem Ankerpunkt (px) */
   pinOffsetY?: number;
+  /** true = Karte anklickbar/scrollbar (z. B. angeheftetes Mitgliederfenster) */
+  interactive?: boolean;
   children: ReactNode;
 }) {
   const map = useMap();
@@ -82,7 +85,11 @@ export function MapHoverOverlay({
     <div
       ref={cardRef}
       data-side={box.ready ? box.side : undefined}
-      className="fc-map-hover-card pointer-events-none absolute z-[1000] overflow-hidden rounded-xl border-2 border-fc-navy/15 bg-gradient-to-br from-fc-ice via-white to-white px-3 py-2.5 text-fc-navy shadow-xl shadow-fc-navy/20 ring-2 ring-fc-gold/50"
+      className={
+        interactive
+          ? "fc-map-hover-card pointer-events-auto absolute z-[1000] overflow-hidden rounded-xl border-2 border-fc-navy/15 bg-gradient-to-br from-fc-ice via-white to-white px-3 py-2.5 text-fc-navy shadow-xl shadow-fc-navy/20 ring-2 ring-fc-gold/50"
+          : "fc-map-hover-card pointer-events-none absolute z-[1000] overflow-hidden rounded-xl border-2 border-fc-navy/15 bg-gradient-to-br from-fc-ice via-white to-white px-3 py-2.5 text-fc-navy shadow-xl shadow-fc-navy/20 ring-2 ring-fc-gold/50"
+      }
       style={{
         left: box.ready ? box.left : -10_000,
         top: box.ready ? box.top : 0,

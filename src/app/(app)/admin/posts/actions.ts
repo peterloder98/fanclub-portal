@@ -214,30 +214,39 @@ export async function deletePostAdmin(formData: FormData) {
 
 /** Fixiert einen Post oben im Feed bzw. löst die Fixierung (nur Admin). */
 export async function setPostPinned(postId: string, pinned: boolean) {
-  const { user } = await requireAdminAction();
-  const id = postId.trim();
-  if (!id) throw new Error("Post fehlt.");
+  try {
+    const { user } = await requireAdminAction();
+    const id = postId.trim();
+    if (!id) return { ok: false as const, error: "Post fehlt." };
 
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin
-    .from("posts")
-    .update(
-      pinned
-        ? {
-            is_pinned: true,
-            pinned_at: new Date().toISOString(),
-            pinned_by: user.id,
-          }
-        : {
-            is_pinned: false,
-            pinned_at: null,
-            pinned_by: null,
-          },
-    )
-    .eq("id", id);
-  if (error) throw new Error(error.message);
+    // User-Session nötig: Trigger posts_guard_pin_fields prüft is_admin() via auth.uid().
+    // Service-Role hat kein uid → Pin würde fehlschlagen.
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase
+      .from("posts")
+      .update(
+        pinned
+          ? {
+              is_pinned: true,
+              pinned_at: new Date().toISOString(),
+              pinned_by: user.id,
+            }
+          : {
+              is_pinned: false,
+              pinned_at: null,
+              pinned_by: null,
+            },
+      )
+      .eq("id", id);
+    if (error) return { ok: false as const, error: error.message };
 
-  revalidatePath("/dashboard");
-  revalidatePath("/posts");
-  return { ok: true as const };
+    revalidatePath("/dashboard");
+    revalidatePath("/posts");
+    return { ok: true as const };
+  } catch (e) {
+    return {
+      ok: false as const,
+      error: e instanceof Error ? e.message : "Fixieren fehlgeschlagen.",
+    };
+  }
 }

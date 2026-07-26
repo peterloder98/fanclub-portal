@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker } from "react-leaflet";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, useMap } from "react-leaflet";
 import type { MemberMapCluster } from "@/lib/members/cluster-map";
 import { MAP_CI } from "@/lib/maps/ci-colors";
-import { Tooltip } from "react-leaflet";
+import { MapHoverOverlay } from "@/components/maps/map-hover-overlay";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import L from "leaflet";
 
 const GERMANY_BOUNDS: [[number, number], [number, number]] = [
   [47.0, 5.5],
@@ -19,17 +21,56 @@ function clusterRadius(count: number) {
   return 9;
 }
 
-function markerStyle(count: number, hovered: boolean) {
+function markerStyle(count: number, active: boolean) {
   const baseR = clusterRadius(count);
   return {
-    radius: hovered ? baseR + 6 : baseR,
+    radius: active ? baseR + 6 : baseR,
     pathOptions: {
-      color: hovered ? MAP_CI.gold : MAP_CI.navy,
-      fillColor: hovered ? MAP_CI.blue : MAP_CI.sky,
-      fillOpacity: hovered ? 0.95 : 0.78,
-      weight: hovered ? 3.5 : 2,
+      color: active ? MAP_CI.gold : MAP_CI.navy,
+      fillColor: active ? MAP_CI.blue : MAP_CI.sky,
+      fillOpacity: active ? 0.95 : 0.78,
+      weight: active ? 3.5 : 2,
     },
   };
+}
+
+function MapClickDismiss({ onDismiss }: { onDismiss: () => void }) {
+  const map = useMap();
+  useEffect(() => {
+    const handler = () => onDismiss();
+    map.on("click", handler);
+    return () => {
+      map.off("click", handler);
+    };
+  }, [map, onDismiss]);
+  return null;
+}
+
+function ClusterMemberCard({
+  cluster,
+  pinned,
+}: {
+  cluster: MemberMapCluster;
+  pinned: boolean;
+}) {
+  const place = cluster.cities[0] ?? "Region";
+  return (
+    <div>
+      <p className="text-sm font-bold text-fc-navy">{place}</p>
+      <p className="text-xs font-medium text-fc-blue">{cluster.label}</p>
+      {pinned ? (
+        <p className="mt-0.5 text-[10px] text-slate-500">Erneut klicken oder Karte tippen zum Schließen</p>
+      ) : null}
+      <ul className="mt-2 max-h-40 space-y-1.5 overflow-y-auto overscroll-contain">
+        {cluster.members.map((m) => (
+          <li key={m.userId} className="flex items-center gap-2">
+            <UserAvatar name={m.name} avatarUrl={m.avatarUrl} size="xs" />
+            <span className="min-w-0 truncate text-xs font-medium text-slate-700">{m.name}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export function MembersMapClient({
@@ -43,6 +84,7 @@ export function MembersMapClient({
 }) {
   const [mounted, setMounted] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -50,6 +92,14 @@ export function MembersMapClient({
     () => clusters.filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng)),
     [clusters],
   );
+
+  const activeId = selectedId ?? hoveredId;
+  const activeCluster = useMemo(
+    () => (activeId ? markers.find((c) => c.id === activeId) ?? null : null),
+    [activeId, markers],
+  );
+
+  const dismissSelected = useCallback(() => setSelectedId(null), []);
 
   if (!mounted) {
     return (
@@ -75,7 +125,7 @@ export function MembersMapClient({
 
   return (
     <div className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-xl border">
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
         <MapContainer
           center={GERMANY_CENTER}
           zoom={5}
@@ -87,13 +137,14 @@ export function MembersMapClient({
           scrollWheelZoom
           aria-label="Mitgliederkarte Deutschland"
         >
+          <MapClickDismiss onDismiss={dismissSelected} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           {markers.map((c) => {
-            const hovered = hoveredId === c.id;
-            const { radius, pathOptions } = markerStyle(c.count, hovered);
+            const active = activeId === c.id;
+            const { radius, pathOptions } = markerStyle(c.count, active);
             return (
               <CircleMarker
                 key={c.id}
@@ -101,26 +152,34 @@ export function MembersMapClient({
                 radius={radius}
                 pathOptions={pathOptions}
                 eventHandlers={{
-                  mouseover: () => setHoveredId(c.id),
-                  mouseout: () => setHoveredId(null),
+                  mouseover: () => {
+                    if (!selectedId) setHoveredId(c.id);
+                  },
+                  mouseout: () => {
+                    if (!selectedId) setHoveredId(null);
+                  },
+                  click: (e) => {
+                    L.DomEvent.stopPropagation(e);
+                    setHoveredId(null);
+                    setSelectedId((prev) => (prev === c.id ? null : c.id));
+                  },
                 }}
-              >
-                <Tooltip
-                  direction="top"
-                  offset={[0, hovered ? -14 : -10]}
-                  opacity={1}
-                  className="fc-map-tooltip"
-                >
-                  <span className="text-sm font-bold text-fc-navy">{c.label}</span>
-                  {c.count > 1 ? (
-                    <span className="mt-0.5 block text-xs font-medium text-fc-blue">
-                      {c.count} Mitglieder
-                    </span>
-                  ) : null}
-                </Tooltip>
-              </CircleMarker>
+              />
             );
           })}
+          {activeCluster ? (
+            <MapHoverOverlay
+              lat={activeCluster.lat}
+              lng={activeCluster.lng}
+              pinOffsetY={28}
+              interactive={Boolean(selectedId)}
+            >
+              <ClusterMemberCard
+                cluster={activeCluster}
+                pinned={Boolean(selectedId && selectedId === activeCluster.id)}
+              />
+            </MapHoverOverlay>
+          ) : null}
         </MapContainer>
       </div>
       <p className="shrink-0 border-t bg-fc-ice px-2 py-1.5 text-center text-[11px] text-fc-navy/80">
@@ -131,6 +190,7 @@ export function MembersMapClient({
         {markers.length > 0
           ? ` · ${markers.length} ${markers.length === 1 ? "Region" : "Regionen"}`
           : null}
+        {" · Hover oder Klick für Namen"}
       </p>
     </div>
   );

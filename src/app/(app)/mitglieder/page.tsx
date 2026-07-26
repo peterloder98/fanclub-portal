@@ -60,6 +60,8 @@ export default async function MitgliederPage() {
       city: city || memberCountryLabel(p.country),
       lat,
       lng,
+      name: profileDisplayName(p),
+      avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at ?? null),
     });
   }
 

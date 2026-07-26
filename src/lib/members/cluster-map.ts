@@ -1,11 +1,19 @@
 /** Mitgliedsstandorte zu Karten-Clustern (max. ~20 km Umkreis). */
 
+export type MemberMapMember = {
+  userId: string;
+  name: string;
+  avatarUrl: string | null;
+};
+
 export type MemberMapPoint = {
   userId: string;
   postalCode: string;
   city: string;
   lat: number;
   lng: number;
+  name: string;
+  avatarUrl: string | null;
 };
 
 export type MemberMapCluster = {
@@ -15,6 +23,7 @@ export type MemberMapCluster = {
   count: number;
   label: string;
   cities: string[];
+  members: MemberMapMember[];
 };
 
 const EARTH_KM = 6371;
@@ -29,6 +38,14 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return 2 * EARTH_KM * Math.asin(Math.min(1, Math.sqrt(x)));
 }
 
+function memberFromPoint(p: MemberMapPoint): MemberMapMember {
+  return {
+    userId: p.userId,
+    name: p.name,
+    avatarUrl: p.avatarUrl,
+  };
+}
+
 export function clusterMemberPoints(
   points: MemberMapPoint[],
   maxKm = 20,
@@ -38,6 +55,7 @@ export function clusterMemberPoints(
     lng: number;
     count: number;
     cityCounts: Map<string, number>;
+    members: MemberMapMember[];
   }[] = [];
 
   for (const p of points) {
@@ -50,6 +68,7 @@ export function clusterMemberPoints(
         c.count = n;
         const cityLabel = [p.postalCode, p.city].filter(Boolean).join(" ");
         c.cityCounts.set(cityLabel, (c.cityCounts.get(cityLabel) ?? 0) + 1);
+        c.members.push(memberFromPoint(p));
         placed = true;
         break;
       }
@@ -61,6 +80,7 @@ export function clusterMemberPoints(
         lng: p.lng,
         count: 1,
         cityCounts: new Map([[cityLabel, 1]]),
+        members: [memberFromPoint(p)],
       });
     }
   }
@@ -72,7 +92,13 @@ export function clusterMemberPoints(
 export function groupMembersByMapLocation(points: MemberMapPoint[]): MemberMapCluster[] {
   const buckets = new Map<
     string,
-    { lat: number; lng: number; count: number; cityCounts: Map<string, number> }
+    {
+      lat: number;
+      lng: number;
+      count: number;
+      cityCounts: Map<string, number>;
+      members: MemberMapMember[];
+    }
   >();
 
   for (const p of points) {
@@ -82,12 +108,14 @@ export function groupMembersByMapLocation(points: MemberMapPoint[]): MemberMapCl
       existing.count += 1;
       const cityLabel = p.city || p.postalCode;
       existing.cityCounts.set(cityLabel, (existing.cityCounts.get(cityLabel) ?? 0) + 1);
+      existing.members.push(memberFromPoint(p));
     } else {
       buckets.set(key, {
         lat: p.lat,
         lng: p.lng,
         count: 1,
         cityCounts: new Map([[p.city || p.postalCode, 1]]),
+        members: [memberFromPoint(p)],
       });
     }
   }
@@ -97,6 +125,7 @@ export function groupMembersByMapLocation(points: MemberMapPoint[]): MemberMapCl
     lng: b.lng,
     count: b.count,
     cityCounts: b.cityCounts,
+    members: b.members,
   }));
 
   return clustersToResult(clusters);
@@ -108,14 +137,15 @@ function clustersToResult(
     lng: number;
     count: number;
     cityCounts: Map<string, number>;
+    members: MemberMapMember[];
   }[],
 ): MemberMapCluster[] {
   return clusters.map((c, i) => {
     const cities = [...c.cityCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
-    const top = cities[0] ?? "Region";
     const label = c.count === 1 ? "1 Mitglied" : `${c.count} Mitglieder`;
+    const members = [...c.members].sort((a, b) => a.name.localeCompare(b.name, "de"));
     return {
       id: `cluster-${i}`,
       lat: c.lat,
@@ -123,6 +153,7 @@ function clustersToResult(
       count: c.count,
       label,
       cities,
+      members,
     };
   });
 }

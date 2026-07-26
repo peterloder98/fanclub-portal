@@ -79,13 +79,13 @@ export function validateBirthdateSegments(segments: BirthdateSegments): string |
       return "Jahr muss mit 19 oder 20 beginnen — bitte korrigieren.";
     }
   }
-  if (day.length === 2 && month.length === 2 && (year.length === 2 || year.length === 4)) {
+  if (day.length === 2 && month.length === 2 && year.length === 4) {
     const iso = segmentsToIso(day, month, year);
     if (!isValidIsoDate(iso)) return "Bitte ein gültiges Geburtsdatum eingeben.";
     return null;
   }
   if (day || month || year) {
-    return "Bitte Geburtsdatum vollständig eingeben (TT.MM.JJJJ oder TT.MM.JJ).";
+    return "Bitte Geburtsdatum vollständig eingeben (TT.MM.JJJJ).";
   }
   return null;
 }

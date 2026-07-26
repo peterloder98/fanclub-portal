@@ -1008,7 +1008,17 @@ function PostFeedInner({
       ),
     );
     try {
-      await setPostPinned(post.id, next);
+      const result = await setPostPinned(post.id, next);
+      if (!result.ok) {
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === post.id
+              ? { ...p, isPinned: post.isPinned, pinnedAt: post.pinnedAt ?? null }
+              : p,
+          ),
+        );
+        setLoadError(result.error);
+      }
     } catch (e) {
       setPosts((prev) =>
         prev.map((p) =>
