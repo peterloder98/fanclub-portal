@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { PendingPostsQueue } from "@/components/admin/pending-posts-queue.client";
 import { requireAdmin } from "@/lib/admin/require-admin";
