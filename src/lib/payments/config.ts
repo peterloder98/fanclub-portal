@@ -1,10 +1,18 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { CLUB_BANK } from "@/lib/payments/club-bank";
 import type { BankTransferPublicConfig, PaymentProvider, PaymentSettingsRow } from "@/lib/payments/types";
 
 const ENV_STRIPE_PUBLIC = process.env.STRIPE_PUBLIC_KEY ?? process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY ?? "";
 const ENV_STRIPE_SECRET = process.env.STRIPE_SECRET_KEY ?? "";
 const ENV_PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID ?? "";
 const ENV_PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET ?? "";
+
+const BANK_PUBLIC_CONFIG: BankTransferPublicConfig = {
+  account_holder: CLUB_BANK.account_holder,
+  iban: CLUB_BANK.iban,
+  bic: CLUB_BANK.bic,
+  bank_name: CLUB_BANK.bank_name,
+};
 
 /** Öffentliche Zahlungsarten für Checkout (keine Secrets). */
 export async function listEnabledPaymentMethods(): Promise<PaymentSettingsRow[]> {
@@ -30,12 +38,7 @@ function fallbackMethods(): PaymentSettingsRow[] {
       provider: "bank_transfer",
       is_enabled: true,
       is_test_mode: false,
-      public_config_json: {
-        account_holder: "Anni Perka Fanclub e.V.",
-        iban: "DE00 0000 0000 0000 0000 00",
-        bic: "TESTDE00XXX",
-        bank_name: "Platzhalter-Bank",
-      },
+      public_config_json: { ...BANK_PUBLIC_CONFIG },
     },
     {
       provider: "paypal",
@@ -57,10 +60,10 @@ export async function getBankTransferDetails(): Promise<BankTransferPublicConfig
   const bank = methods.find((m) => m.provider === "bank_transfer");
   const cfg = (bank?.public_config_json ?? {}) as BankTransferPublicConfig;
   return {
-    account_holder: cfg.account_holder ?? "Anni Perka Fanclub e.V.",
-    iban: cfg.iban ?? "DE00 0000 0000 0000 0000 00",
-    bic: cfg.bic ?? "TESTDE00XXX",
-    bank_name: cfg.bank_name ?? "Platzhalter-Bank",
+    account_holder: cfg.account_holder ?? CLUB_BANK.account_holder,
+    iban: cfg.iban ?? CLUB_BANK.iban,
+    bic: cfg.bic ?? CLUB_BANK.bic,
+    bank_name: cfg.bank_name ?? CLUB_BANK.bank_name,
   };
 }
 

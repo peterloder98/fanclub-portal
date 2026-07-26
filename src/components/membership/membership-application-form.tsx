@@ -20,6 +20,7 @@ import {
 import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
+import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
 
 const MEMBERSHIP_FEE_EUR = 15;
 const SATZUNG_PDF = "/documents/satzung.pdf";
@@ -298,6 +299,19 @@ export function MembershipApplicationForm() {
             Jahresbeitrag von <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> direkt per
             Zahlungsanbieter oder per eigener Überweisung begleichen.
           </p>
+          <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
+            <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>
+            <dl className="mt-2 grid gap-1 text-slate-700 sm:grid-cols-[7.5rem_1fr]">
+              <dt className="text-slate-500">Empfänger</dt>
+              <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
+              <dt className="text-slate-500">IBAN</dt>
+              <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
+              <dt className="text-slate-500">BIC</dt>
+              <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
+              <dt className="text-slate-500">VWZ</dt>
+              <dd>{CLUB_BANK.reference_hint}</dd>
+            </dl>
+          </div>
           <p>
             Nach Bestätigung durch den Vorstand wirst du in der Anni Perka Fanclub App freigeschaltet
             und – wenn du möchtest – in die WhatsApp-Gruppe des Fanclubs aufgenommen.

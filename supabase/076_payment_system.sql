@@ -39,10 +39,10 @@ values
     true,
     false,
     jsonb_build_object(
-      'account_holder', 'Anni Perka Fanclub e.V.',
-      'iban', 'DE00 0000 0000 0000 0000 00',
-      'bic', 'TESTDE00XXX',
-      'bank_name', 'Platzhalter-Bank'
+      'account_holder', 'Anni-Perka Fanclub',
+      'iban', 'DE42 1305 0000 0201 1955 42',
+      'bic', 'NOLADE21ROS',
+      'bank_name', 'Ostseesparkasse Rostock'
     )
   ),
   ('paypal', true, true, jsonb_build_object('client_id_placeholder', 'PAYPAL_TEST_CLIENT_ID')),

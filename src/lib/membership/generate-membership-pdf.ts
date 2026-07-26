@@ -7,6 +7,7 @@ import {
   type PdfSignatureCoord,
 } from "@/lib/membership/membershipPdfCoordinates";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
+import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
 
 export type MembershipApplicationPdfData = {
   id: string;
@@ -110,8 +111,8 @@ async function drawSignature(
     const width = img.width * scale;
     const height = img.height * scale;
     page.drawImage(img, {
-      x: box.x,
-      y: box.y,
+      x: box.x + (box.width - width) / 2,
+      y: box.y + (box.height - height) / 2,
       width,
       height,
     });
@@ -154,11 +155,12 @@ export async function generateMembershipPdf(
   const coords = membershipPdfCoordinates;
 
   if (shouldDrawMembershipNumber(applicationData.membership_number)) {
-    drawFieldText(page1, font, applicationData.membership_number!.trim(), {
-      x: 200,
-      y: 756,
-      fontSize: 10,
-    });
+    drawFieldText(
+      page1,
+      font,
+      applicationData.membership_number!.trim(),
+      coords.page1.membershipNumber,
+    );
   }
 
   drawFieldText(
@@ -185,13 +187,35 @@ export async function generateMembershipPdf(
     drawFieldText(page1, font, applicationData.facebook, coords.page1.facebook);
   }
 
-  const signedLine = `${applicationData.signed_at_place}, ${formatDE(applicationData.signed_at_date)}`;
-  drawFieldText(page1, font, signedLine, coords.page1.signedPlaceDate);
-
   const startDate = applicationData.membership_start_date
     ? formatDE(applicationData.membership_start_date)
     : formatDE(applicationData.signed_at_date);
   drawFieldText(page2, font, startDate, coords.page2.membershipStart);
+
+  // Aktuelle Vereinskontodaten über die veralteten Zeilen im Template legen
+  const bankBox = coords.page2.bankDetailsOverlay;
+  page2.drawRectangle({
+    x: bankBox.x,
+    y: bankBox.y,
+    width: bankBox.width,
+    height: bankBox.height,
+    color: rgb(1, 1, 1),
+  });
+  const bankLines = [
+    `Empfänger: ${CLUB_BANK.account_holder}`,
+    `IBAN: ${formatClubIbanDisplay(CLUB_BANK.iban)}`,
+    `VWZ: ${CLUB_BANK.reference_hint}`,
+  ];
+  const bankLineCoords = coords.page2.bankDetailsLines;
+  bankLines.forEach((line, i) => {
+    page2.drawText(line, {
+      x: bankLineCoords.x,
+      y: bankLineCoords.y - i * bankLineCoords.lineHeight,
+      size: bankLineCoords.fontSize,
+      font,
+      color: rgb(0.05, 0.05, 0.12),
+    });
+  });
 
   drawCheckbox(page2, font, applicationData.privacy_accepted !== false, coords.page2.privacyCheckbox);
   drawCheckbox(page2, font, Boolean(applicationData.whatsapp_opt_in), coords.page2.whatsappCheckbox);
@@ -200,10 +224,10 @@ export async function generateMembershipPdf(
     drawFieldText(page2, font, formatWhatsappMobile(applicationData), coords.page2.whatsappMobile);
   }
 
+  const signedLine = `${applicationData.signed_at_place}, ${formatDE(applicationData.signed_at_date)}`;
   drawFieldText(page2, font, signedLine, coords.page2.signedPlaceDate);
 
   if (signaturePng?.length) {
-    await drawSignature(doc, page1, signaturePng, coords.page1.signature);
     await drawSignature(doc, page2, signaturePng, coords.page2.signature);
   }
 
