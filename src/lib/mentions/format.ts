@@ -37,3 +37,8 @@ export function splitMentionText(text: string): MentionSegment[] {
   if (!out.length) out.push({ type: "text", value: text });
   return out;
 }
+
+/** Lesbarer Klartext für Previews (@Name statt Token). */
+export function mentionTextToPlain(text: string): string {
+  return text.replace(new RegExp(MENTION_RE.source, "gi"), "@$1");
+}

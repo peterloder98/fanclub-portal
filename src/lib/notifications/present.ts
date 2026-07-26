@@ -93,6 +93,7 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.birthdayPost:
     case NOTIFICATION_KINDS.mention:
     case NOTIFICATION_KINDS.postApproved: {
+      if (m.context === "chat" || n.link_url?.includes("chat=1")) return "/dashboard?chat=1";
       if (typeof m.post_id === "string") return `/dashboard?post=${m.post_id}`;
       const fromLink = postIdFromLinkUrl(n.link_url);
       return fromLink ? `/dashboard?post=${fromLink}` : null;
