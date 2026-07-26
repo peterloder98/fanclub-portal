@@ -40,24 +40,68 @@ export default async function EventsPage({
   const eventSelectBase =
     "id,kind,title,start_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng";
 
-  let { data: events, error } = await supabase
-    .from("external_events")
-    .select(eventSelectWithEnd)
-    .eq("is_visible", true)
-    .order("start_at", { ascending: true, nullsFirst: false });
+  type EventRow = {
+    id: string;
+    kind: string | null;
+    title: string;
+    start_at: string | null;
+    end_at?: string | null;
+    venue: string | null;
+    address: string | null;
+    postal_code: string | null;
+    city: string | null;
+    country: string | null;
+    broadcaster: string | null;
+    ticket_url: string | null;
+    lat: number | null;
+    lng: number | null;
+  };
+
+  let events: EventRow[] | null = null;
+  let error: { message: string } | null = null;
+
+  const normalizeRows = (rows: unknown[] | null): EventRow[] =>
+    (rows ?? []).map((row) => {
+      const e = row as Record<string, unknown>;
+      return {
+        id: String(e.id),
+        kind: (e.kind as string | null) ?? null,
+        title: String(e.title ?? ""),
+        start_at: (e.start_at as string | null) ?? null,
+        end_at: (e.end_at as string | null | undefined) ?? null,
+        venue: (e.venue as string | null) ?? null,
+        address: (e.address as string | null) ?? null,
+        postal_code: (e.postal_code as string | null) ?? null,
+        city: (e.city as string | null) ?? null,
+        country: (e.country as string | null) ?? null,
+        broadcaster: (e.broadcaster as string | null) ?? null,
+        ticket_url: (e.ticket_url as string | null) ?? null,
+        lat: (e.lat as number | null) ?? null,
+        lng: (e.lng as number | null) ?? null,
+      };
+    });
+
+  {
+    const res = await supabase
+      .from("external_events")
+      .select(eventSelectWithEnd)
+      .eq("is_visible", true)
+      .order("start_at", { ascending: true, nullsFirst: false });
+    events = normalizeRows(res.data as unknown[] | null);
+    error = res.error;
+  }
 
   if (error && /end_at|date_label/i.test(error.message)) {
-    ({ data: events, error } = await supabase
+    const res = await supabase
       .from("external_events")
       .select(eventSelectBase)
       .eq("is_visible", true)
-      .order("start_at", { ascending: true, nullsFirst: false }));
+      .order("start_at", { ascending: true, nullsFirst: false });
+    events = normalizeRows(res.data as unknown[] | null);
+    error = res.error;
   }
 
-  const allEvents = (events ?? []).map((e) => ({
-    ...e,
-    end_at: "end_at" in e ? ((e as { end_at?: string | null }).end_at ?? null) : null,
-  }));
+  const allEvents = events ?? [];
   const visibleEvents = filterVisibleEvents(allEvents);
   const eventsForPanel = (() => {
     if (!focusEventId) return visibleEvents;
