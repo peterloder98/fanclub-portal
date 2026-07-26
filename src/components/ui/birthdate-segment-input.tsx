@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/cn";
 import {
@@ -17,6 +17,13 @@ function parseIso(value: string) {
   return { year: m[1], month: m[2], day: m[3] };
 }
 
+function formatDe(iso: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return "";
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+/** Geburtsdatum: TT.MM.JJJJ + Kalender-Button (schließt nach Auswahl). */
 export function BirthdateSegmentInput({
   label,
   value,
@@ -35,7 +42,6 @@ export function BirthdateSegmentInput({
   const dayRef = useRef<HTMLInputElement>(null);
   const monthRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
-  const datePickerRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -91,7 +97,6 @@ export function BirthdateSegmentInput({
 
   const inputClass =
     "h-11 w-full rounded-xl border bg-white px-2 text-center text-sm tabular-nums outline-none focus:ring-4 focus:ring-[color:var(--ring)]";
-
   const maxDate = new Date().toISOString().slice(0, 10);
   const invalidRing = error ? "border-rose-300 focus:ring-rose-200" : "";
 
@@ -145,28 +150,70 @@ export function BirthdateSegmentInput({
             className={cn(inputClass, "max-w-[5.5rem]", invalidRing)}
           />
         </div>
-        <span className="hidden text-xs text-slate-400 sm:inline">oder</span>
-        <button
-          type="button"
-          onClick={() => datePickerRef.current?.showPicker?.() ?? datePickerRef.current?.click()}
-          className="inline-flex h-11 items-center gap-1.5 rounded-xl border bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-        >
+        <label className="relative inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border bg-white px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
           <Calendar className="h-4 w-4 text-fc-blue" aria-hidden />
           Kalender
-        </button>
-        <input
-          ref={datePickerRef}
-          type="date"
-          min="1900-01-01"
-          max={maxDate}
-          value={/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : ""}
-          onChange={(e) => onPickerChange(e.target.value)}
-          className="sr-only"
-          tabIndex={-1}
-          aria-hidden
-        />
+          <input
+            type="date"
+            min="1900-01-01"
+            max={maxDate}
+            value={/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : ""}
+            onChange={(e) => onPickerChange(e.target.value)}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            aria-label={`${label} per Kalender wählen`}
+          />
+        </label>
       </div>
       {error ? <p className="text-xs font-medium text-rose-700">{error}</p> : null}
     </div>
+  );
+}
+
+/** Allgemeines Datum (Beginn, Unterschrift) — Anzeige TT.MM.JJJJ, Kalender schließt nach Auswahl. */
+export function AppDateInput({
+  label,
+  value,
+  onChange,
+  required,
+  min,
+  max,
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (iso: string) => void;
+  required?: boolean;
+  min?: string;
+  max?: string;
+  className?: string;
+}) {
+  const id = useId();
+  const display = formatDe(value);
+
+  return (
+    <label className={cn("grid gap-1", className)}>
+      <span className="text-sm font-medium text-slate-700">
+        {label}
+        {required ? " *" : ""}
+      </span>
+      <div className="relative">
+        <div className="pointer-events-none flex h-11 items-center rounded-xl border bg-white px-3 text-sm text-slate-800">
+          <span className={display ? "tabular-nums" : "text-slate-400"}>
+            {display || "TT.MM.JJJJ"}
+          </span>
+          <Calendar className="ml-auto h-4 w-4 text-fc-blue" aria-hidden />
+        </div>
+        <input
+          id={id}
+          type="date"
+          required={required}
+          min={min}
+          max={max}
+          value={/^\d{4}-\d{2}-\d{2}$/.test(value) ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        />
+      </div>
+    </label>
   );
 }

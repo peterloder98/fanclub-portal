@@ -17,7 +17,7 @@ import {
   MEMBERSHIP_REFERRER_STORAGE_KEY,
   readReferrerIdFromSearchParams,
 } from "@/lib/membership/referral-link";
-import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
+import { BirthdateSegmentInput, AppDateInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
 import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
@@ -462,15 +462,14 @@ export function MembershipApplicationForm() {
             Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> (fest, Zahlung nach Antragstellung
             in der App)
           </p>
-          <label className="grid gap-1 sm:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Gewünschter Beginn</span>
-            <input
-              type="date"
-              value={form.membership_start_date}
-              onChange={(e) => setForm((f) => ({ ...f, membership_start_date: e.target.value }))}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-            />
-          </label>
+          <AppDateInput
+            label="Gewünschter Beginn"
+            value={form.membership_start_date}
+            onChange={(membership_start_date) =>
+              setForm((f) => ({ ...f, membership_start_date }))
+            }
+            className="sm:col-span-2"
+          />
         </CardContent>
       </Card>
 
@@ -622,16 +621,12 @@ export function MembershipApplicationForm() {
                 className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
               />
             </label>
-            <label className="grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Datum *</span>
-              <input
-                type="date"
-                required
-                value={form.signed_at_date}
-                onChange={(e) => setForm((f) => ({ ...f, signed_at_date: e.target.value }))}
-                className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-              />
-            </label>
+            <AppDateInput
+              label="Datum"
+              required
+              value={form.signed_at_date}
+              onChange={(signed_at_date) => setForm((f) => ({ ...f, signed_at_date }))}
+            />
           </div>
 
           {signature ? (

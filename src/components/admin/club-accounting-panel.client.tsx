@@ -110,7 +110,7 @@ export function ClubAccountingPanel({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [periodMode, setPeriodMode] = useState<LedgerPeriodMode>("all");
+  const [periodMode, setPeriodMode] = useState<LedgerPeriodMode>("year");
   const now = new Date();
   const [filterYear, setFilterYear] = useState(now.getFullYear());
   const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1);
@@ -227,6 +227,14 @@ export function ClubAccountingPanel({
   );
   const balance = incomeCents - expenseCents;
 
+  const currentYear = now.getFullYear();
+  const currentYearSummary = useMemo(() => {
+    const yearEntries = filterLedgerByPeriod(entries, "year", currentYear, filterMonth);
+    return sumLedgerRows(yearEntries);
+  }, [entries, currentYear, filterMonth]);
+  const currentYearBalance =
+    currentYearSummary.incomeCents - currentYearSummary.expenseCents;
+
   const monthlySummary = useMemo(
     () => summarizeLedgerByMonth(entries, filterYear),
     [entries, filterYear],
@@ -314,128 +322,36 @@ export function ClubAccountingPanel({
         </div>
       ) : null}
 
-      <Card>
-        <CardContent className="flex flex-wrap items-end gap-3 pt-5">
-          <label className="grid gap-1">
-            <span className="text-xs font-semibold text-slate-600">Zeitraum</span>
-            <select
-              value={periodMode}
-              onChange={(e) => setPeriodMode(e.target.value as LedgerPeriodMode)}
-              className="h-10 rounded-xl border px-3 text-sm"
-            >
-              <option value="all">Gesamt</option>
-              <option value="year">Pro Jahr</option>
-              <option value="month">Pro Monat</option>
-            </select>
-          </label>
-          {periodMode !== "all" ? (
-            <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-600">Jahr</span>
-              <select
-                value={filterYear}
-                onChange={(e) => setFilterYear(Number(e.target.value))}
-                className="h-10 rounded-xl border px-3 text-sm"
+      <Card className="border-fc-navy/15 bg-gradient-to-br from-white to-fc-ice/40">
+        <CardHeader className="pb-2">
+          <CardTitle>Saldo {currentYear}</CardTitle>
+          <p className="text-sm text-slate-500">Einnahmen und Ausgaben im laufenden Kalenderjahr</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Einnahmen</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-700">
+                {formatEur(currentYearSummary.incomeCents)}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Ausgaben</p>
+              <p className="mt-1 text-2xl font-bold text-rose-700">
+                {formatEur(currentYearSummary.expenseCents)}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Saldo</p>
+              <p
+                className={`mt-1 text-2xl font-bold ${currentYearBalance >= 0 ? "text-fc-navy" : "text-rose-700"}`}
               >
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          {periodMode === "month" ? (
-            <label className="grid gap-1">
-              <span className="text-xs font-semibold text-slate-600">Monat</span>
-              <select
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(Number(e.target.value))}
-                className="h-10 rounded-xl border px-3 text-sm"
-              >
-                {MONTHS.map((name, i) => (
-                  <option key={name} value={i + 1}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-          <p className="text-sm text-slate-500">{periodLabel}</p>
-          <button
-            type="button"
-            disabled={pending || entries.length === 0}
-            onClick={() => handleExportCsv("paid")}
-            className="ml-auto h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
-          >
-            CSV bestätigt (Steuerberater)
-          </button>
-          <button
-            type="button"
-            disabled={pending || entries.length === 0}
-            onClick={() => handleExportCsv("open")}
-            className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
-          >
-            CSV offene Posten
-          </button>
+                {formatEur(currentYearBalance)}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
-
-      {monthlySummary.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Umsatzübersicht {filterYear}</CardTitle>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            <table className="w-full min-w-[28rem] text-left text-sm">
-              <thead className="border-b text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="py-2 pr-3">Monat</th>
-                  <th className="py-2 pr-3">Einnahmen</th>
-                  <th className="py-2 pr-3">Ausgaben</th>
-                  <th className="py-2 pr-3">Saldo</th>
-                  <th className="py-2">Buchungen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {monthlySummary.map((m) => (
-                  <tr key={m.label} className="border-b">
-                    <td className="py-2 pr-3 font-medium">{m.label}</td>
-                    <td className="py-2 pr-3 text-emerald-700">{formatEur(m.incomeCents)}</td>
-                    <td className="py-2 pr-3 text-rose-700">{formatEur(m.expenseCents)}</td>
-                    <td className="py-2 pr-3 font-semibold">{formatEur(m.balanceCents)}</td>
-                    <td className="py-2 tabular-nums text-slate-600">{m.entryCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-xs font-semibold uppercase text-slate-500">Einnahmen</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-700">{formatEur(incomeCents)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-xs font-semibold uppercase text-slate-500">Ausgaben</p>
-            <p className="mt-1 text-2xl font-bold text-rose-700">{formatEur(expenseCents)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-5">
-            <p className="text-xs font-semibold uppercase text-slate-500">Saldo</p>
-            <p
-              className={`mt-1 text-2xl font-bold ${balance >= 0 ? "text-fc-navy" : "text-rose-700"}`}
-            >
-              {formatEur(balance)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
 
       {openMeetingCharges.length > 0 ? (
         <Card className="border-fc-sky/25">
@@ -510,39 +426,51 @@ export function ClubAccountingPanel({
         <Card>
           <CardHeader>
             <CardTitle>Offene Beiträge ({openContributions.length})</CardTitle>
+            <p className="mt-1 text-xs text-slate-500">
+              Folgejahr nicht bezahlt? Erinnerung direkt aus der Liste senden.
+            </p>
           </CardHeader>
           <CardContent>
             <div className="grid gap-2 lg:hidden">
               {openContributions.map((c) => (
-                <Link
+                <div
                   key={c.userId}
-                  href={`/admin/members/${c.userId}`}
-                  className="block rounded-xl border bg-white p-3 transition hover:border-slate-300 hover:bg-slate-50"
+                  className="rounded-xl border bg-white p-3"
                 >
-                  <div className="font-semibold text-fc-navy">
+                  <Link
+                    href={`/admin/members/${c.userId}`}
+                    className="block font-semibold text-fc-navy hover:underline"
+                  >
                     {c.lastName}, {c.firstName}
                     {c.membershipNumber ? (
                       <span className="ml-1 text-xs font-normal text-slate-500">
                         Nr. {c.membershipNumber}
                       </span>
                     ) : null}
-                  </div>
+                  </Link>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                     <ContributionStatusBadge status={c.status} />
                     <span className="font-semibold text-amber-800">{formatEur(c.openCents)} offen</span>
                     <span className="text-slate-500">{c.periodLabel}</span>
                   </div>
-                </Link>
+                  <Link
+                    href={`/admin/members/${c.userId}?remind=1`}
+                    className="mt-3 inline-flex h-9 items-center justify-center rounded-lg bg-amber-600 px-3 text-xs font-semibold text-white hover:bg-amber-700"
+                  >
+                    Erinnerung senden
+                  </Link>
+                </div>
               ))}
             </div>
             <div className="hidden overflow-x-auto rounded-xl border lg:block">
-              <table className="w-full min-w-[560px] text-left text-sm">
+              <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-600">
                   <tr>
                     <th className="px-3 py-2">Mitglied</th>
                     <th className="px-3 py-2">Periode</th>
                     <th className="px-3 py-2">Offen</th>
                     <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">Aktion</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -563,6 +491,14 @@ export function ClubAccountingPanel({
                       </td>
                       <td className="px-3 py-2">
                         <ContributionStatusBadge status={c.status} />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Link
+                          href={`/admin/members/${c.userId}?remind=1`}
+                          className="inline-flex h-8 items-center rounded-lg bg-amber-600 px-2.5 text-xs font-semibold text-white hover:bg-amber-700"
+                        >
+                          Erinnerung
+                        </Link>
                       </td>
                     </tr>
                   ))}
@@ -663,7 +599,7 @@ export function ClubAccountingPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Buchungen ({sortedEntries.length})</CardTitle>
+          <CardTitle>Zahlungsliste ({sortedEntries.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
@@ -996,6 +932,123 @@ export function ClubAccountingPanel({
             </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Statistische Auswertungen</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid gap-1">
+              <span className="text-xs font-semibold text-slate-600">Zeitraum</span>
+              <select
+                value={periodMode}
+                onChange={(e) => setPeriodMode(e.target.value as LedgerPeriodMode)}
+                className="h-10 rounded-xl border px-3 text-sm"
+              >
+                <option value="all">Gesamt</option>
+                <option value="year">Pro Jahr</option>
+                <option value="month">Pro Monat</option>
+              </select>
+            </label>
+            {periodMode !== "all" ? (
+              <label className="grid gap-1">
+                <span className="text-xs font-semibold text-slate-600">Jahr</span>
+                <select
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(Number(e.target.value))}
+                  className="h-10 rounded-xl border px-3 text-sm"
+                >
+                  {yearOptions.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            {periodMode === "month" ? (
+              <label className="grid gap-1">
+                <span className="text-xs font-semibold text-slate-600">Monat</span>
+                <select
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(Number(e.target.value))}
+                  className="h-10 rounded-xl border px-3 text-sm"
+                >
+                  {MONTHS.map((name, i) => (
+                    <option key={name} value={i + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <p className="text-sm text-slate-500">{periodLabel}</p>
+            <button
+              type="button"
+              disabled={pending || entries.length === 0}
+              onClick={() => handleExportCsv("paid")}
+              className="ml-auto h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              CSV bestätigt (Steuerberater)
+            </button>
+            <button
+              type="button"
+              disabled={pending || entries.length === 0}
+              onClick={() => handleExportCsv("open")}
+              className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 disabled:opacity-50"
+            >
+              CSV offene Posten
+            </button>
+          </div>
+
+          {monthlySummary.length > 0 ? (
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full min-w-[28rem] text-left text-sm">
+                <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2">Monat</th>
+                    <th className="px-3 py-2">Einnahmen</th>
+                    <th className="px-3 py-2">Ausgaben</th>
+                    <th className="px-3 py-2">Saldo</th>
+                    <th className="px-3 py-2">Buchungen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlySummary.map((m) => (
+                    <tr key={m.label} className="border-b">
+                      <td className="px-3 py-2 font-medium">{m.label}</td>
+                      <td className="px-3 py-2 text-emerald-700">{formatEur(m.incomeCents)}</td>
+                      <td className="px-3 py-2 text-rose-700">{formatEur(m.expenseCents)}</td>
+                      <td className="px-3 py-2 font-semibold">{formatEur(m.balanceCents)}</td>
+                      <td className="px-3 py-2 tabular-nums text-slate-600">{m.entryCount}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Einnahmen ({periodLabel})</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-700">{formatEur(incomeCents)}</p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Ausgaben ({periodLabel})</p>
+              <p className="mt-1 text-2xl font-bold text-rose-700">{formatEur(expenseCents)}</p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Saldo ({periodLabel})</p>
+              <p
+                className={`mt-1 text-2xl font-bold ${balance >= 0 ? "text-fc-navy" : "text-rose-700"}`}
+              >
+                {formatEur(balance)}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

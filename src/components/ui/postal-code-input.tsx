@@ -1,10 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import {
-  postalCodeHint,
-  sanitizePostalCode,
-} from "@/lib/postal-code";
+import { sanitizePostalCode } from "@/lib/postal-code";
 
 export function PostalCodeInput({
   label,
@@ -55,7 +52,6 @@ export function PostalCodeInput({
         }}
         className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
       />
-      <span className="text-xs text-slate-500">{postalCodeHint(c)}</span>
     </label>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Mail, Pencil, Trash2 } from "lucide-react";
 import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -113,12 +113,14 @@ export function MemberDetailPanel({
   ledgerEntries,
   ledgerAvailable,
   contribution,
+  autoOpenReminder = false,
 }: {
   member: MemberDetailData;
   warnings: MemberWarningRow[];
   ledgerEntries: ClubLedgerRow[];
   ledgerAvailable: boolean;
   contribution: MemberContributionInfo | null;
+  autoOpenReminder?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -181,6 +183,13 @@ export function MemberDetailPanel({
       setPaymentLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!autoOpenReminder || !member.email) return;
+    void openPaymentDialog();
+    // nur einmal beim Öffnen mit ?remind=1
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenReminder, member.id]);
 
   function onPaymentSignatureChange(signatureId: string) {
     const nextText = paymentSignatureTexts[signatureId] ?? "";
@@ -313,9 +322,18 @@ export function MemberDetailPanel({
           type="button"
           disabled={pending || paymentLoading || !member.email}
           onClick={() => void openPaymentDialog()}
-          className="fc-btn-secondary h-10 disabled:opacity-50"
+          className={
+            contribution && contribution.status !== "paid"
+              ? "inline-flex h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
+              : "fc-btn-secondary h-10 disabled:opacity-50"
+          }
         >
-          Zahlungserinnerung senden
+          <Mail className="h-4 w-4" aria-hidden />
+          {paymentLoading
+            ? "Lade…"
+            : contribution && contribution.status !== "paid"
+              ? `Beitrags-Erinnerung (${formatEur(contribution.openCents)} offen)`
+              : "Beitrags-Erinnerung senden"}
         </button>
         <AdminIconButton
           label="Mitglied löschen"
@@ -377,11 +395,24 @@ export function MemberDetailPanel({
                     <span className="inline-flex flex-wrap items-center gap-2">
                       <ContributionStatusBadge status={contribution.status} />
                       {contribution.status !== "paid" ? (
-                        <span className="text-xs text-slate-600">
-                          Offen: {formatEur(contribution.openCents)} · Periode {contribution.periodLabel}
-                        </span>
+                        <>
+                          <span className="text-xs text-slate-600">
+                            Offen: {formatEur(contribution.openCents)} · Periode{" "}
+                            {contribution.periodLabel}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={pending || paymentLoading || !member.email}
+                            onClick={() => void openPaymentDialog()}
+                            className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
+                          >
+                            Erinnerung senden
+                          </button>
+                        </>
                       ) : (
-                        <span className="text-xs text-slate-600">Periode {contribution.periodLabel}</span>
+                        <span className="text-xs text-slate-600">
+                          Periode {contribution.periodLabel}
+                        </span>
                       )}
                     </span>
                   ) : (
@@ -688,8 +719,8 @@ export function MemberDetailPanel({
 
       {showPaymentDialog ? (
         <EmailDialogShell
-          title="Zahlungserinnerung"
-          description={`An ${member.email}`}
+          title="Beitrags-Erinnerung"
+          description={`An ${member.email} · offener Jahresbeitrag`}
           onClose={() => setShowPaymentDialog(false)}
           footer={
             <button

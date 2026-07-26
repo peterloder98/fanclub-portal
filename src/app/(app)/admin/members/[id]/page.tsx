@@ -15,10 +15,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminMemberDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ remind?: string }>;
 }) {
   const { id } = await params;
+  const { remind } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -160,6 +163,7 @@ export default async function AdminMemberDetailPage({
           ledgerEntries={ledgerEntries}
           ledgerAvailable={ledgerAvailable}
           contribution={contribution}
+          autoOpenReminder={remind === "1"}
         />
         </div>
       </main>

@@ -82,14 +82,16 @@ function textToHtmlParagraphs(text: string) {
 }
 
 const PAYMENT_REMINDER_FALLBACK = {
-  subject: "Zahlungserinnerung Mitgliedsbeitrag Anni Perka Fanclub",
+  subject: "Erinnerung: Mitgliedsbeitrag Anni Perka Fanclub ({{membership_period}})",
   body_text: `Hallo {{first_name}},
 
-vielen Dank für deinen Mitgliedschaftsantrag beim Anni-Perka-Fanclub e. V.
+für die Beitragsperiode {{membership_period}} ist dein Mitgliedsbeitrag noch nicht vollständig bei uns eingegangen.
 
-Der Mitgliedsbeitrag in Höhe von {{fee_eur}} ist bei uns noch nicht eingegangen. Bitte überweise den Betrag auf das im Antrag genannte Konto.
+Jahresbeitrag: {{fee_eur}}
+Bereits gezahlt: {{fee_paid_eur}}
+Noch offen: {{fee_open_eur}}
 
-Erst nach Zahlungseingang schalten wir deinen Zugang zur Fanclub-App frei und nehmen dich – sofern gewünscht – in die WhatsApp-Gruppe als aktives Mitglied auf.
+Bitte überweise den offenen Betrag zeitnah auf das Club-Konto (wie im Antrag bzw. in den Club-Infos angegeben).
 
 Bei Fragen melde dich gerne bei uns.`,
 };

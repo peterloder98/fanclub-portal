@@ -85,7 +85,6 @@ export function PhoneInput({
           className="h-11 min-w-0 flex-1 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
         />
       </div>
-      <span className="text-xs text-slate-500">Nur Ziffern, keine führende 0.</span>
     </label>
   );
 }
