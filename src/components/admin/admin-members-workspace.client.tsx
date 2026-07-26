@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
@@ -13,6 +13,81 @@ import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmptyState } from "@/components/ui/empty-state";
 
 const PAGE_SIZE = 50;
+
+function ListPager({
+  page,
+  pageCount,
+  total,
+  pageSize,
+  onPageChange,
+  noun,
+  className,
+  id,
+}: {
+  page: number;
+  pageCount: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  noun: string;
+  className?: string;
+  id: string;
+}) {
+  const safeCount = Math.max(1, pageCount);
+  const current = Math.min(Math.max(0, page), safeCount - 1);
+
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-600",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          disabled={current <= 0}
+          onClick={() => onPageChange(current - 1)}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-fc-navy transition hover:border-fc-blue hover:bg-fc-ice disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Vorherige Seite"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <label className="sr-only" htmlFor={id}>
+          Seite wählen
+        </label>
+        <select
+          id={id}
+          value={current}
+          disabled={safeCount <= 1}
+          onChange={(e) => onPageChange(Number(e.target.value))}
+          className="h-8 min-w-[3.25rem] rounded-lg border border-slate-200 bg-white px-1.5 text-xs font-medium text-fc-navy outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30 disabled:opacity-60"
+          aria-label="Seite"
+        >
+          {Array.from({ length: safeCount }, (_, i) => (
+            <option key={i} value={i}>
+              {i + 1}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          disabled={current >= safeCount - 1}
+          onClick={() => onPageChange(current + 1)}
+          className="grid h-8 w-8 place-items-center rounded-lg border border-slate-200 bg-white text-fc-navy transition hover:border-fc-blue hover:bg-fc-ice disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Nächste Seite"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+      <span className="font-medium text-fc-navy">
+        Seite {current + 1} von {safeCount}
+      </span>
+      <span>Gesamt: {total} {noun}</span>
+      <span>Anzeige je {pageSize} Stück</span>
+    </div>
+  );
+}
 
 function matchesQuery(q: string, parts: (string | null | undefined)[]) {
   const needle = q.trim().toLowerCase();
@@ -351,30 +426,17 @@ export function AdminMembersWorkspace({
                 </button>
               ))}
             </div>
-            {sortedApps.length > PAGE_SIZE ? (
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-600 lg:hidden">
-                <span>
-                  Seite {appPage + 1} von {appPageCount} ({sortedApps.length} Anträge)
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={appPage === 0}
-                    onClick={() => setAppPage((p) => Math.max(0, p - 1))}
-                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
-                  >
-                    Zurück
-                  </button>
-                  <button
-                    type="button"
-                    disabled={appPage >= appPageCount - 1}
-                    onClick={() => setAppPage((p) => p + 1)}
-                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
-                  >
-                    Weiter
-                  </button>
-                </div>
-              </div>
+            {sortedApps.length > 0 ? (
+              <ListPager
+                id="apps-pager-mobile"
+                className="mb-2 lg:hidden"
+                page={appPage}
+                pageCount={appPageCount}
+                total={sortedApps.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setAppPage}
+                noun="Anträge"
+              />
             ) : null}
             <div className="hidden overflow-x-auto rounded-xl border bg-white lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
@@ -454,6 +516,18 @@ export function AdminMembersWorkspace({
                 </tbody>
               </table>
             </div>
+            {sortedApps.length > 0 ? (
+              <ListPager
+                id="apps-pager-desktop"
+                className="mt-2 hidden lg:flex"
+                page={appPage}
+                pageCount={appPageCount}
+                total={sortedApps.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setAppPage}
+                noun="Anträge"
+              />
+            ) : null}
             </>
           )}
         </CardContent>
@@ -549,36 +623,18 @@ export function AdminMembersWorkspace({
                 </button>
               ))}
             </div>
-            {sortedMembers.length > PAGE_SIZE ? (
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
-                <span>
-                  Seite {memberPage + 1} von {memberPageCount} · {sortedMembers.length} Mitglieder
-                  (je {PAGE_SIZE})
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={memberPage === 0}
-                    onClick={() => setMemberPage((p) => Math.max(0, p - 1))}
-                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
-                  >
-                    Zurück
-                  </button>
-                  <button
-                    type="button"
-                    disabled={memberPage >= memberPageCount - 1}
-                    onClick={() => setMemberPage((p) => p + 1)}
-                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
-                  >
-                    Nächste Seite
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="mb-2 hidden text-xs text-slate-500 lg:block">
-                {sortedMembers.length} Mitglieder
-              </p>
-            )}
+            {sortedMembers.length > 0 ? (
+              <ListPager
+                id="members-pager-top"
+                className="mb-2 lg:hidden"
+                page={memberPage}
+                pageCount={memberPageCount}
+                total={sortedMembers.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setMemberPage}
+                noun="Mitglieder"
+              />
+            ) : null}
             <div className="hidden overflow-x-auto rounded-xl border bg-white lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
@@ -695,31 +751,17 @@ export function AdminMembersWorkspace({
                 </tbody>
               </table>
             </div>
-            {sortedMembers.length > PAGE_SIZE ? (
-              <div className="mt-2 hidden items-center justify-between text-xs text-slate-600 lg:flex">
-                <span>
-                  Seite {memberPage + 1} von {memberPageCount} · {sortedMembers.length} Mitglieder
-                  (je {PAGE_SIZE})
-                </span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={memberPage === 0}
-                    onClick={() => setMemberPage((p) => Math.max(0, p - 1))}
-                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
-                  >
-                    Zurück
-                  </button>
-                  <button
-                    type="button"
-                    disabled={memberPage >= memberPageCount - 1}
-                    onClick={() => setMemberPage((p) => p + 1)}
-                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
-                  >
-                    Nächste Seite
-                  </button>
-                </div>
-              </div>
+            {sortedMembers.length > 0 ? (
+              <ListPager
+                id="members-pager-bottom"
+                className="mt-2 hidden lg:flex"
+                page={memberPage}
+                pageCount={memberPageCount}
+                total={sortedMembers.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setMemberPage}
+                noun="Mitglieder"
+              />
             ) : null}
             </>
           )}
