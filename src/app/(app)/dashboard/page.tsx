@@ -111,18 +111,18 @@ export default async function DashboardPage() {
               />
             </div>
 
-            <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <Card className="flex min-h-[280px] flex-1 flex-col overflow-hidden sm:min-h-[320px]">
               <CardContent className="flex h-full min-h-0 flex-1 flex-col p-1">
                 <EventsMap
                   events={mapEvents}
-                  minHeight={180}
+                  minHeight={280}
                   mapVariant="dashboard"
                   fillHeight
                 />
               </CardContent>
             </Card>
 
-            <Card className="mt-auto flex max-h-[min(38vh,280px)] shrink-0 flex-col overflow-hidden">
+            <Card className="mt-auto flex h-[13rem] shrink-0 flex-col overflow-hidden">
               <CardContent className="flex min-h-0 flex-1 flex-col p-2 pb-2">
                 <DashboardGiveawaysInline items={giveawayItems} />
               </CardContent>

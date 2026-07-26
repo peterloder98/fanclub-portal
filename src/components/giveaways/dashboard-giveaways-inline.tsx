@@ -23,21 +23,21 @@ export function DashboardGiveawaysInline({ items }: { items: GiveawayListItem[] 
         </Link>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5">
         {active.length ? (
           <ul className="grid gap-1.5">
             {active.map((g) => {
               return (
-                <li key={g.id}>
+                <li key={g.id} className="min-h-[4.75rem]">
                   <Link
                     href={`/giveaways/${g.id}`}
-                    className="block rounded-lg border bg-white px-2 py-1.5 transition hover:border-fc-sky/30 hover:bg-fc-ice/30"
+                    className="block h-full rounded-lg border bg-white px-2 py-1.5 transition hover:border-fc-sky/30 hover:bg-fc-ice/30"
                   >
                     <div className="text-xs font-medium leading-snug text-slate-900 line-clamp-2">
                       {g.title}
                     </div>
                     {g.prizeNames[0] ? (
-                      <div className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-slate-500">
+                      <div className="mt-0.5 line-clamp-1 text-[10px] leading-snug text-slate-500">
                         {g.prizeNames.join(" · ")}
                       </div>
                     ) : null}
