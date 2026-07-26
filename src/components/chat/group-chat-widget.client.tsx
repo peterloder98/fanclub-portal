@@ -75,6 +75,7 @@ export function GroupChatWidget() {
   const [onlineCount, setOnlineCount] = useState(1);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
   const dockRef = useRef<HTMLButtonElement>(null);
+  const lastDockHeightRef = useRef(0);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -343,15 +344,28 @@ export function GroupChatWidget() {
 
   useLayoutEffect(() => {
     const root = document.documentElement;
-    const clearDock = () => {
+    if (!userId) {
       root.style.setProperty("--fanclub-chat-dock", "0px");
-      root.style.setProperty("--fanclub-chat-dock-right", "0px");
+      return;
+    }
+
+    // Unten immer denselben Freiraum lassen (auch ausgeklappt),
+    // damit Auf-/Zuklappen den Seiteninhalt nicht verschiebt.
+    const applyCollapsedSize = () => {
+      const el = dockRef.current;
+      if (el) {
+        const h = Math.ceil(el.getBoundingClientRect().height) + 16;
+        lastDockHeightRef.current = h;
+        root.style.setProperty("--fanclub-chat-dock", `${h}px`);
+        return;
+      }
+      const fallback = lastDockHeightRef.current || 76;
+      root.style.setProperty("--fanclub-chat-dock", `${fallback}px`);
     };
 
-    if (!userId || expanded) {
-      clearDock();
-      return clearDock;
-    }
+    applyCollapsedSize();
+
+    if (expanded) return;
 
     let ro: ResizeObserver | null = null;
     let cancelled = false;
@@ -364,22 +378,11 @@ export function GroupChatWidget() {
         requestAnimationFrame(bind);
         return;
       }
-      const apply = () => {
-        const r = el.getBoundingClientRect();
-        root.style.setProperty(
-          "--fanclub-chat-dock",
-          `${Math.ceil(r.height) + 16}px`,
-        );
-        root.style.setProperty(
-          "--fanclub-chat-dock-right",
-          `${Math.ceil(r.width) + 12}px`,
-        );
-      };
-      apply();
-      onResize = apply;
-      ro = new ResizeObserver(apply);
+      onResize = applyCollapsedSize;
+      applyCollapsedSize();
+      ro = new ResizeObserver(applyCollapsedSize);
       ro.observe(el);
-      window.addEventListener("resize", apply);
+      window.addEventListener("resize", applyCollapsedSize);
     };
 
     bind();
@@ -388,9 +391,14 @@ export function GroupChatWidget() {
       cancelled = true;
       ro?.disconnect();
       if (onResize) window.removeEventListener("resize", onResize);
-      clearDock();
     };
   }, [expanded, userId, loaded, preview.name, preview.body]);
+
+  useEffect(() => {
+    return () => {
+      document.documentElement.style.setProperty("--fanclub-chat-dock", "0px");
+    };
+  }, []);
 
   if (!userId && loaded) return null;
   if (!loaded && !userId) return null;
