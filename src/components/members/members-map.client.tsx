@@ -53,11 +53,9 @@ function ClusterMemberCard({
   cluster: MemberMapCluster;
   pinned: boolean;
 }) {
-  const place = cluster.cities[0] ?? "Region";
   return (
     <div>
-      <p className="text-sm font-bold text-fc-navy">{place}</p>
-      <p className="text-xs font-medium text-fc-blue">{cluster.label}</p>
+      <p className="text-sm font-bold text-fc-navy">{cluster.label}</p>
       {pinned ? (
         <p className="mt-0.5 text-[10px] text-slate-500">Erneut klicken oder Karte tippen zum Schließen</p>
       ) : null}
@@ -188,7 +186,7 @@ export function MembersMapClient({
           ? ` (${totalActive} aktiv)`
           : null}
         {markers.length > 0
-          ? ` · ${markers.length} ${markers.length === 1 ? "Region" : "Regionen"}`
+          ? ` · ${markers.length} ${markers.length === 1 ? "Punkt" : "Punkte"} (ca. 30 km)`
           : null}
         {" · Hover oder Klick für Namen"}
       </p>

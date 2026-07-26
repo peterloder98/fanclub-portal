@@ -8,7 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { memberCountryLabel } from "@/lib/members/country";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
-import { groupMembersByMapLocation, type MemberMapCluster } from "@/lib/members/cluster-map";
+import { clusterMemberPoints, type MemberMapCluster } from "@/lib/members/cluster-map";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { buildUpcomingBirthdays } from "@/lib/members/upcoming-birthdays";
 import { redirect } from "next/navigation";
@@ -65,7 +65,7 @@ export default async function MitgliederPage() {
     });
   }
 
-  const clusters: MemberMapCluster[] = groupMembersByMapLocation(mapPoints);
+  const clusters: MemberMapCluster[] = clusterMemberPoints(mapPoints, 30);
 
   const birthdayRows = buildUpcomingBirthdays(
     (profiles ?? []).map((p) => ({
@@ -108,7 +108,7 @@ export default async function MitgliederPage() {
       <div className="fc-accent-bar mb-3 w-16" />
       <h2 className="px-1 text-base font-semibold text-fc-navy">Hier sind unsere Mitglieder her</h2>
       <p className="mt-1 px-1 text-xs text-[color:var(--muted)]">
-        Regionale Einordnung — keine persönlichen Adressen.
+        Orte im Umkreis von ca. 30&nbsp;km werden zu einem Punkt gebündelt — ohne Ortsnamen.
         {missingCoords > 0 ? (
           <span className="mt-1 block text-amber-800">
             {missingCoords} Mitglied(er) ohne Kartenposition.
