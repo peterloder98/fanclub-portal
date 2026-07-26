@@ -6,6 +6,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/login",
   "/forgot-password",
   "/reset-password",
+  "/setup-account",
   "/auth/callback",
   "/supabase-check",
   "/mitgliedschaft",

@@ -170,7 +170,7 @@ export function BirthdateSegmentInput({
         <p className="text-xs font-medium text-rose-700">{error}</p>
       ) : (
         <p className="text-xs text-slate-500">
-          TT (max. 31), MM (max. 12), JJJJ (19xx oder 20xx) — oder Kalender.
+          Format TT.MM.JJJJ — Jahr auch zweistellig (z.&nbsp;B. 86). Nur Zahlen.
         </p>
       )}
     </div>

@@ -14,6 +14,7 @@ export function LoginClient() {
     () => searchParams.get("next") ?? "/dashboard",
     [searchParams],
   );
+  const setupDone = searchParams.get("setup") === "1";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,6 +51,11 @@ export function LoginClient() {
         </div>
       </CardHeader>
       <CardContent>
+        {setupDone ? (
+          <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            Zugang eingerichtet — bitte jetzt mit E-Mail und Passwort anmelden.
+          </div>
+        ) : null}
         <form onSubmit={onSubmit} className="grid gap-3">
           <label className="grid gap-1">
             <span className="text-sm font-medium text-slate-700">E-Mail</span>

@@ -4,9 +4,19 @@ export function digitsOnly(raw: string, max: number) {
   return raw.replace(/\D/g, "").slice(0, max);
 }
 
+/** Zweistelliges Jahr erweitern: 00–30 → 2000–2030, 31–99 → 1931–1999. */
+export function expandYearToFourDigits(year: string): string {
+  const y = digitsOnly(year, 4);
+  if (y.length === 4) return y;
+  if (y.length !== 2) return y;
+  const n = Number(y);
+  return n <= 30 ? `20${y}` : `19${y}`;
+}
+
 export function segmentsToIso(day: string, month: string, year: string) {
-  if (day.length === 2 && month.length === 2 && year.length === 4) {
-    return `${year}-${month}-${day}`;
+  const y4 = expandYearToFourDigits(year);
+  if (day.length === 2 && month.length === 2 && y4.length === 4) {
+    return `${y4}-${month}-${day}`;
   }
   return "";
 }
@@ -31,11 +41,12 @@ export function clampMonthInput(raw: string) {
 
 export function filterYearInput(raw: string) {
   const y = digitsOnly(raw, 4);
-  if (y.length >= 1 && y[0] !== "1" && y[0] !== "2") return "";
-  if (y.length === 2 && y !== "19" && y !== "20") return y[0];
-  if (y.length > 2) {
+  if (!y) return "";
+  // Volles Jahr: nur 19xx / 20xx
+  if (y.length >= 3) {
+    if (y[0] !== "1" && y[0] !== "2") return "";
     const prefix = y.slice(0, 2);
-    if (prefix !== "19" && prefix !== "20") return y[0];
+    if (prefix !== "19" && prefix !== "20") return y.slice(0, 1);
   }
   return y;
 }
@@ -62,17 +73,35 @@ export function validateBirthdateSegments(segments: BirthdateSegments): string |
     const mo = Number(month);
     if (mo < 1 || mo > 12) return "Monat muss zwischen 01 und 12 liegen.";
   }
-  if (year.length >= 2) {
+  if (year.length === 4) {
     const prefix = year.slice(0, 2);
     if (prefix !== "19" && prefix !== "20") {
       return "Jahr muss mit 19 oder 20 beginnen — bitte korrigieren.";
     }
   }
-  if (day.length === 2 && month.length === 2 && year.length === 4) {
+  if (day.length === 2 && month.length === 2 && (year.length === 2 || year.length === 4)) {
     const iso = segmentsToIso(day, month, year);
     if (!isValidIsoDate(iso)) return "Bitte ein gültiges Geburtsdatum eingeben.";
+    return null;
   }
-  if (day.length === 2 && month.length === 2 && year.length === 4) return null;
-  if (day || month || year) return "Bitte Geburtsdatum vollständig eingeben (TT.MM.JJJJ).";
+  if (day || month || year) {
+    return "Bitte Geburtsdatum vollständig eingeben (TT.MM.JJJJ oder TT.MM.JJ).";
+  }
+  return null;
+}
+
+/** Normalisiert Profil- oder Eingabe-Datum auf YYYY-MM-DD. */
+export function normalizeBirthdateIso(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  const raw = value.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const de = /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/.exec(raw);
+  if (de) {
+    const day = de[1].padStart(2, "0");
+    const month = de[2].padStart(2, "0");
+    const year = expandYearToFourDigits(de[3]);
+    const iso = `${year}-${month}-${day}`;
+    return isValidIsoDate(iso) ? iso : null;
+  }
   return null;
 }
