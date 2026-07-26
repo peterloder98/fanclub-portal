@@ -36,6 +36,9 @@ import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
+import { MentionInput } from "@/components/feed/mention-input";
+import { MentionText } from "@/components/feed/mention-text";
+import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 
 type FeedPost = {
   id: string;
@@ -66,6 +69,8 @@ type FeedPost = {
     parentCommentId: string | null;
     replyToUserId: string | null;
     replyToName: string | null;
+    likedByMe?: boolean;
+    likeCount?: number;
   }>;
 };
 
@@ -105,18 +110,24 @@ function organizePostComments(comments: FeedComment[]) {
 }
 
 function CommentBody({ text, replyToName }: { text: string; replyToName: string | null }) {
-  if (!replyToName) {
-    return <p className="text-xs leading-snug text-slate-700">{text}</p>;
-  }
-  const prefix = `@${replyToName}`;
-  if (!text.startsWith(prefix)) {
-    return <p className="text-xs leading-snug text-slate-700">{text}</p>;
+  const prefix = replyToName ? `@${replyToName}` : null;
+  if (!prefix || !text.startsWith(prefix)) {
+    return (
+      <p className="text-xs leading-snug text-slate-700">
+        <MentionText text={text} />
+      </p>
+    );
   }
   const rest = text.slice(prefix.length).trimStart();
   return (
     <p className="text-xs leading-snug text-slate-700">
       <span className="font-semibold text-fc-blue">{prefix}</span>
-      {rest ? ` ${rest}` : null}
+      {rest ? (
+        <>
+          {" "}
+          <MentionText text={rest} />
+        </>
+      ) : null}
     </p>
   );
 }
@@ -186,6 +197,7 @@ function PostFeedInner({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [likeBusy, setLikeBusy] = useState<Record<string, boolean>>({});
+  const [commentLikeBusy, setCommentLikeBusy] = useState<Record<string, boolean>>({});
   const [composerExpanded, setComposerExpanded] = useState(false);
   const composerRef = useRef<HTMLDivElement>(null);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -409,6 +421,26 @@ function PostFeedInner({
           .order("created_at", { ascending: true });
         if (commentsErr) throw commentsErr;
 
+        const commentIds = (commentsData ?? []).map((c) => c.id);
+        const commentLikesByComment = new Map<string, Set<string>>();
+        if (commentIds.length) {
+          try {
+            const { data: commentLikesData, error: commentLikesErr } = await supabase
+              .from("post_comment_likes")
+              .select("comment_id,user_id")
+              .in("comment_id", commentIds);
+            if (commentLikesErr) throw commentLikesErr;
+            (commentLikesData ?? []).forEach((l) => {
+              if (!commentLikesByComment.has(l.comment_id)) {
+                commentLikesByComment.set(l.comment_id, new Set());
+              }
+              commentLikesByComment.get(l.comment_id)!.add(l.user_id);
+            });
+          } catch {
+            // post_comment_likes Tabelle evtl. noch nicht angelegt — Likes einfach überspringen.
+          }
+        }
+
         const replyToIds = Array.from(
           new Set(
             (commentsData ?? [])
@@ -485,6 +517,7 @@ function PostFeedInner({
           const replyTo = c.reply_to_user_id
             ? authorMap.get(c.reply_to_user_id as string)
             : null;
+          const commentLikeSet = commentLikesByComment.get(c.id) ?? new Set<string>();
           commentsByPost.get(c.post_id)!.push({
             id: c.id,
             authorId: c.author_id,
@@ -499,6 +532,8 @@ function PostFeedInner({
             parentCommentId: (c.parent_comment_id as string | null) ?? null,
             replyToUserId: (c.reply_to_user_id as string | null) ?? null,
             replyToName: replyTo?.name ?? null,
+            likedByMe: commentLikeSet.has(user.id),
+            likeCount: commentLikeSet.size,
           });
           if (c.created_at) {
             const prev = latestCommentByPost.get(c.post_id);
@@ -700,6 +735,58 @@ function PostFeedInner({
     );
   }
 
+  function setCommentLikeState(
+    postId: string,
+    commentId: string,
+    likedByMe: boolean,
+    likeDelta: number,
+  ) {
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+        return {
+          ...p,
+          comments: p.comments.map((c) =>
+            c.id !== commentId
+              ? c
+              : {
+                  ...c,
+                  likedByMe,
+                  likeCount: Math.max(0, (c.likeCount ?? 0) + likeDelta),
+                },
+          ),
+        };
+      }),
+    );
+  }
+
+  async function toggleCommentLike(postId: string, comment: FeedComment) {
+    if (!me || commentLikeBusy[comment.id]) return;
+    const nextLiked = !comment.likedByMe;
+    setCommentLikeBusy((b) => ({ ...b, [comment.id]: true }));
+    setCommentLikeState(postId, comment.id, nextLiked, nextLiked ? 1 : -1);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      if (nextLiked) {
+        const { error } = await supabase
+          .from("post_comment_likes")
+          .insert({ comment_id: comment.id, user_id: me.id });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("post_comment_likes")
+          .delete()
+          .eq("comment_id", comment.id)
+          .eq("user_id", me.id);
+        if (error) throw error;
+      }
+    } catch {
+      setCommentLikeState(postId, comment.id, !nextLiked, nextLiked ? -1 : 1);
+    } finally {
+      setCommentLikeBusy((b) => ({ ...b, [comment.id]: false }));
+    }
+  }
+
   function startReply(postId: string, comment: FeedPost["comments"][number]) {
     setReplyingTo({
       postId,
@@ -809,6 +896,8 @@ function PostFeedInner({
                   },
             ),
           );
+
+          void notifyMentionsFromText({ text, postId, context: "comment" });
 
           const post = posts.find((p) => p.id === postId);
           if (replyCtx) {
@@ -960,6 +1049,8 @@ function PostFeedInner({
         .select("id,created_at,author_role,status,title,body")
         .single();
       if (insErr) throw insErr;
+
+      void notifyMentionsFromText({ text, postId: postRow.id, context: "post" });
 
       let uploadedMedia: Array<{ id: string; url: string }> = [];
       if (newFiles.length) {
@@ -1283,16 +1374,16 @@ function PostFeedInner({
             </div>
 
             <div className="min-w-0 flex-1">
-              <textarea
+              <MentionInput
                 value={newText}
-                onChange={(e) => setNewText(e.target.value)}
+                onChange={setNewText}
                 onFocus={() => setComposerExpanded(true)}
                 onBlur={() => {
                   window.setTimeout(() => tryCollapseComposer(), 120);
                 }}
                 placeholder="Schreib etwas…"
                 rows={composerExpanded ? 3 : 1}
-                className={cn(
+                inputClassName={cn(
                   "w-full resize-none rounded-2xl border px-3 py-2.5 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400",
                   composerExpanded
                     ? "min-h-[88px] border-fc-sky/30/80 bg-white shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
@@ -1514,11 +1605,11 @@ function PostFeedInner({
 
             {editingId === post.id ? (
               <div className="mt-2 grid gap-2">
-                <textarea
+                <MentionInput
                   value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
+                  onChange={setEditBody}
                   rows={3}
-                  className="w-full rounded-lg border bg-white px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                  inputClassName="w-full rounded-lg border bg-white px-2.5 py-2 text-sm outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                 />
                 <div className="flex gap-2">
                   <button
@@ -1541,7 +1632,9 @@ function PostFeedInner({
                 </div>
               </div>
             ) : (
-              <p className="mt-1.5 text-sm leading-snug text-slate-800">{post.body}</p>
+              <p className="mt-1.5 text-sm leading-snug text-slate-800">
+                <MentionText text={post.body} />
+              </p>
             )}
 
             {post.media.length ? <PostMediaGallery media={post.media} /> : null}
@@ -1624,13 +1717,14 @@ function PostFeedInner({
               </button>
 
               <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                <input
-                  ref={(el) => {
-                    commentInputRefs.current[post.id] = el;
+                <MentionInput
+                  multiline={false}
+                  inputRef={(el) => {
+                    commentInputRefs.current[post.id] = el as HTMLInputElement | null;
                   }}
                   value={draftByPostId[post.id] ?? ""}
-                  onChange={(e) =>
-                    setDraftByPostId((d) => ({ ...d, [post.id]: e.target.value }))
+                  onChange={(next) =>
+                    setDraftByPostId((d) => ({ ...d, [post.id]: next }))
                   }
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -1643,7 +1737,8 @@ function PostFeedInner({
                       ? `Antwort an @${replyingTo.userName}…`
                       : "Kommentieren…"
                   }
-                  className="h-7 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                  className="min-w-0 flex-1"
+                  inputClassName="h-7 min-w-0 w-full rounded-md border bg-white px-2 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                 />
                 {replyingTo?.postId === post.id ? (
                   <button
@@ -1712,6 +1807,28 @@ function PostFeedInner({
                               <div className="ml-auto flex shrink-0 items-center gap-0.5 pr-1">
                                 <button
                                   type="button"
+                                  disabled={Boolean(commentLikeBusy[c.id])}
+                                  onClick={() => void toggleCommentLike(post.id, c)}
+                                  className={cn(
+                                    "inline-flex h-6 items-center gap-0.5 rounded px-1 text-slate-500 hover:bg-slate-100",
+                                    c.likedByMe && "text-rose-600",
+                                    commentLikeBusy[c.id] ? "opacity-60" : "",
+                                  )}
+                                  title="Gefällt mir"
+                                  aria-label="Gefällt mir"
+                                >
+                                  <Heart
+                                    className={cn(
+                                      "h-3 w-3",
+                                      c.likedByMe ? "fill-rose-600 text-rose-600" : "",
+                                    )}
+                                  />
+                                  {c.likeCount ? (
+                                    <span className="text-[10px]">{c.likeCount}</span>
+                                  ) : null}
+                                </button>
+                                <button
+                                  type="button"
                                   onClick={() => startReply(post.id, c)}
                                   className="grid h-6 w-6 place-items-center rounded text-slate-500 hover:bg-slate-100"
                                   title="Antworten"
@@ -1770,11 +1887,11 @@ function PostFeedInner({
                             </div>
                             {editingCommentId === c.id ? (
                               <div className="mt-1 grid gap-1.5">
-                                <textarea
+                                <MentionInput
                                   value={editCommentText}
-                                  onChange={(e) => setEditCommentText(e.target.value)}
+                                  onChange={setEditCommentText}
                                   rows={2}
-                                  className="w-full rounded-md border px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
+                                  inputClassName="w-full rounded-md border px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-[color:var(--ring)]"
                                 />
                                 <div className="flex gap-1.5">
                                   <button
