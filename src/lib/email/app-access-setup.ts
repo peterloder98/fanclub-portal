@@ -21,16 +21,18 @@ export async function sendAppAccessSetupEmail(input: {
     throw new Error("APP_BASE_URL / NEXT_PUBLIC_APP_URL fehlt.");
   }
 
-  const redirectTo = `${base}/auth/callback?next=${encodeURIComponent("/setup-account")}`;
+  // generateLink action_link ist mit PKCE (@supabase/ssr) unzuverlässig.
+  // Stattdessen hashed_token → App-Seite verifyOtp (stabil für E-Mail-Clients).
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "recovery",
     email: input.email,
-    options: { redirectTo },
   });
   if (linkErr) throw new Error(linkErr.message);
 
-  const setupUrl = linkData.properties.action_link;
-  if (!setupUrl) throw new Error("Kein Setup-Link erzeugt.");
+  const hashedToken = linkData.properties.hashed_token;
+  if (!hashedToken) throw new Error("Kein Setup-Token erzeugt.");
+
+  const setupUrl = `${base}/setup-account?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
 
   const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.appAccessSetup, {
     first_name: input.firstName,
@@ -48,7 +50,7 @@ export async function sendAppAccessSetupEmail(input: {
     templateKey: EMAIL_TEMPLATE_KEYS.appAccessSetup,
     context: {
       user_id: input.userId ?? null,
-      redirect_to: redirectTo,
+      setup_path: "/setup-account",
     },
   });
 

@@ -275,47 +275,89 @@ export function GroupChatPanel({
                   <div className="flex gap-2.5">
                     <UserAvatar name={m.author.name} avatarUrl={m.author.avatarUrl} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
-                          {m.author.name}
-                          {m.author_id === userId ? (
-                            <span className="ml-1 font-normal text-slate-400">(du)</span>
-                          ) : null}
-                        </p>
-                        <time
-                          className="shrink-0 text-[10px] tabular-nums text-slate-400"
-                          dateTime={m.created_at}
-                        >
-                          {formatChatTime(m.created_at)}
-                        </time>
-                        {canWarn ? (
-                          <ChatWarnButton
-                            messageId={m.id}
-                            onRemoved={() => (onRemoveLocal ?? onDelete)(m.id)}
+                      {fullscreen ? (
+                        <div className="flex items-start gap-2">
+                          <p className="shrink-0 pt-0.5 text-xs font-semibold text-fc-navy">
+                            {m.author.name}
+                            {m.author_id === userId ? (
+                              <span className="ml-1 font-normal text-slate-400">(du)</span>
+                            ) : null}
+                          </p>
+                          <MentionText
+                            text={m.body}
+                            className="min-w-0 flex-1 text-sm leading-snug text-slate-700"
                           />
-                        ) : null}
-                        {canDelete ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void onDelete(m.id);
-                            }}
-                            className="grid h-5 w-5 shrink-0 place-items-center rounded text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                            aria-label="Nachricht löschen"
-                            title="Löschen"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
-                        ) : null}
-                      </div>
-                      <MentionText
-                        text={m.body}
-                        className={cn(
-                          "mt-0.5 block leading-snug text-slate-700",
-                          fullscreen ? "text-sm" : "text-[13px]",
-                        )}
-                      />
+                          <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                            <time
+                              className="text-[10px] tabular-nums text-slate-400"
+                              dateTime={m.created_at}
+                            >
+                              {formatChatTime(m.created_at)}
+                            </time>
+                            {canWarn ? (
+                              <ChatWarnButton
+                                messageId={m.id}
+                                onRemoved={() => (onRemoveLocal ?? onDelete)(m.id)}
+                              />
+                            ) : null}
+                            {canDelete ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void onDelete(m.id);
+                                }}
+                                className="grid h-5 w-5 place-items-center rounded text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                                aria-label="Nachricht löschen"
+                                title="Löschen"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
+                              {m.author.name}
+                              {m.author_id === userId ? (
+                                <span className="ml-1 font-normal text-slate-400">(du)</span>
+                              ) : null}
+                            </p>
+                            <time
+                              className="shrink-0 text-[10px] tabular-nums text-slate-400"
+                              dateTime={m.created_at}
+                            >
+                              {formatChatTime(m.created_at)}
+                            </time>
+                            {canWarn ? (
+                              <ChatWarnButton
+                                messageId={m.id}
+                                onRemoved={() => (onRemoveLocal ?? onDelete)(m.id)}
+                              />
+                            ) : null}
+                            {canDelete ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void onDelete(m.id);
+                                }}
+                                className="grid h-5 w-5 shrink-0 place-items-center rounded text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                                aria-label="Nachricht löschen"
+                                title="Löschen"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            ) : null}
+                          </div>
+                          <MentionText
+                            text={m.body}
+                            className="mt-0.5 block text-[13px] leading-snug text-slate-700"
+                          />
+                        </>
+                      )}
                     </div>
                   </div>
                 </li>

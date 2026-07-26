@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { completeAccountSetup } from "@/app/(auth)/setup-account/actions";
 
-export default function SetupAccountPage() {
+function SetupAccountInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -24,6 +25,29 @@ export default function SetupAccountPage() {
     async function init() {
       try {
         const supabase = createSupabaseBrowserClient();
+        const tokenHash = searchParams.get("token_hash");
+        const type = searchParams.get("type");
+
+        if (tokenHash && (type === "recovery" || type === "magiclink" || type === "invite")) {
+          const { data, error: otpErr } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as "recovery" | "magiclink" | "invite",
+          });
+          if (otpErr || !data.session?.user) {
+            setSessionError(
+              "Der Link ist ungültig oder abgelaufen. Bitte die E-Mail erneut öffnen oder den Vorstand kontaktieren.",
+            );
+            setSessionReady(true);
+            return;
+          }
+          setEmail(data.session.user.email ?? null);
+          // Token aus der URL entfernen (kein Reuse / saubere Adresse)
+          router.replace("/setup-account", { scroll: false });
+          setSessionReady(true);
+          return;
+        }
+
+        // Fallback: bereits bestehende Recovery-Session (z. B. nach Auth-Callback)
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -42,7 +66,7 @@ export default function SetupAccountPage() {
       }
     }
     void init();
-  }, []);
+  }, [router, searchParams]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -166,5 +190,13 @@ export default function SetupAccountPage() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+export default function SetupAccountPage() {
+  return (
+    <Suspense fallback={<p className="text-sm text-slate-600">Lade…</p>}>
+      <SetupAccountInner />
+    </Suspense>
   );
 }
