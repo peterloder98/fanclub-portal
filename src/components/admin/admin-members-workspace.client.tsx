@@ -12,7 +12,7 @@ import type { ContributionStatus } from "@/lib/club/membership-contribution";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmptyState } from "@/components/ui/empty-state";
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 100;
 
 function matchesQuery(q: string, parts: (string | null | undefined)[]) {
   const needle = q.trim().toLowerCase();
@@ -461,7 +461,7 @@ export function AdminMembersWorkspace({
 
       <Card>
         <CardHeader>
-          <CardTitle>Mitgliederliste</CardTitle>
+          <CardTitle>Mitgliederliste ({sortedMembers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-3 text-xs text-slate-500">
@@ -550,7 +550,7 @@ export function AdminMembersWorkspace({
               ))}
             </div>
             {sortedMembers.length > PAGE_SIZE ? (
-              <div className="mb-2 flex items-center justify-between text-xs text-slate-600 lg:hidden">
+              <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
                 <span>
                   Seite {memberPage + 1} von {memberPageCount} ({sortedMembers.length} Mitglieder)
                 </span>
@@ -573,7 +573,11 @@ export function AdminMembersWorkspace({
                   </button>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              <p className="mb-2 hidden text-xs text-slate-500 lg:block">
+                {sortedMembers.length} Mitglieder geladen
+              </p>
+            )}
             <div className="hidden overflow-x-auto rounded-xl border bg-white lg:block">
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
@@ -690,6 +694,31 @@ export function AdminMembersWorkspace({
                 </tbody>
               </table>
             </div>
+            {sortedMembers.length > PAGE_SIZE ? (
+              <div className="mt-2 hidden items-center justify-between text-xs text-slate-600 lg:flex">
+                <span>
+                  Seite {memberPage + 1} von {memberPageCount} ({sortedMembers.length} Mitglieder)
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={memberPage === 0}
+                    onClick={() => setMemberPage((p) => Math.max(0, p - 1))}
+                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                  >
+                    Zurück
+                  </button>
+                  <button
+                    type="button"
+                    disabled={memberPage >= memberPageCount - 1}
+                    onClick={() => setMemberPage((p) => p + 1)}
+                    className="rounded-lg border px-2 py-1 disabled:opacity-40"
+                  >
+                    Weiter
+                  </button>
+                </div>
+              </div>
+            ) : null}
             </>
           )}
 

@@ -28,6 +28,7 @@ export const NOTIFICATION_KINDS = {
   postPendingReview: "post_pending_review",
   postApproved: "post_approved",
   postRejected: "post_rejected",
+  mention: "mention",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

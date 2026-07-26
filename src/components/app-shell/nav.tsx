@@ -24,13 +24,19 @@ export type AppNavItem = {
   adminOnly?: boolean;
 };
 
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
+
 export const appNav: AppNavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
   { label: "Events", href: "/events", icon: CalendarDays },
-  { label: "Votings", href: "/votings", icon: Vote },
+  ...(FEATURE_FLAGS.votings
+    ? [{ label: "Votings", href: "/votings", icon: Vote } satisfies AppNavItem]
+    : []),
   { label: "Umfragen", href: "/polls", icon: PieChart },
   { label: "Gewinnspiele", href: "/giveaways", icon: Gift },
-  { label: "Merchandise", href: "/merchandise", icon: ShoppingBag },
+  ...(FEATURE_FLAGS.merchandise
+    ? [{ label: "Merchandise", href: "/merchandise", icon: ShoppingBag } satisfies AppNavItem]
+    : []),
   { label: "Mitglieder & Treffen", href: "/mitglieder", icon: HeartHandshake },
   { label: "Anni-Stars", href: "/punkte", icon: Sparkles },
   { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },

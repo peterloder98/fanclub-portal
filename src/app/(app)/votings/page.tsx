@@ -2,9 +2,12 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { RadioVotingBoard } from "@/components/votings/radio-voting-board";
 import { loadActiveRadioCampaigns } from "@/lib/votings/load-radio-campaigns";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 
 export default async function VotingsPage() {
+  if (!FEATURE_FLAGS.votings) redirect("/dashboard");
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

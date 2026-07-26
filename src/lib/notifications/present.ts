@@ -91,6 +91,7 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.postComment:
     case NOTIFICATION_KINDS.commentReply:
     case NOTIFICATION_KINDS.birthdayPost:
+    case NOTIFICATION_KINDS.mention:
     case NOTIFICATION_KINDS.postApproved: {
       if (typeof m.post_id === "string") return `/dashboard?post=${m.post_id}`;
       const fromLink = postIdFromLinkUrl(n.link_url);
@@ -155,6 +156,8 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
       return { icon: FileCheck, iconClass: "bg-rose-50 text-rose-700" };
     case NOTIFICATION_KINDS.commentReply:
       return { icon: Reply, iconClass: "bg-violet-50 text-violet-700" };
+    case NOTIFICATION_KINDS.mention:
+      return { icon: MessageCircle, iconClass: "bg-fc-ice text-fc-navy" };
     case NOTIFICATION_KINDS.birthdayPost:
       return { icon: Cake, iconClass: "bg-rose-50 text-rose-600" };
     case NOTIFICATION_KINDS.giveawayWon:

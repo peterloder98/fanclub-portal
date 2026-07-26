@@ -3,11 +3,14 @@ import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MerchandiseAdminNav } from "@/components/admin/merchandise/merchandise-admin-nav";
 import { MerchandiseProductList } from "@/components/admin/merchandise/merchandise-product-list.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminMerchandisePage() {
+  if (!FEATURE_FLAGS.merchandise) redirect("/admin");
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

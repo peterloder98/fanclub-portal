@@ -1,11 +1,14 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { MerchandiseShop } from "@/components/merchandise/merchandise-shop.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function MerchandisePage() {
+  if (!FEATURE_FLAGS.merchandise) redirect("/dashboard");
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

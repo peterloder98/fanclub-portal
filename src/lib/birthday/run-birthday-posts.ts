@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { birthdayPostBodyAsync } from "@/lib/birthday/templates";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { formatMentionToken } from "@/lib/mentions/format";
 
 export function berlinTodayMd() {
   const parts = new Intl.DateTimeFormat("de-DE", {
@@ -29,7 +30,7 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id,first_name,birthdate,gender")
+    .select("id,first_name,last_name,birthdate,gender")
     .not("birthdate", "is", null);
 
   const { data: activeMemberships } = await admin
@@ -53,12 +54,17 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
       .limit(1);
     if (existing?.length) continue;
 
-    const { title, body } = await birthdayPostBodyAsync(
+    const { title, body: bodyRaw } = await birthdayPostBodyAsync(
       p.first_name ?? "Fan",
       p.gender,
       p.id,
       todayIso,
     );
+    const displayName =
+      p.first_name && p.last_name
+        ? `${p.first_name} ${p.last_name}`
+        : (p.first_name ?? "Fan");
+    const body = `${formatMentionToken(displayName, p.id)} ${bodyRaw}`;
     const { data: inserted, error } = await admin
       .from("posts")
       .insert({

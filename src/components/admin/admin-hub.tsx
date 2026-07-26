@@ -23,6 +23,7 @@ import {
   FileCheck,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 type AdminHubItem = {
   href: string;
@@ -82,12 +83,16 @@ const SECTIONS: AdminHubSection[] = [
         description: "Einnahmen, Ausgaben und bestätigte Buchungen.",
         icon: Wallet,
       },
-      {
-        href: "/admin/merchandise",
-        title: "Merchandise",
-        description: "Fanschals, Kugelschreiber — Bestand, Größen, Fotos.",
-        icon: ShoppingBag,
-      },
+      ...(FEATURE_FLAGS.merchandise
+        ? [
+            {
+              href: "/admin/merchandise",
+              title: "Merchandise",
+              description: "Fanschals, Kugelschreiber — Bestand, Größen, Fotos.",
+              icon: ShoppingBag,
+            } satisfies AdminHubItem,
+          ]
+        : []),
     ],
   },
   {
@@ -138,12 +143,16 @@ const SECTIONS: AdminHubSection[] = [
         description: "Mitgliederbeiträge annehmen oder ablehnen.",
         icon: FileCheck,
       },
-      {
-        href: "/admin/radio-votings",
-        title: "Radio-Votings",
-        description: "Hörer-Charts pflegen, Enddaten, neue Runden starten.",
-        icon: Radio,
-      },
+      ...(FEATURE_FLAGS.votings
+        ? [
+            {
+              href: "/admin/radio-votings",
+              title: "Radio-Votings",
+              description: "Hörer-Charts pflegen, Enddaten, neue Runden starten.",
+              icon: Radio,
+            } satisfies AdminHubItem,
+          ]
+        : []),
     ],
   },
   {

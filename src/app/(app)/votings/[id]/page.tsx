@@ -1,11 +1,15 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { VotingDetail } from "@/components/votings/voting-detail";
 
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
+import { redirect } from "next/navigation";
+
 export default async function VotingDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  if (!FEATURE_FLAGS.votings) redirect("/dashboard");
   const { id } = await params;
   return (
     <div className="min-h-screen">

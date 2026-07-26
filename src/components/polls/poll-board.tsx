@@ -77,83 +77,86 @@ export function PollBoard({
   }, [initialPolls]);
 
   const load = useCallback(async () => {
-    const supabase = createSupabaseBrowserClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    setUserId(user.id);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
 
-    const { data: pollRows, error: pollErr } = await supabase
-      .from("polls")
-      .select("id,question,allow_multiple,ends_at,created_at")
-      .eq("is_active", true)
-      .order("ends_at", { ascending: false });
-    if (pollErr) throw pollErr;
-    const rows = pollRows ?? [];
-    setPolls((prev) => {
-      if (rows.length > 0) return rows;
-      if (refreshToken) return rows;
-      return prev.length ? prev : rows;
-    });
-
-    const pollIds = (pollRows ?? []).map((p) => p.id);
-    if (!pollIds.length) {
-      setOptions([]);
-      setVotes([]);
-      return;
-    }
-
-    const { data: optRows, error: optErr } = await supabase
-      .from("poll_options")
-      .select("id,poll_id,label,sort_order")
-      .in("poll_id", pollIds)
-      .order("sort_order", { ascending: true });
-    if (optErr) throw optErr;
-    setOptions(optRows ?? []);
-
-    const { data: voteRows, error: voteErr } = await supabase
-      .from("poll_votes")
-      .select("poll_id,option_id,user_id")
-      .in("poll_id", pollIds);
-    if (voteErr) throw voteErr;
-    setVotes(voteRows ?? []);
-
-    const mineByPoll = new Map<string, Set<string>>();
-    (voteRows ?? [])
-      .filter((v) => v.user_id === user.id)
-      .forEach((v) => {
-        if (!mineByPoll.has(v.poll_id)) mineByPoll.set(v.poll_id, new Set());
-        mineByPoll.get(v.poll_id)!.add(v.option_id);
+      const { data: pollRows, error: pollErr } = await supabase
+        .from("polls")
+        .select("id,question,allow_multiple,ends_at,created_at")
+        .eq("is_active", true)
+        .order("ends_at", { ascending: false });
+      if (pollErr) throw pollErr;
+      const rows = pollRows ?? [];
+      setPolls((prev) => {
+        if (rows.length > 0) return rows;
+        if (refreshToken) return rows;
+        return prev.length ? prev : rows;
       });
-    setMyOptionIdsByPoll(mineByPoll);
 
-    const voterIds = Array.from(new Set((voteRows ?? []).map((v) => v.user_id)));
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id,first_name,last_name,email,avatar_path,updated_at")
-      .in("id", voterIds.length ? voterIds : ["00000000-0000-0000-0000-000000000000"]);
-    const pMap = new Map<string, Voter>(
-      (profiles ?? []).map((p) => [p.id, profileToUserListEntry(p)]),
-    );
+      const pollIds = (pollRows ?? []).map((p) => p.id);
+      if (!pollIds.length) {
+        setOptions([]);
+        setVotes([]);
+        return;
+      }
 
-    const byOpt: Record<string, Voter[]> = {};
-    (voteRows ?? []).forEach((v) => {
-      const voter = pMap.get(v.user_id);
-      if (!voter) return;
-      (byOpt[v.option_id] ??= []).push(voter);
-    });
-    Object.values(byOpt).forEach((arr) => {
-      arr.sort((a, b) => a.name.localeCompare(b.name, "de"));
-    });
-    setVotersByOptionId(byOpt);
+      const { data: optRows, error: optErr } = await supabase
+        .from("poll_options")
+        .select("id,poll_id,label,sort_order")
+        .in("poll_id", pollIds)
+        .order("sort_order", { ascending: true });
+      if (optErr) throw optErr;
+      setOptions(optRows ?? []);
 
-    setLoading(false);
+      const { data: voteRows, error: voteErr } = await supabase
+        .from("poll_votes")
+        .select("poll_id,option_id,user_id")
+        .in("poll_id", pollIds);
+      if (voteErr) throw voteErr;
+      setVotes(voteRows ?? []);
+
+      const mineByPoll = new Map<string, Set<string>>();
+      (voteRows ?? [])
+        .filter((v) => v.user_id === user.id)
+        .forEach((v) => {
+          if (!mineByPoll.has(v.poll_id)) mineByPoll.set(v.poll_id, new Set());
+          mineByPoll.get(v.poll_id)!.add(v.option_id);
+        });
+      setMyOptionIdsByPoll(mineByPoll);
+
+      const voterIds = Array.from(new Set((voteRows ?? []).map((v) => v.user_id)));
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id,first_name,last_name,email,avatar_path,updated_at")
+        .in("id", voterIds.length ? voterIds : ["00000000-0000-0000-0000-000000000000"]);
+      const pMap = new Map<string, Voter>(
+        (profiles ?? []).map((p) => [p.id, profileToUserListEntry(p)]),
+      );
+
+      const byOpt: Record<string, Voter[]> = {};
+      (voteRows ?? []).forEach((v) => {
+        const voter = pMap.get(v.user_id);
+        if (!voter) return;
+        (byOpt[v.option_id] ??= []).push(voter);
+      });
+      Object.values(byOpt).forEach((arr) => {
+        arr.sort((a, b) => a.name.localeCompare(b.name, "de"));
+      });
+      setVotersByOptionId(byOpt);
+    } finally {
+      setLoading(false);
+    }
   }, [refreshToken]);
 
   useEffect(() => {
     void load().catch((e) => {
       const msg = e instanceof Error ? e.message : String(e);
+      setLoading(false);
       setError(
         msg.includes("polls") || msg.includes("does not exist")
           ? "Umfragen-Tabelle fehlt. Bitte `supabase/010_polls.sql` in Supabase ausführen."

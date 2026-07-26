@@ -4,8 +4,11 @@ import { RadioVotingsAdmin } from "@/components/admin/radio-votings-admin.client
 import { loadAllRadioCampaignsAdmin } from "@/lib/votings/load-radio-campaigns";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/require-admin";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
+import { redirect } from "next/navigation";
 
 export default async function AdminRadioVotingsPage() {
+  if (!FEATURE_FLAGS.votings) redirect("/admin");
   await requireAdmin();
 
   let campaigns: Awaited<ReturnType<typeof loadAllRadioCampaignsAdmin>> = [];
