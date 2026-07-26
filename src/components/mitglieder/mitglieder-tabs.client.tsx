@@ -39,8 +39,8 @@ export function MitgliederTabs({
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div className="flex shrink-0 flex-wrap gap-2">
         {tabs.map(([key, label]) => (
           <button
             key={key}
@@ -59,15 +59,23 @@ export function MitgliederTabs({
       </div>
 
       {tab === "karte" ? (
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,360px)] lg:items-stretch">
-          {mapSection}
-          {birthdaysSection}
+        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)] lg:gap-4 lg:items-stretch">
+          <div className="min-h-0 flex-[1.35] lg:h-full lg:flex-none">{mapSection}</div>
+          <div className="min-h-[11rem] max-h-[42%] min-w-0 lg:max-h-none lg:h-full lg:min-h-0">
+            {birthdaysSection}
+          </div>
         </section>
       ) : null}
 
-      {tab === "treffen" ? <MeetingsUpcomingSection meetings={meetings} /> : null}
+      {tab === "treffen" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[var(--fanclub-chat-dock,0px)]">
+          <MeetingsUpcomingSection meetings={meetings} />
+        </div>
+      ) : null}
       {tab === "archiv" ? (
-        <MeetingsArchiveSection meetings={meetings} mediaByMeetingId={mediaByMeetingId} />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[var(--fanclub-chat-dock,0px)]">
+          <MeetingsArchiveSection meetings={meetings} mediaByMeetingId={mediaByMeetingId} />
+        </div>
       ) : null}
     </div>
   );

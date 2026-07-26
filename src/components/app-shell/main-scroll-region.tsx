@@ -12,7 +12,8 @@ export function MainScrollRegion({ children }: { children: ReactNode }) {
     ref.current?.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
-  const fillViewport = pathname === "/events" || pathname === "/chat";
+  const fillViewport =
+    pathname === "/events" || pathname === "/chat" || pathname === "/mitglieder";
 
   return (
     <div

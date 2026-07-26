@@ -104,42 +104,41 @@ export default async function MitgliederPage() {
   }
 
   const mapSection = (
-    <div className="relative z-0 flex min-h-[420px] flex-col rounded-2xl border border-fc-ice bg-white p-3 shadow-sm lg:min-h-[520px]">
-      <div className="fc-accent-bar mb-3 w-16" />
-      <h2 className="px-1 text-base font-semibold text-fc-navy">Hier sind unsere Mitglieder her</h2>
-      <p className="mt-1 px-1 text-xs text-[color:var(--muted)]">
-        Orte im Umkreis von ca. 30&nbsp;km werden zu einem Punkt gebündelt — ohne Ortsnamen.
-        {missingCoords > 0 ? (
-          <span className="mt-1 block text-amber-800">
-            {missingCoords} Mitglied(er) ohne Kartenposition.
-          </span>
-        ) : null}
-      </p>
-      <div className="mt-3 min-h-0 flex-1">
+    <div className="relative z-0 flex h-full min-h-0 flex-col rounded-2xl border border-fc-ice bg-white p-3 shadow-sm">
+      <div className="fc-accent-bar mb-2 w-16 shrink-0" />
+      <h2 className="shrink-0 px-1 text-base font-semibold text-fc-navy">
+        Hier sind unsere Mitglieder her
+      </h2>
+      {missingCoords > 0 ? (
+        <p className="mt-1 shrink-0 px-1 text-xs text-amber-800">
+          {missingCoords} Mitglied(er) ohne Kartenposition.
+        </p>
+      ) : null}
+      <div className="mt-2 min-h-0 flex-1">
         <MembersMap clusters={clusters} memberCount={mapPoints.length} totalActive={activeList.length} />
       </div>
     </div>
   );
 
   const birthdaysSection = (
-    <aside className="flex flex-col rounded-2xl border border-fc-ice bg-white shadow-sm">
-      <div className="border-b border-fc-ice px-4 py-3">
+    <aside className="flex h-full min-h-0 flex-col rounded-2xl border border-fc-ice bg-white shadow-sm">
+      <div className="shrink-0 border-b border-fc-ice px-4 py-3">
         <h2 className="text-base font-semibold text-fc-navy">Nächste Geburtstage</h2>
         <p className="text-xs text-[color:var(--muted)]">Die nächsten 10 Termine im Jahr</p>
       </div>
-      <div className="max-h-[13.5rem] overflow-y-auto overscroll-contain lg:max-h-[min(520px,58vh)]">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <UpcomingBirthdays rows={birthdayRows} />
       </div>
     </aside>
   );
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <Topbar
         title="Mitglieder & Treffen"
         subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
       />
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">
+      <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden px-4 pb-2 pt-3 lg:px-8">
         <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-fc-ice" />}>
           <MitgliederTabs
             mapSection={mapSection}

@@ -122,7 +122,7 @@ export function MembersMapClient({
   }
 
   return (
-    <div className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-xl border">
+    <div className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-xl border">
       <div className="relative min-h-0 flex-1">
         <MapContainer
           center={GERMANY_CENTER}
@@ -180,16 +180,6 @@ export function MembersMapClient({
           ) : null}
         </MapContainer>
       </div>
-      <p className="shrink-0 border-t bg-fc-ice px-2 py-1.5 text-center text-[11px] text-fc-navy/80">
-        {memberCount} {memberCount === 1 ? "Mitglied" : "Mitglieder"} auf der Karte
-        {typeof totalActive === "number" && totalActive > memberCount
-          ? ` (${totalActive} aktiv)`
-          : null}
-        {markers.length > 0
-          ? ` · ${markers.length} ${markers.length === 1 ? "Punkt" : "Punkte"} (ca. 30 km)`
-          : null}
-        {" · Hover oder Klick für Namen"}
-      </p>
     </div>
   );
 }
