@@ -112,14 +112,25 @@ function parseMembers() {
     const payment = excelDate(r[6]);
     const statusRaw = String(r[7] ?? "aktiv").trim().toLowerCase();
     const status = statusRaw === "aktiv" ? "active" : "inactive";
+    const ortRaw = r[4] != null ? String(r[4]).trim() : "";
+    const { city, country } = (() => {
+      const split = ortRaw.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+      if (!split) return { city: ortRaw || null, country: "DE" };
+      const suffix = split[2].trim().toUpperCase();
+      if (/SCHWEIZ|SUISSE|SWITZERLAND/.test(suffix)) return { city: split[1].trim(), country: "CH" };
+      if (/NIEDER|HOLLAND|NETHERLANDS/.test(suffix)) return { city: split[1].trim(), country: "NL" };
+      if (/ÖSTERREICH|OESTERREICH|AUSTRIA/.test(suffix)) return { city: split[1].trim(), country: "AT" };
+      if (/DEUTSCHLAND|GERMANY/.test(suffix)) return { city: split[1].trim(), country: "DE" };
+      return { city: ortRaw || null, country: "DE" };
+    })();
     members.push({
       membership_number: nr,
       first_name: first,
       last_name: last,
       street: r[2] != null ? String(r[2]).trim() : null,
       postal_code: r[3] != null ? String(r[3]).trim() : null,
-      city: r[4] != null ? String(r[4]).trim() : null,
-      country: "DE",
+      city,
+      country,
       start_date: start,
       end_date: addYear(start),
       payment_date: payment,

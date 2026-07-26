@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MembershipNumberEditField } from "@/components/admin/membership-number-edit-field.client";
+import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
 import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../../actions";
 
@@ -177,11 +178,21 @@ export default async function AdminMemberEditPage({
                 </label>
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Land</span>
-                  <input
+                  <select
                     name="country"
                     defaultValue={profile.country ?? "DE"}
                     className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-                  />
+                  >
+                    {MEMBER_COUNTRY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                    {profile.country &&
+                    !MEMBER_COUNTRY_OPTIONS.some((o) => o.value === profile.country) ? (
+                      <option value={profile.country}>{profile.country}</option>
+                    ) : null}
+                  </select>
                 </label>
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Rolle</span>

@@ -6,7 +6,7 @@ import { MitgliederTabs } from "@/components/mitglieder/mitglieder-tabs.client";
 import { loadPublishedMeetings } from "@/lib/meetings/load";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
-import { isGermanCountry } from "@/lib/members/geocode-plz";
+import { memberCountryLabel } from "@/lib/members/country";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
 import { groupMembersByMapLocation, type MemberMapCluster } from "@/lib/members/cluster-map";
 import { profileDisplayName } from "@/lib/profiles/display";
@@ -43,9 +43,9 @@ export default async function MitgliederPage() {
   let missingCoords = 0;
 
   for (const p of profiles ?? []) {
-    const plz = (p.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
     const city = (p.city ?? "").trim();
-    if (!plz || plz.length !== 5 || !isGermanCountry(p.country)) continue;
+    const hasAddress = Boolean((p.postal_code ?? "").trim() || city);
+    if (!hasAddress) continue;
 
     const lat = typeof p.map_lat === "number" ? p.map_lat : null;
     const lng = typeof p.map_lng === "number" ? p.map_lng : null;
@@ -56,8 +56,8 @@ export default async function MitgliederPage() {
 
     mapPoints.push({
       userId: p.id,
-      postalCode: plz,
-      city: city || "Deutschland",
+      postalCode: (p.postal_code ?? "").trim() || "—",
+      city: city || memberCountryLabel(p.country),
       lat,
       lng,
     });

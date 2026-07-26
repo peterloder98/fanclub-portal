@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { geocodeGermanPlz, isGermanCountry } from "@/lib/members/geocode-plz";
+import { normalizeMemberCountryCode, memberCountryLabel } from "@/lib/members/country";
 
 export async function geocodeProfileMapCoords(profile: {
   street?: string | null;
@@ -7,29 +8,33 @@ export async function geocodeProfileMapCoords(profile: {
   city?: string | null;
   country?: string | null;
 }): Promise<{ lat: number; lng: number } | null> {
-  const plz = (profile.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
+  const country = normalizeMemberCountryCode(profile.country);
   const city = (profile.city ?? "").trim();
   const street = (profile.street ?? "").trim();
-  if (!plz || plz.length !== 5 || !isGermanCountry(profile.country)) return null;
+  const postal = (profile.postal_code ?? "").replace(/\s+/g, "").trim();
+  if (!postal && !city) return null;
 
-  if (street || city) {
-    const { geocodeWithNominatim } = await import("@/lib/artistflow/geocode");
-    const nom = await geocodeWithNominatim({
-      address: street || undefined,
-      postal_code: plz,
-      city: city || plz,
-      country: "Deutschland",
-      timeoutMs: 10_000,
-    });
-    if (nom.status === "success") {
-      return { lat: nom.lat, lng: nom.lng };
-    }
+  const { geocodeWithNominatim } = await import("@/lib/artistflow/geocode");
+  const nom = await geocodeWithNominatim({
+    address: street || undefined,
+    postal_code: postal || undefined,
+    city: city || postal || "—",
+    country: memberCountryLabel(country),
+    timeoutMs: 10_000,
+  });
+  if (nom.status === "success") {
+    return { lat: nom.lat, lng: nom.lng };
   }
 
-  return geocodeGermanPlz(plz, city);
+  if (isGermanCountry(country)) {
+    const plz = postal.replace(/\D/g, "").slice(0, 5);
+    if (plz.length === 5) return geocodeGermanPlz(plz, city);
+  }
+
+  return null;
 }
 
-/** PLZ/Ort → map_lat/map_lng am Profil speichern (Mitglieder-Karte). */
+/** Adresse → map_lat/map_lng am Profil speichern (Mitglieder-Karte). */
 export async function syncProfileMapCoords(
   admin: SupabaseClient,
   userId: string,

@@ -50,18 +50,38 @@ async function geocodeViaZippopotam(plz) {
 }
 
 export async function geocodeProfileAddress(profile) {
-  const plz = (profile.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
+  const plz = (profile.postal_code ?? "").replace(/\D/g, "");
   const city = (profile.city ?? "").trim();
   const street = (profile.street ?? "").trim();
-  if (!plz || plz.length !== 5 || !isGermanCountry(profile.country)) return null;
+  const countryRaw = (profile.country ?? "DE").trim().toUpperCase();
+  const countryLabel =
+    countryRaw === "CH" || countryRaw === "SCHWEIZ"
+      ? "Schweiz"
+      : countryRaw === "NL" || countryRaw === "NIEDERLANDE"
+        ? "Niederlande"
+        : countryRaw === "AT" || countryRaw === "ÖSTERREICH"
+          ? "Österreich"
+          : "Deutschland";
 
-  for (const q of buildQueries({ street, postal_code: plz, city })) {
+  if (!plz && !city) return null;
+
+  if (!isGermanCountry(profile.country)) {
+    const q = [street, profile.postal_code, city, countryLabel].filter(Boolean).join(", ");
+    const coords = await nominatimSearch(q);
+    if (coords) return coords;
+    return null;
+  }
+
+  const dePlz = plz.slice(0, 5);
+  if (!dePlz || dePlz.length !== 5) return null;
+
+  for (const q of buildQueries({ street, postal_code: dePlz, city })) {
     const coords = await nominatimSearch(q);
     if (coords) return coords;
     await sleep(1100);
   }
 
-  return geocodeViaZippopotam(plz);
+  return geocodeViaZippopotam(dePlz);
 }
 
 export function sleep(ms) {

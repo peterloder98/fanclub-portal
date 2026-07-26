@@ -9,6 +9,7 @@ import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
 import { logAdminAction } from "@/lib/admin/audit-log";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
 import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
+import { normalizeMemberCountryCode } from "@/lib/members/country";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -141,7 +142,7 @@ export async function createMember(formData: FormData) {
       street: input.street || null,
       postal_code: input.postal_code || null,
       city: input.city || null,
-      country: input.country || null,
+      country: input.country ? normalizeMemberCountryCode(input.country) : "DE",
       phone: input.phone || null,
     },
     { onConflict: "id" },
@@ -248,7 +249,7 @@ export async function updateMember(formData: FormData) {
       street: input.street || null,
       postal_code: input.postal_code || null,
       city: input.city || null,
-      country: input.country || null,
+      country: input.country ? normalizeMemberCountryCode(input.country) : "DE",
       phone: input.phone || null,
     })
     .eq("id", input.user_id);

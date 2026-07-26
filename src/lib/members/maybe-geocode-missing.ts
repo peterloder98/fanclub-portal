@@ -1,7 +1,6 @@
 import { after } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
-import { isGermanCountry } from "@/lib/members/geocode-plz";
 
 /** Max. Profile pro Seitenaufruf (Nominatim Rate-Limit). */
 const BATCH_SIZE = 5;
@@ -9,8 +8,8 @@ const BATCH_SIZE = 5;
 let running = false;
 
 /**
- * Geocodiert Profile ohne map_lat/map_lng aus PLZ/Adresse.
- * Im Hintergrund nach Mitglieder-Seitenaufruf, damit Import/Altbestand nachzieht.
+ * Geocodiert Profile ohne map_lat/map_lng aus Adresse (auch CH/NL).
+ * Im Hintergrund nach Mitglieder-Seitenaufruf.
  */
 export async function maybeGeocodeMissingProfiles(): Promise<void> {
   if (running) return;
@@ -19,19 +18,17 @@ export async function maybeGeocodeMissingProfiles(): Promise<void> {
     const admin = createSupabaseAdminClient();
     const { data: profiles, error } = await admin
       .from("profiles")
-      .select("id,postal_code,country,map_lat,map_lng")
+      .select("id,postal_code,city,map_lat")
       .is("map_lat", null)
-      .not("postal_code", "is", null)
       .limit(40);
     if (error) {
       console.error("[geocode] missing-profiles query failed:", error.message);
       return;
     }
 
-    const candidates = (profiles ?? []).filter((p) => {
-      const plz = (p.postal_code ?? "").replace(/\D/g, "").slice(0, 5);
-      return plz.length === 5 && isGermanCountry(p.country);
-    });
+    const candidates = (profiles ?? []).filter(
+      (p) => Boolean((p.postal_code ?? "").trim() || (p.city ?? "").trim()),
+    );
     if (!candidates.length) return;
 
     for (const p of candidates.slice(0, BATCH_SIZE)) {
