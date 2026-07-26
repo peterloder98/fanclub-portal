@@ -316,6 +316,19 @@ async function importMembers(members) {
     });
     if (memErr) console.warn(`  Membership-Fehler: ${memErr.message}`);
 
+    if (m.payment_date) {
+      const { error: payErr } = await admin.from("club_ledger_entries").insert({
+        entry_type: "income",
+        amount_cents: 1500,
+        description: "Mitgliedsbeitrag 2026",
+        category: "membership",
+        member_id: userId,
+        entry_date: m.payment_date,
+        bookkeeping_status: "paid",
+      });
+      if (payErr) console.warn(`  Zahlungs-Fehler: ${payErr.message}`);
+    }
+
     const coords = await geocodeProfileAddress({
       street: m.street,
       postal_code: m.postal_code,

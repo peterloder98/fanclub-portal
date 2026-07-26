@@ -162,7 +162,7 @@ function PostFeedInner({
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const commentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const commentInputRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
 
   useEffect(() => {
@@ -1720,7 +1720,7 @@ function PostFeedInner({
                 <MentionInput
                   multiline={false}
                   inputRef={(el) => {
-                    commentInputRefs.current[post.id] = el as HTMLInputElement | null;
+                    commentInputRefs.current[post.id] = el;
                   }}
                   value={draftByPostId[post.id] ?? ""}
                   onChange={(next) =>

@@ -390,7 +390,6 @@ export function MemberDetailPanel({
                   )
                 }
               />
-              <InfoRow label="Beitragsdatum" value={formatDE(member.contribution_date)} />
             </dl>
             {member.application_id ? (
               <Link

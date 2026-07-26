@@ -12,7 +12,7 @@ import type { ContributionStatus } from "@/lib/club/membership-contribution";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmptyState } from "@/components/ui/empty-state";
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 50;
 
 function matchesQuery(q: string, parts: (string | null | undefined)[]) {
   const needle = q.trim().toLowerCase();
@@ -552,7 +552,8 @@ export function AdminMembersWorkspace({
             {sortedMembers.length > PAGE_SIZE ? (
               <div className="mb-2 flex items-center justify-between text-xs text-slate-600">
                 <span>
-                  Seite {memberPage + 1} von {memberPageCount} ({sortedMembers.length} Mitglieder)
+                  Seite {memberPage + 1} von {memberPageCount} · {sortedMembers.length} Mitglieder
+                  (je {PAGE_SIZE})
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -569,13 +570,13 @@ export function AdminMembersWorkspace({
                     onClick={() => setMemberPage((p) => p + 1)}
                     className="rounded-lg border px-2 py-1 disabled:opacity-40"
                   >
-                    Weiter
+                    Nächste Seite
                   </button>
                 </div>
               </div>
             ) : (
               <p className="mb-2 hidden text-xs text-slate-500 lg:block">
-                {sortedMembers.length} Mitglieder geladen
+                {sortedMembers.length} Mitglieder
               </p>
             )}
             <div className="hidden overflow-x-auto rounded-xl border bg-white lg:block">
@@ -697,7 +698,8 @@ export function AdminMembersWorkspace({
             {sortedMembers.length > PAGE_SIZE ? (
               <div className="mt-2 hidden items-center justify-between text-xs text-slate-600 lg:flex">
                 <span>
-                  Seite {memberPage + 1} von {memberPageCount} ({sortedMembers.length} Mitglieder)
+                  Seite {memberPage + 1} von {memberPageCount} · {sortedMembers.length} Mitglieder
+                  (je {PAGE_SIZE})
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -714,7 +716,7 @@ export function AdminMembersWorkspace({
                     onClick={() => setMemberPage((p) => p + 1)}
                     className="rounded-lg border px-2 py-1 disabled:opacity-40"
                   >
-                    Weiter
+                    Nächste Seite
                   </button>
                 </div>
               </div>
