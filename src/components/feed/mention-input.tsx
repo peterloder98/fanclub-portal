@@ -185,14 +185,8 @@ export function MentionInput({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return members.slice(0, 8);
-    return members
-      .filter(
-        (m) =>
-          m.name.toLowerCase().includes(q) ||
-          (m.membershipNumber ?? "").toLowerCase().includes(q),
-      )
-      .slice(0, 8);
+    if (!q) return members;
+    return members.filter((m) => m.name.toLowerCase().includes(q));
   }, [members, query]);
 
   function emitFromEditor() {
@@ -362,7 +356,7 @@ export function MentionInput({
       </div>
       {open && filtered.length ? (
         <ul
-          className="absolute bottom-full z-40 mb-1 max-h-56 w-full overflow-auto rounded-xl border bg-white py-1 shadow-lg shadow-slate-900/10"
+          className="absolute bottom-full z-40 mb-1 max-h-[11.5rem] w-full overflow-y-auto rounded-xl border bg-white py-1 shadow-lg shadow-slate-900/10"
           role="listbox"
         >
           {filtered.map((m, i) => (
@@ -382,9 +376,6 @@ export function MentionInput({
               >
                 <UserAvatar name={m.name} avatarUrl={m.avatarUrl} size="xs" />
                 <span className="min-w-0 flex-1 truncate font-medium text-fc-navy">{m.name}</span>
-                {m.membershipNumber ? (
-                  <span className="shrink-0 text-xs text-slate-500">Nr. {m.membershipNumber}</span>
-                ) : null}
               </button>
             </li>
           ))}

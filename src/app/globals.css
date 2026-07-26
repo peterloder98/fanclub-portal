@@ -19,6 +19,7 @@
   --ring: rgba(44, 100, 163, 0.38);
   --fanclub-sidebar-width: 16rem;
   --fanclub-chrome-header-height: 4rem;
+  --fanclub-chat-dock: 0px;
 }
 
 @theme inline {

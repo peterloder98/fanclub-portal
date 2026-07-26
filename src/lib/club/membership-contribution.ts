@@ -73,6 +73,33 @@ export function deriveContributionStatus(
 
 type MembershipPaymentRow = { member_id: string; amount_cents: number; entry_date: string };
 
+/**
+ * Ordnet eine Zahlung dem Mitgliedschaftsjahr zu.
+ * Zahlungen vor dem Eintritt zählen für die erste Periode (ab Eintrittsdatum).
+ */
+export function paymentBelongsToPeriod(
+  paymentDate: string,
+  membershipStart: string,
+  periodStart: string,
+  periodEnd: string,
+): boolean {
+  const effective = paymentDate < membershipStart ? membershipStart : paymentDate;
+  return effective >= periodStart && effective <= periodEnd;
+}
+
+function paidCentsForPeriod(
+  payments: MembershipPaymentRow[],
+  membershipStart: string,
+  periodStart: string,
+  periodEnd: string,
+): number {
+  return payments
+    .filter((p) =>
+      paymentBelongsToPeriod(p.entry_date, membershipStart, periodStart, periodEnd),
+    )
+    .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+}
+
 async function loadMembershipPaymentsForUsers(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   userIds: string[],
@@ -113,9 +140,12 @@ function computeContributionFromPayments(
 ): ContributionStatusBrief {
   const period = currentMembershipPeriod(startDate, ref);
   const payments = paymentsByMember.get(userId) ?? [];
-  const paidCents = payments
-    .filter((p) => p.entry_date >= period.start && p.entry_date <= period.end)
-    .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+  const paidCents = paidCentsForPeriod(
+    payments,
+    startDate,
+    period.start,
+    period.end,
+  );
   const openCents = Math.max(0, feeCents - paidCents);
   return {
     status: deriveContributionStatus(feeCents, paidCents, period.start, ref),
@@ -155,9 +185,12 @@ export async function getMemberContributionInfo(
     paymentsByMember,
   );
   const payments = paymentsByMember.get(userId) ?? [];
-  const paidCents = payments
-    .filter((p) => p.entry_date >= period.start && p.entry_date <= period.end)
-    .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+  const paidCents = paidCentsForPeriod(
+    payments,
+    membership.start_date,
+    period.start,
+    period.end,
+  );
 
   return {
     userId: profile.id,
@@ -250,9 +283,12 @@ export async function listOpenContributions(): Promise<MemberContributionInfo[]>
     if (brief.status === "paid") continue;
 
     const payments = paymentsByMember.get(m.user_id) ?? [];
-    const paidCents = payments
-      .filter((row) => row.entry_date >= period.start && row.entry_date <= period.end)
-      .reduce((s, row) => s + (row.amount_cents ?? 0), 0);
+    const paidCents = paidCentsForPeriod(
+      payments,
+      m.start_date,
+      period.start,
+      period.end,
+    );
 
     results.push({
       userId: p.id,

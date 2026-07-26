@@ -356,7 +356,6 @@ export function MemberDetailPanel({
                     : "—"
                 }
               />
-              <InfoRow label="Rolle" value={member.role} />
             </dl>
           </CardContent>
         </Card>

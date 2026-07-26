@@ -340,15 +340,35 @@ export function GroupChatWidget() {
     }
   }
 
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!userId) {
+      root.style.setProperty("--fanclub-chat-dock", "0px");
+      return;
+    }
+    if (expanded) {
+      root.style.setProperty("--fanclub-chat-dock", "0px");
+    } else {
+      root.style.setProperty(
+        "--fanclub-chat-dock",
+        "calc(3.75rem + env(safe-area-inset-bottom, 0px))",
+      );
+    }
+    return () => {
+      root.style.setProperty("--fanclub-chat-dock", "0px");
+    };
+  }, [expanded, userId]);
+
   if (!userId && loaded) return null;
   if (!loaded && !userId) return null;
 
   return (
     <div
       className={cn(
-        "pointer-events-none fixed z-[180] flex flex-col items-end gap-2",
-        "right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))]",
-        "sm:right-4 sm:bottom-4",
+        "pointer-events-none fixed z-[180] flex flex-col items-end",
+        expanded
+          ? "right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] sm:right-4 sm:bottom-4"
+          : "right-0 bottom-0",
       )}
     >
       {expanded ? (
@@ -489,10 +509,10 @@ export function GroupChatWidget() {
           type="button"
           onClick={() => toggleExpanded(true)}
           className={cn(
-            "pointer-events-auto flex w-[min(18rem,calc(100vw-1.5rem))] items-center gap-2.5",
-            "rounded-2xl border-2 border-fc-navy/35 bg-gradient-to-r from-white via-white to-fc-ice",
-            "px-3 py-2.5 text-left shadow-[0_10px_28px_rgba(20,49,101,0.28)]",
-            "ring-1 ring-fc-navy/10 transition hover:border-fc-blue hover:shadow-[0_12px_32px_rgba(20,49,101,0.35)]",
+            "pointer-events-auto flex w-[min(18rem,100vw)] items-center gap-2.5",
+            "rounded-tl-2xl border-l-2 border-t-2 border-fc-navy/40 bg-gradient-to-r from-white via-white to-fc-ice",
+            "px-3 py-2.5 text-left shadow-[0_-4px_24px_rgba(20,49,101,0.22)]",
+            "ring-1 ring-fc-navy/10 transition hover:border-fc-blue",
           )}
           aria-label="Gruppenchat öffnen"
         >

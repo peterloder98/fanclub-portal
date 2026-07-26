@@ -15,7 +15,7 @@ export function MainScrollRegion({ children }: { children: ReactNode }) {
   return (
     <div
       ref={ref}
-      className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain"
+      className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--fanclub-chat-dock,0px)]"
     >
       {children}
     </div>
