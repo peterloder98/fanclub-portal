@@ -57,12 +57,53 @@ const listDateFmt = new Intl.DateTimeFormat("de-DE", {
   timeZone: BERLIN_TZ,
 });
 
-/** Kompakt für Terminliste: nur Datum (Uhrzeit separat, z. B. bei TV). */
-export function formatEventListDate(startAt: string | null): string {
+function sameBerlinDay(a: string, b: string): boolean {
+  const fa = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BERLIN_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return fa.format(new Date(a)) === fa.format(new Date(b));
+}
+
+/**
+ * Single day: like formatEventStart.
+ * Multi-day: "08.10.2026 – 11.10.2026" (no clock times for date-only ranges).
+ */
+export function formatEventDateRange(
+  startAt: string | null,
+  endAt: string | null | undefined,
+) {
+  if (!startAt) return { date: "Datum folgt", time: null as string | null };
+  if (!endAt || sameBerlinDay(startAt, endAt)) {
+    return formatEventStart(startAt);
+  }
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return formatEventStart(startAt);
+  }
+  return {
+    date: `${listDateFmt.format(start)} – ${listDateFmt.format(end)}`,
+    time: null as string | null,
+  };
+}
+
+/** Kompakt für Terminliste: Datum oder von–bis. */
+export function formatEventListDate(
+  startAt: string | null,
+  endAt?: string | null,
+): string {
   if (!startAt) return "Datum folgt";
   const d = new Date(startAt);
   if (Number.isNaN(d.getTime())) return "Datum folgt";
-  return listDateFmt.format(d);
+  if (!endAt || sameBerlinDay(startAt, endAt)) {
+    return listDateFmt.format(d);
+  }
+  const end = new Date(endAt);
+  if (Number.isNaN(end.getTime())) return listDateFmt.format(d);
+  return `${listDateFmt.format(d)} – ${listDateFmt.format(end)}`;
 }
 
 /** Uhrzeit für TV-Zeile in der Terminliste. */

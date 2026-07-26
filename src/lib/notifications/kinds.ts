@@ -25,6 +25,9 @@ export const NOTIFICATION_KINDS = {
   radioVotingLastChance: "radio_voting_last_chance",
   radioVotingAvailable: "radio_voting_available",
   radioVotingNewCycle: "radio_voting_new_cycle",
+  postPendingReview: "post_pending_review",
+  postApproved: "post_approved",
+  postRejected: "post_rejected",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

@@ -33,6 +33,8 @@ function buildFeedFieldsPatch(e: NormalizedExternalEvent, is_visible: boolean) {
     kind: e.kind,
     title: e.title,
     start_at: e.start_at,
+    end_at: e.end_at,
+    date_label: e.date_label,
     timezone: e.timezone,
     venue: e.venue,
     address: e.address,

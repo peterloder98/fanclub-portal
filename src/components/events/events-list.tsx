@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { formatEventDateRange, formatLocation } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 
 export type ExternalEventRow = {
@@ -9,6 +9,7 @@ export type ExternalEventRow = {
   kind?: string | null;
   title: string;
   start_at: string | null;
+  end_at?: string | null;
   venue: string | null;
   city: string | null;
   country?: string | null;
@@ -25,7 +26,7 @@ function EventCard({
   event: ExternalEventRow;
   highlight?: boolean;
 }) {
-  const { date, time } = formatEventStart(event.start_at);
+  const { date, time } = formatEventDateRange(event.start_at, event.end_at);
   const location = formatLocation(event);
   const ticket = ticketDisplay(event.ticket_url);
 

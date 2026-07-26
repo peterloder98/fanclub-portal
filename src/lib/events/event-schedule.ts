@@ -14,12 +14,20 @@ export function eventStartMs(startAt: string | null | undefined): number | null 
 
 /** Termin noch relevant (läuft oder kurz danach) — für Listen. */
 export function isEventStillVisible(
-  event: { start_at: string | null; kind?: string | null },
+  event: { start_at: string | null; end_at?: string | null; kind?: string | null },
   now = Date.now(),
 ): boolean {
   const start = eventStartMs(event.start_at);
   if (start === null) return false;
-  return start + graceMs(event.kind) >= now;
+  const end = eventStartMs(event.end_at ?? null);
+  const anchor = end !== null && end > start ? end : start;
+  return anchor + graceMs(event.kind) >= now;
+}
+
+export function filterVisibleEvents<
+  T extends { start_at: string | null; end_at?: string | null; kind?: string | null },
+>(events: T[], now = Date.now()): T[] {
+  return events.filter((e) => isEventStillVisible(e, now));
 }
 
 /** Nächster Countdown-Zieltermin — nur zukünftige Starts. */
@@ -29,13 +37,6 @@ export function isEventUpcoming(
 ): boolean {
   const start = eventStartMs(event.start_at);
   return start !== null && start > now;
-}
-
-export function filterVisibleEvents<T extends { start_at: string | null; kind?: string | null }>(
-  events: T[],
-  now = Date.now(),
-): T[] {
-  return events.filter((e) => isEventStillVisible(e, now));
 }
 
 export function filterUpcomingEvents<T extends { start_at: string | null }>(

@@ -1,10 +1,11 @@
-import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { formatEventDateRange, formatLocation } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 
 export type ExternalEventRow = {
   id: string;
   title: string;
   start_at: string | null;
+  end_at?: string | null;
   venue: string | null;
   city: string | null;
   address: string | null;
@@ -16,7 +17,7 @@ export function EventsRows({ events }: { events: ExternalEventRow[] }) {
   return (
     <div className="grid gap-3">
       {events.map((e) => {
-        const { date, time } = formatEventStart(e.start_at);
+        const { date, time } = formatEventDateRange(e.start_at, e.end_at);
         const location = formatLocation(e);
         const ticket = ticketDisplay(e.ticket_url);
         return (

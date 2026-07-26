@@ -20,6 +20,7 @@ import {
   Wallet,
   CreditCard,
   ShoppingBag,
+  FileCheck,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -131,6 +132,12 @@ const SECTIONS: AdminHubSection[] = [
     title: "Community & Engagement",
     subtitle: "Votings, Umfragen und Mitglieder-Aktivität.",
     items: [
+      {
+        href: "/admin/posts",
+        title: "Posts freigeben",
+        description: "Mitgliederbeiträge annehmen oder ablehnen.",
+        icon: FileCheck,
+      },
       {
         href: "/admin/radio-votings",
         title: "Radio-Votings",

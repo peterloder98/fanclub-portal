@@ -6,7 +6,7 @@ import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { setPostPinned } from "@/app/(app)/admin/posts/actions";
+import { setPostPinned, notifyPendingPostCreated } from "@/app/(app)/admin/posts/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
@@ -555,6 +555,10 @@ function PostFeedInner({
               likeCount: likedSet.size,
               comments: commentsByPost.get(p.id) ?? [],
             };
+          }).filter((p) => {
+            // Public feed: only approved. Authors see own pending/rejected.
+            if (p.status === "approved" || !p.status) return true;
+            return p.authorId === user.id;
           });
         setPosts(mappedPosts);
 
@@ -982,32 +986,36 @@ function PostFeedInner({
       setComposerExpanded(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Only show immediately if approved; pending goes to admin queue.
-      if (status === "approved") {
-        setPosts((prev) => [
-          {
-            id: postRow.id,
-            authorId: me.id,
-            authorName: me.name,
-            authorRole: me.role,
-            authorAvatarUrl: me.avatarUrl,
-            createdAtLabel: new Date(postRow.created_at).toLocaleString("de-DE", {
-              dateStyle: "short",
-              timeStyle: "short",
-            }),
-            title: postRow.title,
-            body: postRow.body,
-            status: "approved",
-            lastActivityAt: new Date().toISOString(),
-            isBirthday: false,
-            birthdayDate: null,
-            media: uploadedMedia,
-            likeCount: 0,
-            likedByMe: false,
-            comments: [],
-          },
-          ...prev,
-        ]);
+      // Show own post immediately (pending = only visible to author until approved).
+      setPosts((prev) => [
+        {
+          id: postRow.id,
+          authorId: me.id,
+          authorName: me.name,
+          authorRole: me.role,
+          authorAvatarUrl: me.avatarUrl,
+          createdAtLabel: new Date(postRow.created_at).toLocaleString("de-DE", {
+            dateStyle: "short",
+            timeStyle: "short",
+          }),
+          title: postRow.title,
+          body: postRow.body,
+          status: status === "pending" ? "pending" : "approved",
+          lastActivityAt: new Date().toISOString(),
+          isPinned: false,
+          pinnedAt: null,
+          isBirthday: false,
+          birthdayDate: null,
+          media: uploadedMedia,
+          likeCount: 0,
+          likedByMe: false,
+          comments: [],
+        },
+        ...prev,
+      ]);
+
+      if (status === "pending") {
+        void notifyPendingPostCreated(postRow.id).catch(console.error);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Post konnte nicht erstellt werden.";
@@ -1441,6 +1449,16 @@ function PostFeedInner({
                   {post.isPinned ? (
                     <Badge variant="brand" className="ml-1.5 px-1.5 py-0 text-[10px]">
                       Fixiert
+                    </Badge>
+                  ) : null}
+                  {post.status === "pending" ? (
+                    <Badge variant="warning" className="ml-1.5 px-1.5 py-0 text-[10px]">
+                      Wartet auf Freigabe
+                    </Badge>
+                  ) : null}
+                  {post.status === "rejected" ? (
+                    <Badge variant="danger" className="ml-1.5 px-1.5 py-0 text-[10px]">
+                      Abgelehnt
                     </Badge>
                   ) : null}
                 </span>

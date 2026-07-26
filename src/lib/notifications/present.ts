@@ -14,6 +14,7 @@ import {
   UserPlus,
   Users,
   Vote,
+  FileCheck,
 } from "lucide-react";
 import { formatNotificationDateTime } from "@/lib/notifications/format-datetime";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
@@ -63,17 +64,42 @@ function postIdFromLinkUrl(linkUrl: string | null): string | null {
   return null;
 }
 
+function eventIdFromLinkUrl(linkUrl: string | null): string | null {
+  if (!linkUrl) return null;
+  try {
+    const url = linkUrl.startsWith("http") ? new URL(linkUrl) : new URL(linkUrl, "https://local");
+    const focus = url.searchParams.get("focus");
+    if (focus) return focus;
+  } catch {
+    const m = linkUrl.match(/[?&]focus=([^&]+)/);
+    if (m?.[1]) return m[1];
+  }
+  return null;
+}
+
+function resolveEventHref(n: UserNotificationRow): string {
+  const m = metaRecord(n);
+  const eventId =
+    typeof m.event_id === "string" ? m.event_id : eventIdFromLinkUrl(n.link_url);
+  return eventId ? `/events?focus=${eventId}` : "/events";
+}
+
 export function resolveNotificationHref(n: UserNotificationRow): string | null {
   const m = metaRecord(n);
 
   switch (n.kind) {
     case NOTIFICATION_KINDS.postComment:
     case NOTIFICATION_KINDS.commentReply:
-    case NOTIFICATION_KINDS.birthdayPost: {
+    case NOTIFICATION_KINDS.birthdayPost:
+    case NOTIFICATION_KINDS.postApproved: {
       if (typeof m.post_id === "string") return `/dashboard?post=${m.post_id}`;
       const fromLink = postIdFromLinkUrl(n.link_url);
       return fromLink ? `/dashboard?post=${fromLink}` : null;
     }
+    case NOTIFICATION_KINDS.postRejected:
+      return "/posts";
+    case NOTIFICATION_KINDS.postPendingReview:
+      return "/admin/posts";
     case NOTIFICATION_KINDS.giveawayWon:
     case NOTIFICATION_KINDS.giveawayEnded:
     case NOTIFICATION_KINDS.giveawayAvailable:
@@ -90,10 +116,9 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.contributionOpen:
       return typeof m.meeting_id === "string" ? `/treffen/${m.meeting_id}` : n.link_url;
     case NOTIFICATION_KINDS.eventAvailable:
-      return typeof m.event_id === "string" ? `/events?focus=${m.event_id}` : "/events";
     case NOTIFICATION_KINDS.eventReminder7d:
     case NOTIFICATION_KINDS.eventReminder2d:
-      return typeof m.event_id === "string" ? `/events?focus=${m.event_id}` : "/events";
+      return resolveEventHref(n);
     case NOTIFICATION_KINDS.badgeUnlocked:
     case NOTIFICATION_KINDS.rankUp:
       return "/punkte";
@@ -122,6 +147,12 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
   switch (kind) {
     case NOTIFICATION_KINDS.postComment:
       return { icon: MessageCircle, iconClass: "bg-fc-ice text-fc-blue" };
+    case NOTIFICATION_KINDS.postPendingReview:
+      return { icon: FileCheck, iconClass: "bg-amber-50 text-amber-800" };
+    case NOTIFICATION_KINDS.postApproved:
+      return { icon: FileCheck, iconClass: "bg-emerald-50 text-emerald-700" };
+    case NOTIFICATION_KINDS.postRejected:
+      return { icon: FileCheck, iconClass: "bg-rose-50 text-rose-700" };
     case NOTIFICATION_KINDS.commentReply:
       return { icon: Reply, iconClass: "bg-violet-50 text-violet-700" };
     case NOTIFICATION_KINDS.birthdayPost:

@@ -65,7 +65,7 @@ export function EventListItem({
 }) {
   const [travelOpen, setTravelOpen] = useState(false);
   const isTv = e.kind === "tv";
-  const listDate = formatEventListDate(e.start_at);
+  const listDate = formatEventListDate(e.start_at, e.end_at);
   const locationLine = formatLocationLine(e, isTv);
   const ticket = ticketDisplay(e.ticket_url);
   const showAdminTravel = isAdmin && !isTv;

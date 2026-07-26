@@ -64,6 +64,19 @@ describe("normalizeArtistflowEvent", () => {
     expect(e1.external_id).toBe(e2.external_id);
     expect(e1.content_hash).toBe(e2.content_hash);
   });
+
+  it("parses multi-day dateLabel into end_at", () => {
+    const e = normalizeArtistflowEvent({
+      event_id: "job_flair",
+      dateSort: "2026-10-08",
+      dateLabel: "08.10. - 11.10.2026",
+      title: "Schlagerflair am Meer",
+      city: "Jesolo",
+    });
+    expect(e.start_at).toBe("2026-10-08T00:00:00.000Z");
+    expect(e.end_at).toBe("2026-10-11T00:00:00.000Z");
+    expect(e.date_label).toBe("08.10. - 11.10.2026");
+  });
 });
 
 describe("canGeocodeNormalizedEvent", () => {

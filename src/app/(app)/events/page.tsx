@@ -37,15 +37,26 @@ export default async function EventsPage({
 
   const { data: events, error } = await supabase
     .from("external_events")
-    .select("id,kind,title,start_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
+    .select("id,kind,title,start_at,end_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false });
 
   const allEvents = events ?? [];
   const visibleEvents = filterVisibleEvents(allEvents);
+  const eventsForPanel = (() => {
+    if (!focusEventId) return visibleEvents;
+    if (visibleEvents.some((e) => e.id === focusEventId)) return visibleEvents;
+    const focused = allEvents.find((e) => e.id === focusEventId);
+    if (!focused) return visibleEvents;
+    return [...visibleEvents, focused].sort((a, b) => {
+      const at = a.start_at ?? "";
+      const bt = b.start_at ?? "";
+      return at.localeCompare(bt);
+    });
+  })();
   const nextEvent = pickNextEvent(allEvents);
 
-  const eventIds = visibleEvents.map((e) => e.id);
+  const eventIds = eventsForPanel.map((e) => e.id);
   const participationByEventId: Record<string, EventParticipationMeta> = {};
 
   if (eventIds.length) {
@@ -143,7 +154,7 @@ export default async function EventsPage({
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <EventsInteractivePanel
-            events={visibleEvents as never[]}
+            events={eventsForPanel as never[]}
             clubMeetings={clubMeetings}
             nextStartAt={nextEvent?.start_at ?? null}
             nextTitle={nextEvent?.title ?? null}

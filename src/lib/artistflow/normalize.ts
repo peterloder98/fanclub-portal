@@ -1,4 +1,8 @@
 import crypto from "node:crypto";
+import {
+  dateOnlyToStartAt,
+  parseArtistflowDateLabel,
+} from "@/lib/artistflow/parse-date-label";
 
 export type ArtistflowFeedItem = Record<string, unknown>;
 
@@ -9,6 +13,8 @@ export type NormalizedExternalEvent = {
   kind: EventKind;
   title: string;
   start_at: string | null;
+  end_at: string | null;
+  date_label: string | null;
   timezone: string | null;
   venue: string | null;
   address: string | null;
@@ -86,6 +92,7 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<
 } {
   const kind = parseKind(item.kind);
   const dateSort = asString(item.dateSort) ?? asString(item.start_at) ?? asString(item.date);
+  const dateLabelRaw = (asString(item.dateLabel) ?? "").trim() || null;
   const title = (asString(item.title) ?? "").trim();
   const city = (asString(item.city) ?? "").trim();
   const venue = (asString(item.venue) ?? "").trim() || null;
@@ -112,11 +119,13 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<
 
   const raw_external_id = asString(item.event_id)?.trim() || null;
 
-  // Keep start_at tolerant; if dateSort is date-only ISO, treat as midnight UTC.
+  const fromLabel = parseArtistflowDateLabel(dateLabelRaw);
+  // Prefer dateSort for start when present; end from dateLabel range.
   const start_at =
     dateSort && /^\d{4}-\d{2}-\d{2}$/.test(dateSort)
       ? `${dateSort}T00:00:00.000Z`
-      : dateSort ?? null;
+      : dateSort ?? dateOnlyToStartAt(fromLabel.startDate);
+  const end_at = dateOnlyToStartAt(fromLabel.endDate);
 
   const fallback_id_basis = `${kind}|${dateSort ?? ""}|${title}|${city}|${venue ?? ""}|${broadcaster ?? ""}`;
 
@@ -124,6 +133,8 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<
     kind,
     title,
     start_at,
+    end_at,
+    date_label: dateLabelRaw,
     timezone,
     venue,
     address,
@@ -148,6 +159,8 @@ export function normalizeArtistflowItem(item: ArtistflowFeedItem): Omit<
     kind,
     title,
     start_at,
+    end_at,
+    date_label: dateLabelRaw,
     timezone,
     venue,
     address,
@@ -176,6 +189,8 @@ export function normalizeArtistflowEvent(item: ArtistflowFeedItem): NormalizedEx
     kind: base.kind,
     title: base.title,
     start_at: base.start_at,
+    end_at: base.end_at,
+    date_label: base.date_label,
     timezone: base.timezone,
     venue: base.venue,
     address: base.address,

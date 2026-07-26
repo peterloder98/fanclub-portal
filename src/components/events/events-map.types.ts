@@ -5,6 +5,7 @@ export type MapEvent = {
   kind?: string | null;
   title: string;
   start_at: string | null;
+  end_at?: string | null;
   ticket_url: string | null;
   venue: string | null;
   address: string | null;

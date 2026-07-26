@@ -17,6 +17,7 @@ import {
   sendEventAvailableNotices,
   type EventAvailableNotice,
 } from "@/lib/notifications/event-available";
+import { deleteNotificationsByMetadataMany } from "@/lib/notifications/cleanup";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type SyncResult = {
@@ -149,6 +150,8 @@ function buildFeedFieldsPatch(e: NormalizedExternalEvent, is_visible: boolean) {
     kind: e.kind,
     title: e.title,
     start_at: e.start_at,
+    end_at: e.end_at,
+    date_label: e.date_label,
     timezone: e.timezone,
     venue: e.venue,
     address: e.address,
@@ -363,6 +366,7 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
           .from("external_events")
           .update({ is_visible: false })
           .in("id", duplicateIds);
+        await deleteNotificationsByMetadataMany("event_id", duplicateIds);
         rows = rows.map((r) =>
           duplicateIds.includes(r.id) ? { ...r, is_visible: false } : r,
         );
@@ -392,6 +396,10 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
           toHide.map((x) => x.id),
         );
       if (error) throw new Error(error.message);
+      await deleteNotificationsByMetadataMany(
+        "event_id",
+        toHide.map((x) => x.id),
+      );
       result.hidden += toHide.length;
     }
 

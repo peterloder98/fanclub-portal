@@ -1,12 +1,12 @@
 "use client";
 
-import { formatEventStart, formatLocation } from "@/lib/events/format";
+import { formatEventDateRange, formatLocation } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import type { MapEvent } from "./events-map.types";
 
 /** Kompakte Vorschau beim Hover über einen Pin */
 export function EventMapHoverContent({ event }: { event: MapEvent }) {
-  const { date, time } = formatEventStart(event.start_at);
+  const { date, time } = formatEventDateRange(event.start_at, event.end_at);
   const location = formatLocation(event);
   const ticket = ticketDisplay(event.ticket_url);
 
