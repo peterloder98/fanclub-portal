@@ -319,7 +319,7 @@ export function MentionInput({
   }
 
   const minHeight = multiline ? `${Math.max(rows, 1) * 1.5}rem` : undefined;
-  const singleLineLike = !multiline || rows <= 1;
+  const singleLineLike = !multiline;
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>

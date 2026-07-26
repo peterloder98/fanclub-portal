@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Maximize2, MessageCircle, SendHorizontal, X } from "lucide-react";
+import { AlertTriangle, ChevronDown, Maximize2, MessageCircle, SendHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { MentionInput } from "@/components/feed/mention-input";
 import { MentionText } from "@/components/feed/mention-text";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import { formatChatTime, type OnlineMember } from "@/lib/chat/types";
-import { GROUP_CHAT_MAX_LEN } from "@/lib/chat/constants";
 import type { ChatMessage } from "@/lib/chat/use-group-chat";
+import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 
 export function OnlineMembersControl({
   onlineCount,
@@ -80,6 +81,58 @@ export function OnlineMembersControl({
   );
 }
 
+function ChatWarnButton({
+  messageId,
+  onRemoved,
+}: {
+  messageId: string;
+  onRemoved: () => void;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={(e) => {
+        e.stopPropagation();
+        const ok = window.confirm(
+          "Nachricht löschen und automatische Verwarnung per E-Mail senden?",
+        );
+        if (!ok) return;
+        onRemoved();
+        startTransition(async () => {
+          try {
+            const result = await issueCommentWarning({
+              commentType: "chat",
+              commentId: messageId,
+            });
+            router.refresh();
+            if (result.isThirdWarning) {
+              window.alert(
+                "Hinweis: Dies ist bereits die 3. Verwarnung für dieses Mitglied. Evtl. sind weitere Schritte nötig.",
+              );
+            }
+          } catch (err) {
+            window.alert(
+              err instanceof Error
+                ? err.message
+                : "Verwarnung fehlgeschlagen — bitte Seite neu laden.",
+            );
+            router.refresh();
+          }
+        });
+      }}
+      className="grid h-5 w-5 shrink-0 place-items-center rounded text-amber-600 transition hover:bg-amber-50 hover:text-amber-800 disabled:opacity-50"
+      aria-label="Verwarnung aussprechen"
+      title="Verwarnung"
+    >
+      <AlertTriangle className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
 type PanelProps = {
   mode: "dock" | "fullscreen";
   messages: ChatMessage[];
@@ -120,6 +173,8 @@ export function GroupChatPanel({
   className,
 }: PanelProps) {
   const fullscreen = mode === "fullscreen";
+  const [composerFocused, setComposerFocused] = useState(false);
+  const composerRows = composerFocused || draft.includes("\n") ? 3 : 1;
 
   return (
     <div
@@ -208,7 +263,7 @@ export function GroupChatPanel({
           <ul className="divide-y divide-fc-navy/5">
             {messages.map((m, i) => {
               const canDelete = isAdmin || m.author_id === userId;
-              const canWarn = isAdmin && m.author_id !== userId;
+              const canWarn = Boolean(isAdmin && m.author_id !== userId);
               return (
                 <li
                   key={m.id}
@@ -220,7 +275,7 @@ export function GroupChatPanel({
                   <div className="flex gap-2.5">
                     <UserAvatar name={m.author.name} avatarUrl={m.author.avatarUrl} size="sm" />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
                           {m.author.name}
                           {m.author_id === userId ? (
@@ -234,25 +289,25 @@ export function GroupChatPanel({
                           {formatChatTime(m.created_at)}
                         </time>
                         {canWarn ? (
-                          <CommentWarningButton
-                            commentType="chat"
-                            commentId={m.id}
+                          <ChatWarnButton
+                            messageId={m.id}
                             onRemoved={() => (onRemoveLocal ?? onDelete)(m.id)}
                           />
                         ) : null}
                         {canDelete ? (
                           <button
                             type="button"
-                            onClick={() => void onDelete(m.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void onDelete(m.id);
+                            }}
                             className="grid h-5 w-5 shrink-0 place-items-center rounded text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
                             aria-label="Nachricht löschen"
                             title="Löschen"
                           >
                             <X className="h-3.5 w-3.5" />
                           </button>
-                        ) : (
-                          <span className="inline-block w-5 shrink-0" aria-hidden />
-                        )}
+                        ) : null}
                       </div>
                       <MentionText
                         text={m.body}
@@ -276,7 +331,7 @@ export function GroupChatPanel({
           fullscreen ? "p-3" : "p-2.5",
         )}
       >
-        {error ? (
+        {error && !/warten|cooldown|zu schnell/i.test(error) ? (
           <p className="mb-1.5 text-[11px] text-rose-600" role="alert">
             {error}
           </p>
@@ -286,22 +341,19 @@ export function GroupChatPanel({
             value={draft}
             onChange={onDraftChange}
             multiline
-            rows={fullscreen ? 3 : 2}
+            rows={composerRows}
             disabled={sending}
             placeholder="Nachricht… @ für Markierung"
             className="min-w-0 flex-1"
             inputClassName={cn(
-              "w-full resize-none rounded-xl border bg-white px-3 py-2 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2",
+              "w-full resize-none rounded-xl border bg-white px-3 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 transition-[min-height] duration-150",
+              composerRows === 1 ? "py-2" : "py-2",
               overLimit
                 ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200"
                 : "border-fc-navy/15 focus:border-fc-blue focus:ring-fc-sky/30",
             )}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void onSend();
-              }
-            }}
+            onFocus={() => setComposerFocused(true)}
+            onBlur={() => setComposerFocused(false)}
           />
           <button
             type="button"
@@ -313,11 +365,6 @@ export function GroupChatPanel({
             <SendHorizontal className="h-4 w-4" />
           </button>
         </div>
-        {fullscreen ? (
-          <p className="mt-1.5 text-[10px] text-slate-400">
-            Max. {GROUP_CHAT_MAX_LEN} Zeichen · Enter senden · Shift+Enter neue Zeile
-          </p>
-        ) : null}
       </footer>
     </div>
   );

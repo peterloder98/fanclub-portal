@@ -225,9 +225,6 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   async function onSend() {
     const text = draft.trim();
     if (!text || sending || cooldownActive) {
-      if (cooldownActive && text) {
-        setError("Bitte kurz warten, bevor du erneut schreibst.");
-      }
       return;
     }
     if (draft.length > GROUP_CHAT_MAX_LEN) {
@@ -241,10 +238,12 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     const result = await sendGroupChatMessage(text);
     setSending(false);
     if (!result.ok) {
-      setError(result.error);
       if (result.retryAfterMs) {
         setCooldownUntil(Date.now() + result.retryAfterMs);
         setNowTick(Date.now());
+        // Zeitsperre: still, kein Hinweistext
+      } else if (!/warten|cooldown|zu schnell/i.test(result.error)) {
+        setError(result.error);
       }
       return;
     }
