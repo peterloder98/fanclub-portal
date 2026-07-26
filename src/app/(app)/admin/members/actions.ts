@@ -190,8 +190,19 @@ export async function updateMember(formData: FormData) {
     .maybeSingle();
   if (me?.role !== "admin") redirect("/dashboard");
 
-  const input = updateSchema.parse(Object.fromEntries(formData.entries()));
+  let input: z.infer<typeof updateSchema>;
+  try {
+    input = updateSchema.parse(Object.fromEntries(formData.entries()));
+  } catch {
+    redirect(
+      `/admin/members/${String(formData.get("user_id") ?? "")}/edit?error=${encodeURIComponent("Eingaben ungültig.")}`,
+    );
+  }
   const admin = createSupabaseAdminClient();
+
+  const fail = (msg: string): never => {
+    redirect(`/admin/members/${input.user_id}/edit?error=${encodeURIComponent(msg)}`);
+  };
 
   const { data: existingProfile } = await admin
     .from("profiles")
@@ -210,6 +221,21 @@ export async function updateMember(formData: FormData) {
     membershipNumber = existingProfile?.membership_number?.trim() || null;
   }
 
+  const previousNumber = existingProfile?.membership_number?.trim() || null;
+  if (membershipNumber && membershipNumber !== previousNumber) {
+    const { data: clash } = await admin
+      .from("profiles")
+      .select("id")
+      .eq("membership_number", membershipNumber)
+      .neq("id", input.user_id)
+      .maybeSingle();
+    if (clash) {
+      fail(
+        `Das ist nicht möglich, da die Mitgliedsnummer ${membershipNumber} bereits vorhanden ist.`,
+      );
+    }
+  }
+
   const { error: profileErr } = await admin
     .from("profiles")
     .update({
@@ -226,7 +252,14 @@ export async function updateMember(formData: FormData) {
       phone: input.phone || null,
     })
     .eq("id", input.user_id);
-  if (profileErr) throw new Error(profileErr.message);
+  if (profileErr) {
+    if (/membership_number|duplicate|unique/i.test(profileErr.message)) {
+      fail(
+        `Das ist nicht möglich, da die Mitgliedsnummer ${membershipNumber ?? ""} bereits vorhanden ist.`,
+      );
+    }
+    fail(profileErr.message);
+  }
   await syncProfileMapCoords(admin, input.user_id);
 
   // Update membership: update latest row (best-effort)

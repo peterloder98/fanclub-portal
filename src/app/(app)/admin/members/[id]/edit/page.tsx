@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { MembershipNumberEditField } from "@/components/admin/membership-number-edit-field.client";
 import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../../actions";
 
@@ -22,10 +23,13 @@ function formatDE(date: string | null) {
 
 export default async function AdminMemberEditPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error: errorParam } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -76,18 +80,15 @@ export default async function AdminMemberEditPage({
               <CardTitle>Stammdaten & Mitgliedschaft</CardTitle>
             </CardHeader>
             <CardContent>
+              {errorParam ? (
+                <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                  {errorParam}
+                </div>
+              ) : null}
               <form action={updateMember} className="grid gap-3 md:grid-cols-2">
                 <input type="hidden" name="user_id" value={profile.id} />
 
-                <label className="grid gap-1">
-                  <span className="text-sm font-medium text-slate-700">Mitgliedsnummer</span>
-                  <input
-                    name="membership_number"
-                    defaultValue={profile.membership_number ?? ""}
-                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-                    placeholder="Wird bei Freigabe automatisch vergeben"
-                  />
-                </label>
+                <MembershipNumberEditField value={profile.membership_number ?? ""} />
                 {(() => {
                   const wc = (profile as { warning_count?: number }).warning_count ?? 0;
                   return wc > 0 ? (
