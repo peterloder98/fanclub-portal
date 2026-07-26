@@ -69,7 +69,7 @@ function sameBerlinDay(a: string, b: string): boolean {
 
 /**
  * Single day: like formatEventStart.
- * Multi-day: "08.10.2026 – 11.10.2026" (no clock times for date-only ranges).
+ * Multi-day: "von 08.10.2026 bis 11.10.2026" (no clock times for date-only ranges).
  */
 export function formatEventDateRange(
   startAt: string | null,
@@ -85,7 +85,7 @@ export function formatEventDateRange(
     return formatEventStart(startAt);
   }
   return {
-    date: `${listDateFmt.format(start)} – ${listDateFmt.format(end)}`,
+    date: `von ${listDateFmt.format(start)} bis ${listDateFmt.format(end)}`,
     time: null as string | null,
   };
 }
@@ -103,7 +103,7 @@ export function formatEventListDate(
   }
   const end = new Date(endAt);
   if (Number.isNaN(end.getTime())) return listDateFmt.format(d);
-  return `${listDateFmt.format(d)} – ${listDateFmt.format(end)}`;
+  return `von ${listDateFmt.format(d)} bis ${listDateFmt.format(end)}`;
 }
 
 /** Uhrzeit für TV-Zeile in der Terminliste. */

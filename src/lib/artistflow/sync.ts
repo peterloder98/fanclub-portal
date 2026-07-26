@@ -271,12 +271,15 @@ export async function syncArtistflowEventsFromFeed(feedUrl: string) {
 
       if (existing.content_hash === e.content_hash) {
         const wasVisible = existing.is_visible;
+        // Auch bei gleichem Hash end_at/date_label nachziehen (neue Spalten / Backfill).
         await admin
           .from("external_events")
           .update({
             last_seen_at: new Date().toISOString(),
             is_visible,
             external_id: e.external_id,
+            end_at: e.end_at,
+            date_label: e.date_label,
           })
           .eq("id", existing.id);
         if (existing.external_id !== e.external_id) {
