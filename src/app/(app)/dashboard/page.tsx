@@ -24,14 +24,27 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: events } = await supabase
+  let { data: events } = await supabase
     .from("external_events")
     .select("id,kind,title,start_at,end_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false })
     .limit(50);
 
-  const allEvents = events ?? [];
+  if (!events) {
+    const fallback = await supabase
+      .from("external_events")
+      .select("id,kind,title,start_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
+      .eq("is_visible", true)
+      .order("start_at", { ascending: true, nullsFirst: false })
+      .limit(50);
+    events = (fallback.data ?? []).map((e) => ({ ...e, end_at: null }));
+  }
+
+  const allEvents = (events ?? []).map((e) => ({
+    ...e,
+    end_at: (e as { end_at?: string | null }).end_at ?? null,
+  }));
   const visibleEvents = filterVisibleEvents(allEvents);
   const nextEvent = pickNextEvent(allEvents);
 
@@ -39,6 +52,7 @@ export default async function DashboardPage() {
     id: e.id,
     title: e.title,
     start_at: e.start_at,
+    end_at: e.end_at ?? null,
     ticket_url: e.ticket_url,
     venue: e.venue ?? null,
     address: e.address ?? null,

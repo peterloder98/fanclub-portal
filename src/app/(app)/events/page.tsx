@@ -35,13 +35,29 @@ export default async function EventsPage({
     .maybeSingle();
   const isAdmin = profile?.role === "admin";
 
-  const { data: events, error } = await supabase
+  const eventSelectWithEnd =
+    "id,kind,title,start_at,end_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng";
+  const eventSelectBase =
+    "id,kind,title,start_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng";
+
+  let { data: events, error } = await supabase
     .from("external_events")
-    .select("id,kind,title,start_at,end_at,venue,address,postal_code,city,country,broadcaster,ticket_url,lat,lng")
+    .select(eventSelectWithEnd)
     .eq("is_visible", true)
     .order("start_at", { ascending: true, nullsFirst: false });
 
-  const allEvents = events ?? [];
+  if (error && /end_at|date_label/i.test(error.message)) {
+    ({ data: events, error } = await supabase
+      .from("external_events")
+      .select(eventSelectBase)
+      .eq("is_visible", true)
+      .order("start_at", { ascending: true, nullsFirst: false }));
+  }
+
+  const allEvents = (events ?? []).map((e) => ({
+    ...e,
+    end_at: "end_at" in e ? ((e as { end_at?: string | null }).end_at ?? null) : null,
+  }));
   const visibleEvents = filterVisibleEvents(allEvents);
   const eventsForPanel = (() => {
     if (!focusEventId) return visibleEvents;
@@ -144,8 +160,10 @@ export default async function EventsPage({
       <main className="flex flex-col px-1.5 py-2 sm:px-3 sm:py-3 lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:px-6">
         {error ? (
           <div className="mb-3 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-            {error.message.includes("external_events")
-              ? "Tabelle fehlt noch. Bitte `supabase/006_artistflow_events.sql` ausführen."
+            {error.message.includes("end_at") || error.message.includes("date_label")
+              ? "Event-Zeitraum-Spalten fehlen noch. Bitte `supabase/089_external_events_end_at.sql` im Supabase SQL Editor ausführen, danach Artistflow Sync."
+              : error.message.includes("external_events") && /does not exist|relation/i.test(error.message)
+                ? "Tabelle fehlt noch. Bitte `supabase/006_artistflow_events.sql` ausführen."
               : error.message.includes("event_participations")
                 ? "Bitte `supabase/035_event_participations.sql` ausführen."
                 : error.message}
