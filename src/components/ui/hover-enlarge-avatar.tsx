@@ -7,7 +7,6 @@ import { cn } from "@/lib/cn";
 import { initialsFromName } from "@/lib/user/initials";
 
 const SIZE = { xs: 20, sm: 24 } as const;
-const NAME_TAG_HEIGHT = 22;
 const HOVER_CLOSE_MS = 220;
 
 export function HoverEnlargeAvatar({
@@ -47,7 +46,7 @@ export function HoverEnlargeAvatar({
       8,
       Math.min(rect.left + rect.width / 2 - enlarged / 2, window.innerWidth - enlarged - 8),
     );
-    const top = Math.max(8, rect.top - enlarged - NAME_TAG_HEIGHT - 6);
+    const top = Math.max(8, rect.top - enlarged - 8);
     setCoords({ top, left });
   }, [enlarged]);
 
@@ -80,15 +79,12 @@ export function HoverEnlargeAvatar({
     <span
       ref={previewRef}
       role="tooltip"
-      style={{ top: coords.top, left: coords.left, width: enlarged }}
-      className="fixed z-[250] flex flex-col items-center pointer-events-auto"
+      style={{ top: coords.top, left: coords.left, width: enlarged, height: enlarged }}
+      className="fixed z-[250] pointer-events-auto"
       onMouseEnter={showPreview}
       onMouseLeave={scheduleHide}
     >
-      <span
-        className="overflow-hidden rounded-full border-2 border-white shadow-xl shadow-slate-900/25"
-        style={{ width: enlarged, height: enlarged }}
-      >
+      <span className="block h-full w-full overflow-hidden rounded-full border-2 border-white shadow-xl shadow-slate-900/25">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -97,9 +93,6 @@ export function HoverEnlargeAvatar({
             {initialsFromName(name)}
           </span>
         )}
-      </span>
-      <span className="mt-1 max-w-[min(10rem,40vw)] truncate rounded-md bg-fc-navy/92 px-2 py-0.5 text-center text-[11px] font-medium text-white shadow-sm">
-        {name}
       </span>
     </span>
   ) : null;

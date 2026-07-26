@@ -1386,8 +1386,8 @@ function PostFeedInner({
                 inputClassName={cn(
                   "w-full resize-none rounded-2xl border px-3 text-sm text-slate-800 outline-none transition-all duration-200 placeholder:text-slate-400",
                   composerExpanded
-                    ? "min-h-[88px] items-start border-fc-sky/30 bg-white py-2.5 shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
-                    : "h-10 items-center border-slate-200/90 bg-white/90 py-0 focus:border-fc-sky/30 focus:ring-2 focus:ring-blue-500/10",
+                    ? "min-h-[88px] border-fc-sky/30 bg-white py-2.5 leading-snug shadow-inner shadow-blue-900/[0.03] focus:border-blue-300 focus:ring-4 focus:ring-blue-500/15"
+                    : "h-10 border-slate-200/90 bg-white/90 py-0 leading-10 focus:border-fc-sky/30 focus:ring-2 focus:ring-blue-500/10",
                 )}
               />
 
@@ -1738,7 +1738,7 @@ function PostFeedInner({
                       : "Kommentieren…"
                   }
                   className="min-w-0 flex-1"
-                  inputClassName="box-border flex h-8 min-w-0 w-full items-center rounded-md border border-slate-200 bg-white px-2.5 text-xs leading-none text-slate-900 outline-none placeholder:text-slate-400 focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
+                  inputClassName="box-border h-8 min-w-0 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs leading-8 text-slate-900 outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
                 />
                 {replyingTo?.postId === post.id ? (
                   <button

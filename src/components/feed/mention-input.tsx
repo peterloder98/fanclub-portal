@@ -65,7 +65,7 @@ function createMentionChip(name: string, userId: string): HTMLSpanElement {
   chip.dataset.mentionName = name;
   chip.contentEditable = "false";
   chip.className =
-    "mention-chip mx-0.5 inline-flex align-baseline rounded-md bg-fc-ice px-1 py-0.5 text-[inherit] font-semibold text-fc-blue";
+    "mention-chip mx-0.5 inline-flex items-center rounded-md bg-fc-ice px-1 font-semibold text-fc-blue align-middle leading-none";
   chip.textContent = `@${name}`;
   return chip;
 }
@@ -323,7 +323,7 @@ export function MentionInput({
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      <div className={cn("relative", singleLineLike && "flex items-stretch")}>
+      <div className="relative">
         {!value && placeholder ? (
           <span
             className={cn(
@@ -339,13 +339,23 @@ export function MentionInput({
         <div
           ref={setEditorRef}
           role="textbox"
-          aria-multiline={multiline}
+          aria-multiline={multiline && !singleLineLike}
           aria-placeholder={placeholder}
           contentEditable={!disabled}
+          data-mention-editor={singleLineLike ? "single" : "multi"}
           suppressContentEditableWarning
           onInput={handleInput}
           onKeyDown={handleKeyDown}
-          onFocus={onFocus}
+          onFocus={(e) => {
+            if (singleLineLike) {
+              const el = e.currentTarget;
+              // Leeres contentEditable oft mit <br> → Caret klebt oben
+              if (!serializeEditor(el).trim() && el.innerHTML !== "") {
+                el.replaceChildren();
+              }
+            }
+            onFocus?.(e);
+          }}
           onBlur={onBlur}
           onClick={() => detectMentionFromCaret()}
           onPaste={(e) => {
@@ -354,9 +364,9 @@ export function MentionInput({
             document.execCommand("insertText", false, text);
           }}
           className={cn(
-            "w-full text-left text-fc-navy outline-none",
+            "w-full box-border text-left text-fc-navy outline-none",
             singleLineLike
-              ? "flex items-center overflow-x-auto overflow-y-hidden whitespace-nowrap leading-none"
+              ? "block overflow-x-auto overflow-y-hidden whitespace-nowrap py-0 leading-8"
               : "overflow-y-auto whitespace-pre-wrap break-words leading-snug",
             disabled && "cursor-not-allowed opacity-60",
             inputClassName,

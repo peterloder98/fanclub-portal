@@ -52,6 +52,14 @@ body {
   background: rgba(44, 100, 163, 0.22);
 }
 
+/* Einzeilige Mention-Felder: Caret über line-height vertikal mittig */
+[data-mention-editor="single"] {
+  display: block;
+}
+[data-mention-editor="single"] .mention-chip {
+  vertical-align: middle;
+}
+
 /* Leaflet: Tailwind base styles can break tile sizing (shows "quadrants"). */
 .leaflet-container img.leaflet-tile {
   max-width: none !important;
