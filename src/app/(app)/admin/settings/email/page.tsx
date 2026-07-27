@@ -8,7 +8,7 @@ export default async function AdminEmailSettingsPage() {
 
   return (
     <div className="min-h-screen">
-      <Topbar title="E-Mail / SMTP" subtitle="Versandkonten für Anträge und Benachrichtigungen" />
+      <Topbar title="Email Konten verwalten" subtitle="Versandkonten für Anträge und Benachrichtigungen" />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
         <div className="mt-4">

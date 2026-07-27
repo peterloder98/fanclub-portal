@@ -8,7 +8,6 @@ import { appNav, NavList } from "@/components/app-shell/nav";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
 import { SidebarNavTooltip } from "@/components/app-shell/sidebar-nav-tooltip";
 import { SidebarSpotifyPlayer } from "@/components/app-shell/sidebar-spotify-player";
-import { ANNI_STAR_COLOR, ANNI_STAR_SYMBOL } from "@/lib/anni-stars/format";
 import { cn } from "@/lib/cn";
 
 export type SidebarUser = {
@@ -136,35 +135,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
               <ReferMembershipNavCta />
             </div>
           </div>
-          <div className="shrink-0 border-t px-3 py-3">
-            <Link
-              href="/profile"
-              className="mb-3 flex items-center gap-2.5 rounded-xl border bg-white/80 p-2.5 shadow-sm transition hover:bg-fc-ice"
-            >
-              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-slate-50">
-                {user.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="grid h-full w-full place-items-center bg-gradient-to-br from-fc-navy to-fc-sky text-xs font-bold text-white">
-                    {user.initials}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-fc-navy">{user.name}</p>
-                <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-600">
-                  <span className="inline-flex items-center gap-0.5 font-semibold tabular-nums text-fc-navy">
-                    <span style={{ color: ANNI_STAR_COLOR }} aria-hidden>
-                      {ANNI_STAR_SYMBOL}
-                    </span>
-                    {user.points}
-                  </span>
-                  <span className="text-slate-300">·</span>
-                  <span>Rang {user.rank}</span>
-                </p>
-              </div>
-            </Link>
+          <div className="shrink-0 px-2 pb-2 pt-1">
             <SidebarSpotifyPlayer />
           </div>
         </>

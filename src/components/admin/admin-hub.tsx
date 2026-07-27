@@ -106,7 +106,7 @@ const SECTIONS: AdminHubSection[] = [
     items: [
       {
         href: "/admin/settings/email",
-        title: "SMTP-Einstellungen",
+        title: "Email Konten verwalten",
         description: "Server, Absender und Verbindungstest",
         icon: Server,
       },
