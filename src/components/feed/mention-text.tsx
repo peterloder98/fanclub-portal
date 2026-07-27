@@ -22,7 +22,7 @@ export function MentionText({
             className="rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue hover:bg-fc-sky/30"
             onClick={(e) => e.stopPropagation()}
           >
-            @{p.name}
+            {p.name}
           </Link>
         ) : (
           <span key={i}>{p.value}</span>

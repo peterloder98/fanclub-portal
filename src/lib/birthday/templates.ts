@@ -1,3 +1,4 @@
+import { formatMentionToken } from "@/lib/mentions/format";
 import { normalizeGender, salutation, type NormalizedGender } from "@/lib/person/gender";
 import type { BirthdayGreetingTemplate } from "@/lib/birthday/template-store";
 import { loadActiveBirthdayTemplates } from "@/lib/birthday/template-store";
@@ -11,27 +12,27 @@ export const DEFAULT_BIRTHDAY_TEMPLATES: BirthdayTemplateShape[] = [
   {
     title_template: "Alles Gute, {{first_name}}! 🎂",
     body_template:
-      "{{salutation}}, wir wünschen dir heute alles Gute zu deinem Geburtstag — dein Anni Perka Fanclub.",
+      "{{salutation}} {{mention}}, wir wünschen dir heute alles Gute zu deinem Geburtstag — dein Anni Perka Fanclub.",
   },
   {
     title_template: "Happy Birthday! 🎉",
     body_template:
-      "{{salutation}}, der Fanclub feiert dich heute: alles Liebe zum Geburtstag und einen wundervollen Tag!",
+      "{{salutation}} {{mention}}, der Fanclub feiert dich heute: alles Liebe zum Geburtstag und einen wundervollen Tag!",
   },
   {
     title_template: "Geburtstagsgrüße",
     body_template:
-      "{{salutation}}, von uns aus dem Anni Perka Fanclub: herzlichen Glückwunsch und viel Freude an deinem besonderen Tag!",
+      "{{salutation}} {{mention}}, von uns aus dem Anni Perka Fanclub: herzlichen Glückwunsch und viel Freude an deinem besonderen Tag!",
   },
   {
     title_template: "Heute ist dein Tag!",
     body_template:
-      "{{salutation}}, wir denken heute besonders an dich — alles Gute, Gesundheit und schöne Momente wünscht dir dein Fanclub-Team.",
+      "{{salutation}} {{mention}}, wir denken heute besonders an dich — alles Gute, Gesundheit und schöne Momente wünscht dir dein Fanclub-Team.",
   },
   {
     title_template: "Zum Geburtstag",
     body_template:
-      "{{salutation}}, danke, dass du Teil der Community bist. Heute wünschen wir dir von Herzen einen tollen Geburtstag! — Anni Perka Fanclub",
+      "{{salutation}} {{mention}}, danke, dass du Teil der Community bist. Heute wünschen wir dir von Herzen einen tollen Geburtstag! — Anni Perka Fanclub",
   },
 ];
 
@@ -47,11 +48,14 @@ export function renderBirthdayTemplateText(
   template: string,
   firstName: string,
   genderRaw: string | null | undefined,
+  mentionToken?: string,
 ) {
   const g = normalizeGender(genderRaw);
   const name = firstName.trim() || "Fan";
+  const mention = mentionToken ?? name;
   return template
     .replace(/\{\{first_name\}\}/g, name)
+    .replace(/\{\{mention\}\}/g, mention)
     .replace(/\{\{salutation\}\}/g, salutation(name, g));
 }
 
@@ -61,13 +65,15 @@ export function birthdayPostBodyFromList(
   userId: string,
   dateIso: string,
   templates: BirthdayTemplateShape[],
+  displayName?: string,
 ): { title: string; body: string } {
   const list = templates.length ? templates : DEFAULT_BIRTHDAY_TEMPLATES;
   const idx = birthdayTemplateIndex(userId, dateIso, list.length);
   const t = list[idx]!;
+  const mentionToken = formatMentionToken(displayName?.trim() || firstName.trim() || "Fan", userId);
   return {
-    title: renderBirthdayTemplateText(t.title_template, firstName, genderRaw),
-    body: renderBirthdayTemplateText(t.body_template, firstName, genderRaw),
+    title: renderBirthdayTemplateText(t.title_template, firstName, genderRaw, mentionToken),
+    body: renderBirthdayTemplateText(t.body_template, firstName, genderRaw, mentionToken),
   };
 }
 
@@ -86,13 +92,21 @@ export async function birthdayPostBodyAsync(
   genderRaw: string | null | undefined,
   userId: string,
   dateIso: string,
+  displayName?: string,
 ): Promise<{ title: string; body: string }> {
   const rows = await loadActiveBirthdayTemplates();
   const templates = rows.map((r) => ({
     title_template: r.title_template,
     body_template: r.body_template,
   }));
-  return birthdayPostBodyFromList(firstName, genderRaw, userId, dateIso, templates);
+  return birthdayPostBodyFromList(
+    firstName,
+    genderRaw,
+    userId,
+    dateIso,
+    templates,
+    displayName,
+  );
 }
 
 export function listBirthdayTemplatePreviews(

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -83,51 +84,99 @@ type ReplyingTo = {
 
 type FeedComment = FeedPost["comments"][number];
 
+type ComposerMedia = { id: string; url: string };
+
 function organizePostComments(comments: FeedComment[]) {
-  const childrenByParent = new Map<string, FeedComment[]>();
+  const byId = new Map(comments.map((c) => [c.id, c]));
   const roots: FeedComment[] = [];
+  const repliesByRoot = new Map<string, FeedComment[]>();
+
+  const findRootId = (comment: FeedComment): string => {
+    let current = comment;
+    while (current.parentCommentId) {
+      const parent = byId.get(current.parentCommentId);
+      if (!parent) break;
+      current = parent;
+    }
+    return current.id;
+  };
 
   for (const c of comments) {
-    if (c.parentCommentId) {
-      const list = childrenByParent.get(c.parentCommentId) ?? [];
-      list.push(c);
-      childrenByParent.set(c.parentCommentId, list);
-    } else {
+    if (!c.parentCommentId) {
       roots.push(c);
+    } else {
+      const rootId = findRootId(c);
+      const list = repliesByRoot.get(rootId) ?? [];
+      list.push(c);
+      repliesByRoot.set(rootId, list);
     }
   }
 
   roots.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
-  for (const list of childrenByParent.values()) {
+  for (const list of repliesByRoot.values()) {
     list.sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
   }
 
-  return { roots, childrenByParent };
+  return { roots, repliesByRoot };
 }
 
-function CommentBody({ text, replyToName }: { text: string; replyToName: string | null }) {
-  const prefix = replyToName ? `@${replyToName}` : null;
-  if (!prefix || !text.startsWith(prefix)) {
-    return (
-      <p className="text-xs leading-snug text-slate-700">
-        <MentionText text={text} />
-      </p>
-    );
+function resolveReplyParentId(comments: FeedComment[], replyCommentId: string) {
+  const target = comments.find((c) => c.id === replyCommentId);
+  return target?.parentCommentId ?? replyCommentId;
+}
+
+function CommentBody({
+  text,
+  replyToName,
+  replyToUserId,
+}: {
+  text: string;
+  replyToName: string | null;
+  replyToUserId?: string | null;
+}) {
+  let displayText = text;
+  if (replyToName) {
+    const legacyPrefix = `@${replyToName}`;
+    if (displayText.startsWith(legacyPrefix)) {
+      displayText = displayText.slice(legacyPrefix.length).trimStart();
+    }
   }
-  const rest = text.slice(prefix.length).trimStart();
+
+  const replyLabel = replyToName ? (
+    replyToUserId ? (
+      <Link
+        href={`/mitglieder?focus=${replyToUserId}`}
+        className="rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue hover:bg-fc-sky/30"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {replyToName}
+      </Link>
+    ) : (
+      <span className="rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue">
+        {replyToName}
+      </span>
+    )
+  ) : null;
+
   return (
     <p className="text-xs leading-snug text-slate-700">
-      <span className="font-semibold text-fc-blue">{prefix}</span>
-      {rest ? (
+      {replyLabel ? (
         <>
-          {" "}
-          <MentionText text={rest} />
+          {replyLabel}
+          {displayText ? (
+            <>
+              {" "}
+              <MentionText text={displayText} />
+            </>
+          ) : null}
         </>
-      ) : null}
+      ) : (
+        <MentionText text={displayText} />
+      )}
     </p>
   );
 }
@@ -158,10 +207,13 @@ function PostFeedInner({
     initials: string;
   } | null>(null);
   const [newText, setNewText] = useState("");
-  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [composerDraftPostId, setComposerDraftPostId] = useState<string | null>(null);
+  const [composerMedia, setComposerMedia] = useState<ComposerMedia[]>([]);
+  const [composerUploading, setComposerUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const composerInputRef = useRef<HTMLDivElement>(null);
   const commentInputRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
 
@@ -796,7 +848,7 @@ function PostFeedInner({
     });
     setDraftByPostId((d) => ({
       ...d,
-      [postId]: `@${comment.author} `,
+      [postId]: "",
     }));
     requestAnimationFrame(() => commentInputRefs.current[postId]?.focus());
   }
@@ -805,8 +857,12 @@ function PostFeedInner({
     const text = (draftByPostId[postId] ?? "").trim();
     if (!text) return;
     if (!me) return;
+    const post = posts.find((p) => p.id === postId);
     const replyCtx =
       replyingTo?.postId === postId ? replyingTo : null;
+    const parentCommentId = replyCtx
+      ? resolveReplyParentId(post?.comments ?? [], replyCtx.commentId)
+      : null;
     const flyFrom =
       fromEl ?? commentInputRefs.current[postId] ?? null;
     const flyRect = flyFrom?.getBoundingClientRect() ?? null;
@@ -817,7 +873,6 @@ function PostFeedInner({
       timeStyle: "short",
     });
     const tempId = crypto.randomUUID();
-    const post = posts.find((p) => p.id === postId);
     const isBirthday = Boolean(post?.isBirthday);
 
     setPosts((prev) =>
@@ -836,7 +891,7 @@ function PostFeedInner({
               createdAt: new Date().toISOString(),
               createdAtLabel: nowLabel,
               text,
-              parentCommentId: replyCtx?.commentId ?? null,
+              parentCommentId,
               replyToUserId: replyCtx?.userId ?? null,
               replyToName: replyCtx?.userName ?? null,
             },
@@ -861,7 +916,7 @@ function PostFeedInner({
           body: text,
         };
         if (replyCtx) {
-          insertRow.parent_comment_id = replyCtx.commentId;
+          insertRow.parent_comment_id = parentCommentId;
           insertRow.reply_to_user_id = replyCtx.userId;
         }
 
@@ -1033,11 +1088,100 @@ function PostFeedInner({
     }
   }
 
+  async function ensureComposerDraftPost(
+    supabase: ReturnType<typeof createSupabaseBrowserClient>,
+  ) {
+    if (!me) throw new Error("Nicht angemeldet");
+    if (composerDraftPostId) return composerDraftPostId;
+    const { data, error } = await supabase
+      .from("posts")
+      .insert({
+        author_id: me.id,
+        author_role: me.role,
+        title: "…",
+        body: "",
+        status: "pending",
+      })
+      .select("id")
+      .single();
+    if (error) throw error;
+    setComposerDraftPostId(data.id);
+    return data.id;
+  }
+
+  async function uploadImagesToPost(postId: string, files: File[]) {
+    const optimized = await Promise.all(files.map((f) => optimizePostImage(f)));
+    const fd = new FormData();
+    fd.append("postId", postId);
+    optimized.forEach((o, idx) => {
+      fd.append("files", o.blob, `img_${idx}.webp`);
+    });
+    const res = await fetch("/api/post-media/upload", { method: "POST", body: fd });
+    const json = (await res.json()) as {
+      ok?: boolean;
+      error?: string;
+      files?: Array<{ path: string; url: string | null }>;
+    };
+    if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
+    return (json.files ?? [])
+      .map((f, i) => ({
+        id: `${postId}_${Date.now()}_${i}`,
+        url: f.url ?? "",
+      }))
+      .filter((m) => Boolean(m.url));
+  }
+
+  async function handleComposerFiles(picked: File[]) {
+    if (!me || !picked.length) return;
+    const images = picked.filter((f) => f.type.startsWith("image/"));
+    const videos = picked.filter((f) => f.type.startsWith("video/"));
+    if (videos.length && me.role !== "admin") {
+      setLoadError("Videos können nur von Admins gepostet werden.");
+      return;
+    }
+    if (videos.length && me.role === "admin") {
+      setLoadError("Video-Upload ist noch nicht verfügbar — bitte vorerst Fotos verwenden.");
+      return;
+    }
+    if (!images.length) return;
+
+    const remaining = Math.max(0, 4 - composerMedia.length);
+    const batch = images.slice(0, remaining);
+    if (!batch.length) {
+      setLoadError("Maximal 4 Bilder pro Post.");
+      return;
+    }
+
+    setComposerExpanded(true);
+    setComposerUploading(true);
+    setLoadError(null);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const postId = await ensureComposerDraftPost(supabase);
+      const uploaded = await uploadImagesToPost(postId, batch);
+      setComposerMedia((prev) => [...prev, ...uploaded]);
+      requestAnimationFrame(() => composerInputRef.current?.focus());
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
+    } finally {
+      setComposerUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function resetComposerState() {
+    setNewText("");
+    setComposerMedia([]);
+    setComposerDraftPostId(null);
+    setComposerExpanded(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   async function submitNewPost() {
     if (!me) return;
     const text = newText.trim();
     if (!text) return;
-    if (newFiles.length > 4) {
+    if (composerMedia.length > 4) {
       setLoadError("Maximal 4 Bilder pro Post.");
       return;
     }
@@ -1047,45 +1191,51 @@ function PostFeedInner({
       const supabase = createSupabaseBrowserClient();
       const status = me.role === "member" ? "pending" : "approved";
       const title = text.length > 36 ? `${text.slice(0, 36)}…` : text;
-      const { data: postRow, error: insErr } = await supabase
-        .from("posts")
-        .insert({
-          author_id: me.id,
-          author_role: me.role,
-          title,
-          body: text,
-          status,
-        })
-        .select("id,created_at,author_role,status,title,body")
-        .single();
-      if (insErr) throw insErr;
+
+      let postRow: {
+        id: string;
+        created_at: string;
+        author_role: "admin" | "anni" | "member";
+        status?: string | null;
+        title: string;
+        body: string;
+      };
+      let uploadedMedia: ComposerMedia[] = [];
+
+      if (composerDraftPostId) {
+        const { data, error: updErr } = await supabase
+          .from("posts")
+          .update({
+            title,
+            body: text,
+            status,
+            last_activity_at: new Date().toISOString(),
+          })
+          .eq("id", composerDraftPostId)
+          .select("id,created_at,author_role,status,title,body")
+          .single();
+        if (updErr) throw updErr;
+        postRow = data;
+        uploadedMedia = composerMedia;
+      } else {
+        const { data, error: insErr } = await supabase
+          .from("posts")
+          .insert({
+            author_id: me.id,
+            author_role: me.role,
+            title,
+            body: text,
+            status,
+          })
+          .select("id,created_at,author_role,status,title,body")
+          .single();
+        if (insErr) throw insErr;
+        postRow = data;
+      }
 
       void notifyMentionsFromText({ text, postId: postRow.id, context: "post" });
 
-      let uploadedMedia: Array<{ id: string; url: string }> = [];
-      if (newFiles.length) {
-        const optimized = await Promise.all(newFiles.map((f) => optimizePostImage(f)));
-        const fd = new FormData();
-        fd.append("postId", postRow.id);
-        optimized.forEach((o, idx) => {
-          fd.append("files", o.blob, `img_${idx}.webp`);
-        });
-        const res = await fetch("/api/post-media/upload", { method: "POST", body: fd });
-        const json = (await res.json()) as {
-          ok?: boolean;
-          error?: string;
-          files?: Array<{ path: string; url: string | null }>;
-        };
-        if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
-        uploadedMedia = (json.files ?? [])
-          .map((f, i) => ({ id: `${postRow.id}_${i}`, url: f.url ?? "" }))
-          .filter((m) => Boolean(m.url));
-      }
-
-      setNewText("");
-      setNewFiles([]);
-      setComposerExpanded(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      resetComposerState();
 
       // Show own post immediately (pending = only visible to author until approved).
       setPosts((prev) => [
@@ -1280,7 +1430,9 @@ function PostFeedInner({
     setEditCommentText("");
   }
 
-  const composerHasContent = Boolean(newText.trim() || newFiles.length > 0);
+  const composerHasContent = Boolean(
+    newText.trim() || composerMedia.length > 0 || composerUploading,
+  );
 
   const tryCollapseComposer = () => {
     if (!composerHasContent && !dragActive) setComposerExpanded(false);
@@ -1385,9 +1537,25 @@ function PostFeedInner({
             </div>
 
             <div className="min-w-0 flex-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept={
+                  me?.role === "admin"
+                    ? "image/jpeg,image/png,image/webp,video/*"
+                    : "image/jpeg,image/png,image/webp"
+                }
+                className="hidden"
+                onChange={(e) => {
+                  const picked = Array.from(e.target.files ?? []);
+                  if (picked.length) void handleComposerFiles(picked);
+                }}
+              />
               <MentionInput
                 value={newText}
                 onChange={setNewText}
+                inputRef={composerInputRef}
                 onFocus={() => setComposerExpanded(true)}
                 onBlur={() => {
                   window.setTimeout(() => tryCollapseComposer(), 120);
@@ -1401,6 +1569,19 @@ function PostFeedInner({
                     : "h-10 border-slate-200/90 bg-white/90 py-0 leading-10 focus:border-fc-sky/30 focus:ring-2 focus:ring-blue-500/10",
                 )}
               />
+
+              {!composerExpanded ? (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={!me || composerUploading}
+                    className="h-8 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
+                  >
+                    {composerUploading ? "Lädt…" : "Foto auswählen"}
+                  </button>
+                </div>
+              ) : null}
 
               {composerExpanded ? (
                 <div className="mt-2.5 grid gap-2.5">
@@ -1418,10 +1599,8 @@ function PostFeedInner({
                     onDrop={(e) => {
                       e.preventDefault();
                       setDragActive(false);
-                      const picked = Array.from(e.dataTransfer.files ?? [])
-                        .filter((f) => f.type.startsWith("image/"))
-                        .slice(0, 4);
-                      if (picked.length) setNewFiles(picked);
+                      const picked = Array.from(e.dataTransfer.files ?? []);
+                      if (picked.length) void handleComposerFiles(picked);
                     }}
                     className={cn(
                       "rounded-xl border border-dashed px-3 py-2.5 transition",
@@ -1431,22 +1610,13 @@ function PostFeedInner({
                     )}
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        accept="image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={(e) =>
-                          setNewFiles(Array.from(e.target.files ?? []).slice(0, 4))
-                        }
-                      />
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50"
+                        disabled={!me || composerUploading}
+                        className="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
                       >
-                        Foto auswählen
+                        {composerUploading ? "Lädt…" : "Foto auswählen"}
                       </button>
                       <button
                         type="button"
@@ -1461,20 +1631,15 @@ function PostFeedInner({
                             : "Posten"}
                       </button>
                     </div>
-                    {newFiles.length ? (
+                    {composerMedia.length ? (
                       <div className="mt-2 grid grid-cols-4 gap-2">
-                        {newFiles.map((f) => (
+                        {composerMedia.map((m) => (
                           <div
-                            key={`${f.name}-${f.lastModified}`}
+                            key={m.id}
                             className="aspect-square overflow-hidden rounded-lg border border-white bg-white shadow-sm"
-                            title={f.name}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={URL.createObjectURL(f)}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
+                            <img src={m.url} alt="" className="h-full w-full object-cover" />
                           </div>
                         ))}
                       </div>
@@ -1745,7 +1910,7 @@ function PostFeedInner({
                   }}
                   placeholder={
                     replyingTo?.postId === post.id
-                      ? `Antwort an @${replyingTo.userName}…`
+                      ? `Antwort an ${replyingTo.userName}…`
                       : "Kommentieren…"
                   }
                   className="min-w-0 flex-1"
@@ -1783,24 +1948,16 @@ function PostFeedInner({
                 )}
               >
                 {(() => {
-                  const { roots, childrenByParent } = organizePostComments(post.comments);
+                  const { roots, repliesByRoot } = organizePostComments(post.comments);
 
-                  function renderCommentNode(c: FeedComment, isReply: boolean) {
+                  function renderCommentNode(c: FeedComment) {
                     const canEdit = me?.id === c.authorId;
                     const canDelete =
                       me && (me.id === c.authorId || me.role === "admin");
                     const canWarn = me?.role === "admin";
-                    const replies = childrenByParent.get(c.id) ?? [];
 
                     return (
-                      <div key={c.id} className={isReply ? undefined : "space-y-1"}>
-                        <div
-                          className={cn(
-                            "flex gap-2",
-                            isReply &&
-                              "rounded-lg border border-fc-sky/25 bg-fc-ice/50 px-2 py-1.5",
-                          )}
-                        >
+                      <div className="flex gap-2">
                           <HoverEnlargeAvatar
                             name={c.author}
                             avatarUrl={c.authorAvatarUrl}
@@ -1926,21 +2083,29 @@ function PostFeedInner({
                                 </div>
                               </div>
                             ) : (
-                              <CommentBody text={c.text} replyToName={c.replyToName} />
+                              <CommentBody
+                                text={c.text}
+                                replyToName={c.replyToName}
+                                replyToUserId={c.replyToUserId}
+                              />
                             )}
                           </div>
-                        </div>
-                        {replies.length > 0 ? (
-                          <div className="ml-7 mt-1 space-y-1.5 border-l-2 border-fc-sky/40 pl-3">
-                            {replies.map((reply) => renderCommentNode(reply, true))}
-                          </div>
-                        ) : null}
                       </div>
                     );
                   }
 
                   return roots.map((root) => (
-                    <div key={root.id}>{renderCommentNode(root, false)}</div>
+                    <div key={root.id} className="space-y-1.5">
+                      {renderCommentNode(root)}
+                      {(repliesByRoot.get(root.id) ?? []).map((reply) => (
+                        <div
+                          key={reply.id}
+                          className="ml-7 border-l-2 border-fc-sky/40 pl-3"
+                        >
+                          {renderCommentNode(reply)}
+                        </div>
+                      ))}
+                    </div>
                   ));
                 })()}
               </div>

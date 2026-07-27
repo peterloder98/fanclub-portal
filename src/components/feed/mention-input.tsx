@@ -66,7 +66,7 @@ function createMentionChip(name: string, userId: string): HTMLSpanElement {
   chip.contentEditable = "false";
   chip.className =
     "mention-chip mx-0.5 inline-flex items-center rounded-md bg-fc-ice px-1 font-semibold text-fc-blue align-middle leading-none";
-  chip.textContent = `@${name}`;
+  chip.textContent = name;
   return chip;
 }
 

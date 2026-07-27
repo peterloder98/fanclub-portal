@@ -32,7 +32,7 @@ export function BirthdayTemplatesPanel() {
   const [showNewForm, setShowNewForm] = useState(false);
   const [newTitle, setNewTitle] = useState("Alles Gute, {{first_name}}! 🎂");
   const [newBody, setNewBody] = useState(
-    "{{salutation}}, wir wünschen dir alles Gute zum Geburtstag!",
+    "{{salutation}} {{mention}}, wir wünschen dir alles Gute zum Geburtstag!",
   );
 
   const reload = useCallback(async () => {
@@ -314,7 +314,8 @@ export function BirthdayTemplatesPanel() {
 
       <div className="rounded-xl border bg-slate-50 px-3 py-2 text-xs text-slate-600">
         <span className="font-semibold text-slate-800">Platzhalter: </span>
-        <code>{`{{first_name}}`}</code> — Vorname · <code>{`{{salutation}}`}</code> — Lieber/Liebe/Liebe/r …
+        <code>{`{{first_name}}`}</code> — Vorname · <code>{`{{salutation}}`}</code> — Lieber/Liebe/Liebe/r ·{" "}
+        <code>{`{{mention}}`}</code> — verlinkter Name
       </div>
 
       {message ? (
