@@ -22,6 +22,7 @@ type PollRow = {
   allow_multiple: boolean;
   ends_at: string;
   created_at: string;
+  author_id: string;
 };
 
 type OptionRow = { id: string; poll_id: string; label: string; sort_order: number };
@@ -88,7 +89,7 @@ export function PollBoard({
 
       const { data: pollRows, error: pollErr } = await supabase
         .from("polls")
-        .select("id,question,allow_multiple,ends_at,created_at")
+        .select("id,question,allow_multiple,ends_at,created_at,author_id")
         .eq("is_active", true)
         .order("ends_at", { ascending: false });
       if (pollErr) throw pollErr;
@@ -263,7 +264,9 @@ export function PollBoard({
         .eq("poll_id", poll.id)
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
-      applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
+      if (poll.author_id !== userId) {
+        applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
+      }
       const optionIdsForPoll = options.filter((o) => o.poll_id === poll.id).map((o) => o.id);
       invalidatePollVoterCache(setVotersByOptionId, optionIdsForPoll);
       setParticipantsByPollId((m) => {

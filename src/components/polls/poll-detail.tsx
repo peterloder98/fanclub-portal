@@ -24,6 +24,7 @@ type Poll = {
   question: string;
   allow_multiple: boolean;
   ends_at: string;
+  author_id: string;
 };
 
 type Option = { id: string; label: string; sort_order: number };
@@ -88,7 +89,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
 
     const { data: pollRow, error: pollErr } = await supabase
       .from("polls")
-      .select("id,question,allow_multiple,ends_at")
+      .select("id,question,allow_multiple,ends_at,author_id")
       .eq("id", pollId)
       .maybeSingle();
     if (pollErr) throw pollErr;
@@ -245,7 +246,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
         .eq("poll_id", pollId)
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
-      if (fromRect || fromEl) {
+      if ((fromRect || fromEl) && poll.author_id !== userId) {
         applyPollVotePointsFx({ votesBefore, votesAfter, fromRect, fromEl });
       }
 

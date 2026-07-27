@@ -44,7 +44,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "An Umfrage teilgenommen",
     points: POINT_VALUES.pollVote,
     how: "In einer Umfrage mindestens eine Antwort wählen.",
-    note: `Pro Umfrage einmal. Alle Stimmen zurücknehmen: −${POINT_VALUES.pollVote} Anni-Stars.`,
+    note: `Pro Umfrage einmal. Alle Stimmen zurücknehmen: −${POINT_VALUES.pollVote} Anni-Stars. Eigene Umfragen bringen keine Sterne.`,
   },
   {
     id: "birthday_comment",
@@ -58,7 +58,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Beitrag kommentiert",
     points: POINT_VALUES.postComment,
     how: "Einen Kommentar unter einem normalen Beitrag im Dashboard schreiben.",
-    note: "Einmal pro Beitrag — weitere Kommentare bringen keine zusätzlichen Anni-Stars. Löschen: −3 Anni-Stars.",
+    note: "Einmal pro Beitrag — weitere Kommentare bringen keine zusätzlichen Anni-Stars. Eigene Beiträge zählen nicht. Löschen des letzten Kommentars: −3 Anni-Stars.",
   },
   {
     id: "giveaway_entry",
@@ -79,7 +79,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Beitrag geliked",
     points: POINT_VALUES.postLike,
     how: "Den Daumen bei einem Beitrag setzen.",
-    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen.",
+    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen. Likes auf eigene Beiträge geben keine Sterne.",
   },
   {
     id: "shop_order",
@@ -93,14 +93,14 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Gewinnspiel geliked",
     points: POINT_VALUES.giveawayLike,
     how: "Ein Gewinnspiel mit „Gefällt mir“ markieren.",
-    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen.",
+    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen. Eigene Gewinnspiele zählen nicht.",
   },
   {
     id: "giveaway_comment",
     label: "Kommentar zu einem Gewinnspiel",
     points: POINT_VALUES.giveawayComment,
     how: "Einen Kommentar bei einem Gewinnspiel schreiben.",
-    note: "Einmal pro Gewinnspiel.",
+    note: "Einmal pro Gewinnspiel. Eigene Gewinnspiele und gelöschte letzte Kommentare: Sterne entfallen.",
   },
 ];
 

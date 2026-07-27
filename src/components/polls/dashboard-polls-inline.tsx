@@ -16,6 +16,7 @@ type PollRow = {
   question: string;
   allow_multiple: boolean;
   ends_at: string;
+  author_id: string;
 };
 
 type OptionRow = { id: string; poll_id: string; label: string; sort_order: number };
@@ -41,7 +42,7 @@ export function DashboardPollsInline() {
 
     const { data: pollRows } = await supabase
       .from("polls")
-      .select("id,question,allow_multiple,ends_at")
+      .select("id,question,allow_multiple,ends_at,author_id")
       .eq("is_active", true)
       .order("created_at", { ascending: false })
       .limit(3);
@@ -168,7 +169,9 @@ export function DashboardPollsInline() {
         .eq("poll_id", poll.id)
         .eq("user_id", userId);
       const votesAfter = myRows?.length ?? 0;
-      applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
+      if (poll.author_id !== userId) {
+        applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
+      }
       await load();
     } finally {
       setBusyKey(null);

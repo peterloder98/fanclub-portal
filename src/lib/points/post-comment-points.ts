@@ -35,9 +35,17 @@ export async function awardPostCommentPoints(
 
   const { data: post } = await admin
     .from("posts")
-    .select("is_birthday")
+    .select("is_birthday,author_id,status")
     .eq("id", postId)
     .maybeSingle();
+
+  // Keine Punkte für Kommentare am eigenen Beitrag
+  if (post?.author_id && post.author_id === userId) {
+    return { ok: true, points: 0, reason: "post_comment", changed: false };
+  }
+  if (post?.status && post.status !== "approved") {
+    return { ok: true, points: 0, reason: "post_comment", changed: false };
+  }
 
   const isBirthday = Boolean(post?.is_birthday);
   const reason = isBirthday ? "birthday_comment" : "post_comment";
@@ -79,6 +87,17 @@ export async function revokePostCommentPoints(
   postId: string,
 ): Promise<PostCommentPointsResult> {
   const admin = createSupabaseAdminClient();
+
+  const { count } = await admin
+    .from("post_comments")
+    .select("id", { count: "exact", head: true })
+    .eq("post_id", postId)
+    .eq("author_id", userId);
+
+  // Nur entziehen, wenn kein eigener Kommentar mehr existiert
+  if ((count ?? 0) > 0) {
+    return { ok: true, points: 0, reason: "post_comment", changed: false };
+  }
 
   const { data: post } = await admin
     .from("posts")

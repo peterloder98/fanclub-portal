@@ -37,7 +37,7 @@ export default async function GiveawayDetailPage({
   const { data: g } = await supabase
     .from("giveaways")
     .select(
-      "id,title,description,entry_mode,ends_at,status,is_paused,is_year_end_lottery,points_year,year_end_confirmed_at",
+      "id,title,description,entry_mode,ends_at,status,is_paused,is_year_end_lottery,points_year,year_end_confirmed_at,author_id",
     )
     .eq("id", id)
     .maybeSingle();

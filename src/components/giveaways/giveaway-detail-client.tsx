@@ -81,6 +81,7 @@ export function GiveawayDetailClient({
     is_paused: boolean;
     is_year_end_lottery?: boolean;
     points_year?: number | null;
+    author_id?: string;
   };
   prizes: { id: string; name: string }[];
   questions: Question[];
@@ -281,6 +282,7 @@ export function GiveawayDetailClient({
     const fromRect = captureFlyRect(fromEl);
     const supabase = createSupabaseBrowserClient();
     const next = !likes.mine;
+    const isOwn = Boolean(giveaway.author_id && giveaway.author_id === userId);
     setLikes((l) => ({
       mine: next,
       count: Math.max(0, l.count + (next ? 1 : -1)),
@@ -291,14 +293,14 @@ export function GiveawayDetailClient({
           giveaway_id: giveaway.id,
           user_id: userId,
         });
-        flyPointsFromElement({ fromRect, delta: +1 });
+        if (!isOwn) flyPointsFromElement({ fromRect, delta: +1 });
       } else {
         await supabase
           .from("giveaway_likes")
           .delete()
           .eq("giveaway_id", giveaway.id)
           .eq("user_id", userId);
-        flyPointsFromElement({ fromRect, delta: -1 });
+        if (!isOwn) flyPointsFromElement({ fromRect, delta: -1 });
       }
     } catch {
       setLikes((l) => ({

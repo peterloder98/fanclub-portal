@@ -1915,7 +1915,10 @@ function PostFeedInner({
                           .from("post_likes")
                           .insert({ post_id: post.id, user_id: me.id });
                         if (error) throw error;
-                        flyPointsFromElement({ fromRect, delta: +1 });
+                        // Keine Anni-Stars für Likes auf eigene Beiträge
+                        if (post.authorId !== me.id) {
+                          flyPointsFromElement({ fromRect, delta: +1 });
+                        }
                       } else {
                         const { error } = await supabase
                           .from("post_likes")
@@ -1923,7 +1926,9 @@ function PostFeedInner({
                           .eq("post_id", post.id)
                           .eq("user_id", me.id);
                         if (error) throw error;
-                        flyPointsFromElement({ fromRect, delta: -1 });
+                        if (post.authorId !== me.id) {
+                          flyPointsFromElement({ fromRect, delta: -1 });
+                        }
                       }
                     } catch (e) {
                       toggleLike(post.id);

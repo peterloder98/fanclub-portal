@@ -20,7 +20,7 @@ export default async function PollsPage() {
 
   const { data: initialPolls } = await supabase
     .from("polls")
-    .select("id,question,allow_multiple,ends_at,created_at")
+    .select("id,question,allow_multiple,ends_at,created_at,author_id")
     .eq("is_active", true)
     .order("ends_at", { ascending: false });
 
