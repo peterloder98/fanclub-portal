@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { SignaturePad } from "@/components/profile/signature-pad";
+import { DEFAULT_CLUB_SIGNATURE_TEXT } from "@/lib/email/club-signature-defaults";
 
 export function ClubSignatureSettings() {
-  const [text, setText] = useState("Anni-Perka-Fanclub e. V.\nVorstand");
+  const [text, setText] = useState(DEFAULT_CLUB_SIGNATURE_TEXT);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,8 +69,8 @@ export function ClubSignatureSettings() {
   return (
     <div className="grid gap-4">
       <p className="text-sm text-slate-600">
-        Allgemeine Signatur des Fanclubs für System-E-Mails (z. B. Benachrichtigungen). Jeder Admin
-        kann sie bearbeiten.
+        Allgemeine Signatur des Fanclubs für System-E-Mails (z. B. Freischaltung, Erinnerungen).
+        Beim manuellen Versand kann jeder Vorstand weiterhin die eigene Signatur wählen.
       </p>
 
       <label className="grid gap-1">

@@ -76,7 +76,7 @@ export default async function MemberPortalPage({
   const { data: profileWithBio, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id,first_name,last_name,email,city,country,avatar_path,updated_at,membership_number,short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+      "id,first_name,last_name,email,city,country,avatar_path,updated_at,short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
     )
     .eq("id", id)
     .maybeSingle();
@@ -88,7 +88,7 @@ export default async function MemberPortalPage({
           await supabase
             .from("profiles")
             .select(
-              "id,first_name,last_name,email,city,country,avatar_path,updated_at,membership_number,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+              "id,first_name,last_name,email,city,country,avatar_path,updated_at,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
             )
             .eq("id", id)
             .maybeSingle()
@@ -212,11 +212,6 @@ export default async function MemberPortalPage({
                   <p className="mt-2 text-sm text-white/70">Ort noch nicht angegeben</p>
                 )}
                 <div className="mt-3 flex flex-wrap justify-center gap-2 sm:justify-start">
-                  {profile.membership_number ? (
-                    <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs text-white/90">
-                      Nr. {profile.membership_number}
-                    </span>
-                  ) : null}
                   {memberSince ? (
                     <span className="rounded-full bg-white/15 px-2.5 py-1 text-xs text-white/90">
                       Mitglied seit {memberSince}

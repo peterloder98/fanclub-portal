@@ -1,10 +1,10 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_CLUB_SIGNATURE_TEXT } from "@/lib/email/club-signature-defaults";
+
+export { DEFAULT_CLUB_SIGNATURE_TEXT } from "@/lib/email/club-signature-defaults";
 
 export const CLUB_SIGNATURE_TEXT_KEY = "club_signature_text";
 export const CLUB_SIGNATURE_IMAGE_KEY = "club_signature_image_path";
-
-const DEFAULT_CLUB_TEXT =
-  "Herzliche Grüße\n\nJanine | Andreas | Nicole\nFanclub-Team\nOffizieller Anni Perka Fanclub";
 
 export async function getClubSignatureText(): Promise<string> {
   const admin = createSupabaseAdminClient();
@@ -13,7 +13,7 @@ export async function getClubSignatureText(): Promise<string> {
     .select("value")
     .eq("key", CLUB_SIGNATURE_TEXT_KEY)
     .maybeSingle();
-  return data?.value?.trim() || DEFAULT_CLUB_TEXT;
+  return data?.value?.trim() || DEFAULT_CLUB_SIGNATURE_TEXT;
 }
 
 export async function getClubSignatureImagePath(): Promise<string | null> {
