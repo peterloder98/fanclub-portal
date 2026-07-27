@@ -127,7 +127,7 @@ export function EventsInteractivePanel({
   );
 
   const mapInner = (
-    <div className="h-[220px] w-full lg:h-full lg:min-h-[240px]">
+    <div className="h-[220px] w-full min-h-0 lg:h-full lg:min-h-0 lg:flex-1">
       <EventsMapClient
         events={events}
         highlightedEventId={highlightedId}
@@ -169,10 +169,10 @@ export function EventsInteractivePanel({
         <div className="min-h-[50vh] shrink-0">{list}</div>
       </div>
 
-      {/* Desktop: Liste links (scrollt) | rechts Countdown + Karte ausgeklappt */}
+      {/* Desktop: Liste links (scrollt) | rechts Countdown + Karte bis Unterkante */}
       <div
         className={cn(
-          "hidden min-h-0 h-full flex-1 gap-4 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)]",
+          "hidden min-h-0 h-full flex-1 gap-4 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,1fr)]",
           className,
         )}
       >
@@ -182,7 +182,9 @@ export function EventsInteractivePanel({
             <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
           </div>
           <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-            <CardContent className="min-h-0 flex-1 p-1.5 sm:p-2">{mapInner}</CardContent>
+            <CardContent className="flex min-h-0 flex-1 flex-col p-1 sm:p-1.5">
+              {mapInner}
+            </CardContent>
           </Card>
         </aside>
       </div>

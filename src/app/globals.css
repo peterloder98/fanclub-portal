@@ -83,6 +83,12 @@ body {
   min-width: 0;
 }
 
+/* Volle Viewport-Höhe (Events / Karten): kein unteres Innenpadding */
+.fc-page-canvas main.fc-main-fill {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0 !important;
+}
+
 @media (min-width: 1024px) {
   .fc-page-canvas main {
     padding-left: 2rem !important;
