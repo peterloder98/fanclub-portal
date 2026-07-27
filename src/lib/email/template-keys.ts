@@ -1,3 +1,5 @@
+import { EMAIL_SALUTATION_PLACEHOLDER } from "@/lib/email/salutation-block";
+
 export const EMAIL_TEMPLATE_KEYS = {
   membershipApplicationReceived: "membership_application_received",
   membershipApplicationAdminNotify: "membership_application_admin_notify",
@@ -12,11 +14,14 @@ export const EMAIL_TEMPLATE_KEYS = {
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
 
+const personFacingSalutation = [EMAIL_SALUTATION_PLACEHOLDER] as const;
+
 export const TEMPLATE_PLACEHOLDERS: Record<
   EmailTemplateKey,
   { key: string; label: string }[]
 > = {
   [EMAIL_TEMPLATE_KEYS.membershipApplicationReceived]: [
+    ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "last_name", label: "Nachname" },
     { key: "applicant_name", label: "Vollständiger Name" },
@@ -37,6 +42,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "admin_signature_block", label: "Admin-Signatur (HTML mit Bild)" },
   ],
   [EMAIL_TEMPLATE_KEYS.membershipPaymentReminder]: [
+    ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "last_name", label: "Nachname" },
     { key: "applicant_name", label: "Vollständiger Name" },
@@ -60,6 +66,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "giveaway_admin_url", label: "Link zur Auslosung (Admin)" },
   ],
   [EMAIL_TEMPLATE_KEYS.giveawayWinnerCongrats]: [
+    ...personFacingSalutation,
     { key: "first_name", label: "Vorname Gewinner" },
     { key: "giveaway_title", label: "Titel Gewinnspiel" },
     { key: "prize_name", label: "Preisname" },
@@ -67,6 +74,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "admin_signature_block", label: "Admin-Signatur (HTML mit Bild)" },
   ],
   [EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome]: [
+    ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "membership_number", label: "Mitgliedsnummer" },
     { key: "invite_url", label: "Link Passwort setzen" },
@@ -74,6 +82,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "admin_signature_block", label: "Fanclub-Signatur (HTML mit Bild)" },
   ],
   [EMAIL_TEMPLATE_KEYS.clubMeetingReminder]: [
+    ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "meeting_title", label: "Titel Treffen" },
     { key: "meeting_date", label: "Datum & Uhrzeit" },
@@ -84,7 +93,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "admin_signature_block", label: "Fanclub-Signatur (HTML mit Bild)" },
   ],
   [EMAIL_TEMPLATE_KEYS.appAccessSetup]: [
-    { key: "salutation", label: "Anrede (Liebe/Lieber …)" },
+    ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "setup_url", label: "Link Zugang einrichten" },
     { key: "admin_signature_text", label: "Fanclub-Signatur (Text)" },

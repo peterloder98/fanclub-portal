@@ -52,7 +52,7 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
     const userIds = parts.map((p) => p.user_id);
     const { data: profiles } = await admin
       .from("profiles")
-      .select("id,first_name,email")
+      .select("id,first_name,email,gender")
       .in("id", userIds);
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -107,6 +107,7 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
           EMAIL_TEMPLATE_KEYS.clubMeetingReminder,
           {
             first_name: profile.first_name?.trim() || "Fan",
+            gender: profile.gender ?? "",
             meeting_title: meeting.title,
             meeting_date: dateLabel,
             meeting_location: location || "—",

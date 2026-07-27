@@ -2,7 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
-import { normalizeGender, salutation } from "@/lib/person/gender";
+import { emailPersonVars } from "@/lib/email/salutation-block";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -45,11 +45,10 @@ export async function sendAppAccessSetupEmail(input: {
   if (!hashedToken) throw new Error("Kein Setup-Token erzeugt.");
 
   const setupUrl = `${base}/setup-account?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
-  const greeting = salutation(input.firstName, normalizeGender(genderRaw));
+  const person = emailPersonVars({ firstName: input.firstName, gender: genderRaw });
 
   const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.appAccessSetup, {
-    first_name: input.firstName,
-    salutation: greeting,
+    ...person,
     setup_url: setupUrl,
   });
 

@@ -8,6 +8,10 @@ import { cn } from "@/lib/cn";
 import { BirthdayTemplatesPanel } from "@/components/admin/birthday-templates-panel.client";
 import { TEMPLATE_PLACEHOLDERS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import {
+  EMAIL_SALUTATION_PLACEHOLDER,
+  EMAIL_SALUTATION_SNIPPET,
+} from "@/lib/email/salutation-block";
+import {
   loadEmailTemplatesAction,
   saveEmailTemplateAction,
 } from "./actions";
@@ -116,6 +120,55 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
               {error}
             </div>
           ) : null}
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Anrede-Baustein (Geschlecht)</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-2 text-sm text-slate-600">
+              <p>
+                Für personenbezogene Mails immer diesen Baustein nutzen — die App setzt automatisch
+                „Lieber …“, „Liebe …“ oder „Liebe/r …“ anhand des hinterlegten Geschlechts:
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <code className="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-fc-navy ring-1 ring-slate-200">
+                  {EMAIL_SALUTATION_SNIPPET}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void navigator.clipboard.writeText(EMAIL_SALUTATION_SNIPPET);
+                    setMessage(`Baustein ${EMAIL_SALUTATION_SNIPPET} in die Zwischenablage kopiert.`);
+                  }}
+                  className="h-9 rounded-xl border bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Kopieren
+                </button>
+                {activeKey ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBodyText((prev) =>
+                        prev.trimStart().startsWith("{{salutation}}")
+                          ? prev
+                          : `${EMAIL_SALUTATION_SNIPPET}\n\n${prev.replace(/^(Liebe\/r|Lieber|Liebe|Hallo)\s+\{\{first_name\}\},?\s*/i, "")}`,
+                      );
+                      setMessage(
+                        `${EMAIL_SALUTATION_PLACEHOLDER.label} am Anfang der Text-Vorlage eingefügt.`,
+                      );
+                    }}
+                    className="h-9 rounded-xl bg-fc-navy px-3 text-xs font-semibold text-white"
+                  >
+                    In aktuelle Vorlage einfügen
+                  </button>
+                ) : null}
+              </div>
+              <p className="text-xs text-slate-500">
+                Alte Schreibweisen wie <code>Liebe/r {"{{first_name}}"}</code> werden beim Versand
+                automatisch auf den Baustein umgestellt.
+              </p>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader className="pb-2">

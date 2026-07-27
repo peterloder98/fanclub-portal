@@ -265,6 +265,7 @@ export async function POST(request: Request) {
         email,
         firstName: input.first_name.trim(),
         lastName: input.last_name.trim(),
+        gender: input.gender,
         feeCents: 1500,
       });
     } catch (e) {

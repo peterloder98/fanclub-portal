@@ -3,6 +3,7 @@ import { loadApplicationPdfBytes } from "@/lib/membership/application-pdf-servic
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
+import { emailPersonVars } from "@/lib/email/salutation-block";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -109,16 +110,18 @@ export async function sendApplicantConfirmationEmail(input: {
   email: string;
   firstName: string;
   lastName?: string;
+  gender?: string | null;
   feeCents?: number;
 }) {
   const pdfBytes = await loadApplicationPdfBytes(input.applicationId);
   const feeEur = `${((input.feeCents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
   const applicantName = [input.firstName, input.lastName].filter(Boolean).join(" ").trim();
+  const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
 
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,
     {
-      first_name: input.firstName,
+      ...person,
       last_name: input.lastName ?? "",
       applicant_name: applicantName || input.firstName,
       email: input.email,
@@ -150,6 +153,7 @@ export async function sendMemberInviteAfterApproval(input: {
   email: string;
   firstName: string;
   membershipNumber: string;
+  gender?: string | null;
 }) {
   const admin = createSupabaseAdminClient();
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
@@ -159,11 +163,12 @@ export async function sendMemberInviteAfterApproval(input: {
   if (linkErr) throw new Error(linkErr.message);
 
   const inviteUrl = linkData.properties.action_link;
+  const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
 
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome,
     {
-      first_name: input.firstName,
+      ...person,
       membership_number: input.membershipNumber,
       invite_url: inviteUrl,
     },

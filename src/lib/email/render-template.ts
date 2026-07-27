@@ -3,6 +3,10 @@ import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template
 import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { loadMailSignature } from "@/lib/email/signatures";
 import { escapePlainTextForHtml, linkifyEscapedHtml } from "@/lib/email/linkify-plain-text";
+import {
+  ensureEmailSalutationVars,
+  normalizeLegacySalutationPlaceholders,
+} from "@/lib/email/salutation-block";
 
 export type EmailTemplateRow = {
   key: string;
@@ -83,7 +87,7 @@ function textToHtmlParagraphs(text: string) {
 
 const PAYMENT_REMINDER_FALLBACK = {
   subject: "Erinnerung: Mitgliedsbeitrag Anni Perka Fanclub ({{membership_period}})",
-  body_text: `Hallo {{first_name}},
+  body_text: `{{salutation}},
 
 für die Beitragsperiode {{membership_period}} ist dein Mitgliedsbeitrag noch nicht vollständig bei uns eingegangen.
 
@@ -157,19 +161,27 @@ export async function renderEmailFromTemplate(
   const sig = opts?.signatureId
     ? await loadMailSignature(opts.signatureId)
     : await loadDefaultMailSignature();
-  const allVars: Record<string, string> = {
+  const allVars = ensureEmailSalutationVars({
     ...vars,
     admin_signature_text: sig.text,
     admin_signature_block: sig.htmlBlock,
-  };
+  });
 
-  const subject = replaceVars(row.subject, allVars);
-  const bodyCore = stripTemplateBodyArtifacts(row.body_text);
+  const subject = replaceVars(
+    normalizeLegacySalutationPlaceholders(row.subject),
+    allVars,
+  );
+  const bodyCore = stripTemplateBodyArtifacts(
+    normalizeLegacySalutationPlaceholders(row.body_text),
+  );
   const text = appendSignatureToPlainText(replaceVars(bodyCore, allVars), sig.text);
 
   // HTML-Vorlagen strippen Signatur-Platzhalter — Signatur immer separat anhängen (wie Text).
   const bodyHtmlCore = row.body_html?.trim()
-    ? replaceVars(stripTemplateBodyArtifacts(row.body_html), allVars)
+    ? replaceVars(
+        stripTemplateBodyArtifacts(normalizeLegacySalutationPlaceholders(row.body_html)),
+        allVars,
+      )
     : textToHtmlParagraphs(replaceVars(bodyCore, allVars));
   const bodyHtml = sig.htmlBlock?.trim()
     ? `${bodyHtmlCore}${sig.htmlBlock}`

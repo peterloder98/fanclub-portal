@@ -37,7 +37,7 @@ async function activateApplication(
 ) {
   const { data: app, error: appErr } = await admin
     .from("membership_applications")
-    .select("id,user_id,email,first_name,last_name,status,fee_cents,referred_by_user_id")
+    .select("id,user_id,email,first_name,last_name,gender,status,fee_cents,referred_by_user_id")
     .eq("id", applicationId)
     .maybeSingle();
 
@@ -134,6 +134,7 @@ async function activateApplication(
       email: app.email,
       firstName: app.first_name?.trim() || "Fan",
       membershipNumber: assignedNumber,
+      gender: app.gender,
     }).catch((e) => {
       console.error("[membership] Freischaltungs-Mail fehlgeschlagen:", e);
     });
@@ -186,7 +187,7 @@ export async function getPaymentReminderDraft(
   const admin = createSupabaseAdminClient();
   const { data: app, error: appErr } = await admin
     .from("membership_applications")
-    .select("id,user_id,first_name,last_name,email,fee_cents")
+    .select("id,user_id,first_name,last_name,email,gender,fee_cents")
     .eq("id", applicationId)
     .maybeSingle();
   if (appErr) throw new Error(appErr.message);
@@ -209,6 +210,7 @@ export async function getPaymentReminderDraft(
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
       first_name: app.first_name?.trim() || "Fan",
+      gender: app.gender ?? "",
       last_name: app.last_name?.trim() || "",
       applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
       email: app.email,
@@ -240,7 +242,7 @@ export async function sendPaymentReminderEmail(input: {
   const admin = createSupabaseAdminClient();
   const { data: app, error: appErr } = await admin
     .from("membership_applications")
-    .select("id,user_id,email,first_name,last_name,fee_cents")
+    .select("id,user_id,email,first_name,last_name,gender,fee_cents")
     .eq("id", input.applicationId)
     .maybeSingle();
   if (appErr) throw new Error(appErr.message);
@@ -260,6 +262,7 @@ export async function sendPaymentReminderEmail(input: {
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
       first_name: app.first_name?.trim() || "Fan",
+      gender: app.gender ?? "",
       last_name: app.last_name?.trim() || "",
       applicant_name: `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim(),
       email: app.email,

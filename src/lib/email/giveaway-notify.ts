@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { emailPersonVars } from "@/lib/email/salutation-block";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -50,14 +51,16 @@ export async function notifyAdminsGiveawayEnded(input: {
 export async function notifyGiveawayWinner(input: {
   winnerEmail: string;
   firstName: string;
+  gender?: string | null;
   giveawayTitle: string;
   prizeName: string;
   signatureId?: string;
 }) {
+  const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.giveawayWinnerCongrats,
     {
-      first_name: input.firstName,
+      ...person,
       giveaway_title: input.giveawayTitle,
       prize_name: input.prizeName,
     },

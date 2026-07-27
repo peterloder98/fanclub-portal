@@ -1,5 +1,8 @@
+import { buildEmailSalutation } from "@/lib/email/salutation-block";
+
 export function buildCommentWarningEmail(input: {
   firstName: string;
+  gender?: string | null;
   commentText: string;
   commentDateLabel: string;
   contextTitle: string;
@@ -25,8 +28,10 @@ export function buildCommentWarningEmail(input: {
     ? `leider mussten wir deine Nachricht "${input.commentText}" vom ${input.commentDateLabel} im ${contextLabel} löschen.`
     : `leider mussten wir deinen Kommentar "${input.commentText}" vom ${input.commentDateLabel} unter der ${contextLabel} "${input.contextTitle}" von ${input.contextAuthorName} löschen.`;
 
+  const greeting = buildEmailSalutation(input.firstName, input.gender);
+
   const text = [
-    `Liebe/r ${input.firstName},`,
+    `${greeting},`,
     "",
     deletedLine,
     "",

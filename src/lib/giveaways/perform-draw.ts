@@ -101,7 +101,7 @@ export async function performGiveawayDraw(
     for (const w of inserted ?? []) {
       const { data: profile } = await admin
         .from("profiles")
-        .select("email,first_name")
+        .select("email,first_name,gender")
         .eq("id", w.user_id)
         .maybeSingle();
       const email = profile?.email?.trim();
@@ -111,6 +111,7 @@ export async function performGiveawayDraw(
         await notifyGiveawayWinner({
           winnerEmail: email,
           firstName: profile?.first_name?.trim() || "Fan",
+          gender: profile?.gender,
           giveawayTitle: g.title ?? "Gewinnspiel",
           prizeName: prizeRow?.name ?? "Preis",
           signatureId: options.signatureId,

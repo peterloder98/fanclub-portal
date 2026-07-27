@@ -40,6 +40,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   let contextKind: "post" | "poll" | "giveaway" | "chat";
   let memberEmail: string | null;
   let memberFirstName: string;
+  let memberGender: string | null = null;
 
   if (input.commentType === "post") {
     const { data: c, error } = await admin
@@ -168,7 +169,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
 
   const { data: member, error: mErr } = await admin
     .from("profiles")
-    .select("id,email,first_name,last_name,warning_count")
+    .select("id,email,first_name,last_name,gender,warning_count")
     .eq("id", memberId)
     .maybeSingle();
   if (mErr) throw new Error(mErr.message);
@@ -176,6 +177,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
 
   memberEmail = member.email;
   memberFirstName = member.first_name?.trim() || "Fan";
+  memberGender = member.gender ?? null;
 
   const previousWarnings = member.warning_count ?? 0;
   const newCount = previousWarnings + 1;
@@ -264,6 +266,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   if (memberEmail) {
     const { subject, text } = buildCommentWarningEmail({
       firstName: memberFirstName,
+      gender: memberGender,
       commentText,
       commentDateLabel: formatDE(commentCreatedAt),
       contextTitle,

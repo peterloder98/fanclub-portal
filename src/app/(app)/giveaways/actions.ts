@@ -1,5 +1,6 @@
 "use server";
 
+import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -263,7 +264,7 @@ export async function sendGiveawayWinnerEmail(
   const { data: prize } = await admin.from("giveaway_prizes").select("name").eq("id", w.prize_id).maybeSingle();
   const { data: profile } = await admin
     .from("profiles")
-    .select("email,first_name")
+    .select("email,first_name,gender")
     .eq("id", w.user_id)
     .maybeSingle();
 
@@ -273,6 +274,7 @@ export async function sendGiveawayWinnerEmail(
   await notifyGiveawayWinner({
     winnerEmail: email,
     firstName: profile?.first_name?.trim() || "Fan",
+    gender: profile?.gender,
     giveawayTitle: g?.title ?? "Gewinnspiel",
     prizeName: prize?.name ?? "Preis",
     signatureId: signatureId || undefined,
@@ -642,6 +644,7 @@ export async function deleteGiveaway(giveawayId: string) {
 
   const { error } = await admin.from("giveaways").delete().eq("id", giveawayId);
   if (error) throw new Error(error.message);
+  await deleteNotificationsByMetadata("giveaway_id", giveawayId);
 
   revalidatePath("/giveaways");
   return { ok: true as const };

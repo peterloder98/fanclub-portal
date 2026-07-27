@@ -291,7 +291,7 @@ export async function updateMember(formData: FormData) {
   if (previousStatus === "applied" && input.status === "active") {
     const { data: profile } = await admin
       .from("profiles")
-      .select("email,first_name,membership_number")
+      .select("email,first_name,membership_number,gender")
       .eq("id", input.user_id)
       .maybeSingle();
     if (profile?.email) {
@@ -300,6 +300,7 @@ export async function updateMember(formData: FormData) {
         email: profile.email,
         firstName: profile.first_name?.trim() || "Fan",
         membershipNumber: profile.membership_number?.trim() || "—",
+        gender: profile.gender,
       }).catch((e) => {
         console.error("[membership] Einladungs-E-Mail fehlgeschlagen:", e);
       });

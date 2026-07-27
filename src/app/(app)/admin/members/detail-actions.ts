@@ -101,7 +101,7 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
   const admin = createSupabaseAdminClient();
   const { data: profile, error: pErr } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email")
+    .select("id,first_name,last_name,email,gender")
     .eq("id", userId)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -132,6 +132,7 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
       first_name: profile.first_name?.trim() || "Fan",
+      gender: profile.gender ?? "",
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
       email: profile.email,
@@ -163,7 +164,7 @@ export async function sendMemberPaymentReminderEmail(input: {
   const admin = createSupabaseAdminClient();
   const { data: profile, error: pErr } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email")
+    .select("id,first_name,last_name,email,gender")
     .eq("id", input.userId)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -191,6 +192,7 @@ export async function sendMemberPaymentReminderEmail(input: {
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
     {
       first_name: profile.first_name?.trim() || "Fan",
+      gender: profile.gender ?? "",
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
       email: profile.email,
