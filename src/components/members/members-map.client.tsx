@@ -46,6 +46,28 @@ function MapClickDismiss({ onDismiss }: { onDismiss: () => void }) {
   return null;
 }
 
+function FitMembersBounds({ points }: { points: Array<{ lat: number; lng: number }> }) {
+  const map = useMap();
+  const key = points.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join("|");
+  useEffect(() => {
+    if (!points.length) return;
+    if (points.length === 1) {
+      map.setView([points[0].lat, points[0].lng], 9, { animate: false });
+    } else {
+      const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
+      map.fitBounds(bounds.pad(0.18), {
+        padding: [28, 28],
+        maxZoom: 9,
+        animate: false,
+      });
+    }
+    requestAnimationFrame(() => map.invalidateSize());
+    // points captured via key
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, key]);
+  return null;
+}
+
 function ClusterMemberCard({
   cluster,
   pinned,
@@ -126,7 +148,7 @@ export function MembersMapClient({
       <div className="relative min-h-0 flex-1">
         <MapContainer
           center={GERMANY_CENTER}
-          zoom={5}
+          zoom={6}
           minZoom={4}
           maxZoom={12}
           maxBounds={GERMANY_BOUNDS}
@@ -135,6 +157,7 @@ export function MembersMapClient({
           scrollWheelZoom
           aria-label="Mitgliederkarte Deutschland"
         >
+          <FitMembersBounds points={markers.map((c) => ({ lat: c.lat, lng: c.lng }))} />
           <MapClickDismiss onDismiss={dismissSelected} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
