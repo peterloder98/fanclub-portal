@@ -122,7 +122,7 @@ export function MentionProfileLink({
     <>
       <Link
         ref={anchorRef}
-        href={`/mitglieder?focus=${userId}`}
+        href={`/mitglieder/${userId}`}
         className={cn(
           "rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue hover:bg-fc-sky/30",
           className,

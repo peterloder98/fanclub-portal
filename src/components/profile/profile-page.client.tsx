@@ -25,6 +25,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { PreferredCalendarSettings } from "@/components/profile/preferred-calendar-settings";
+import { ProfileIntroSection } from "@/components/profile/profile-intro-section.client";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
 import { MembershipPaymentPanel } from "@/components/payments/membership-payment-panel";
 import {
@@ -499,6 +500,8 @@ export function ProfilePageClient() {
               </div>
             </div>
           </div>
+
+          <ProfileIntroSection userId={profile.id} />
 
           <div className="space-y-4">
             <ProfileSection

@@ -32,6 +32,7 @@ type Comment = {
   id: string;
   body: string;
   created_at: string;
+  author_id: string;
   authorName: string;
   authorAvatarUrl: string | null;
 };
@@ -151,6 +152,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
         id: c.id,
         body: c.body,
         created_at: c.created_at,
+        author_id: c.author_id,
         authorName: profileMap.get(c.author_id)?.name ?? "Mitglied",
         authorAvatarUrl: profileMap.get(c.author_id)?.avatarUrl ?? null,
       })),
@@ -438,6 +440,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
                     name={c.authorName}
                     avatarUrl={c.authorAvatarUrl}
                     size="xs"
+                    href={`/mitglieder/${c.author_id}`}
                   >
                     <span className="font-semibold text-slate-700">{c.authorName}</span>
                   </HoverEnlargeAvatar>

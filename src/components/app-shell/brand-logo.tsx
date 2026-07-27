@@ -26,9 +26,9 @@ export function BrandLogo({
       {showText ? (
         <div className="flex min-w-0 flex-col justify-center leading-tight">
           <div className="truncate text-sm font-semibold text-fc-navy lg:text-[15px]">
-            Anni Perka Fanclub
+            Anni Perka
           </div>
-          <div className="text-xs leading-snug text-slate-600">Portal</div>
+          <div className="text-xs leading-snug text-slate-600">Fanclub</div>
         </div>
       ) : null}
     </Link>

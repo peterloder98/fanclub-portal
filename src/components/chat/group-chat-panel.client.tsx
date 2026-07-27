@@ -65,7 +65,7 @@ export function OnlineMembersControl({
             {onlineMembers.map((m) => (
               <li key={m.id}>
                 <Link
-                  href={`/mitglieder?focus=${m.id}`}
+                  href={`/mitglieder/${m.id}`}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-fc-ice"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -298,14 +298,24 @@ export function GroupChatPanel({
                 >
                   <div className="min-w-0 w-full">
                     <div className="flex items-center gap-1.5">
-                      <UserAvatar
-                        name={m.author.name}
-                        avatarUrl={m.author.avatarUrl}
-                        size="xs"
+                      <Link
+                        href={`/mitglieder/${m.author_id}`}
                         className="shrink-0 sm:hidden"
-                      />
+                        aria-label={`Portal von ${m.author.name}`}
+                      >
+                        <UserAvatar
+                          name={m.author.name}
+                          avatarUrl={m.author.avatarUrl}
+                          size="xs"
+                        />
+                      </Link>
                       <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
-                        {m.author.name}
+                        <Link
+                          href={`/mitglieder/${m.author_id}`}
+                          className="hover:text-fc-blue hover:underline"
+                        >
+                          {m.author.name}
+                        </Link>
                         {m.author_id === userId ? (
                           <span className="ml-1 font-normal text-slate-400">(du)</span>
                         ) : null}

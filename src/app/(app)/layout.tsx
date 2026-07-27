@@ -15,35 +15,45 @@ function initialsFromName(name: string) {
 }
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  async function loadUser(): Promise<SidebarUser> {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    // Middleware should prevent this, but keep a safe fallback.
-    if (!user) {
-      return {
-        name: "Unbekannt",
-        initials: "U",
-        role: "member",
-        points: 0,
-        rank: rankFromPoints(0),
-      };
-    }
+  let sidebarUser: SidebarUser = {
+    name: "Unbekannt",
+    initials: "U",
+    role: "member",
+    points: 0,
+    rank: rankFromPoints(0),
+  };
+  let needsIntroOnboarding = false;
 
-    const { data: profile } = await supabase
+  if (user) {
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("first_name,last_name,role,avatar_path,updated_at")
+      .select("first_name,last_name,role,avatar_path,updated_at,intro_onboarding_dismissed_at")
       .eq("id", user.id)
       .maybeSingle();
 
+    // Spalte fehlt ggf. vor Migration → ohne Intro-Feld erneut laden
+    const safeProfile =
+      profile ??
+      (profileError
+        ? (
+            await supabase
+              .from("profiles")
+              .select("first_name,last_name,role,avatar_path,updated_at")
+              .eq("id", user.id)
+              .maybeSingle()
+          ).data
+        : null);
+
     const name =
-      profile?.first_name && profile?.last_name
-        ? `${profile.first_name} ${profile.last_name}`
+      safeProfile?.first_name && safeProfile?.last_name
+        ? `${safeProfile.first_name} ${safeProfile.last_name}`
         : user.email ?? "Mitglied";
 
-    // Points (v1): sum of points_transactions for current year
     const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
     const { data: pointsRows } = await supabase
       .from("points_transactions")
@@ -52,24 +62,29 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       .gte("created_at", yearStart);
     const points = (pointsRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
 
-    return {
+    sidebarUser = {
       name,
       initials: initialsFromName(name),
-      role: (profile?.role ?? "member") as SidebarUser["role"],
+      role: (safeProfile?.role ?? "member") as SidebarUser["role"],
       points,
       rank: rankFromPoints(points),
-      avatarUrl: profile?.avatar_path
-        ? `${avatarPublicUrl(profile.avatar_path)}?v=${encodeURIComponent(profile.updated_at ?? "")}`
+      avatarUrl: safeProfile?.avatar_path
+        ? `${avatarPublicUrl(safeProfile.avatar_path)}?v=${encodeURIComponent(safeProfile.updated_at ?? "")}`
         : null,
     };
+
+    needsIntroOnboarding =
+      safeProfile != null &&
+      "intro_onboarding_dismissed_at" in safeProfile &&
+      (safeProfile as { intro_onboarding_dismissed_at?: string | null }).intro_onboarding_dismissed_at ==
+        null;
   }
 
   return (
     <div className="flex h-dvh max-h-dvh w-full max-w-full flex-col overflow-hidden lg:flex-row">
       <SkipToContent />
-      <Sidebar user={await loadUser()} />
-      <AppShellClient>{children}</AppShellClient>
+      <Sidebar user={sidebarUser} />
+      <AppShellClient needsIntroOnboarding={needsIntroOnboarding}>{children}</AppShellClient>
     </div>
   );
 }
-

@@ -9,18 +9,20 @@ function LeaderboardEntry({
   points,
   avatarUrl,
   highlight,
+  userId,
 }: {
   rank: number;
   name: string;
   points: number;
   avatarUrl: string | null;
   highlight: boolean;
+  userId: string;
 }) {
   return (
     <li className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 hover:bg-slate-50">
       <span className="flex min-w-0 items-center gap-2">
         <span className="w-6 shrink-0 text-sm font-bold tabular-nums text-slate-500">{rank}.</span>
-        <HoverEnlargeAvatar name={name} avatarUrl={avatarUrl} size="xs">
+        <HoverEnlargeAvatar name={name} avatarUrl={avatarUrl} size="xs" href={`/mitglieder/${userId}`}>
           <span
             className={
               highlight
@@ -56,6 +58,7 @@ export function PointsLeaderboard({ data }: { data: YearLeaderboardData }) {
           points={r.points}
           avatarUrl={r.avatarUrl}
           highlight={r.isSelf}
+          userId={r.userId}
         />
       ))}
       {selfRow ? (
@@ -67,6 +70,7 @@ export function PointsLeaderboard({ data }: { data: YearLeaderboardData }) {
             points={selfRow.points}
             avatarUrl={selfRow.avatarUrl}
             highlight
+            userId={selfRow.userId}
           />
         </>
       ) : null}

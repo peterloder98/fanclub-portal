@@ -7,8 +7,15 @@ import { TopbarProvider } from "@/components/app-shell/topbar-context";
 import { TopbarChrome } from "@/components/app-shell/topbar-chrome";
 import { ChatUnreadProvider } from "@/components/chat/chat-unread-context";
 import { GroupChatWidget } from "@/components/chat/group-chat-widget.client";
+import { AppActivityAndOnboarding } from "@/components/app-shell/app-activity-and-onboarding.client";
 
-export function AppShellClient({ children }: { children: ReactNode }) {
+export function AppShellClient({
+  children,
+  needsIntroOnboarding = false,
+}: {
+  children: ReactNode;
+  needsIntroOnboarding?: boolean;
+}) {
   return (
     <TopbarProvider>
       <ChatUnreadProvider>
@@ -19,6 +26,7 @@ export function AppShellClient({ children }: { children: ReactNode }) {
         >
           <TopbarChrome />
           <MainScrollRegion>{children}</MainScrollRegion>
+          <AppActivityAndOnboarding needsIntroOnboarding={needsIntroOnboarding} />
           <Suspense fallback={null}>
             <GroupChatWidget />
           </Suspense>

@@ -10,7 +10,7 @@ export function UpcomingBirthdays({ rows }: { rows: UpcomingBirthdayRow[] }) {
     <ul className="divide-y divide-slate-100">
       {rows.map((r) => (
         <li key={r.userId} className="flex items-center gap-3 px-3 py-2.5">
-          <HoverEnlargeAvatar name={r.name} avatarUrl={r.avatarUrl} size="sm">
+          <HoverEnlargeAvatar name={r.name} avatarUrl={r.avatarUrl} size="sm" href={`/mitglieder/${r.userId}`}>
             <div className="min-w-0">
               <div className="truncate text-sm font-medium text-slate-900">{r.name}</div>
               <div className="text-xs text-slate-600">{r.dateLabel}</div>

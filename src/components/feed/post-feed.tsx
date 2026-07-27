@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -1752,6 +1753,7 @@ function PostFeedInner({
                 avatarUrl={post.authorAvatarUrl}
                 size="sm"
                 className="min-w-0 flex-1"
+                href={post.authorId ? `/mitglieder/${post.authorId}` : null}
               >
                 <span className="truncate text-xs text-slate-600">
                   <span className="font-semibold text-slate-800">{post.authorName}</span>
@@ -2006,12 +2008,16 @@ function PostFeedInner({
                             avatarUrl={c.authorAvatarUrl}
                             size="xs"
                             className="shrink-0"
+                            href={`/mitglieder/${c.authorId}`}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-semibold text-slate-700">
+                              <Link
+                                href={`/mitglieder/${c.authorId}`}
+                                className="text-[11px] font-semibold text-slate-700 hover:text-fc-blue"
+                              >
                                 {c.author}
-                              </span>
+                              </Link>
                               <span className="text-[10px] text-slate-400">
                                 {c.createdAtLabel}
                               </span>

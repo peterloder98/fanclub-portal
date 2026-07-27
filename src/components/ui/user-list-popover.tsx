@@ -110,7 +110,7 @@ export function UserListPopover({
         ) : users.length ? (
           users.map((u) => (
             <span key={u.id} className="flex items-center gap-2 py-1">
-              <HoverEnlargeAvatar name={u.name} avatarUrl={u.avatarUrl} size="xs">
+              <HoverEnlargeAvatar name={u.name} avatarUrl={u.avatarUrl} size="xs" href={`/mitglieder/${u.id}`}>
                 <span className="min-w-0 truncate">{u.name}</span>
               </HoverEnlargeAvatar>
             </span>

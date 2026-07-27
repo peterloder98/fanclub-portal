@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   FileCheck,
   Server,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
@@ -187,8 +188,14 @@ const SECTIONS: AdminHubSection[] = [
   {
     id: "system",
     title: "System",
-    subtitle: "Protokoll",
+    subtitle: "Statistik und Protokoll",
     items: [
+      {
+        href: "/admin/app-stats",
+        title: "App-Statistik",
+        description: "Mitglieder aktiv, App-Nutzung und Monatskurve",
+        icon: Activity,
+      },
       {
         href: "/admin/audit",
         title: "Audit-Log",

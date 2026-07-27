@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -15,12 +16,15 @@ export function HoverEnlargeAvatar({
   size = "sm",
   className,
   children,
+  href,
 }: {
   name: string;
   avatarUrl?: string | null;
   size?: "xs" | "sm";
   className?: string;
   children?: ReactNode;
+  /** Optional link target (e.g. Mitglieder-Portal). */
+  href?: string | null;
 }) {
   const hoverRef = useRef<HTMLSpanElement>(null);
   const avatarRef = useRef<HTMLSpanElement>(null);
@@ -97,13 +101,8 @@ export function HoverEnlargeAvatar({
     </span>
   ) : null;
 
-  return (
-    <span
-      ref={hoverRef}
-      className={cn("inline-flex items-center gap-1.5", className)}
-      onMouseEnter={showPreview}
-      onMouseLeave={scheduleHide}
-    >
+  const body = (
+    <>
       <span ref={avatarRef} className="inline-flex shrink-0">
         <UserAvatar name={name} avatarUrl={avatarUrl} size={size} />
       </span>
@@ -111,6 +110,32 @@ export function HoverEnlargeAvatar({
       {typeof document !== "undefined" && preview
         ? createPortal(preview, document.body)
         : null}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cn("inline-flex items-center gap-1.5 hover:opacity-90", className)}
+        onMouseEnter={showPreview}
+        onMouseLeave={scheduleHide}
+      >
+        <span ref={hoverRef} className="inline-flex min-w-0 items-center gap-1.5">
+          {body}
+        </span>
+      </Link>
+    );
+  }
+
+  return (
+    <span
+      ref={hoverRef}
+      className={cn("inline-flex items-center gap-1.5", className)}
+      onMouseEnter={showPreview}
+      onMouseLeave={scheduleHide}
+    >
+      {body}
     </span>
   );
 }

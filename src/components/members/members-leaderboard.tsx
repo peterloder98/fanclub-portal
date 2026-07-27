@@ -25,7 +25,7 @@ export function MembersLeaderboard({ rows }: { rows: MembersLeaderboardRow[] }) 
             <span className="w-6 shrink-0 text-sm font-bold tabular-nums text-slate-500">
               {i + 1}.
             </span>
-            <HoverEnlargeAvatar name={r.name} avatarUrl={r.avatarUrl} size="xs">
+            <HoverEnlargeAvatar name={r.name} avatarUrl={r.avatarUrl} size="xs" href={`/mitglieder/${r.userId}`}>
               <span className="truncate text-sm font-medium text-slate-900">{r.name}</span>
             </HoverEnlargeAvatar>
           </span>

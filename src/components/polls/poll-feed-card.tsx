@@ -126,6 +126,7 @@ export function PollFeedCard({
             avatarUrl={poll.authorAvatarUrl}
             size="sm"
             className="shrink-0"
+            href={poll.authorId ? `/mitglieder/${poll.authorId}` : null}
           >
             <span className="font-medium text-slate-800">{poll.authorName}</span>
           </HoverEnlargeAvatar>

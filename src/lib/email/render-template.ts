@@ -107,7 +107,7 @@ wir freuen uns, dass du im Anni Perka Fanclub dabei bist und senden dir heute de
 
 2. Bestätige deine Identität durch Eingabe deines Geburtsdatums und vergebe dein Wunschpasswort. Dein Benutzername ist deine E-Mail-Adresse. Bitte speichere dir beides unbedingt ab!
 
-3. Die neuen Features in der App austesten und mit deinen Fanclub-Freunden chatten oder austauschen!
+3. Nach dem Login kannst du optional fünf kurze Kennenlernen-Fragen beantworten (oder überspringen) — und danach die App mit deinen Fanclub-Freunden austesten!
 
 Viel Spaß und bis ganz bald.`,
   body_html: `<p style="margin:0 0 1em;font-size:15px;line-height:1.55;color:#1e293b">{{salutation}},</p>
@@ -117,7 +117,7 @@ Viel Spaß und bis ganz bald.`,
     <a href="{{setup_url}}" style="display:inline-block;margin-top:8px;padding:12px 18px;background:#0b1f3a;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:600">Zugang hier einrichten</a>
   </li>
   <li style="margin-bottom:0.75em"><strong>Bestätige deine Identität</strong> durch Eingabe deines Geburtsdatums und vergebe dein Wunschpasswort. Dein Benutzername ist deine E-Mail-Adresse. Bitte speichere dir beides unbedingt ab!</li>
-  <li><strong>Die neuen Features in der App austesten</strong> und mit deinen Fanclub-Freunden chatten oder austauschen!</li>
+  <li><strong>Nach dem Login</strong> kannst du optional fünf kurze Kennenlernen-Fragen beantworten (oder überspringen) — und danach die App mit deinen Fanclub-Freunden austesten!</li>
 </ol>
 <p style="margin:0 0 1em;font-size:15px;line-height:1.55;color:#1e293b">Viel Spaß und bis ganz bald.</p>`,
 };
