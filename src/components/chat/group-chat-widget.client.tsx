@@ -75,7 +75,7 @@ export function GroupChatWidget() {
         )}
       >
         {open ? (
-          <div className="pointer-events-auto h-[min(28rem,70vh)] w-full max-w-md max-sm:max-w-none">
+          <div className="pointer-events-auto h-[min(28rem,70vh)] w-[min(calc(100vw-1.5rem),28rem)] max-sm:w-full">
             <GroupChatPanel
               mode="dock"
               messages={chat.messages}

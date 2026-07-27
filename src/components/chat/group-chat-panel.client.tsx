@@ -190,38 +190,37 @@ export function GroupChatPanel({
     >
       <header
         className={cn(
-          "flex shrink-0 items-center justify-between gap-2 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2.5 text-white",
+          "relative flex shrink-0 items-center justify-between gap-2 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2.5 text-white",
           !fullscreen && onCollapse && "cursor-pointer",
         )}
-        onClick={!fullscreen && onCollapse ? () => onCollapse() : undefined}
-        onKeyDown={
-          !fullscreen && onCollapse
-            ? (e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onCollapse();
-                }
-              }
-            : undefined
-        }
-        role={!fullscreen && onCollapse ? "button" : undefined}
-        tabIndex={!fullscreen && onCollapse ? 0 : undefined}
       >
-        <div className="min-w-0 flex-1">
+        {!fullscreen && onCollapse ? (
+          <button
+            type="button"
+            className="absolute inset-0 z-0"
+            aria-label="Chat verkleinern"
+            onClick={() => onCollapse()}
+          />
+        ) : null}
+        <div
+          className={cn(
+            "relative z-10 min-w-0 flex-1",
+            !fullscreen && onCollapse && "pointer-events-none",
+          )}
+        >
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <p className="truncate text-sm font-semibold tracking-tight">Gruppenchat</p>
             {!fullscreen ? (
               <Link
                 href="/chat"
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-white/85 underline-offset-2 hover:text-white hover:underline"
+                className="pointer-events-auto inline-flex items-center gap-1 text-[11px] font-medium text-white/85 underline-offset-2 hover:text-white hover:underline"
               >
                 <Maximize2 className="h-3 w-3" />
                 Chat in Vollbild öffnen
               </Link>
             ) : null}
           </div>
-          <div className="mt-0.5" onClick={(e) => e.stopPropagation()}>
+          <div className="pointer-events-auto mt-0.5">
             <OnlineMembersControl
               onlineCount={onlineCount}
               onlineMembers={onlineMembers}
@@ -232,11 +231,8 @@ export function GroupChatPanel({
         {!fullscreen && onCollapse ? (
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCollapse();
-            }}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
+            onClick={() => onCollapse()}
+            className="relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
             aria-label="Chat verkleinern"
             title="Verkleinern"
           >
@@ -388,7 +384,7 @@ export function GroupChatPanel({
             placeholder="Nachricht… @ für Markierung"
             className="min-w-0 flex-1"
             inputClassName={cn(
-              "w-full resize-none rounded-xl border bg-white px-3 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 transition-[min-height] duration-150",
+              "w-full min-w-0 max-w-full overflow-x-hidden resize-none rounded-xl border bg-white px-3 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 transition-[min-height] duration-150",
               composerRows === 1 ? "py-2" : "py-2",
               overLimit
                 ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200"
