@@ -142,6 +142,8 @@ export function GroupChatWidget() {
                 onlineMembers={chat.onlineMembers}
                 cooldownActive={chat.cooldownActive}
                 overLimit={chat.overLimit}
+                muted={chat.muted}
+                onToggleMuted={chat.toggleMuted}
                 onDraftChange={chat.onDraftChange}
                 onSend={chat.onSend}
                 onDelete={chat.onDelete}

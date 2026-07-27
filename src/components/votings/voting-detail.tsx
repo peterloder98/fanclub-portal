@@ -7,7 +7,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
-import { MentionInput } from "@/components/feed/mention-input";
+import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 
@@ -310,7 +310,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="flex gap-2">
-            <MentionInput
+            <MentionInputWithEmoji
               value={commentDraft}
               onChange={setCommentDraft}
               placeholder="Kommentar schreiben… @ für Markierung"

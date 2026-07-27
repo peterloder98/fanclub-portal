@@ -21,7 +21,7 @@ import { GiveawayDrawStatus } from "@/components/giveaways/giveaway-draw-status"
 import { GiveawayWinnerReveal } from "@/components/giveaways/giveaway-winner-reveal";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
-import { MentionInput } from "@/components/feed/mention-input";
+import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import {
@@ -650,7 +650,7 @@ export function GiveawayDetailClient({
               </div>
 
               <div className="flex gap-2">
-                <MentionInput
+                <MentionInputWithEmoji
                   value={commentDraft}
                   onChange={setCommentDraft}
                   placeholder="Kommentieren… @ für Markierung"

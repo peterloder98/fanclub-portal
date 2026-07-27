@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatMentionToken, splitMentionText } from "@/lib/mentions/format";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -12,6 +12,11 @@ export type MentionCandidate = {
   name: string;
   membershipNumber: string | null;
   avatarUrl: string | null;
+};
+
+export type MentionInputHandle = {
+  insertText: (text: string) => void;
+  focus: () => void;
 };
 
 type Props = {
@@ -107,20 +112,23 @@ function getPlainBeforeCaret(root: HTMLElement): { text: string; range: Range } 
   return { text: serializeEditor(walkerRoot), range };
 }
 
-export function MentionInput({
-  value,
-  onChange,
-  placeholder,
-  rows = 3,
-  className,
-  inputClassName,
-  multiline = true,
-  onKeyDown,
-  onFocus,
-  onBlur,
-  disabled,
-  inputRef: externalRef,
-}: Props) {
+export const MentionInput = forwardRef<MentionInputHandle, Props>(function MentionInput(
+  {
+    value,
+    onChange,
+    placeholder,
+    rows = 3,
+    className,
+    inputClassName,
+    multiline = true,
+    onKeyDown,
+    onFocus,
+    onBlur,
+    disabled,
+    inputRef: externalRef,
+  },
+  ref,
+) {
   const [members, setMembers] = useState<MentionCandidate[]>([]);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -137,6 +145,31 @@ export function MentionInput({
       (externalRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
     }
   }
+
+  function emitFromEditor() {
+    const el = editorRef.current;
+    if (!el) return;
+    skipSyncRef.current = true;
+    onChange(serializeEditor(el));
+  }
+
+  useImperativeHandle(ref, () => ({
+    insertText(text: string) {
+      const el = editorRef.current;
+      if (!el || disabled) return;
+      el.focus();
+      try {
+        document.execCommand("insertText", false, text);
+      } catch {
+        el.appendChild(document.createTextNode(text));
+      }
+      emitFromEditor();
+      placeCaretAtEnd(el);
+    },
+    focus() {
+      editorRef.current?.focus();
+    },
+  }));
 
   useEffect(() => {
     let cancelled = false;
@@ -188,13 +221,6 @@ export function MentionInput({
     if (!q) return members;
     return members.filter((m) => m.name.toLowerCase().includes(q));
   }, [members, query]);
-
-  function emitFromEditor() {
-    const el = editorRef.current;
-    if (!el) return;
-    skipSyncRef.current = true;
-    onChange(serializeEditor(el));
-  }
 
   function detectMentionFromCaret() {
     const before = getPlainBeforeCaret(editorRef.current!);
@@ -403,4 +429,6 @@ export function MentionInput({
       ) : null}
     </div>
   );
-}
+});
+
+MentionInput.displayName = "MentionInput";

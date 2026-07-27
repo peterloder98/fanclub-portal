@@ -16,7 +16,7 @@ import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { PollAdminControls } from "@/components/polls/poll-admin-controls";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
-import { MentionInput } from "@/components/feed/mention-input";
+import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 type Poll = {
@@ -417,7 +417,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
         </CardHeader>
         <CardContent className="grid gap-3">
           <div className="flex gap-2">
-            <MentionInput
+            <MentionInputWithEmoji
               value={commentDraft}
               onChange={setCommentDraft}
               placeholder="Kommentar schreiben… @ für Markierung"

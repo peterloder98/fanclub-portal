@@ -19,6 +19,7 @@ import {
   type ChatAuthor,
   type OnlineMember,
 } from "@/lib/chat/types";
+import { isChatMuted, playChatBling, setChatMuted } from "@/lib/chat/sound";
 
 export type ChatMessage = GroupChatMessageRow & { author: ChatAuthor };
 
@@ -39,7 +40,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const [nowTick, setNowTick] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState<OnlineMember[]>([]);
+  const [muted, setMuted] = useState(false);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
+  const seenNewestIdRef = useRef<string | null>(null);
+  const readyForSoundRef = useRef(false);
 
   const cooldownLeftMs = Math.max(0, cooldownUntil - nowTick);
   const cooldownActive = cooldownLeftMs > 0;
@@ -47,10 +51,22 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const onlineCount = Math.max(onlineMembers.length ? onlineMembers.length : 0, meProfile ? 1 : 0);
 
   useEffect(() => {
+    setMuted(isChatMuted());
+  }, []);
+
+  useEffect(() => {
     if (!cooldownActive) return;
     const id = window.setInterval(() => setNowTick(Date.now()), 250);
     return () => window.clearInterval(id);
   }, [cooldownActive]);
+
+  function toggleMuted() {
+    setMuted((prev) => {
+      const next = !prev;
+      setChatMuted(next);
+      return next;
+    });
+  }
 
   const loadAuthors = useCallback(async (ids: string[]) => {
     const missing = ids.filter((id) => !authorsRef.current.has(id));
@@ -142,6 +158,9 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     }
 
     setMessages(await hydrate((data ?? []) as GroupChatMessageRow[]));
+    const newest = (data ?? [])[0]?.id ?? null;
+    seenNewestIdRef.current = newest;
+    readyForSoundRef.current = true;
     setLoaded(true);
   }, [enabled, hydrate]);
 
@@ -157,7 +176,32 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       .channel("group-chat-messages")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "group_chat_messages" },
+        { event: "INSERT", schema: "public", table: "group_chat_messages" },
+        (payload) => {
+          const row = payload.new as GroupChatMessageRow | undefined;
+          if (!row?.id) {
+            void refresh();
+            return;
+          }
+          if (
+            readyForSoundRef.current &&
+            row.author_id !== userId &&
+            row.id !== seenNewestIdRef.current
+          ) {
+            playChatBling();
+          }
+          seenNewestIdRef.current = row.id;
+          void refresh();
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "group_chat_messages" },
+        () => void refresh(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "group_chat_messages" },
         () => void refresh(),
       )
       .subscribe();
@@ -286,6 +330,8 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     onlineCount: Math.max(1, onlineCount || onlineMembers.length || 1),
     cooldownActive,
     overLimit,
+    muted,
+    toggleMuted,
     onDraftChange,
     onSend,
     onDelete,

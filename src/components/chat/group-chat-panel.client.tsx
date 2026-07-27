@@ -2,11 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronDown, Maximize2, MessageCircle, SendHorizontal, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Maximize2,
+  MessageCircle,
+  SendHorizontal,
+  Volume2,
+  VolumeX,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
-import { MentionInput } from "@/components/feed/mention-input";
+import { MentionInput, type MentionInputHandle } from "@/components/feed/mention-input";
 import { MentionText } from "@/components/feed/mention-text";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { EmojiPickerButton } from "@/components/ui/emoji-picker";
 import { formatChatTime, type OnlineMember } from "@/lib/chat/types";
 import type { ChatMessage } from "@/lib/chat/use-group-chat";
 import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
@@ -145,6 +155,8 @@ type PanelProps = {
   onlineMembers: OnlineMember[];
   cooldownActive: boolean;
   overLimit: boolean;
+  muted: boolean;
+  onToggleMuted: () => void;
   onDraftChange: (v: string) => void;
   onSend: () => void;
   onDelete: (id: string) => void;
@@ -166,6 +178,8 @@ export function GroupChatPanel({
   onlineMembers,
   cooldownActive,
   overLimit,
+  muted,
+  onToggleMuted,
   onDraftChange,
   onSend,
   onDelete,
@@ -177,6 +191,7 @@ export function GroupChatPanel({
   const fullscreen = mode === "fullscreen";
   const [composerFocused, setComposerFocused] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
+  const mentionRef = useRef<MentionInputHandle>(null);
 
   useEffect(() => {
     if (!composerFocused || typeof window === "undefined") return;
@@ -244,28 +259,42 @@ export function GroupChatPanel({
             />
           </div>
         </div>
-        {!fullscreen && onCollapse ? (
+        <div className="relative z-10 flex shrink-0 items-center gap-1">
           <button
             type="button"
-            onClick={() => onCollapse()}
-            className="relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
-            aria-label="Chat verkleinern"
-            title="Verkleinern"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleMuted();
+            }}
+            className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
+            aria-label={muted ? "Chat-Ton einschalten" : "Chat lautlos"}
+            title={muted ? "Ton an" : "Lautlos"}
           >
-            <ChevronDown className="h-4 w-4" />
+            {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
-        ) : null}
-        {fullscreen && onClose ? (
-          <button
-            type="button"
-            onClick={() => onClose()}
-            className="relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
-            aria-label="Chat schließen"
-            title="Schließen"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
+          {!fullscreen && onCollapse ? (
+            <button
+              type="button"
+              onClick={() => onCollapse()}
+              className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
+              aria-label="Chat verkleinern"
+              title="Verkleinern"
+            >
+              <ChevronDown className="h-4 w-4" />
+            </button>
+          ) : null}
+          {fullscreen && onClose ? (
+            <button
+              type="button"
+              onClick={() => onClose()}
+              className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
+              aria-label="Chat schließen"
+              title="Schließen"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <div
@@ -372,12 +401,13 @@ export function GroupChatPanel({
         ) : null}
         <div className="flex items-end gap-1.5">
           <MentionInput
+            ref={mentionRef}
             value={draft}
             onChange={(v) => onDraftChange(v.replace(/\r?\n/g, " "))}
             multiline={false}
             rows={1}
             disabled={sending}
-            placeholder="Nachricht… @ für Markierung · Enter sendet"
+            placeholder="Nachricht… @ · Enter sendet"
             className="min-w-0 flex-1"
             inputClassName={cn(
               "w-full min-w-0 max-w-full overflow-x-hidden rounded-xl border bg-white px-3 py-2 text-base text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 lg:text-sm",
@@ -393,6 +423,11 @@ export function GroupChatPanel({
               if (sending || cooldownActive || !draft.trim() || overLimit) return;
               void onSend();
             }}
+          />
+          <EmojiPickerButton
+            tone="navy"
+            disabled={sending}
+            onPick={(emoji) => mentionRef.current?.insertText(emoji)}
           />
           <button
             type="button"

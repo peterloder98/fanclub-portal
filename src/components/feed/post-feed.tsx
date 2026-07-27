@@ -37,7 +37,7 @@ import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
-import { MentionInput } from "@/components/feed/mention-input";
+import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
@@ -1600,7 +1600,7 @@ function PostFeedInner({
                   if (picked.length) void handleComposerFiles(picked);
                 }}
               />
-              <MentionInput
+              <MentionInputWithEmoji
                 value={newText}
                 onChange={setNewText}
                 inputRef={composerInputRef}
@@ -1826,7 +1826,7 @@ function PostFeedInner({
 
             {editingId === post.id ? (
               <div className="mt-2 grid gap-2">
-                <MentionInput
+                <MentionInputWithEmoji
                   value={editBody}
                   onChange={setEditBody}
                   rows={3}
@@ -1938,7 +1938,7 @@ function PostFeedInner({
               </button>
 
               <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                <MentionInput
+                <MentionInputWithEmoji
                   multiline={false}
                   inputRef={(el) => {
                     commentInputRefs.current[post.id] = el;
@@ -2104,7 +2104,7 @@ function PostFeedInner({
                             </div>
                             {editingCommentId === c.id ? (
                               <div className="mt-1 grid gap-1.5">
-                                <MentionInput
+                                <MentionInputWithEmoji
                                   value={editCommentText}
                                   onChange={setEditCommentText}
                                   rows={2}
