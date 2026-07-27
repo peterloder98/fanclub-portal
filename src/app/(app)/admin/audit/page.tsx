@@ -64,7 +64,7 @@ export default async function AdminAuditPage() {
               {(rows ?? []).length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-slate-500">
-                    Noch keine Einträge — nach Migration 043 und Admin-Aktionen erscheinen sie hier.
+                    Noch keine Einträge. Nach Admin-Aktionen (Mitglieder, Zahlungen, Posts, …) erscheinen sie hier automatisch.
                   </td>
                 </tr>
               ) : (

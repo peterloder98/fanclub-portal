@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
+import { auditLog } from "@/lib/admin/audit-log";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
@@ -166,6 +167,13 @@ export async function approveMembershipApplicationWithNumber(
   const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
   await activateApplication(admin, applicationId, undefined, user.id);
+  await auditLog({
+    actorId: user.id,
+    action: "application.approve",
+    entityType: "membership_application",
+    entityId: applicationId,
+    summary: "Mitgliedsantrag freigegeben",
+  });
   revalidatePath("/admin/members");
   redirect("/admin/members");
 }
@@ -422,6 +430,14 @@ export async function rejectMembershipApplication(input: {
     createdBy: user.id,
   });
 
+  await auditLog({
+    actorId: user.id,
+    action: "application.reject",
+    entityType: "membership_application",
+    entityId: input.applicationId,
+    summary: "Mitgliedsantrag abgelehnt",
+  });
+
   revalidatePath("/admin/members");
   return { ok: true };
 }
@@ -449,6 +465,13 @@ export async function deleteMembershipApplication(applicationId: string) {
   }
 
   await deleteMembershipApplicationCompletely(admin, applicationId);
+  await auditLog({
+    actorId: user.id,
+    action: "application.delete",
+    entityType: "membership_application",
+    entityId: applicationId,
+    summary: `Mitgliedsantrag gelöscht: ${app.first_name} ${app.last_name}`,
+  });
   revalidatePath("/admin/members");
   return { ok: true };
 }

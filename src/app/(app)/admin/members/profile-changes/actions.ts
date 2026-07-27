@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin/require-admin";
+import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
@@ -68,6 +69,15 @@ export async function approveProfileChangeRequest(requestId: string) {
   );
   await deleteNotificationsByMetadata("request_id", requestId).catch(() => null);
 
+  await auditLog({
+    actorId: user.id,
+    action: "profile_change.approve",
+    entityType: "profile_change_request",
+    entityId: requestId,
+    summary: "Stammdaten-Änderung freigegeben",
+    metadata: { user_id: row.user_id, fields: Object.keys(patch) },
+  });
+
   revalidatePath("/admin/members/profile-changes");
   revalidatePath("/profile");
   revalidatePath(`/admin/members/${row.user_id}`);
@@ -110,6 +120,15 @@ export async function rejectProfileChangeRequest(requestId: string) {
     console.error,
   );
   await deleteNotificationsByMetadata("request_id", requestId).catch(() => null);
+
+  await auditLog({
+    actorId: user.id,
+    action: "profile_change.reject",
+    entityType: "profile_change_request",
+    entityId: requestId,
+    summary: "Stammdaten-Änderung abgelehnt",
+    metadata: { user_id: row.user_id },
+  });
 
   revalidatePath("/admin/members/profile-changes");
   revalidatePath("/profile");

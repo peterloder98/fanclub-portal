@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
+import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
@@ -141,6 +142,14 @@ export async function approvePostAction(postId: string) {
     .eq("id", id);
   if (error) throw new Error(error.message);
 
+  await auditLog({
+    actorId: user.id,
+    action: "post.approve",
+    entityType: "post",
+    entityId: id,
+    summary: `Beitrag freigegeben (${id.slice(0, 8)}…)`,
+  });
+
   if (post.author_id) {
     await notifyMemberPostModerationResult({
       authorId: post.author_id,
@@ -157,7 +166,7 @@ export async function approvePostAction(postId: string) {
 }
 
 export async function rejectPostAction(postId: string) {
-  await requireAdminAction();
+  const { user } = await requireAdminAction();
   const id = postId.trim();
   if (!id) throw new Error("Post fehlt.");
 
@@ -176,6 +185,14 @@ export async function rejectPostAction(postId: string) {
     .update({ status: "rejected" })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  await auditLog({
+    actorId: user.id,
+    action: "post.reject",
+    entityType: "post",
+    entityId: id,
+    summary: `Beitrag abgelehnt (${id.slice(0, 8)}…)`,
+  });
 
   if (post.author_id) {
     await notifyMemberPostModerationResult({
@@ -204,11 +221,18 @@ export async function rejectPost(formData: FormData) {
 }
 
 export async function deletePostAdmin(formData: FormData) {
-  await requireAdmin();
+  const { user } = await requireAdminAction();
   const postId = String(formData.get("postId") ?? "");
   const admin = createSupabaseAdminClient();
   const { error } = await admin.from("posts").delete().eq("id", postId);
   if (error) throw new Error(error.message);
+  await auditLog({
+    actorId: user.id,
+    action: "post.delete",
+    entityType: "post",
+    entityId: postId,
+    summary: `Beitrag gelöscht (${postId.slice(0, 8)}…)`,
+  });
   redirect("/admin/posts");
 }
 
@@ -239,6 +263,14 @@ export async function setPostPinned(postId: string, pinned: boolean) {
       )
       .eq("id", id);
     if (error) return { ok: false as const, error: error.message };
+
+    await auditLog({
+      actorId: user.id,
+      action: pinned ? "post.pin" : "post.unpin",
+      entityType: "post",
+      entityId: id,
+      summary: pinned ? "Beitrag fixiert" : "Fixierung aufgehoben",
+    });
 
     revalidatePath("/dashboard");
     revalidatePath("/posts");

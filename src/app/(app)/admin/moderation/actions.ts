@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
+import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buildCommentWarningEmail } from "@/lib/moderation/warning-email";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
@@ -287,6 +288,15 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   revalidatePath("/polls");
   revalidatePath("/giveaways");
   revalidatePath("/chat");
+
+  await auditLog({
+    actorId: user.id,
+    action: "moderation.warning",
+    entityType: input.commentType,
+    entityId: input.commentId,
+    summary: `Verwarnung ausgesprochen (${input.commentType}, ${newCount}. Mal)`,
+    metadata: { member_id: memberId, warning_count: newCount },
+  });
 
   return {
     ok: true,

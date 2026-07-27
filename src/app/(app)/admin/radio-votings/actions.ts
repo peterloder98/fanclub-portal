@@ -1,8 +1,10 @@
 "use server";
 
+import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
+import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   notifyMembersRadioVotingAvailable,
@@ -40,7 +42,7 @@ function parseEndsAt(raw: string) {
 }
 
 export async function saveRadioVotingCampaign(formData: FormData) {
-  await requireAdminAction();
+  const { user } = await requireAdminAction();
   const id = formData.get("id")?.toString().trim() || null;
 
   const parsed = campaignSchema.safeParse({
@@ -113,6 +115,16 @@ export async function saveRadioVotingCampaign(formData: FormData) {
     }
   }
 
+  await auditLog({
+    actorId: user.id,
+    action: id ? "radio_voting.update" : "radio_voting.create",
+    entityType: "radio_voting_campaign",
+    entityId: id ?? undefined,
+    summary: id
+      ? `Radio-Voting bearbeitet: ${input.song_title}`
+      : `Radio-Voting angelegt: ${input.song_title}`,
+  });
+
   revalidatePath("/votings");
   revalidatePath("/admin/radio-votings");
 }
@@ -125,6 +137,7 @@ export async function deleteRadioVotingCampaign(formData: FormData) {
   const admin = createSupabaseAdminClient();
   const { error } = await admin.from("radio_voting_campaigns").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  await deleteNotificationsByMetadata("campaign_id", id);
 
   revalidatePath("/votings");
   revalidatePath("/admin/radio-votings");

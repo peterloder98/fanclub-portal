@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash2, X } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -39,6 +38,7 @@ import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import { MentionInput } from "@/components/feed/mention-input";
 import { MentionText } from "@/components/feed/mention-text";
+import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
 import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
@@ -150,13 +150,7 @@ function CommentBody({
 
   const replyLabel = replyToName ? (
     replyToUserId ? (
-      <Link
-        href={`/mitglieder?focus=${replyToUserId}`}
-        className="rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue hover:bg-fc-sky/30"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {replyToName}
-      </Link>
+      <MentionProfileLink userId={replyToUserId} name={replyToName} />
     ) : (
       <span className="rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue">
         {replyToName}

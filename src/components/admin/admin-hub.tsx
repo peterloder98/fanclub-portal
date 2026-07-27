@@ -10,8 +10,6 @@ import {
   Mail,
   Mails,
   MapPinned,
-  Train,
-  Music2,
   PenLine,
   Radio,
   ScrollText,
@@ -170,19 +168,13 @@ const SECTIONS: AdminHubSection[] = [
   {
     id: "events",
     title: "Events & Treffen",
-    subtitle: "Termine, Sync und Reise-Infos",
+    subtitle: "Termine und Sync",
     items: [
       {
         href: "/admin/treffen",
         title: "Fanclub-Treffen",
         description: "Eigene Treffen anlegen und verwalten",
         icon: HeartHandshake,
-      },
-      {
-        href: "/events",
-        title: "Events & Reise-Infos",
-        description: "Termine und Bahnhof/Hotel bearbeiten",
-        icon: Train,
       },
       {
         href: "/admin/events-sync",
@@ -195,14 +187,8 @@ const SECTIONS: AdminHubSection[] = [
   {
     id: "system",
     title: "System",
-    subtitle: "Integrationen und Protokoll",
+    subtitle: "Protokoll",
     items: [
-      {
-        href: "/admin/settings/spotify",
-        title: "Spotify",
-        description: "Player und Verbindung",
-        icon: Music2,
-      },
       {
         href: "/admin/audit",
         title: "Audit-Log",

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
+import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   cancelPaymentManually,
@@ -111,6 +112,13 @@ export async function confirmPaymentAction(input: {
     note: input.note,
     receiptReference: input.receiptReference,
   });
+  await auditLog({
+    actorId: user.id,
+    action: "payment.confirm",
+    entityType: "payment",
+    entityId: input.paymentId,
+    summary: "Zahlung manuell bestätigt",
+  });
   revalidatePath("/admin/payments");
   revalidatePath("/admin/accounting");
   revalidatePath("/admin/merchandise");
@@ -125,6 +133,13 @@ export async function cancelPaymentAction(input: { paymentId: string; note?: str
     paymentId: input.paymentId,
     adminUserId: user.id,
     note: input.note,
+  });
+  await auditLog({
+    actorId: user.id,
+    action: "payment.cancel",
+    entityType: "payment",
+    entityId: input.paymentId,
+    summary: "Zahlung storniert",
   });
   revalidatePath("/admin/payments");
   revalidatePath("/admin/accounting");
