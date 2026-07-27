@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { MessageCircle as MessageCircleIcon } from "lucide-react";
 import { NotificationBell } from "@/components/app-shell/notification-bell.client";
 import { MobileNavDrawer } from "@/components/app-shell/mobile-nav-drawer";
 import { useTopbarMeta } from "@/components/app-shell/topbar-context";
@@ -15,6 +16,7 @@ import { POINTS_TARGET_ID, setPointsTargetElement } from "@/lib/points/target";
 import { Badge } from "@/components/ui/badge";
 import { ANNI_STARS_LABEL } from "@/lib/anni-stars/terminology";
 import { ANNI_STAR_COLOR, ANNI_STAR_SYMBOL } from "@/lib/anni-stars/format";
+import { useChatUnread } from "@/components/chat/chat-unread-context";
 
 /** Persistente Kopfzeile — bleibt beim Navigieren zwischen Seiten gemountet. */
 export function TopbarChrome() {
@@ -39,6 +41,7 @@ export function TopbarChrome() {
   const profileOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeNotificationsRef = useRef<(() => void) | null>(null);
+  const { hasUnread: chatUnread } = useChatUnread();
 
   const updateMenuPos = useCallback(() => {
     const el = profileRef.current;
@@ -143,16 +146,17 @@ export function TopbarChrome() {
     <>
       <header
         className={cn(
-          "fixed top-0 z-[200] flex w-full max-w-full items-center gap-1.5 overflow-hidden border-b bg-[color:var(--background)]/95 px-2 backdrop-blur sm:gap-2 sm:px-4",
+          "fixed top-0 z-[200] flex w-full max-w-full items-center overflow-visible border-b bg-[color:var(--background)]/95 backdrop-blur",
           "min-h-[var(--fanclub-chrome-header-height,4rem)] pt-[env(safe-area-inset-top,0px)]",
           profileOpen && "z-[9998]",
-          "left-0 right-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0 lg:px-8",
+          "left-0 right-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0",
           className,
         )}
         style={{
           height: "calc(var(--fanclub-chrome-header-height, 4rem) + env(safe-area-inset-top, 0px))",
         }}
       >
+        <div className="mx-auto flex h-full w-full min-w-0 max-w-full items-center gap-1.5 px-3 sm:gap-2 sm:px-4 lg:px-6">
         <MobileNavDrawer isAdmin={role === "admin"} />
         <div className="min-w-0 flex-1 overflow-hidden" title={subtitle}>
           <div className="truncate text-sm font-semibold leading-tight text-fc-navy sm:text-base">
@@ -165,7 +169,18 @@ export function TopbarChrome() {
           ) : null}
         </div>
 
-        <div className="ml-auto flex h-10 min-w-0 items-center gap-0.5 sm:gap-2">
+        <div className="ml-auto flex h-10 shrink-0 items-center gap-0.5 sm:gap-1.5">
+          <Link
+            href="/chat"
+            className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200/90 bg-white text-fc-navy shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 sm:h-10 sm:w-10"
+            aria-label={chatUnread ? "Chat — neue Nachrichten" : "Chat"}
+            title="Chat"
+          >
+            <MessageCircleIcon className="h-[18px] w-[18px]" />
+            {chatUnread ? (
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+            ) : null}
+          </Link>
           <Link
             href="/punkte"
             className="relative flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/30 sm:h-10 sm:w-auto sm:min-w-[4.5rem] sm:rounded-xl sm:px-2.5"
@@ -231,6 +246,7 @@ export function TopbarChrome() {
             </button>
 
           </div>
+        </div>
         </div>
       </header>
       <div

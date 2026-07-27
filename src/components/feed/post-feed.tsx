@@ -39,6 +39,8 @@ import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import { MentionInput } from "@/components/feed/mention-input";
 import { MentionText } from "@/components/feed/mention-text";
+import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
+import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 
 type FeedPost = {
@@ -84,7 +86,7 @@ type ReplyingTo = {
 
 type FeedComment = FeedPost["comments"][number];
 
-type ComposerMedia = { id: string; url: string };
+type ComposerMedia = ComposerMediaItem;
 
 function organizePostComments(comments: FeedComment[]) {
   const byId = new Map(comments.map((c) => [c.id, c]));
@@ -1109,26 +1111,77 @@ function PostFeedInner({
     return data.id;
   }
 
-  async function uploadImagesToPost(postId: string, files: File[]) {
-    const optimized = await Promise.all(files.map((f) => optimizePostImage(f)));
+  async function uploadMediaToPost(postId: string, files: File[], existingCount: number) {
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    const videos = files.filter((f) => f.type.startsWith("video/"));
+    const optimizedImages = await Promise.all(images.map((f) => optimizePostImage(f)));
+
     const fd = new FormData();
     fd.append("postId", postId);
-    optimized.forEach((o, idx) => {
+    fd.append("existingCount", String(existingCount));
+    optimizedImages.forEach((o, idx) => {
       fd.append("files", o.blob, `img_${idx}.webp`);
     });
+    videos.forEach((v, idx) => {
+      fd.append("files", v, `vid_${idx}.mp4`);
+    });
+
     const res = await fetch("/api/post-media/upload", { method: "POST", body: fd });
     const json = (await res.json()) as {
       ok?: boolean;
       error?: string;
-      files?: Array<{ path: string; url: string | null }>;
+      files?: Array<{
+        id: string;
+        path: string;
+        url: string | null;
+        mediaType: "image" | "video";
+      }>;
     };
     if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
     return (json.files ?? [])
-      .map((f, i) => ({
-        id: `${postId}_${Date.now()}_${i}`,
+      .map((f) => ({
+        id: f.id,
         url: f.url ?? "",
+        storagePath: f.path,
+        mediaType: f.mediaType,
       }))
       .filter((m) => Boolean(m.url));
+  }
+
+  async function removeComposerMedia(item: ComposerMedia) {
+    if (!composerDraftPostId) {
+      setComposerMedia((prev) => prev.filter((m) => m.id !== item.id));
+      return;
+    }
+    setComposerUploading(true);
+    try {
+      const res = await fetch("/api/post-media/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: composerDraftPostId,
+          mediaId: item.id,
+          storagePath: item.storagePath,
+        }),
+      });
+      const json = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "Löschen fehlgeschlagen");
+      setComposerMedia((prev) => prev.filter((m) => m.id !== item.id));
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+    } finally {
+      setComposerUploading(false);
+    }
+  }
+
+  function reorderComposerMedia(fromIndex: number, toIndex: number) {
+    setComposerMedia((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      if (!moved) return prev;
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
   }
 
   async function handleComposerFiles(picked: File[]) {
@@ -1140,15 +1193,15 @@ function PostFeedInner({
       return;
     }
     if (videos.length && me.role === "admin") {
-      setLoadError("Video-Upload ist noch nicht verfügbar — bitte vorerst Fotos verwenden.");
-      return;
+      // Admin-Videos werden serverseitig stark komprimiert.
     }
-    if (!images.length) return;
+    const batch = [...images, ...videos];
+    if (!batch.length) return;
 
-    const remaining = Math.max(0, 4 - composerMedia.length);
-    const batch = images.slice(0, remaining);
-    if (!batch.length) {
-      setLoadError("Maximal 4 Bilder pro Post.");
+    const remaining = Math.max(0, POST_MEDIA_MAX_COUNT - composerMedia.length);
+    const slice = batch.slice(0, remaining);
+    if (!slice.length) {
+      setLoadError(`Maximal ${POST_MEDIA_MAX_COUNT} Medien pro Post.`);
       return;
     }
 
@@ -1158,7 +1211,7 @@ function PostFeedInner({
     try {
       const supabase = createSupabaseBrowserClient();
       const postId = await ensureComposerDraftPost(supabase);
-      const uploaded = await uploadImagesToPost(postId, batch);
+      const uploaded = await uploadMediaToPost(postId, slice, composerMedia.length);
       setComposerMedia((prev) => [...prev, ...uploaded]);
       requestAnimationFrame(() => composerInputRef.current?.focus());
     } catch (e) {
@@ -1181,8 +1234,8 @@ function PostFeedInner({
     if (!me) return;
     const text = newText.trim();
     if (!text) return;
-    if (composerMedia.length > 4) {
-      setLoadError("Maximal 4 Bilder pro Post.");
+    if (composerMedia.length > POST_MEDIA_MAX_COUNT) {
+      setLoadError(`Maximal ${POST_MEDIA_MAX_COUNT} Medien pro Post.`);
       return;
     }
     setSubmitting(true);
@@ -1631,19 +1684,15 @@ function PostFeedInner({
                             : "Posten"}
                       </button>
                     </div>
-                    {composerMedia.length ? (
-                      <div className="mt-2 grid grid-cols-4 gap-2">
-                        {composerMedia.map((m) => (
-                          <div
-                            key={m.id}
-                            className="aspect-square overflow-hidden rounded-lg border border-white bg-white shadow-sm"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={m.url} alt="" className="h-full w-full object-cover" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
+                    <ComposerMediaGrid
+                      items={composerMedia}
+                      disabled={composerUploading}
+                      onRemove={(id) => {
+                        const item = composerMedia.find((m) => m.id === id);
+                        if (item) void removeComposerMedia(item);
+                      }}
+                      onReorder={reorderComposerMedia}
+                    />
                   </div>
                   {me?.role === "member" ? (
                     <p className="text-xs text-slate-500">

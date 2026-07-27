@@ -70,12 +70,12 @@ export function MitgliederTabs({
       ) : null}
 
       {tab === "treffen" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(var(--fanclub-chat-dock,0px)+var(--fanclub-mobile-tab-bar,0px))]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[var(--fanclub-chat-dock,0px)]">
           <MeetingsUpcomingSection meetings={meetings} />
         </div>
       ) : null}
       {tab === "archiv" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(var(--fanclub-chat-dock,0px)+var(--fanclub-mobile-tab-bar,0px))]">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[var(--fanclub-chat-dock,0px)]">
           <MeetingsArchiveSection meetings={meetings} mediaByMeetingId={mediaByMeetingId} />
         </div>
       ) : null}

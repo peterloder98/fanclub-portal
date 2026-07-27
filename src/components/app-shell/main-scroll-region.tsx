@@ -12,8 +12,7 @@ export function MainScrollRegion({ children }: { children: ReactNode }) {
     ref.current?.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
-  const bottomPad =
-    "pb-[calc(var(--fanclub-chat-dock,0px)+var(--fanclub-mobile-tab-bar,0px))]";
+  const bottomPad = "pb-[var(--fanclub-chat-dock,0px)]";
 
   return (
     <div

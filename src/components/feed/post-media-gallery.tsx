@@ -4,13 +4,20 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-export function PostMediaGallery({
-  media,
-}: {
-  media: Array<{ id: string; url: string }>;
-}) {
+export type PostMediaItem = {
+  id: string;
+  url: string;
+  mediaType?: "image" | "video";
+};
+
+function inferMediaType(url: string): "image" | "video" {
+  return /\.mp4(\?|$)/i.test(url) ? "video" : "image";
+}
+
+export function PostMediaGallery({ media }: { media: PostMediaItem[] }) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const items = media.slice(0, 4);
+  const [lightboxType, setLightboxType] = useState<"image" | "video">("image");
+  const items = media.slice(0, 6);
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -26,25 +33,31 @@ export function PostMediaGallery({
   return (
     <>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {items.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            onClick={() => setLightboxUrl(m.url)}
-            className={cn(
-              "rounded-lg border bg-slate-50 p-0.5 transition hover:ring-2 hover:ring-blue-200",
-              items.length === 1 ? "max-w-[min(100%,12rem)]" : "max-w-[calc(50%-0.25rem)] sm:max-w-[7rem]",
-            )}
-            aria-label="Bild vergrößern"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={m.url}
-              alt=""
-              className="block max-h-20 w-auto max-w-full object-contain"
-            />
-          </button>
-        ))}
+        {items.map((m) => {
+          const type = m.mediaType ?? inferMediaType(m.url);
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                setLightboxType(type);
+                setLightboxUrl(m.url);
+              }}
+              className={cn(
+                "rounded-lg border bg-slate-50 p-0.5 transition hover:ring-2 hover:ring-blue-200",
+                items.length === 1 ? "max-w-[min(100%,12rem)]" : "max-w-[calc(50%-0.25rem)] sm:max-w-[7rem]",
+              )}
+              aria-label={type === "video" ? "Video abspielen" : "Bild vergrößern"}
+            >
+              {type === "video" ? (
+                <video src={m.url} className="block max-h-20 w-auto max-w-full object-contain" muted playsInline />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={m.url} alt="" className="block max-h-20 w-auto max-w-full object-contain" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {lightboxUrl ? (
@@ -52,7 +65,7 @@ export function PostMediaGallery({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Bild in voller Größe"
+          aria-label="Medien in voller Größe"
           onClick={() => setLightboxUrl(null)}
         >
           <button
@@ -63,13 +76,23 @@ export function PostMediaGallery({
           >
             <X className="h-5 w-5" />
           </button>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={lightboxUrl}
-            alt=""
-            className="max-h-[min(88vh,720px)] max-w-[min(96vw,720px)] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {lightboxType === "video" ? (
+            <video
+              src={lightboxUrl}
+              className="max-h-[min(88vh,720px)] max-w-[min(96vw,720px)]"
+              controls
+              autoPlay
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={lightboxUrl}
+              alt=""
+              className="max-h-[min(88vh,720px)] max-w-[min(96vw,720px)] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
         </div>
       ) : null}
     </>

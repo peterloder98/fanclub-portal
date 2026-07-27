@@ -2,7 +2,7 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { Card, CardContent } from "@/components/ui/card";
 import { PostFeed } from "@/components/feed/post-feed";
 import type { MapEvent } from "@/components/events/events-map";
-import { EventsMap } from "@/components/events/events-map";
+import { DashboardEventsMapCard } from "@/components/dashboard/dashboard-events-map-card.client";
 import { EventsCountdown } from "@/components/events/events-countdown";
 import { pickNextEvent } from "@/lib/events/pick-next-event";
 import { filterVisibleEvents } from "@/lib/events/event-schedule";
@@ -111,16 +111,7 @@ export default async function DashboardPage() {
               />
             </div>
 
-            <Card className="flex min-h-[280px] flex-1 flex-col overflow-hidden sm:min-h-[320px]">
-              <CardContent className="flex h-full min-h-0 flex-1 flex-col p-1">
-                <EventsMap
-                  events={mapEvents}
-                  minHeight={280}
-                  mapVariant="dashboard"
-                  fillHeight
-                />
-              </CardContent>
-            </Card>
+            <DashboardEventsMapCard events={mapEvents} />
 
             <Card className="mt-auto flex h-[13rem] shrink-0 flex-col overflow-hidden">
               <CardContent className="flex min-h-0 flex-1 flex-col p-2 pb-2">

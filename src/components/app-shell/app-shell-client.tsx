@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 import { MainScrollRegion } from "@/components/app-shell/main-scroll-region";
-import { MobileTabBar } from "@/components/app-shell/mobile-tab-bar";
 import { TopbarProvider } from "@/components/app-shell/topbar-context";
 import { TopbarChrome } from "@/components/app-shell/topbar-chrome";
 import { ChatUnreadProvider } from "@/components/chat/chat-unread-context";
@@ -20,7 +19,6 @@ export function AppShellClient({ children }: { children: ReactNode }) {
         >
           <TopbarChrome />
           <MainScrollRegion>{children}</MainScrollRegion>
-          <MobileTabBar />
           <Suspense fallback={null}>
             <GroupChatWidget />
           </Suspense>

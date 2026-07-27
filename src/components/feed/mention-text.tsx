@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { splitMentionText } from "@/lib/mentions/format";
 import { cn } from "@/lib/cn";
 
@@ -16,14 +16,7 @@ export function MentionText({
     <span className={cn("whitespace-pre-wrap break-words", className)}>
       {parts.map((p, i) =>
         p.type === "mention" ? (
-          <Link
-            key={`${p.userId}-${i}`}
-            href={`/mitglieder?focus=${p.userId}`}
-            className="rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue hover:bg-fc-sky/30"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {p.name}
-          </Link>
+          <MentionProfileLink key={`${p.userId}-${i}`} userId={p.userId} name={p.name} />
         ) : (
           <span key={i}>{p.value}</span>
         ),
