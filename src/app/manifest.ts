@@ -1,0 +1,22 @@
+import type { MetadataRoute } from "next";
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "Anni Perka Fanclub",
+    short_name: "Fanclub",
+    description: "Digitales Fanclub-Portal für Mitglieder und Vorstand.",
+    start_url: "/dashboard",
+    display: "standalone",
+    background_color: "#f4f7fb",
+    theme_color: "#143165",
+    lang: "de",
+    icons: [
+      {
+        src: "/images/fanclub-logo.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+    ],
+  };
+}

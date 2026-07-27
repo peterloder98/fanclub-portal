@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Menu, X } from "lucide-react";
 import { appNav, NavList } from "@/components/app-shell/nav";
+import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
 
 export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
@@ -12,6 +13,14 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    function onOpen() {
+      setOpen(true);
+    }
+    window.addEventListener("fc-open-mobile-nav", onOpen);
+    return () => window.removeEventListener("fc-open-mobile-nav", onOpen);
   }, []);
 
   useEffect(() => {
@@ -41,22 +50,23 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-nav-title"
-          className="absolute inset-y-0 left-0 z-10 flex h-full w-[min(100%,18rem)] flex-col border-r bg-[color:var(--background)] shadow-2xl"
+          className="absolute inset-y-0 left-0 z-10 flex h-full w-[min(100%,18rem)] flex-col border-r bg-[color:var(--background)] pt-[env(safe-area-inset-top,0px)] shadow-2xl"
         >
-          <div className="flex h-14 shrink-0 items-center justify-between border-b px-3">
-            <span id="mobile-nav-title" className="text-sm font-semibold text-fc-navy">
+          <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b px-3">
+            <BrandLogo showText imageClassName="h-9 w-9" className="min-w-0 flex-1" />
+            <span id="mobile-nav-title" className="sr-only">
               Navigation
             </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="grid h-9 w-9 place-items-center rounded-xl border bg-white"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border bg-white"
               aria-label="Schließen"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
             <div className="rounded-2xl border bg-white p-2 shadow-sm" onClick={() => setOpen(false)}>
               <NavList items={appNav} isAdmin={isAdmin} />
             </div>

@@ -144,12 +144,15 @@ export function TopbarChrome() {
     <>
       <header
         className={cn(
-          "fixed top-0 z-[200] flex items-center gap-3 border-b bg-[color:var(--background)]/95 px-4 pt-[env(safe-area-inset-top,0px)] backdrop-blur",
-          "h-[var(--fanclub-chrome-header-height,4rem)]",
+          "fixed top-0 z-[200] flex items-center gap-3 border-b bg-[color:var(--background)]/95 px-4 backdrop-blur",
+          "min-h-[var(--fanclub-chrome-header-height,4rem)] pt-[env(safe-area-inset-top,0px)]",
           profileOpen && "z-[9998]",
           "inset-x-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0 lg:px-8",
           className,
         )}
+        style={{
+          height: "calc(var(--fanclub-chrome-header-height, 4rem) + env(safe-area-inset-top, 0px))",
+        }}
       >
         <MobileNavDrawer isAdmin={role === "admin"} />
         <BrandLogo className="lg:hidden" showText={false} imageClassName="h-10 w-10" />
@@ -234,8 +237,10 @@ export function TopbarChrome() {
         </div>
       </header>
       <div
-        className="shrink-0 pt-[env(safe-area-inset-top,0px)]"
-        style={{ height: "var(--fanclub-chrome-header-height, 4rem)" }}
+        className="shrink-0"
+        style={{
+          height: "calc(var(--fanclub-chrome-header-height, 4rem) + env(safe-area-inset-top, 0px))",
+        }}
         aria-hidden
       />
       {portalReady && profileOpen && !notificationsOpen

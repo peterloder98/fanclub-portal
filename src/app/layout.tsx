@@ -15,12 +15,26 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Anni Perka Fanclub Portal",
   description: "Digitales Fanclub-Portal für Mitglieder, Admins und Anni.",
+  applicationName: "Anni Perka Fanclub",
+  appleWebApp: {
+    capable: true,
+    title: "Fanclub",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: "/images/fanclub-logo.png",
+    apple: "/images/fanclub-logo.png",
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover" as const,
+  themeColor: "#143165",
 };
 
 export default function RootLayout({

@@ -1,11 +1,18 @@
 "use client";
 
+import { useEffect } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
 import { GroupChatPanel } from "@/components/chat/group-chat-panel.client";
 import { useGroupChat } from "@/lib/chat/use-group-chat";
+import { markChatSeenFromMessages } from "@/lib/chat/last-seen";
 
 export function GroupChatFullscreenPage() {
   const chat = useGroupChat({ enabled: true });
+
+  useEffect(() => {
+    if (!chat.loaded || !chat.messages.length) return;
+    markChatSeenFromMessages(chat.messages);
+  }, [chat.loaded, chat.messages]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">

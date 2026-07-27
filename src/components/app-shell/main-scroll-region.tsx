@@ -15,13 +15,16 @@ export function MainScrollRegion({ children }: { children: ReactNode }) {
   const fillViewport =
     pathname === "/events" || pathname === "/chat" || pathname === "/mitglieder";
 
+  const bottomPad =
+    "pb-[calc(var(--fanclub-chat-dock,0px)+var(--fanclub-mobile-tab-bar,0px))]";
+
   return (
     <div
       ref={ref}
       className={
         fillViewport
-          ? "flex min-h-0 flex-1 flex-col overflow-hidden"
-          : "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain pb-[var(--fanclub-chat-dock,0px)]"
+          ? `flex min-h-0 flex-1 flex-col overflow-hidden ${bottomPad}`
+          : `flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain ${bottomPad}`
       }
     >
       {children}
