@@ -159,7 +159,7 @@ export function MembersMapClient({
   }
 
   return (
-    <div className="flex h-full min-h-[280px] flex-col overflow-hidden rounded-xl border">
+    <div className="flex h-[min(55vh,380px)] min-h-[280px] w-full flex-col overflow-hidden rounded-xl border lg:h-full lg:min-h-[320px]">
       <div className="relative min-h-0 flex-1">
         <MapContainer
           center={GERMANY_CENTER}

@@ -1562,7 +1562,7 @@ function PostFeedInner({
   }
 
   return (
-    <div className="grid w-full min-w-0 max-w-full gap-3 overflow-hidden">
+    <div className="mx-auto grid w-full min-w-0 max-w-2xl gap-3 overflow-hidden">
       <Card className="overflow-hidden border-blue-100/90 bg-gradient-to-br from-sky-50/80 via-white to-rose-50/50 shadow-sm shadow-blue-900/5">
         <CardContent ref={composerRef} className="pt-4">
           <div className="flex items-start gap-3">
@@ -2143,7 +2143,7 @@ function PostFeedInner({
                       {(repliesByRoot.get(root.id) ?? []).map((reply) => (
                         <div
                           key={reply.id}
-                          className="ml-7 border-l-2 border-fc-sky/40 pl-3"
+                          className="ml-1.5 border-l border-fc-sky/40 pl-1.5 sm:ml-3 sm:pl-2"
                         >
                           {renderCommentNode(reply)}
                         </div>

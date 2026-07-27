@@ -8,6 +8,7 @@ import {
   Gift,
   HeartHandshake,
   Home,
+  MessageCircle,
   PieChart,
   Shield,
   ShoppingBag,
@@ -28,6 +29,7 @@ import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export const appNav: AppNavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
+  { label: "Chat", href: "/chat", icon: MessageCircle },
   { label: "Events", href: "/events", icon: CalendarDays },
   ...(FEATURE_FLAGS.votings
     ? [{ label: "Votings", href: "/votings", icon: Vote } satisfies AppNavItem]

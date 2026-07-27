@@ -442,7 +442,7 @@ export function AdminMembersWorkspace({
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
-                    <th className="px-3 py-2">
+                    <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]">
                       <SortBtn
                         label="Mitgliedsnr."
                         active={false}
@@ -499,7 +499,7 @@ export function AdminMembersWorkspace({
                       onClick={() => openRecord(`/admin/members/applications/${a.id}`)}
                       className={`cursor-pointer border-b transition hover:bg-slate-50 ${navPending && navTarget === `/admin/members/applications/${a.id}` ? "opacity-60" : ""}`}
                     >
-                      <td className="px-3 py-2 tabular-nums text-slate-600">
+                      <td className="sticky left-0 z-10 bg-white px-3 py-2 tabular-nums text-slate-600 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]">
                         {a.membership_number ?? MEMBERSHIP_NUMBER_PENDING_LABEL}
                       </td>
                       <td className="px-3 py-2">{a.first_name}</td>
@@ -639,7 +639,7 @@ export function AdminMembersWorkspace({
               <table className="w-full min-w-[720px] text-left text-sm">
                 <thead className="border-b bg-slate-50 text-xs uppercase tracking-wide text-slate-600">
                   <tr>
-                    <th className="px-3 py-2">
+                    <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.08)]">
                       <SortBtn
                         label="Mitgliedsnr."
                         active={memberSort.key === "membership_number"}

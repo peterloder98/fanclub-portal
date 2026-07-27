@@ -99,9 +99,9 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
       if (typeof m.poll_id === "string") return `/polls/${m.poll_id}`;
       if (typeof m.giveaway_id === "string") return `/giveaways/${m.giveaway_id}`;
       if (typeof m.voting_id === "string") return `/votings/${m.voting_id}`;
-      if (typeof m.post_id === "string") return `/dashboard?post=${m.post_id}`;
+      if (typeof m.post_id === "string") return `/dashboard?post=${m.post_id}#post-${m.post_id}`;
       const fromLink = postIdFromLinkUrl(n.link_url);
-      return fromLink ? `/dashboard?post=${fromLink}` : n.link_url;
+      return fromLink ? `/dashboard?post=${fromLink}#post-${fromLink}` : n.link_url;
     }
     case NOTIFICATION_KINDS.postRejected:
       return "/posts";
@@ -128,7 +128,9 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
         : n.link_url;
     case NOTIFICATION_KINDS.clubMeetingPublished:
     case NOTIFICATION_KINDS.contributionOpen:
-      return typeof m.meeting_id === "string" ? `/treffen/${m.meeting_id}` : n.link_url;
+      return typeof m.meeting_id === "string"
+        ? `/treffen/${m.meeting_id}`
+        : "/mitglieder?tab=treffen";
     case NOTIFICATION_KINDS.eventAvailable:
     case NOTIFICATION_KINDS.eventReminder7d:
     case NOTIFICATION_KINDS.eventReminder2d:

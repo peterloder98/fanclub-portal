@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ChevronDown, Maximize2, MessageCircle, SendHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -176,7 +176,22 @@ export function GroupChatPanel({
 }: PanelProps) {
   const fullscreen = mode === "fullscreen";
   const [composerFocused, setComposerFocused] = useState(false);
+  const footerRef = useRef<HTMLElement>(null);
   const composerRows = composerFocused || draft.includes("\n") ? 3 : 1;
+
+  useEffect(() => {
+    if (!composerFocused || typeof window === "undefined") return;
+    const footer = footerRef.current;
+    if (!footer) return;
+    const scrollIntoView = () => {
+      footer.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    };
+    scrollIntoView();
+    const vv = window.visualViewport;
+    if (!vv) return;
+    vv.addEventListener("resize", scrollIntoView);
+    return () => vv.removeEventListener("resize", scrollIntoView);
+  }, [composerFocused]);
 
   return (
     <div
@@ -260,6 +275,7 @@ export function GroupChatPanel({
           fullscreen && "max-h-none",
         )}
       >
+        <div className={cn(fullscreen && "mx-auto w-full max-w-3xl")}>
         {!messages.length ? (
           <div className="grid h-full min-h-[12rem] place-items-center px-4 text-center">
             <div>
@@ -332,9 +348,11 @@ export function GroupChatPanel({
             })}
           </ul>
         )}
+        </div>
       </div>
 
       <footer
+        ref={footerRef}
         className={cn(
           "shrink-0 border-t border-fc-navy/10 bg-fc-mist/80",
           fullscreen ? "p-3" : "p-2.5",
@@ -345,7 +363,7 @@ export function GroupChatPanel({
             {error}
           </p>
         ) : null}
-        <div className="flex items-end gap-1.5">
+        <div className={cn("flex items-end gap-1.5", fullscreen && "mx-auto w-full max-w-3xl")}>
           <MentionInput
             value={draft}
             onChange={onDraftChange}
@@ -355,7 +373,7 @@ export function GroupChatPanel({
             placeholder="Nachricht… @ für Markierung"
             className="min-w-0 flex-1"
             inputClassName={cn(
-              "w-full min-w-0 max-w-full overflow-x-hidden resize-none rounded-xl border bg-white px-3 text-sm text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 transition-[min-height] duration-150",
+              "w-full min-w-0 max-w-full overflow-x-hidden resize-none rounded-xl border bg-white px-3 text-base text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 transition-[min-height] duration-150 lg:text-sm",
               composerRows === 1 ? "py-2" : "py-2",
               overLimit
                 ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200"
@@ -363,6 +381,11 @@ export function GroupChatPanel({
             )}
             onFocus={() => setComposerFocused(true)}
             onBlur={() => setComposerFocused(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+              }
+            }}
           />
           <button
             type="button"

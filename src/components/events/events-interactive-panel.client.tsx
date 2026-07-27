@@ -39,7 +39,7 @@ export function EventsInteractivePanel({
 }) {
   const searchParams = useSearchParams();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-  const [mapOpen, setMapOpen] = useState(true);
+  const [mapOpen, setMapOpen] = useState(false);
 
   const effectiveFocusId = focusEventId ?? searchParams.get("focus");
 
@@ -128,7 +128,7 @@ export function EventsInteractivePanel({
   );
 
   const mapInner = (
-    <div className="h-[220px] w-full lg:h-full lg:min-h-0">
+    <div className="h-[220px] w-full lg:h-[280px]">
       <EventsMapClient
         events={events}
         highlightedEventId={highlightedId}
@@ -140,49 +140,47 @@ export function EventsInteractivePanel({
     </div>
   );
 
-  const map = (
-    <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
-      <CardContent className="min-h-0 flex-1 p-1.5 sm:p-2">{mapInner}</CardContent>
+  const mapToggle = (
+    <Card className="shrink-0 rounded-2xl">
+      <button
+        type="button"
+        onClick={() => setMapOpen((v) => !v)}
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+      >
+        <span className="inline-flex items-center gap-2 text-sm font-semibold text-fc-navy">
+          <Map className="h-4 w-4 text-fc-blue" aria-hidden />
+          Karte {mapOpen ? "ausblenden" : "anzeigen"}
+        </span>
+        <ChevronDown
+          className={cn("h-5 w-5 shrink-0 text-slate-500 transition", mapOpen && "rotate-180")}
+          aria-hidden
+        />
+      </button>
+      {mapOpen ? <div className="border-t p-2">{mapInner}</div> : null}
     </Card>
   );
 
   return (
-    <>
+  <>
       <div className={cn("flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:hidden", className)}>
         <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-        <Card className="shrink-0 rounded-2xl">
-          <button
-            type="button"
-            onClick={() => setMapOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
-          >
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-fc-navy">
-              <Map className="h-4 w-4 text-fc-blue" aria-hidden />
-              Karte {mapOpen ? "ausblenden" : "anzeigen"}
-            </span>
-            <ChevronDown
-              className={cn("h-5 w-5 shrink-0 text-slate-500 transition", mapOpen && "rotate-180")}
-              aria-hidden
-            />
-          </button>
-          {mapOpen ? <div className="border-t p-2">{mapInner}</div> : null}
-        </Card>
+        {mapToggle}
         <div className="min-h-0 shrink-0">{list}</div>
       </div>
 
       <div
         className={cn(
-          "hidden min-h-0 h-full flex-1 gap-3 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4",
+          "hidden min-h-0 h-full flex-1 flex-col gap-3 overflow-hidden lg:flex",
           className,
         )}
       >
-        {list}
-        <aside className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-          <div className="shrink-0">
-            <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-          </div>
-          {map}
-        </aside>
+        <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
+        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)]">
+          {list}
+          <aside className="flex min-h-0 flex-col gap-3 overflow-hidden">
+            {mapToggle}
+          </aside>
+        </div>
       </div>
     </>
   );

@@ -53,7 +53,7 @@ export function PostMediaGallery({ media }: { media: PostMediaItem[] }) {
                 <video src={m.url} className="block max-h-20 w-auto max-w-full object-contain" muted playsInline />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.url} alt="" className="block max-h-20 w-auto max-w-full object-contain" />
+                <img src={m.url} alt="" className="block max-h-20 w-auto max-w-full object-contain" loading="lazy" decoding="async" />
               )}
             </button>
           );

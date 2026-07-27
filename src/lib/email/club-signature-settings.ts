@@ -3,7 +3,8 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 export const CLUB_SIGNATURE_TEXT_KEY = "club_signature_text";
 export const CLUB_SIGNATURE_IMAGE_KEY = "club_signature_image_path";
 
-const DEFAULT_CLUB_TEXT = "Anni-Perka-Fanclub e. V.\nVorstand";
+const DEFAULT_CLUB_TEXT =
+  "Herzliche Grüße\n\nJanine | Andreas | Nicole\nFanclub-Team\nOffizieller Anni Perka Fanclub";
 
 export async function getClubSignatureText(): Promise<string> {
   const admin = createSupabaseAdminClient();

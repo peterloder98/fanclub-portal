@@ -97,7 +97,7 @@ export default async function DashboardPage() {
             nextTitle={nextEvent?.title ?? null}
           />
         </div>
-        <div className="grid min-w-0 max-w-full items-stretch gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4 lg:min-h-[calc(100dvh-4rem-1rem)]">
+        <div className="grid min-w-0 max-w-full items-stretch gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)] lg:gap-4 lg:min-h-[calc(100dvh-4rem-1rem)]">
           <section className="min-w-0 max-w-full">
             <PostFeed embedPollsInFeed />
           </section>

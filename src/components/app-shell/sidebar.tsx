@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, UserPlus } from "lucide-react";
+import { ChevronLeft, Music2, UserPlus } from "lucide-react";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { appNav, NavList } from "@/components/app-shell/nav";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
 import { SidebarNavTooltip } from "@/components/app-shell/sidebar-nav-tooltip";
 import { SidebarSpotifyPlayer } from "@/components/app-shell/sidebar-spotify-player";
+import { ANNI_STAR_COLOR, ANNI_STAR_SYMBOL } from "@/lib/anni-stars/format";
 import { cn } from "@/lib/cn";
 
 export type SidebarUser = {
@@ -97,6 +98,14 @@ export function Sidebar({ user }: { user: SidebarUser }) {
                 <UserPlus className="h-4 w-4" aria-hidden />
               </Link>
             </SidebarNavTooltip>
+            <SidebarNavTooltip label="Spotify">
+              <Link
+                href="/admin/settings/spotify"
+                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-fc-navy shadow-sm transition hover:bg-fc-ice"
+              >
+                <Music2 className="h-4 w-4" aria-hidden />
+              </Link>
+            </SidebarNavTooltip>
           </div>
         </>
       ) : (
@@ -105,11 +114,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
             className="flex shrink-0 items-center gap-2 border-b px-3 lg:px-4"
             style={{ height: "var(--fanclub-chrome-header-height, 4rem)" }}
           >
-            <BrandLogo
-              showText
-              className="min-w-0 flex-1"
-              imageClassName="h-10 w-10"
-            />
+            <BrandLogo showText className="min-w-0 flex-1" imageClassName="h-10 w-10" />
             <button
               type="button"
               onClick={collapse}
@@ -131,7 +136,37 @@ export function Sidebar({ user }: { user: SidebarUser }) {
               <ReferMembershipNavCta />
             </div>
           </div>
-          <SidebarSpotifyPlayer />
+          <div className="shrink-0 border-t px-3 py-3">
+            <Link
+              href="/profile"
+              className="mb-3 flex items-center gap-2.5 rounded-xl border bg-white/80 p-2.5 shadow-sm transition hover:bg-fc-ice"
+            >
+              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-slate-50">
+                {user.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="grid h-full w-full place-items-center bg-gradient-to-br from-fc-navy to-fc-sky text-xs font-bold text-white">
+                    {user.initials}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-fc-navy">{user.name}</p>
+                <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-600">
+                  <span className="inline-flex items-center gap-0.5 font-semibold tabular-nums text-fc-navy">
+                    <span style={{ color: ANNI_STAR_COLOR }} aria-hidden>
+                      {ANNI_STAR_SYMBOL}
+                    </span>
+                    {user.points}
+                  </span>
+                  <span className="text-slate-300">·</span>
+                  <span>Rang {user.rank}</span>
+                </p>
+              </div>
+            </Link>
+            <SidebarSpotifyPlayer />
+          </div>
         </>
       )}
     </aside>

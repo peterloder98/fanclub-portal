@@ -226,7 +226,7 @@ function AdminHubRow({ item, isLast }: { item: AdminHubItem; isLast: boolean }) 
 
 export function AdminHub() {
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-6xl space-y-6">
       <div className="flex items-start gap-3 px-0.5">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
           <Shield className="h-5 w-5" aria-hidden />
@@ -254,7 +254,7 @@ export function AdminHub() {
         ))}
       </nav>
 
-      <div className="space-y-5">
+      <div className="grid gap-5 xl:grid-cols-2">
         {SECTIONS.map((section) => (
           <section key={section.id} id={`admin-${section.id}`} className="scroll-mt-20">
             <div className="mb-2 px-0.5">

@@ -46,8 +46,6 @@ export function TopbarChrome() {
   const [portalReady, setPortalReady] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 288 });
   const profileRef = useRef<HTMLDivElement>(null);
-  const profileOpenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const profileCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeNotificationsRef = useRef<(() => void) | null>(null);
   const { hasUnread: chatUnread } = useChatUnread();
 
@@ -62,6 +60,15 @@ export function TopbarChrome() {
   }, []);
 
   useEffect(() => setPortalReady(true), []);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setProfileOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [profileOpen]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -101,26 +108,6 @@ export function TopbarChrome() {
     }
     router.push("/chat");
   }
-
-  function scheduleProfileOpen() {
-    if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
-    profileOpenTimer.current = setTimeout(() => {
-      closeNotifications();
-      setProfileOpen(true);
-    }, 100);
-  }
-
-  function scheduleProfileClose() {
-    if (profileOpenTimer.current) clearTimeout(profileOpenTimer.current);
-    profileCloseTimer.current = setTimeout(() => setProfileOpen(false), 180);
-  }
-
-  useEffect(() => {
-    return () => {
-      if (profileOpenTimer.current) clearTimeout(profileOpenTimer.current);
-      if (profileCloseTimer.current) clearTimeout(profileCloseTimer.current);
-    };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,13 +209,13 @@ export function TopbarChrome() {
             </div>
           </div>
 
-          <span className="mx-0.5 hidden h-6 w-px shrink-0 bg-slate-200/90 sm:block" aria-hidden />
+          <span className="mx-0.5 hidden h-6 w-px shrink-0 bg-slate-200/90 sm:block lg:hidden" aria-hidden />
 
           <button
             type="button"
             onClick={handleChatToggle}
             className={cn(
-              "relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border shadow-sm transition sm:h-10 sm:w-10",
+              "relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border shadow-sm transition sm:h-10 sm:w-10 lg:hidden",
               chatActive
                 ? "border-fc-blue bg-fc-ice text-fc-navy ring-2 ring-fc-sky/40"
                 : "border-slate-200/90 bg-white text-fc-navy hover:border-fc-sky/30 hover:bg-fc-ice/50",
@@ -256,12 +243,7 @@ export function TopbarChrome() {
             />
           </div>
 
-          <div
-            className="relative"
-            ref={profileRef}
-            onMouseEnter={scheduleProfileOpen}
-            onMouseLeave={scheduleProfileClose}
-          >
+          <div className="relative" ref={profileRef}>
             <button
               type="button"
               onClick={() => {
@@ -303,8 +285,6 @@ export function TopbarChrome() {
                 left: menuPos.left,
                 width: menuPos.width,
               }}
-              onMouseEnter={scheduleProfileOpen}
-              onMouseLeave={scheduleProfileClose}
             >
               <div className="pointer-events-auto rounded-2xl border bg-white p-3 shadow-xl shadow-fc-navy/20">
                 <div className="flex items-start gap-3">

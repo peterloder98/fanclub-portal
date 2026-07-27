@@ -132,6 +132,7 @@ export function MentionProfileLink({
         onMouseLeave={scheduleHide}
         onFocus={showPreview}
         onBlur={scheduleHide}
+        onTouchStart={() => showPreview()}
       >
         {name}
       </Link>

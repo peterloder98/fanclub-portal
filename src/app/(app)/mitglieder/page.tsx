@@ -114,7 +114,7 @@ export default async function MitgliederPage() {
           {missingCoords} Mitglied(er) ohne Kartenposition.
         </p>
       ) : null}
-      <div className="mt-2 min-h-[min(55vh,380px)] flex-1 lg:min-h-0">
+      <div className="mt-2 h-[min(55vh,380px)] min-h-[280px] flex-none lg:min-h-0 lg:h-full lg:flex-1">
         <MembersMap clusters={clusters} memberCount={mapPoints.length} totalActive={activeList.length} />
       </div>
     </div>
