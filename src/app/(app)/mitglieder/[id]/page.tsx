@@ -20,6 +20,8 @@ import {
 } from "@/lib/events/format";
 import { isEventUpcoming } from "@/lib/events/event-schedule";
 import { rankFromPoints } from "@/lib/points/rank";
+import { loadUserAchievementsForDisplay } from "@/lib/badges/evaluate-user-badges";
+import { MemberPortalBadges } from "@/components/members/member-portal-badges.client";
 
 export const dynamic = "force-dynamic";
 
@@ -71,14 +73,29 @@ export default async function MemberPortalPage({
     .maybeSingle();
   if (!membership) notFound();
 
-  const { data: profile } = await supabase
+  const { data: profileWithBio, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id,first_name,last_name,email,city,country,avatar_path,updated_at,membership_number,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+      "id,first_name,last_name,email,city,country,avatar_path,updated_at,membership_number,short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
     )
     .eq("id", id)
     .maybeSingle();
-  if (!profile) notFound();
+
+  const profileRow =
+    profileWithBio ??
+    (profileError
+      ? (
+          await supabase
+            .from("profiles")
+            .select(
+              "id,first_name,last_name,email,city,country,avatar_path,updated_at,membership_number,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+            )
+            .eq("id", id)
+            .maybeSingle()
+        ).data
+      : null);
+  if (!profileRow) notFound();
+  const profile = profileRow as typeof profileRow & { short_bio?: string | null };
 
   const name = profileDisplayName(profile);
   const avatarUrl = getAvatarPublicUrl(profile.avatar_path, profile.updated_at ?? null);
@@ -102,6 +119,8 @@ export default async function MemberPortalPage({
     .gte("created_at", yearStart);
   const yearPoints = (pointsRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
   const yearRank = rankFromPoints(yearPoints);
+  const shortBio = (profile.short_bio as string | null | undefined)?.trim() || null;
+  const achievements = await loadUserAchievementsForDisplay(id).catch(() => []);
 
   const { data: partRows } = await supabase
     .from("event_participations")
@@ -208,11 +227,18 @@ export default async function MemberPortalPage({
                     {yearPoints} Anni-Stars · {yearRank}
                   </span>
                 </div>
+                {shortBio ? (
+                  <p className="mt-4 text-sm leading-relaxed text-white/90 sm:max-w-xl">
+                    {shortBio}
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>
 
           <div className="space-y-8 px-5 py-6 sm:px-8">
+            {achievements.length ? <MemberPortalBadges achievements={achievements} /> : null}
+
             <section className="space-y-3">
               <div>
                 <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">

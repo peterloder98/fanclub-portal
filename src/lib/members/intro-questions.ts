@@ -1,5 +1,11 @@
 /** Öffentliche Intro-Fragen für das Mitglieder-Portal (alle optional). */
 
+export const SHORT_BIO_MAX_LENGTH = 150;
+
+/** Beim Ausfüllen (Willkommen / Profil): Anrede „dich“ bzw. „mich“. */
+export const SHORT_BIO_LABEL_YOU = "Ein paar Worte über dich";
+export const SHORT_BIO_LABEL_ME = "Ein paar Worte über mich";
+
 export const MEMBER_INTRO_QUESTIONS = [
   {
     key: "intro_discovered_anni",
@@ -25,7 +31,9 @@ export const MEMBER_INTRO_QUESTIONS = [
 
 export type MemberIntroKey = (typeof MEMBER_INTRO_QUESTIONS)[number]["key"];
 
-export type MemberIntroAnswers = Partial<Record<MemberIntroKey, string | null>>;
+export type MemberIntroAnswers = Partial<Record<MemberIntroKey, string | null>> & {
+  short_bio?: string | null;
+};
 
 export function memberPortalPath(userId: string) {
   return `/mitglieder/${userId}`;
@@ -42,4 +50,11 @@ export function formatMemberOrigin(input: {
   if (city) return city;
   if (country) return country;
   return null;
+}
+
+export function normalizeShortBio(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim().replace(/\s+/g, " ");
+  if (!t) return null;
+  return t.slice(0, SHORT_BIO_MAX_LENGTH);
 }

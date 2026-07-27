@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   MEMBER_INTRO_QUESTIONS,
+  normalizeShortBio,
   type MemberIntroAnswers,
   type MemberIntroKey,
 } from "@/lib/members/intro-questions";
@@ -28,6 +29,9 @@ export async function saveMyIntroAnswers(
     if (q.key in input) {
       patch[q.key] = trimAnswer(input[q.key as MemberIntroKey]);
     }
+  }
+  if ("short_bio" in input) {
+    patch.short_bio = normalizeShortBio(input.short_bio);
   }
   if (input.dismissOnboarding) {
     patch.intro_onboarding_dismissed_at = new Date().toISOString();

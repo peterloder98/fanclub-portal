@@ -6,6 +6,8 @@ import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   MEMBER_INTRO_QUESTIONS,
+  SHORT_BIO_LABEL_ME,
+  SHORT_BIO_MAX_LENGTH,
   type MemberIntroKey,
 } from "@/lib/members/intro-questions";
 import { saveMyIntroAnswers } from "@/app/(app)/mitglieder/intro-actions";
@@ -16,6 +18,7 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [shortBio, setShortBio] = useState("");
   const [answers, setAnswers] = useState<Record<MemberIntroKey, string>>({
     intro_discovered_anni: "",
     intro_favorite_song: "",
@@ -31,7 +34,7 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
       const { data } = await supabase
         .from("profiles")
         .select(
-          "intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+          "short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
         )
         .eq("id", userId)
         .maybeSingle();
@@ -39,6 +42,7 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
         setLoaded(true);
         return;
       }
+      setShortBio(data.short_bio ?? "");
       setAnswers({
         intro_discovered_anni: data.intro_discovered_anni ?? "",
         intro_favorite_song: data.intro_favorite_song ?? "",
@@ -57,7 +61,10 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
     setMessage(null);
     setError(null);
     startTransition(async () => {
-      const result = await saveMyIntroAnswers(answers);
+      const result = await saveMyIntroAnswers({
+        ...answers,
+        short_bio: shortBio,
+      });
       if (!result.ok) {
         setError(result.error);
         return;
@@ -76,7 +83,7 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-fc-navy">Kennenlernen</h2>
             <p className="mt-0.5 text-sm text-slate-600">
-              Freiwillige Fragen für dein öffentliches Mitglieder-Portal.{" "}
+              Freiwillige Angaben für dein öffentliches Mitglieder-Portal.{" "}
               <Link href={`/mitglieder/${userId}`} className="font-medium text-fc-blue hover:underline">
                 Portal ansehen
               </Link>
@@ -88,20 +95,38 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
         {!loaded ? (
           <p className="text-sm text-slate-500">Lade…</p>
         ) : (
-          MEMBER_INTRO_QUESTIONS.map((q) => (
-            <label key={q.key} className="grid gap-1">
-              <span className="text-sm font-medium text-slate-700">{q.label}</span>
+          <>
+            <label className="grid gap-1">
+              <span className="flex items-baseline justify-between gap-2 text-sm font-medium text-slate-700">
+                <span>{SHORT_BIO_LABEL_ME}</span>
+                <span className="text-xs font-normal tabular-nums text-slate-400">
+                  {shortBio.length}/{SHORT_BIO_MAX_LENGTH}
+                </span>
+              </span>
               <textarea
-                value={answers[q.key]}
-                onChange={(e) =>
-                  setAnswers((prev) => ({ ...prev, [q.key]: e.target.value }))
-                }
+                value={shortBio}
+                onChange={(e) => setShortBio(e.target.value.slice(0, SHORT_BIO_MAX_LENGTH))}
                 rows={2}
-                maxLength={800}
+                maxLength={SHORT_BIO_MAX_LENGTH}
+                placeholder="Max. 150 Zeichen …"
                 className="w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
               />
             </label>
-          ))
+            {MEMBER_INTRO_QUESTIONS.map((q) => (
+              <label key={q.key} className="grid gap-1">
+                <span className="text-sm font-medium text-slate-700">{q.label}</span>
+                <textarea
+                  value={answers[q.key]}
+                  onChange={(e) =>
+                    setAnswers((prev) => ({ ...prev, [q.key]: e.target.value }))
+                  }
+                  rows={2}
+                  maxLength={800}
+                  className="w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                />
+              </label>
+            ))}
+          </>
         )}
         {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
