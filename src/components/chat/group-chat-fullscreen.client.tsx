@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { GroupChatPanel } from "@/components/chat/group-chat-panel.client";
 import { useGroupChat } from "@/lib/chat/use-group-chat";
 import { markChatSeenFromMessages } from "@/lib/chat/last-seen";
 
 export function GroupChatFullscreenPage() {
+  const router = useRouter();
   const chat = useGroupChat({ enabled: true });
+
+  const closeChat = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  }, [router]);
 
   useEffect(() => {
     if (!chat.loaded || !chat.messages.length) return;
@@ -35,6 +45,7 @@ export function GroupChatFullscreenPage() {
             onSend={chat.onSend}
             onDelete={chat.onDelete}
             onRemoveLocal={chat.onRemoveLocal}
+            onClose={closeChat}
             className="min-h-0 flex-1"
           />
         </div>

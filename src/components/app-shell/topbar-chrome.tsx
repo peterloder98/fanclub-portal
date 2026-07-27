@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { MessageCircle as MessageCircleIcon } from "lucide-react";
 import { NotificationBell } from "@/components/app-shell/notification-bell.client";
 import { MobileNavDrawer } from "@/components/app-shell/mobile-nav-drawer";
@@ -19,9 +20,16 @@ import { ANNI_STAR_COLOR, ANNI_STAR_SYMBOL } from "@/lib/anni-stars/format";
 import { useChatUnread } from "@/components/chat/chat-unread-context";
 
 /** Persistente Kopfzeile — bleibt beim Navigieren zwischen Seiten gemountet. */
+function isChatRoute(pathname: string | null) {
+  return pathname === "/chat" || Boolean(pathname?.startsWith("/chat/"));
+}
+
 export function TopbarChrome() {
   const { meta } = useTopbarMeta();
   const { title, subtitle, className } = meta;
+  const pathname = usePathname();
+  const router = useRouter();
+  const chatActive = isChatRoute(pathname);
 
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -78,6 +86,20 @@ export function TopbarChrome() {
 
   function closeNotifications() {
     closeNotificationsRef.current?.();
+  }
+
+  function handleChatToggle() {
+    closeNotifications();
+    setProfileOpen(false);
+    if (chatActive) {
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        router.back();
+      } else {
+        router.push("/");
+      }
+      return;
+    }
+    router.push("/chat");
   }
 
   function scheduleProfileOpen() {
@@ -169,18 +191,7 @@ export function TopbarChrome() {
           ) : null}
         </div>
 
-        <div className="ml-auto flex h-10 shrink-0 items-center gap-0.5 sm:gap-1.5">
-          <Link
-            href="/chat"
-            className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-slate-200/90 bg-white text-fc-navy shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 sm:h-10 sm:w-10"
-            aria-label={chatUnread ? "Chat — neue Nachrichten" : "Chat"}
-            title="Chat"
-          >
-            <MessageCircleIcon className="h-[18px] w-[18px]" />
-            {chatUnread ? (
-              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            ) : null}
-          </Link>
+        <div className="ml-auto flex h-10 shrink-0 items-center gap-2 sm:gap-3">
           <Link
             href="/punkte"
             className="relative flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/30 sm:h-10 sm:w-auto sm:min-w-[4.5rem] sm:rounded-xl sm:px-2.5"
@@ -210,6 +221,33 @@ export function TopbarChrome() {
               </div>
             </div>
           </div>
+
+          <span className="mx-0.5 hidden h-6 w-px shrink-0 bg-slate-200/90 sm:block" aria-hidden />
+
+          <button
+            type="button"
+            onClick={handleChatToggle}
+            className={cn(
+              "relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border shadow-sm transition sm:h-10 sm:w-10",
+              chatActive
+                ? "border-fc-blue bg-fc-ice text-fc-navy ring-2 ring-fc-sky/40"
+                : "border-slate-200/90 bg-white text-fc-navy hover:border-fc-sky/30 hover:bg-fc-ice/50",
+            )}
+            aria-label={
+              chatActive
+                ? "Chat schließen"
+                : chatUnread
+                  ? "Chat — neue Nachrichten"
+                  : "Chat"
+            }
+            aria-pressed={chatActive}
+            title={chatActive ? "Chat schließen" : "Chat"}
+          >
+            <MessageCircleIcon className="h-[18px] w-[18px]" />
+            {chatUnread && !chatActive ? (
+              <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
+            ) : null}
+          </button>
 
           <div className="relative shrink-0">
             <NotificationBell

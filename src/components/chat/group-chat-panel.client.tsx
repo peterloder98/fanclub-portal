@@ -150,6 +150,7 @@ type PanelProps = {
   onDelete: (id: string) => void;
   onRemoveLocal?: (id: string) => void;
   onCollapse?: () => void;
+  onClose?: () => void;
   className?: string;
 };
 
@@ -170,6 +171,7 @@ export function GroupChatPanel({
   onDelete,
   onRemoveLocal,
   onCollapse,
+  onClose,
   className,
 }: PanelProps) {
   const fullscreen = mode === "fullscreen";
@@ -237,6 +239,17 @@ export function GroupChatPanel({
             title="Verkleinern"
           >
             <ChevronDown className="h-4 w-4" />
+          </button>
+        ) : null}
+        {fullscreen && onClose ? (
+          <button
+            type="button"
+            onClick={() => onClose()}
+            className="relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
+            aria-label="Chat schließen"
+            title="Schließen"
+          >
+            <X className="h-4 w-4" />
           </button>
         ) : null}
       </header>
