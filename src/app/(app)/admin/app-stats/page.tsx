@@ -7,11 +7,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminAppStatsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
+export default async function AdminAppStatsPage() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -25,10 +21,9 @@ export default async function AdminAppStatsPage({
     .maybeSingle();
   if (profile?.role !== "admin") redirect("/dashboard");
 
-  const { month } = await searchParams;
   let stats;
   try {
-    stats = await loadAppStats(month);
+    stats = await loadAppStats();
   } catch (e) {
     return (
       <div className="min-h-screen">
@@ -40,6 +35,8 @@ export default async function AdminAppStatsPage({
             <p className="mt-2 text-amber-800">
               Falls die Tabellen noch fehlen: bitte{" "}
               <code className="rounded bg-white/70 px-1">supabase/103_member_portal_intro_and_app_activity.sql</code>{" "}
+              und{" "}
+              <code className="rounded bg-white/70 px-1">supabase/105_app_activity_hit_count.sql</code>{" "}
               im Supabase SQL Editor ausführen.
             </p>
           </div>
@@ -56,7 +53,7 @@ export default async function AdminAppStatsPage({
       />
       <main className="mx-auto w-full max-w-5xl px-4 py-6 lg:px-8">
         <AdminBackLink />
-        <AppStatsPanel stats={stats} />
+        <AppStatsPanel initial={stats} />
       </main>
     </div>
   );

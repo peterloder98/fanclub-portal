@@ -42,7 +42,7 @@ export async function dismissIntroOnboarding(): Promise<{ ok: true } | { ok: fal
   return saveMyIntroAnswers({ dismissOnboarding: true });
 }
 
-/** Heartbeat: last_app_active_at + ein Tageseintrag (idempotent). */
+/** Heartbeat: last_app_active_at + Tageseintrag inkl. Zugriffszähler. */
 export async function pingAppActivity(): Promise<void> {
   const supabase = await createSupabaseServerClient();
   const {
@@ -55,8 +55,24 @@ export async function pingAppActivity(): Promise<void> {
   const admin = createSupabaseAdminClient();
 
   await admin.from("profiles").update({ last_app_active_at: now }).eq("id", user.id);
-  await admin.from("app_activity_days").upsert(
-    { user_id: user.id, activity_date: today },
-    { onConflict: "user_id,activity_date", ignoreDuplicates: true },
+
+  const { data: existing } = await admin
+    .from("app_activity_days")
+    .select("hit_count")
+    .eq("user_id", user.id)
+    .eq("activity_date", today)
+    .maybeSingle();
+
+  const nextHits = (typeof existing?.hit_count === "number" ? existing.hit_count : 0) + 1;
+  const { error } = await admin.from("app_activity_days").upsert(
+    { user_id: user.id, activity_date: today, hit_count: nextHits },
+    { onConflict: "user_id,activity_date" },
   );
+  if (error) {
+    // Spalte hit_count fehlt ggf. vor Migration 105
+    await admin.from("app_activity_days").upsert(
+      { user_id: user.id, activity_date: today },
+      { onConflict: "user_id,activity_date", ignoreDuplicates: true },
+    );
+  }
 }

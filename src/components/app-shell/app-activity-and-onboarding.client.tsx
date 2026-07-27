@@ -6,7 +6,7 @@ import { pingAppActivity } from "@/app/(app)/mitglieder/intro-actions";
 
 /**
  * App-Heartbeat + einmaliges Intro-Onboarding nach Login.
- * Läuft im App-Shell, ohne den Seiteninhalt zu blockieren.
+ * Heartbeat bei Navigation (gedrosselt), damit App-Zugriffe sinnvoll zählen.
  */
 export function AppActivityAndOnboarding({
   needsIntroOnboarding,
@@ -15,13 +15,15 @@ export function AppActivityAndOnboarding({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const pinged = useRef(false);
+  const lastPingAt = useRef(0);
 
   useEffect(() => {
-    if (pinged.current) return;
-    pinged.current = true;
+    const now = Date.now();
+    // Mindestens alle 30s bei Navigation erneut zählen
+    if (now - lastPingAt.current < 30_000) return;
+    lastPingAt.current = now;
     void pingAppActivity();
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (!needsIntroOnboarding) return;
