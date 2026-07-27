@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
+import { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef, useLayoutEffect } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatMentionToken, splitMentionText } from "@/lib/mentions/format";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -216,6 +216,21 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
     fillEditorFromValue(el, value);
   }, [value]);
 
+  // Caret/Text vertikal mittig: line-height = tatsächliche Feldhöhe (h-8/h-9/h-10)
+  useLayoutEffect(() => {
+    if (multiline) return;
+    const el = editorRef.current;
+    const shell = el?.parentElement;
+    if (!el || !shell) return;
+    const apply = () => {
+      el.style.lineHeight = `${shell.clientHeight}px`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(shell);
+    return () => ro.disconnect();
+  }, [multiline, inputClassName]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return members;
@@ -378,7 +393,7 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
       className={cn(
         "text-left text-fc-navy outline-none",
         singleLineLike
-          ? "absolute inset-0 z-0 flex items-center overflow-x-auto overflow-y-hidden whitespace-nowrap px-3"
+          ? "absolute inset-0 z-0"
           : "w-full box-border overflow-y-auto whitespace-pre-wrap break-words leading-snug",
         disabled && "cursor-not-allowed opacity-60",
         !singleLineLike && inputClassName,
@@ -390,9 +405,9 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
   return (
     <div ref={rootRef} className={cn("relative", className)}>
       {singleLineLike ? (
-        <div className={cn("relative box-border", inputClassName)}>
+        <div className={cn("relative box-border overflow-hidden", inputClassName)}>
           {!value && placeholder ? (
-            <span className="pointer-events-none absolute inset-y-0 left-3 z-[1] flex items-center text-sm text-slate-400">
+            <span className="pointer-events-none absolute inset-y-0 left-3 z-[1] flex items-center text-sm text-slate-400 lg:text-sm">
               {placeholder}
             </span>
           ) : null}

@@ -133,14 +133,20 @@ body {
   background: rgba(44, 100, 163, 0.22);
 }
 
-/* Einzeilige Mention-Felder: Caret vertikal mittig (überschreibt nicht flex) */
+/* Einzeilige Mention-Felder: line-height wird per JS auf Feldhöhe gesetzt */
 [data-mention-editor="single"] {
-  display: flex !important;
-  align-items: center;
-  line-height: normal;
+  display: block !important;
+  height: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 [data-mention-editor="single"] .mention-chip {
   vertical-align: middle;
+  line-height: normal;
 }
 
 /* Leaflet: Tailwind base styles can break tile sizing (shows "quadrants"). */
