@@ -270,7 +270,11 @@ export function GroupChatPanel({
             }}
             className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 hover:bg-white/20"
             aria-label={muted ? "Chat-Ton einschalten" : "Chat lautlos"}
-            title={muted ? "Ton an" : "Lautlos"}
+            title={
+              muted
+                ? "Ton einschalten (spielt Testton)"
+                : "Ton an — Klick für Lautlos"
+            }
           >
             {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
@@ -389,6 +393,24 @@ export function GroupChatPanel({
         )}
       </div>
 
+      {typingIndicator ? (
+        <div
+          className="shrink-0 border-t border-fc-gold/50 bg-gradient-to-r from-fc-navy via-fc-blue to-fc-navy px-3 py-2 shadow-[0_-4px_14px_rgba(15,23,42,0.12)]"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2.5 text-sm font-semibold tracking-tight text-white">
+            <span className="flex items-center gap-1" aria-hidden>
+              <span className="fc-typing-dot h-2 w-2 rounded-full bg-fc-gold" />
+              <span className="fc-typing-dot h-2 w-2 rounded-full bg-fc-gold [animation-delay:0.15s]" />
+              <span className="fc-typing-dot h-2 w-2 rounded-full bg-fc-gold [animation-delay:0.3s]" />
+            </span>
+            <span className="min-w-0 truncate">
+              {typingIndicator.name} <span className="font-bold text-fc-gold">tippt…</span>
+            </span>
+          </div>
+        </div>
+      ) : null}
+
       <footer
         ref={footerRef}
         className={cn(
@@ -399,11 +421,6 @@ export function GroupChatPanel({
         {error && !/warten|cooldown|zu schnell/i.test(error) ? (
           <p className="mb-1.5 text-[11px] text-rose-600" role="alert">
             {error}
-          </p>
-        ) : null}
-        {typingIndicator ? (
-          <p className="mb-1.5 truncate text-[11px] text-slate-500" aria-live="polite">
-            <span className="font-medium text-fc-navy">{typingIndicator.name}</span> tippt…
           </p>
         ) : null}
         <div className="flex items-end gap-1.5">
@@ -417,7 +434,7 @@ export function GroupChatPanel({
             placeholder="Nachricht… @ · Enter sendet"
             className="min-w-0 flex-1"
             inputClassName={cn(
-              "w-full min-w-0 max-w-full overflow-x-hidden rounded-xl border bg-white px-3 py-2 text-base text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 lg:text-sm",
+              "box-border h-10 w-full min-w-0 max-w-full overflow-x-hidden rounded-xl border bg-white px-3 text-base text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 lg:text-sm",
               overLimit
                 ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200"
                 : "border-fc-navy/15 focus:border-fc-blue focus:ring-fc-sky/30",

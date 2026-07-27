@@ -172,10 +172,12 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     setMuted((prev) => {
       const next = !prev;
       setChatMuted(next);
-      void unlockChatAudio().then(() => {
-        // Beim Einschalten kurzer Test-Ton, damit klar ist: Audio läuft.
-        if (!next) playChatBling({ force: true });
-      });
+      if (!next) {
+        // Einschalten: Freischalten + lauter Test-Ton (User-Geste → Safari erlaubt Audio)
+        void unlockChatAudio().then(() => {
+          playChatBling({ force: true });
+        });
+      }
       return next;
     });
   }
@@ -296,7 +298,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     }
     knownIdsRef.current = new Set(messages.map((m) => m.id));
     if (shouldBling) {
-      void unlockChatAudio().then(() => playChatBling());
+      playChatBling();
     }
   }, [enabled, loaded, userId, messages]);
 

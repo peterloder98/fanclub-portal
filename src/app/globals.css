@@ -388,3 +388,20 @@ body {
     transform: translate(-50%, -14px) scale(1.45);
   }
 }
+
+@keyframes fc-typing-bounce {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.fc-typing-dot {
+  animation: fc-typing-bounce 1s ease-in-out infinite;
+}
