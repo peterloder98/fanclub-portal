@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 /** +1 Anni-Star je 10 € Bestellwert (abgeschlossen / versendet). */
 export function starsForOrderTotalCents(totalCents: number): number {
@@ -7,6 +8,9 @@ export function starsForOrderTotalCents(totalCents: number): number {
 }
 
 export async function awardShopOrderStars(orderId: string): Promise<{ awarded: boolean; stars: number }> {
+  if (!isFeatureEnabled("merchandise")) {
+    return { awarded: false, stars: 0 };
+  }
   const admin = createSupabaseAdminClient();
 
   const { data: existing } = await admin

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runRadioVotingLastChanceReminders } from "@/lib/notifications/radio-voting-reminders";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,10 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  if (!isFeatureEnabled("votings")) {
+    return NextResponse.json({ ok: true, skipped: true, reason: "votings_disabled" });
   }
 
   const admin = createSupabaseAdminClient();

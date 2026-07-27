@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { evaluateUserBadges } from "@/lib/badges/evaluate-user-badges";
 import { notifyRankUpIfChanged, sumUserPointsThisYear } from "@/lib/points/rank-notify";
 import { POINT_VALUES } from "@/lib/points/values";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 export type RecordRadioParticipationResult = {
   ok: boolean;
@@ -14,6 +15,9 @@ export async function recordRadioVotingParticipation(
   userId: string,
   campaignId: string,
 ): Promise<RecordRadioParticipationResult> {
+  if (!isFeatureEnabled("votings")) {
+    return { ok: false, alreadyParticipated: false, starsAwarded: 0, error: "Radio-Votings sind deaktiviert." };
+  }
   const admin = createSupabaseAdminClient();
 
   const { data: campaign, error: cErr } = await admin

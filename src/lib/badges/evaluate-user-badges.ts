@@ -12,6 +12,7 @@ import {
   highestReferralProTier,
   nextReferralProTier,
 } from "@/lib/badges/referral-pro";
+import { isBadgeSlugEnabled, isFeatureEnabled } from "@/lib/feature-flags";
 
 type AchievementDefinition = {
   id: string;
@@ -61,22 +62,30 @@ async function metricValue(
         .from("poll_votes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId);
-      const { count: radioCount } = await admin
-        .from("radio_voting_participations")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
-      return (pollCount ?? 0) + (radioCount ?? 0);
+      let radioCount = 0;
+      if (isFeatureEnabled("votings")) {
+        const { count } = await admin
+          .from("radio_voting_participations")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId);
+        radioCount = count ?? 0;
+      }
+      return (pollCount ?? 0) + radioCount;
     }
     case "voting_engagement": {
       const { count: pollCount } = await admin
         .from("poll_votes")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId);
-      const { count: radioCount } = await admin
-        .from("radio_voting_participations")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
-      return (pollCount ?? 0) + (radioCount ?? 0);
+      let radioCount = 0;
+      if (isFeatureEnabled("votings")) {
+        const { count } = await admin
+          .from("radio_voting_participations")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId);
+        radioCount = count ?? 0;
+      }
+      return (pollCount ?? 0) + radioCount;
     }
     case "birthday_comments": {
       const { count } = await admin
@@ -285,6 +294,8 @@ export async function evaluateUserBadges(userId: string): Promise<UserAchievemen
   const display: UserAchievementRow[] = [];
 
   for (const def of (defs ?? []) as AchievementDefinition[]) {
+    if (!isBadgeSlugEnabled(def.slug)) continue;
+
     if (def.slug === "referral_pro") {
       const counts = await fetchReferralCounts(admin, userId);
       const newly = await syncReferralProTiers(admin, userId, def, counts, existing);
@@ -450,6 +461,8 @@ export async function loadUserAchievementsForDisplay(
 
   const display: UserAchievementRow[] = [];
   for (const def of (defs ?? []) as AchievementDefinition[]) {
+    if (!isBadgeSlugEnabled(def.slug)) continue;
+
     const unlocked = bestByAchievement.get(def.id);
     if (!unlocked) continue;
 

@@ -22,7 +22,7 @@ export function AchievementsPanel({
         <div className="border-b border-slate-100 px-4 py-3">
           <h3 className="text-base font-semibold text-fc-navy">Meine Erfolge</h3>
           <p className="mt-0.5 text-xs text-slate-600">
-            Aktiv in der App — Konzerte, Umfragen, Shop und mehr — um Badges zu sammeln.
+            Aktiv in der App — Konzerte, Umfragen und mehr — um Badges zu sammeln.
           </p>
         </div>
         <p className="px-4 py-4 text-sm text-slate-600">

@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { recordRadioVotingParticipation } from "@/lib/votings/record-radio-participation";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 export async function POST(request: Request) {
+  if (!isFeatureEnabled("votings")) {
+    return NextResponse.json({ error: "disabled" }, { status: 404 });
+  }
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

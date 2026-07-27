@@ -1,10 +1,40 @@
+/**
+ * Feature-Flags: auf `true` setzen, um Shop bzw. Radio-Votings wieder freizuschalten.
+ * Badges, Punkte-Regeln, Navigation und Vergabe reagieren automatisch.
+ */
 export const FEATURE_FLAGS = {
-  /** Shop — vorerst für alle ausgeblendet. */
+  /** Fanshop + Merch-Badge + Shop-Sterne */
   merchandise: false,
-  /** Radio-Votings — vorerst für alle ausgeblendet. */
+  /** Radio-Hörervotings (+ Badge „Votingheld“, Radio-Sterne, Nav/Admin) */
   votings: false,
 } as const;
 
-export function isFeatureEnabled(flag: keyof typeof FEATURE_FLAGS): boolean {
+export type FeatureFlag = keyof typeof FEATURE_FLAGS;
+
+export function isFeatureEnabled(flag: FeatureFlag): boolean {
   return FEATURE_FLAGS[flag];
+}
+
+/** Badge-Slugs, die an Flags hängen. */
+export const FEATURE_BADGE_SLUGS = {
+  merch_legend: "merchandise",
+  voting_hero: "votings",
+} as const satisfies Record<string, FeatureFlag>;
+
+/** Punkte-Regel-IDs, die an Flags hängen. */
+export const FEATURE_POINTS_RULE_IDS = {
+  shop_order: "merchandise",
+  radio_voting: "votings",
+} as const satisfies Record<string, FeatureFlag>;
+
+export function isBadgeSlugEnabled(slug: string): boolean {
+  const flag = (FEATURE_BADGE_SLUGS as Record<string, FeatureFlag | undefined>)[slug];
+  if (!flag) return true;
+  return isFeatureEnabled(flag);
+}
+
+export function isPointsRuleEnabled(ruleId: string): boolean {
+  const flag = (FEATURE_POINTS_RULE_IDS as Record<string, FeatureFlag | undefined>)[ruleId];
+  if (!flag) return true;
+  return isFeatureEnabled(flag);
 }

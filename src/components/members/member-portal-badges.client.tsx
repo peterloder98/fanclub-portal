@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AchievementBadgeIcon } from "@/components/badges/achievement-badge-icon";
 import { tierLabel } from "@/lib/badges/tiers";
 import type { UserAchievementRow } from "@/lib/badges/evaluate-user-badges";
-import { BADGE_CATALOG } from "@/lib/badges/guide";
+import { activeBadgeCatalog } from "@/lib/badges/guide";
 
 /** Max. sichtbare Badges auf dem Portal (Katalog hat aktuell 6). */
 const PORTAL_BADGE_SOFT_CAP = 8;
@@ -57,7 +57,7 @@ export function MemberPortalBadges({
         ) : null}
       </ul>
       <p className="text-[11px] text-slate-500">
-        Bis zu {BADGE_CATALOG.length} Badge-Arten — hier nur freigeschaltete als Icons.
+        Bis zu {activeBadgeCatalog().length} Badge-Arten — hier nur freigeschaltete als Icons.
       </p>
     </section>
   );

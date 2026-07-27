@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Award, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { BADGE_CATALOG, BADGE_TIER_EXPLANATION } from "@/lib/badges/guide";
+import { BADGE_TIER_EXPLANATION, activeBadgeCatalog } from "@/lib/badges/guide";
 import { tierLabel } from "@/lib/badges/tiers";
 import { tierChipClass, tierVisual } from "@/lib/badges/tier-styles";
 import { BadgeCategoryCard } from "@/components/badges/badge-category-card";
@@ -79,7 +79,7 @@ export function BadgesGuideCard() {
             </p>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              {BADGE_CATALOG.map((category) => (
+              {activeBadgeCatalog().map((category) => (
                 <BadgeCategoryCard key={category.slug} category={category} />
               ))}
             </div>

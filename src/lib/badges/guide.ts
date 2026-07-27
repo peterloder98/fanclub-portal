@@ -4,6 +4,7 @@ import {
   REFERRAL_PRO_DESCRIPTION,
   REFERRAL_PRO_REQUIREMENTS,
 } from "@/lib/badges/referral-pro";
+import { isBadgeSlugEnabled } from "@/lib/feature-flags";
 
 export type BadgeThresholdUnit = {
   singular: string;
@@ -27,7 +28,7 @@ export const BADGE_TIER_EXPLANATION = [
     tier: "platinum" as const,
     summary: "Höchste Stufe — Fanclub-Legende in dieser Kategorie.",
   },
-];
+] as const;
 
 /** Entspricht dem Seed in supabase/070_anni_stars_system.sql */
 export const BADGE_CATALOG = [
@@ -86,6 +87,11 @@ export type BadgeCategoryEntry = (typeof BADGE_CATALOG)[number];
 export type ReferralBadgeCategory = Extract<BadgeCategoryEntry, { slug: "referral_pro" }>;
 
 export type CountBadgeCategory = Exclude<BadgeCategoryEntry, ReferralBadgeCategory>;
+
+/** Aktive Badge-Kategorien — Merch/Radio je nach Feature-Flag ausgeblendet. */
+export function activeBadgeCatalog(): BadgeCategoryEntry[] {
+  return BADGE_CATALOG.filter((c) => isBadgeSlugEnabled(c.slug));
+}
 
 export function isReferralBadge(
   category: BadgeCategoryEntry,

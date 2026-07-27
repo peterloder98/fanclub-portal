@@ -6,6 +6,7 @@ import {
   POINTS_YEAR_HINT,
   POINT_VALUES,
 } from "@/lib/points/values";
+import { isPointsRuleEnabled } from "@/lib/feature-flags";
 
 export type PointsRule = {
   id: string;
@@ -104,6 +105,11 @@ export const POINTS_RULES: PointsRule[] = [
   },
 ];
 
+/** Aktive Regeln — Merch/Radio je nach Feature-Flag ausgeblendet. */
+export function activePointsRules(): PointsRule[] {
+  return POINTS_RULES.filter((r) => isPointsRuleEnabled(r.id));
+}
+
 export function pointsRulesSortedByPoints(): PointsRule[] {
-  return [...POINTS_RULES].sort((a, b) => b.points - a.points);
+  return [...activePointsRules()].sort((a, b) => b.points - a.points);
 }

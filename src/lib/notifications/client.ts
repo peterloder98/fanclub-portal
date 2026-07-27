@@ -1,5 +1,33 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserNotificationRow } from "@/lib/notifications/actions";
+import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { isBadgeSlugEnabled, isFeatureEnabled } from "@/lib/feature-flags";
+
+function isNotificationVisible(row: UserNotificationRow): boolean {
+  const kind = row.kind;
+  if (
+    kind === NOTIFICATION_KINDS.radioVotingLastChance ||
+    kind === NOTIFICATION_KINDS.radioVotingAvailable ||
+    kind === NOTIFICATION_KINDS.radioVotingNewCycle
+  ) {
+    return isFeatureEnabled("votings");
+  }
+  if (
+    kind === NOTIFICATION_KINDS.merchandiseOrderConfirmed ||
+    kind === NOTIFICATION_KINDS.merchandiseOrderAdmin
+  ) {
+    return isFeatureEnabled("merchandise");
+  }
+  if (kind === NOTIFICATION_KINDS.badgeUnlocked) {
+    const meta =
+      row.metadata && typeof row.metadata === "object"
+        ? (row.metadata as { achievement_slug?: unknown; slug?: unknown })
+        : null;
+    const slug = String(meta?.achievement_slug ?? meta?.slug ?? "");
+    if (slug && !isBadgeSlugEnabled(slug)) return false;
+  }
+  return true;
+}
 
 export async function fetchNotificationsForUser(
   supabase: SupabaseClient,
@@ -19,7 +47,7 @@ export async function fetchNotificationsForUser(
 
   if (error) throw error;
 
-  const rows = (items ?? []) as UserNotificationRow[];
+  const rows = ((items ?? []) as UserNotificationRow[]).filter(isNotificationVisible);
   return {
     items: rows,
     unreadCount: rows.filter((r) => !r.read_at).length,

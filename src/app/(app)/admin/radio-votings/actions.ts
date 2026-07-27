@@ -6,10 +6,17 @@ import { z } from "zod";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 import {
   notifyMembersRadioVotingAvailable,
   notifyMembersRadioVotingNewCycle,
 } from "@/lib/notifications/radio-voting-notify";
+
+function assertVotingsEnabled() {
+  if (!isFeatureEnabled("votings")) {
+    throw new Error("Radio-Votings sind derzeit deaktiviert.");
+  }
+}
 
 const campaignSelect =
   "id,station,chart_name,song_title,is_active" as const;
@@ -42,6 +49,7 @@ function parseEndsAt(raw: string) {
 }
 
 export async function saveRadioVotingCampaign(formData: FormData) {
+  assertVotingsEnabled();
   const { user } = await requireAdminAction();
   const id = formData.get("id")?.toString().trim() || null;
 
@@ -130,6 +138,7 @@ export async function saveRadioVotingCampaign(formData: FormData) {
 }
 
 export async function deleteRadioVotingCampaign(formData: FormData) {
+  assertVotingsEnabled();
   await requireAdminAction();
   const id = formData.get("id")?.toString();
   if (!id) throw new Error("ID fehlt");
@@ -144,6 +153,7 @@ export async function deleteRadioVotingCampaign(formData: FormData) {
 }
 
 export async function toggleRadioVotingCampaign(formData: FormData) {
+  assertVotingsEnabled();
   await requireAdminAction();
   const id = formData.get("id")?.toString();
   const isActive = formData.get("is_active") === "true";
@@ -161,6 +171,7 @@ export async function toggleRadioVotingCampaign(formData: FormData) {
 }
 
 export async function startNewRadioVotingCycle(formData: FormData) {
+  assertVotingsEnabled();
   await requireAdminAction();
   const id = formData.get("id")?.toString();
   if (!id) throw new Error("ID fehlt");
