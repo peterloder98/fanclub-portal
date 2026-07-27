@@ -34,15 +34,19 @@ type PresenceMeta = {
   name?: string;
   avatar_url?: string | null;
   online_at?: string;
-  typing_since?: string | null;
 };
 
 const TYPING_IDLE_MS = 2800;
+/** Presence-Updates lösen kurz Leave+Join aus — Removals verzögern, damit die Online-Zahl nicht flackert. */
+const ONLINE_LEAVE_GRACE_MS = 2500;
+const TYPING_BROADCAST_EVENT = "typing";
 
 type Options = {
   /** When false, skip load/realtime/presence (e.g. dock hidden on /chat). */
   enabled?: boolean;
 };
+
+type RemoteTyper = { userId: string; name: string; since: string; expiresAt: number };
 
 export function useGroupChat({ enabled = true }: Options = {}) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -66,6 +70,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const userIdRef = useRef<string | null>(null);
   const typingSinceRef = useRef<string | null>(null);
   const typingIdleTimerRef = useRef<number | null>(null);
+  const lastTypingBroadcastRef = useRef(0);
+  const remoteTypersRef = useRef<Map<string, RemoteTyper>>(new Map());
+  const onlineSnapshotRef = useRef<Map<string, OnlineMember>>(new Map());
+  const pendingLeaveTimersRef = useRef<Map<string, number>>(new Map());
 
   const cooldownLeftMs = Math.max(0, cooldownUntil - nowTick);
   const cooldownActive = cooldownLeftMs > 0;
@@ -79,22 +87,41 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     userIdRef.current = userId;
   }, [userId]);
 
-  const pushPresence = useCallback(async (typingSince: string | null) => {
+  const publishTyping = useCallback(async (typing: boolean, since: string | null) => {
     const channel = presenceChannelRef.current;
     const me = meProfileRef.current;
     const uid = userIdRef.current;
     if (!channel || !me || !uid) return;
     try {
-      await channel.track({
-        user_id: uid,
-        name: me.name,
-        avatar_url: me.avatarUrl,
-        online_at: new Date().toISOString(),
-        typing_since: typingSince,
+      await channel.send({
+        type: "broadcast",
+        event: TYPING_BROADCAST_EVENT,
+        payload: {
+          user_id: uid,
+          name: me.name,
+          typing,
+          since: typing ? since : null,
+        },
       });
     } catch {
       /* ignore */
     }
+  }, []);
+
+  const recomputeTypingIndicator = useCallback(() => {
+    const uid = userIdRef.current;
+    const now = Date.now();
+    const active: RemoteTyper[] = [];
+    for (const [id, t] of remoteTypersRef.current) {
+      if (t.expiresAt <= now || id === uid) {
+        remoteTypersRef.current.delete(id);
+        continue;
+      }
+      active.push(t);
+    }
+    active.sort((a, b) => a.since.localeCompare(b.since));
+    const first = active[0];
+    setTypingIndicator(first ? { userId: first.userId, name: first.name } : null);
   }, []);
 
   const clearTyping = useCallback(() => {
@@ -104,13 +131,20 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     }
     if (typingSinceRef.current == null) return;
     typingSinceRef.current = null;
-    void pushPresence(null);
-  }, [pushPresence]);
+    lastTypingBroadcastRef.current = 0;
+    void publishTyping(false, null);
+  }, [publishTyping]);
 
   const bumpTyping = useCallback(() => {
-    if (!typingSinceRef.current) {
+    const now = Date.now();
+    const started = !typingSinceRef.current;
+    if (started) {
       typingSinceRef.current = new Date().toISOString();
-      void pushPresence(typingSinceRef.current);
+    }
+    // Heartbeat, damit die Anzeige bei längerem Tippen nicht abläuft
+    if (started || now - lastTypingBroadcastRef.current > 1500) {
+      lastTypingBroadcastRef.current = now;
+      void publishTyping(true, typingSinceRef.current);
     }
     if (typingIdleTimerRef.current) {
       window.clearTimeout(typingIdleTimerRef.current);
@@ -118,9 +152,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     typingIdleTimerRef.current = window.setTimeout(() => {
       typingSinceRef.current = null;
       typingIdleTimerRef.current = null;
-      void pushPresence(null);
+      lastTypingBroadcastRef.current = 0;
+      void publishTyping(false, null);
     }, TYPING_IDLE_MS);
-  }, [pushPresence]);
+  }, [publishTyping]);
 
   useEffect(() => {
     setMuted(isChatMuted());
@@ -266,21 +301,14 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   }, [enabled, loaded, userId, messages]);
 
   useEffect(() => {
-    if (!enabled || !userId || !meProfile) return;
+    if (!enabled || !userId) return;
     const supabase = createSupabaseBrowserClient();
     const messagesChannel = supabase
       .channel("group-chat-messages")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_chat_messages" },
-        (payload) => {
-          const row = payload.new as GroupChatMessageRow | undefined;
-          if (!row?.id) {
-            void refresh();
-            return;
-          }
-          void refresh();
-        },
+        () => void refresh(),
       )
       .on(
         "postgres_changes",
@@ -294,64 +322,133 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       )
       .subscribe();
 
+    return () => {
+      void supabase.removeChannel(messagesChannel);
+    };
+  }, [enabled, userId, refresh]);
+
+  useEffect(() => {
+    if (!enabled || !userId || !meProfile) return;
+    const supabase = createSupabaseBrowserClient();
+    const myId = userId;
+
     const presenceChannel = supabase.channel(GROUP_CHAT_PRESENCE_CHANNEL, {
-      config: { presence: { key: userId } },
+      config: {
+        presence: { key: myId },
+        broadcast: { self: false },
+      },
     });
     presenceChannelRef.current = presenceChannel;
 
+    const flushOnlineMembers = () => {
+      const list = [...onlineSnapshotRef.current.values()].sort((a, b) =>
+        a.name.localeCompare(b.name, "de"),
+      );
+      const me = meProfileRef.current;
+      setOnlineMembers(list.length ? list : me ? [me] : []);
+    };
+
     const syncPresence = () => {
       const state = presenceChannel.presenceState<PresenceMeta>();
-      const list: OnlineMember[] = [];
-      const typers: { userId: string; name: string; since: string }[] = [];
+      const seen = new Set<string>();
+
       for (const [key, metas] of Object.entries(state)) {
-        const meta = metas[0];
+        // Neueste Meta bevorzugen (mehrere Tabs / Presence-Updates)
+        const meta = metas[metas.length - 1] ?? metas[0];
         const id = meta?.user_id ?? key;
-        list.push({
+        seen.add(id);
+        const pending = pendingLeaveTimersRef.current.get(id);
+        if (pending) {
+          window.clearTimeout(pending);
+          pendingLeaveTimersRef.current.delete(id);
+        }
+        onlineSnapshotRef.current.set(id, {
           id,
           name: meta?.name ?? "Mitglied",
           avatarUrl: meta?.avatar_url ?? null,
           onlineAt: meta?.online_at,
         });
-        const since = meta?.typing_since?.trim();
-        if (since && id !== userId) {
-          typers.push({ userId: id, name: meta?.name ?? "Mitglied", since });
-        }
       }
-      list.sort((a, b) => a.name.localeCompare(b.name, "de"));
-      setOnlineMembers(list.length ? list : meProfile ? [meProfile] : []);
-      // Nur der, der zuerst angefangen hat zu tippen
-      typers.sort((a, b) => a.since.localeCompare(b.since));
-      const first = typers[0];
-      setTypingIndicator(first ? { userId: first.userId, name: first.name } : null);
+
+      for (const id of [...onlineSnapshotRef.current.keys()]) {
+        if (seen.has(id)) continue;
+        if (pendingLeaveTimersRef.current.has(id)) continue;
+        const timer = window.setTimeout(() => {
+          pendingLeaveTimersRef.current.delete(id);
+          const stillGone = !Object.entries(presenceChannel.presenceState<PresenceMeta>()).some(
+            ([key, metas]) => (metas[metas.length - 1]?.user_id ?? key) === id,
+          );
+          if (stillGone) {
+            onlineSnapshotRef.current.delete(id);
+            flushOnlineMembers();
+          }
+        }, ONLINE_LEAVE_GRACE_MS);
+        pendingLeaveTimersRef.current.set(id, timer);
+      }
+
+      flushOnlineMembers();
     };
 
     presenceChannel
       .on("presence", { event: "sync" }, syncPresence)
-      .on("presence", { event: "join" }, syncPresence)
-      .on("presence", { event: "leave" }, syncPresence)
+      .on("broadcast", { event: TYPING_BROADCAST_EVENT }, ({ payload }) => {
+        const p = payload as {
+          user_id?: string;
+          name?: string;
+          typing?: boolean;
+          since?: string | null;
+        };
+        const id = p.user_id?.trim();
+        if (!id || id === myId) return;
+        if (p.typing) {
+          const since = p.since?.trim() || new Date().toISOString();
+          const existing = remoteTypersRef.current.get(id);
+          remoteTypersRef.current.set(id, {
+            userId: id,
+            name: p.name?.trim() || existing?.name || "Mitglied",
+            since: existing?.since ?? since,
+            expiresAt: Date.now() + TYPING_IDLE_MS + 1200,
+          });
+        } else {
+          remoteTypersRef.current.delete(id);
+        }
+        recomputeTypingIndicator();
+      })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
+          const me = meProfileRef.current;
+          if (!me) return;
+          // Presence nur einmal tracken — Tippen läuft über Broadcast (kein Leave/Join-Flackern)
           await presenceChannel.track({
-            user_id: userId,
-            name: meProfile.name,
-            avatar_url: meProfile.avatarUrl,
+            user_id: myId,
+            name: me.name,
+            avatar_url: me.avatarUrl,
             online_at: new Date().toISOString(),
-            typing_since: typingSinceRef.current,
           });
         }
       });
 
+    const typingExpiryTick = window.setInterval(() => {
+      if (remoteTypersRef.current.size === 0) return;
+      recomputeTypingIndicator();
+    }, 500);
+
     return () => {
       presenceChannelRef.current = null;
+      window.clearInterval(typingExpiryTick);
       if (typingIdleTimerRef.current) {
         window.clearTimeout(typingIdleTimerRef.current);
         typingIdleTimerRef.current = null;
       }
       typingSinceRef.current = null;
-      void supabase.removeChannel(messagesChannel);
+      remoteTypersRef.current.clear();
+      for (const t of pendingLeaveTimersRef.current.values()) window.clearTimeout(t);
+      pendingLeaveTimersRef.current.clear();
+      onlineSnapshotRef.current.clear();
+      setTypingIndicator(null);
       void supabase.removeChannel(presenceChannel);
     };
-  }, [enabled, userId, meProfile, refresh]);
+  }, [enabled, userId, meProfile?.id, recomputeTypingIndicator]);
 
   function onDraftChange(next: string) {
     setDraft(next);
