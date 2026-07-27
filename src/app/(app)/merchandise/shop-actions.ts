@@ -11,6 +11,7 @@ export type ShopProduct = {
   description: string | null;
   sale_price_cents: number;
   image_url: string | null;
+  image_urls: string[];
   has_sizes: boolean;
   variants: Array<{
     id: string;
@@ -31,16 +32,40 @@ export async function listShopProductsAction(): Promise<{
   if (!user) throw new Error("Bitte einloggen.");
 
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("merchandise_products")
-    .select("id,name,description,sale_price_cents,image_path,has_sizes")
-    .gt("sale_price_cents", 0)
-    .order("name", { ascending: true });
-  if (error) {
-    if (/merchandise_products|does not exist/i.test(error.message)) {
-      return { products: [], tableMissing: true };
+  let data: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    sale_price_cents: number;
+    image_path: string | null;
+    image_paths?: string[] | null;
+    has_sizes: boolean;
+  }> | null = null;
+  {
+    const withPaths = await admin
+      .from("merchandise_products")
+      .select("id,name,description,sale_price_cents,image_path,image_paths,has_sizes")
+      .gt("sale_price_cents", 0)
+      .order("name", { ascending: true });
+    if (withPaths.error) {
+      if (/merchandise_products|does not exist/i.test(withPaths.error.message)) {
+        return { products: [], tableMissing: true };
+      }
+      // Fallback before migration 086 (image_paths) is applied.
+      if (/image_paths/i.test(withPaths.error.message)) {
+        const legacy = await admin
+          .from("merchandise_products")
+          .select("id,name,description,sale_price_cents,image_path,has_sizes")
+          .gt("sale_price_cents", 0)
+          .order("name", { ascending: true });
+        if (legacy.error) throw new Error(legacy.error.message);
+        data = legacy.data;
+      } else {
+        throw new Error(withPaths.error.message);
+      }
+    } else {
+      data = withPaths.data;
     }
-    throw new Error(error.message);
   }
 
   const ids = (data ?? []).map((p) => p.id);
@@ -66,12 +91,18 @@ export async function listShopProductsAction(): Promise<{
         available: variantAvailable(v),
       }));
       const total_available = vs.reduce((s, v) => s + v.available, 0);
+      const paths =
+        p.image_paths?.filter(Boolean) ?? (p.image_path ? [p.image_path] : []);
+      const imageUrls = (await Promise.all(paths.map((path) => signedClubDocumentUrl(path)))).filter(
+        Boolean,
+      ) as string[];
       return {
         id: p.id,
         name: p.name,
         description: p.description,
         sale_price_cents: p.sale_price_cents,
-        image_url: await signedClubDocumentUrl(p.image_path),
+        image_url: imageUrls[0] ?? null,
+        image_urls: imageUrls,
         has_sizes: p.has_sizes,
         variants: vs,
         total_available,
