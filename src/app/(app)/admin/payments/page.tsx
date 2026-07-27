@@ -39,8 +39,8 @@ export default async function AdminPaymentsPage({
   return (
     <>
       <Topbar title="Admin · Zahlungen" />
-      <main className="mx-auto max-w-6xl space-y-4 p-4 pb-16">
-        <AdminBackLink href="/admin" label="Admin" />
+      <main className="mx-auto max-w-6xl space-y-4 px-4 py-6 pb-16 lg:px-8">
+        <AdminBackLink />
         <AdminMembersNav active="payments" />
         {!available ? (
           <p className="text-sm text-amber-800">

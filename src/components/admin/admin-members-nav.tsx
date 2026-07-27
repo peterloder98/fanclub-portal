@@ -21,7 +21,7 @@ export function AdminMembersNav({
 
   return (
     <nav
-      className="sticky top-[calc(var(--fanclub-chrome-header-height,4rem)+0.25rem)] z-40 -mx-4 flex gap-2 overflow-x-auto border-b bg-[color:var(--background)] px-4 py-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] lg:mx-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:py-0 [&::-webkit-scrollbar]:hidden"
+      className="mb-4 flex flex-wrap gap-2"
       aria-label="Mitgliederverwaltung"
     >
       {items.map((item) => {
