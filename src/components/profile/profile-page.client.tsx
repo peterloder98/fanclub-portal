@@ -11,6 +11,7 @@ import {
   IdCard,
   ImageIcon,
   KeyRound,
+  Mail,
   ShieldAlert,
   UserRound,
 } from "lucide-react";
@@ -39,6 +40,7 @@ import { formatEur } from "@/lib/club/ledger";
 import { activityTypeLabel } from "@/lib/membership/activity-log";
 import {
   loadMyProfileBundle,
+  updateMyEmail,
   updateMyProfile,
   type MyProfileBundle,
   type MyWarningRow,
@@ -255,6 +257,80 @@ function ActivityHistorySection({ rows }: { rows: MemberActivityRow[] }) {
         </CardContent>
       ) : null}
     </Card>
+  );
+}
+
+function EmailSection({
+  currentEmail,
+  onChanged,
+}: {
+  currentEmail: string | null;
+  onChanged: () => void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [email, setEmail] = useState(currentEmail ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+
+  useEffect(() => {
+    setEmail(currentEmail ?? "");
+  }, [currentEmail]);
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setOk(false);
+    const fd = new FormData();
+    fd.set("email", email);
+    startTransition(async () => {
+      try {
+        const result = await updateMyEmail(fd);
+        setOk(true);
+        if (!result.unchanged) onChanged();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "E-Mail konnte nicht geändert werden.");
+      }
+    });
+  }
+
+  return (
+    <ProfileSection
+      icon={Mail}
+      title="E-Mail / Login"
+      description="Deine E-Mail ist zugleich dein Benutzername für die Anmeldung."
+    >
+      <form onSubmit={onSubmit} className="grid max-w-md gap-3">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-950">
+          Wenn du die E-Mail änderst, änderst du auch deinen{" "}
+          <strong>Login-Zugang</strong>. Beim nächsten Anmelden bitte die neue Adresse verwenden.
+          Die Änderung gilt sofort — ohne Freigabe durch den Vorstand.
+        </div>
+        <label className="grid gap-1">
+          <span className={fieldLabelClass}>E-Mail-Adresse</span>
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={fieldInputClass}
+          />
+        </label>
+        {error ? (
+          <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            {error}
+          </div>
+        ) : null}
+        {ok ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+            E-Mail gespeichert. Bitte merke dir die neue Adresse für den Login.
+          </div>
+        ) : null}
+        <button type="submit" disabled={pending} className={cn(primaryButtonClass, "w-full sm:w-auto")}>
+          {pending ? "Speichern…" : "E-Mail speichern"}
+        </button>
+      </form>
+    </ProfileSection>
   );
 }
 
@@ -562,7 +638,7 @@ export function ProfilePageClient() {
                     className="h-11 rounded-xl border bg-slate-50 px-3 text-sm text-slate-600 outline-none"
                   />
                   <span className="text-xs text-slate-500">
-                    E-Mail-Änderungen bitte beim Vorstand anfragen.
+                    Login-E-Mail änderst du unten unter „E-Mail / Login“ — gilt sofort ohne Freigabe.
                   </span>
                 </label>
                 <label className="grid gap-1">
@@ -742,6 +818,7 @@ export function ProfilePageClient() {
                 ) : null}
               </ProfileSection>
 
+              <EmailSection currentEmail={profile.email} onChanged={reload} />
               <PasswordSection />
 
               <ProfileSection

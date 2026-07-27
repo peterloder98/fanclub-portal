@@ -318,3 +318,72 @@ export async function updateMyProfile(formData: FormData) {
   revalidatePath("/admin/members/profile-changes");
   return { ok: true as const, unchanged: false, pending: true };
 }
+
+const emailSchema = z
+  .string()
+  .trim()
+  .email("Bitte eine gültige E-Mail-Adresse eingeben.")
+  .transform((v) => v.toLowerCase());
+
+/** E-Mail (Login) sofort ändern — ohne Admin-Freigabe. */
+export async function updateMyEmail(formData: FormData) {
+  const { supabase, user } = await requireAuthenticatedUser();
+  const parsed = emailSchema.safeParse(String(formData.get("email") ?? ""));
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "Ungültige E-Mail.");
+  }
+  const email = parsed.data;
+
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", user.id)
+    .maybeSingle();
+  const currentEmail = (current?.email ?? user.email ?? "").trim().toLowerCase();
+  if (currentEmail === email) {
+    revalidatePath("/profile");
+    return { ok: true as const, unchanged: true };
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  const { data: taken } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", email)
+    .neq("id", user.id)
+    .maybeSingle();
+  if (taken) {
+    throw new Error("Diese E-Mail-Adresse wird bereits von einem anderen Mitglied verwendet.");
+  }
+
+  const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
+    email,
+    email_confirm: true,
+  });
+  if (authErr) {
+    throw new Error(
+      /already|registered|exists|duplicate/i.test(authErr.message)
+        ? "Diese E-Mail-Adresse ist bereits vergeben."
+        : authErr.message,
+    );
+  }
+
+  const { error: profileErr } = await admin
+    .from("profiles")
+    .update({ email })
+    .eq("id", user.id);
+  if (profileErr) throw new Error(profileErr.message);
+
+  await logMemberActivity({
+    userId: user.id,
+    eventType: MEMBER_ACTIVITY_TYPES.profileSelfUpdated,
+    title: "E-Mail-Adresse geändert",
+    details: `Login-E-Mail von ${currentEmail || "—"} auf ${email} geändert.`,
+    createdBy: user.id,
+  });
+
+  revalidatePath("/profile");
+  return { ok: true as const, unchanged: false };
+}
+
