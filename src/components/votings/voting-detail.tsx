@@ -319,7 +319,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
               className="min-w-0 flex-1"
               emojiSize="md"
               emojiTone="navy"
-              inputClassName="box-border h-10 min-w-0 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-fc-blue focus:ring-4 focus:ring-[color:var(--ring)]"
+              inputClassName="box-border h-10 min-w-0 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-900 outline-none focus:border-fc-blue focus:ring-4 focus:ring-[color:var(--ring)]"
             />
             <button
               type="button"

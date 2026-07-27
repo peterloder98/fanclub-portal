@@ -107,16 +107,20 @@ function ChatWarnButton({
       disabled={pending}
       onClick={(e) => {
         e.stopPropagation();
-        const ok = window.confirm(
-          "Nachricht löschen und automatische Verwarnung per E-Mail senden?",
+        const warnOk = window.confirm(
+          "Verwarnung aussprechen und automatische E-Mail an das Mitglied senden?",
         );
-        if (!ok) return;
-        onRemoved();
+        if (!warnOk) return;
+        const deleteOk = window.confirm(
+          "Nachricht zusätzlich löschen?\n\nOK = löschen + verwarnen\nAbbrechen = nur verwarnen (bleibt stehen)",
+        );
+        if (deleteOk) onRemoved();
         startTransition(async () => {
           try {
             const result = await issueCommentWarning({
               commentType: "chat",
               commentId: messageId,
+              deleteComment: deleteOk,
             });
             router.refresh();
             if (result.isThirdWarning) {

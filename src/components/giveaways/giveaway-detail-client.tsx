@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Heart, MessageCircle, SendHorizontal } from "lucide-react";
+import { ChevronDown, ChevronUp, Heart, MessageCircle, SendHorizontal, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -93,6 +93,7 @@ export function GiveawayDetailClient({
   comments: Array<{
     id: string;
     body: string;
+    authorId: string;
     authorName: string;
     authorAvatarUrl: string | null;
     createdAtLabel: string;
@@ -332,6 +333,7 @@ export function GiveawayDetailClient({
       {
         id: data.id,
         body: data.body,
+        authorId: userId,
         authorName: "Du",
         authorAvatarUrl: myAvatarUrl,
         createdAtLabel: new Date(data.created_at).toLocaleString("de-DE", {
@@ -341,6 +343,21 @@ export function GiveawayDetailClient({
       },
       ...c,
     ]);
+  }
+
+  async function deleteComment(commentId: string) {
+    if (!window.confirm("Kommentar wirklich löschen?")) return;
+    const supabase = createSupabaseBrowserClient();
+    const prev = commentList;
+    setCommentList((list) => list.filter((x) => x.id !== commentId));
+    const { error: delErr } = await supabase
+      .from("giveaway_comments")
+      .delete()
+      .eq("id", commentId);
+    if (delErr) {
+      setCommentList(prev);
+      setError(delErr.message);
+    }
   }
 
   return (
@@ -672,7 +689,10 @@ export function GiveawayDetailClient({
 
               {commentList.length ? (
                 <div className="grid gap-2">
-                  {commentList.map((c) => (
+                  {commentList.map((c) => {
+                    const canDelete = Boolean(isAdmin || c.authorId === userId);
+                    const canWarn = Boolean(isAdmin && c.authorId !== userId);
+                    return (
                     <div key={c.id} className="flex gap-2 text-sm">
                       <HoverEnlargeAvatar
                         name={c.authorName}
@@ -684,22 +704,36 @@ export function GiveawayDetailClient({
                         <div className="flex items-center gap-1 pr-2">
                           <span className="text-xs font-semibold">{c.authorName}</span>
                           <span className="text-xs text-slate-400"> · {c.createdAtLabel}</span>
-                          {isAdmin ? (
-                            <div className="ml-auto shrink-0">
-                              <CommentWarningButton
-                                commentType="giveaway"
-                                commentId={c.id}
-                                onRemoved={() =>
-                                  setCommentList((list) => list.filter((x) => x.id !== c.id))
-                                }
-                              />
+                          {canDelete || canWarn ? (
+                            <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                              {canWarn ? (
+                                <CommentWarningButton
+                                  commentType="giveaway"
+                                  commentId={c.id}
+                                  onRemoved={() =>
+                                    setCommentList((list) => list.filter((x) => x.id !== c.id))
+                                  }
+                                />
+                              ) : null}
+                              {canDelete ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void deleteComment(c.id)}
+                                  className="grid h-6 w-6 place-items-center rounded text-rose-600 hover:bg-rose-50"
+                                  aria-label="Kommentar löschen"
+                                  title="Löschen"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>
                         <MentionText text={c.body} className="block text-slate-700" />
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : null}
             </>

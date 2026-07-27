@@ -13,16 +13,13 @@ export function CommentWarningButton({
 }: {
   commentType: "post" | "poll" | "giveaway" | "chat";
   commentId: string;
-  /** Sofort aus der UI entfernen (vor Server-Antwort). */
+  /** Sofort aus der UI entfernen, falls gelöscht wird. */
   onRemoved: () => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const confirmLabel =
-    commentType === "chat"
-      ? "Nachricht löschen und automatische Verwarnung per E-Mail senden?"
-      : "Kommentar löschen und automatische Verwarnung per E-Mail senden?";
+  const noun = commentType === "chat" ? "Nachricht" : "Kommentar";
 
   return (
     <>
@@ -35,12 +32,21 @@ export function CommentWarningButton({
         className="!h-7 !w-7 !rounded-md !shadow-none"
         onClick={() => {
           setError(null);
-          const ok = window.confirm(confirmLabel);
-          if (!ok) return;
-          onRemoved();
+          const warnOk = window.confirm(
+            `Verwarnung aussprechen und automatische E-Mail an das Mitglied senden?`,
+          );
+          if (!warnOk) return;
+          const deleteOk = window.confirm(
+            `${noun} zusätzlich löschen?\n\nOK = löschen + verwarnen\nAbbrechen = nur verwarnen (bleibt stehen)`,
+          );
+          if (deleteOk) onRemoved();
           startTransition(async () => {
             try {
-              const result = await issueCommentWarning({ commentType, commentId });
+              const result = await issueCommentWarning({
+                commentType,
+                commentId,
+                deleteComment: deleteOk,
+              });
               router.refresh();
               if (result.isThirdWarning) {
                 window.alert(

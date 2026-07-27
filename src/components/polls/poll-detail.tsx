@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { PieChart, SendHorizontal } from "lucide-react";
+import { PieChart, SendHorizontal, Trash2 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -321,6 +321,18 @@ export function PollDetail({ pollId }: { pollId: string }) {
     await load();
   }
 
+  async function deleteComment(commentId: string) {
+    if (!window.confirm("Kommentar wirklich löschen?")) return;
+    const supabase = createSupabaseBrowserClient();
+    const prev = comments;
+    setComments((list) => list.filter((x) => x.id !== commentId));
+    const { error: delErr } = await supabase.from("poll_comments").delete().eq("id", commentId);
+    if (delErr) {
+      setComments(prev);
+      setError(delErr.message);
+    }
+  }
+
   if (error && !poll) {
     return (
       <div className="rounded-2xl border bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -425,7 +437,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
               className="min-w-0 flex-1"
               emojiSize="md"
               emojiTone="navy"
-              inputClassName="box-border h-10 min-w-0 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-fc-blue focus:ring-4 focus:ring-[color:var(--ring)]"
+              inputClassName="box-border h-10 min-w-0 w-full rounded-xl border border-slate-200 bg-white text-sm text-slate-900 outline-none focus:border-fc-blue focus:ring-4 focus:ring-[color:var(--ring)]"
             />
             <button
               type="button"
@@ -437,7 +449,10 @@ export function PollDetail({ pollId }: { pollId: string }) {
             </button>
           </div>
           <div className="grid gap-2">
-            {comments.map((c) => (
+            {comments.map((c) => {
+              const canDelete = Boolean(isAdmin || c.author_id === userId);
+              const canWarn = Boolean(isAdmin && c.author_id !== userId);
+              return (
               <div key={c.id} className="rounded-xl border bg-slate-50 px-3 py-2">
                 <div className="flex items-center gap-2 pr-2 text-xs text-slate-600">
                   <HoverEnlargeAvatar
@@ -455,21 +470,35 @@ export function PollDetail({ pollId }: { pollId: string }) {
                       timeStyle: "short",
                     })}
                   </span>
-                  {isAdmin ? (
-                    <div className="ml-auto shrink-0">
-                      <CommentWarningButton
-                        commentType="poll"
-                        commentId={c.id}
-                        onRemoved={() =>
-                          setComments((list) => list.filter((x) => x.id !== c.id))
-                        }
-                      />
+                  {canDelete || canWarn ? (
+                    <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                      {canWarn ? (
+                        <CommentWarningButton
+                          commentType="poll"
+                          commentId={c.id}
+                          onRemoved={() =>
+                            setComments((list) => list.filter((x) => x.id !== c.id))
+                          }
+                        />
+                      ) : null}
+                      {canDelete ? (
+                        <button
+                          type="button"
+                          onClick={() => void deleteComment(c.id)}
+                          className="grid h-7 w-7 place-items-center rounded-md text-rose-600 hover:bg-rose-50"
+                          aria-label="Kommentar löschen"
+                          title="Löschen"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
                 <MentionText text={c.body} className="mt-1 block text-sm text-slate-800" />
               </div>
-            ))}
+              );
+            })}
             {!comments.length ? (
               <div className="text-sm text-slate-500">Noch keine Kommentare.</div>
             ) : null}

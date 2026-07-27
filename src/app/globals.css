@@ -133,9 +133,11 @@ body {
   background: rgba(44, 100, 163, 0.22);
 }
 
-/* Einzeilige Mention-Felder: Caret über line-height vertikal mittig */
+/* Einzeilige Mention-Felder: Caret vertikal mittig (überschreibt nicht flex) */
 [data-mention-editor="single"] {
-  display: block;
+  display: flex !important;
+  align-items: center;
+  line-height: normal;
 }
 [data-mention-editor="single"] .mention-chip {
   vertical-align: middle;

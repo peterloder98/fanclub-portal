@@ -20,6 +20,8 @@ import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 export type CommentWarningInput = {
   commentType: "post" | "poll" | "giveaway" | "chat";
   commentId: string;
+  /** Wenn false: nur Verwarnung, Kommentar bleibt stehen. */
+  deleteComment?: boolean;
 };
 
 function formatDE(iso: string) {
@@ -31,6 +33,7 @@ function formatDE(iso: string) {
 export async function issueCommentWarning(input: CommentWarningInput) {
   const { user, profile: adminProfile } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
+  const shouldDelete = input.deleteComment !== false;
 
   let memberId: string;
   let commentText: string;
@@ -71,8 +74,10 @@ export async function issueCommentWarning(input: CommentWarningInput) {
         ? `${author.first_name} ${author.last_name}`
         : (author?.email ?? "Unbekannt");
 
-    const { error: delErr } = await admin.from("post_comments").delete().eq("id", c.id);
-    if (delErr) throw new Error(delErr.message);
+    if (shouldDelete) {
+      const { error: delErr } = await admin.from("post_comments").delete().eq("id", c.id);
+      if (delErr) throw new Error(delErr.message);
+    }
   } else if (input.commentType === "poll") {
     const { data: c, error } = await admin
       .from("poll_comments")
@@ -102,8 +107,10 @@ export async function issueCommentWarning(input: CommentWarningInput) {
         ? `${author.first_name} ${author.last_name}`
         : (author?.email ?? "Unbekannt");
 
-    const { error: delErr } = await admin.from("poll_comments").delete().eq("id", c.id);
-    if (delErr) throw new Error(delErr.message);
+    if (shouldDelete) {
+      const { error: delErr } = await admin.from("poll_comments").delete().eq("id", c.id);
+      if (delErr) throw new Error(delErr.message);
+    }
   } else if (input.commentType === "chat") {
     const { data: c, error } = await admin
       .from("group_chat_messages")
@@ -128,12 +135,14 @@ export async function issueCommentWarning(input: CommentWarningInput) {
         ? `${author.first_name} ${author.last_name}`
         : (author?.email ?? "Mitglied");
 
-    const { error: delErr } = await admin
-      .from("group_chat_messages")
-      .delete()
-      .eq("id", c.id);
-    if (delErr) throw new Error(delErr.message);
-    await deleteNotificationsByMetadata("chat_message_id", c.id).catch(() => null);
+    if (shouldDelete) {
+      const { error: delErr } = await admin
+        .from("group_chat_messages")
+        .delete()
+        .eq("id", c.id);
+      if (delErr) throw new Error(delErr.message);
+      await deleteNotificationsByMetadata("chat_message_id", c.id).catch(() => null);
+    }
   } else {
     const { data: c, error } = await admin
       .from("giveaway_comments")
@@ -163,8 +172,10 @@ export async function issueCommentWarning(input: CommentWarningInput) {
         ? `${author.first_name} ${author.last_name}`
         : (author?.email ?? "Unbekannt");
 
-    const { error: delErr } = await admin.from("giveaway_comments").delete().eq("id", c.id);
-    if (delErr) throw new Error(delErr.message);
+    if (shouldDelete) {
+      const { error: delErr } = await admin.from("giveaway_comments").delete().eq("id", c.id);
+      if (delErr) throw new Error(delErr.message);
+    }
   }
 
   const { data: member, error: mErr } = await admin
@@ -303,8 +314,8 @@ export async function issueCommentWarning(input: CommentWarningInput) {
     action: "moderation.warning",
     entityType: input.commentType,
     entityId: input.commentId,
-    summary: `Verwarnung ausgesprochen (${input.commentType}, ${newCount}. Mal)`,
-    metadata: { member_id: memberId, warning_count: newCount },
+    summary: `Verwarnung ausgesprochen (${input.commentType}, ${newCount}. Mal${shouldDelete ? ", gelöscht" : ", belassen"})`,
+    metadata: { member_id: memberId, warning_count: newCount, deleted: shouldDelete },
   });
 
   return {
@@ -312,6 +323,6 @@ export async function issueCommentWarning(input: CommentWarningInput) {
     memberId,
     warningCount: newCount,
     isThirdWarning: newCount >= 3,
-    deletedCommentId: input.commentId,
+    deletedCommentId: shouldDelete ? input.commentId : null,
   };
 }

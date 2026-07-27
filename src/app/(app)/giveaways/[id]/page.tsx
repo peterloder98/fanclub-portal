@@ -175,6 +175,7 @@ export default async function GiveawayDetailPage({
   const comments = (commentRows ?? []).map((c) => ({
     id: c.id,
     body: c.body,
+    authorId: c.author_id,
     authorName: cMap.get(c.author_id)?.name ?? "Mitglied",
     authorAvatarUrl: cMap.get(c.author_id)?.avatarUrl ?? null,
     createdAtLabel: new Date(c.created_at).toLocaleString("de-DE", {

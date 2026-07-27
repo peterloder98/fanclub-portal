@@ -347,58 +347,67 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
   const minHeight = multiline ? `${Math.max(rows, 1) * 1.5}rem` : undefined;
   const singleLineLike = !multiline;
 
+  const editor = (
+    <div
+      ref={setEditorRef}
+      role="textbox"
+      aria-multiline={multiline && !singleLineLike}
+      aria-placeholder={placeholder}
+      contentEditable={!disabled}
+      data-mention-editor={singleLineLike ? "single" : "multi"}
+      suppressContentEditableWarning
+      onInput={handleInput}
+      onKeyDown={handleKeyDown}
+      onFocus={(e) => {
+        if (singleLineLike) {
+          const el = e.currentTarget;
+          // Leeres contentEditable oft mit <br> → Caret klebt oben
+          if (!serializeEditor(el).trim() && el.innerHTML !== "") {
+            el.replaceChildren();
+          }
+        }
+        onFocus?.(e);
+      }}
+      onBlur={onBlur}
+      onClick={() => detectMentionFromCaret()}
+      onPaste={(e) => {
+        e.preventDefault();
+        const text = e.clipboardData.getData("text/plain");
+        document.execCommand("insertText", false, text);
+      }}
+      className={cn(
+        "text-left text-fc-navy outline-none",
+        singleLineLike
+          ? "absolute inset-0 z-0 flex items-center overflow-x-auto overflow-y-hidden whitespace-nowrap px-3"
+          : "w-full box-border overflow-y-auto whitespace-pre-wrap break-words leading-snug",
+        disabled && "cursor-not-allowed opacity-60",
+        !singleLineLike && inputClassName,
+      )}
+      style={{ minHeight: singleLineLike ? undefined : minHeight }}
+    />
+  );
+
   return (
     <div ref={rootRef} className={cn("relative", className)}>
-      <div className="relative">
-        {!value && placeholder ? (
-          <span
-            className={cn(
-              "pointer-events-none absolute z-[1] text-slate-400",
-              singleLineLike
-                ? "left-2 top-1/2 -translate-y-1/2 text-xs sm:left-3 sm:text-sm"
-                : "left-3 top-2.5 text-sm",
-            )}
-          >
-            {placeholder}
-          </span>
-        ) : null}
-        <div
-          ref={setEditorRef}
-          role="textbox"
-          aria-multiline={multiline && !singleLineLike}
-          aria-placeholder={placeholder}
-          contentEditable={!disabled}
-          data-mention-editor={singleLineLike ? "single" : "multi"}
-          suppressContentEditableWarning
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onFocus={(e) => {
-            if (singleLineLike) {
-              const el = e.currentTarget;
-              // Leeres contentEditable oft mit <br> → Caret klebt oben
-              if (!serializeEditor(el).trim() && el.innerHTML !== "") {
-                el.replaceChildren();
-              }
-            }
-            onFocus?.(e);
-          }}
-          onBlur={onBlur}
-          onClick={() => detectMentionFromCaret()}
-          onPaste={(e) => {
-            e.preventDefault();
-            const text = e.clipboardData.getData("text/plain");
-            document.execCommand("insertText", false, text);
-          }}
-          className={cn(
-            "w-full box-border text-left text-fc-navy outline-none",
-            singleLineLike
-              ? "flex items-center overflow-x-auto overflow-y-hidden whitespace-nowrap py-0 leading-none [&_*]:leading-none"
-              : "overflow-y-auto whitespace-pre-wrap break-words leading-snug",
-            disabled && "cursor-not-allowed opacity-60",
-            inputClassName,
-          )}
-          style={{ minHeight: singleLineLike ? undefined : minHeight }}
-        />      </div>
+      {singleLineLike ? (
+        <div className={cn("relative box-border", inputClassName)}>
+          {!value && placeholder ? (
+            <span className="pointer-events-none absolute inset-y-0 left-3 z-[1] flex items-center text-sm text-slate-400">
+              {placeholder}
+            </span>
+          ) : null}
+          {editor}
+        </div>
+      ) : (
+        <div className="relative">
+          {!value && placeholder ? (
+            <span className="pointer-events-none absolute left-3 top-2.5 z-[1] text-sm text-slate-400">
+              {placeholder}
+            </span>
+          ) : null}
+          {editor}
+        </div>
+      )}
       {open && filtered.length ? (
         <ul
           className="absolute bottom-full z-40 mb-1 max-h-[11.5rem] w-full overflow-y-auto rounded-xl border bg-white py-1 shadow-lg shadow-slate-900/10"
