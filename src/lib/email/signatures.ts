@@ -61,8 +61,8 @@ export async function loadMailSignature(
       }
     }
     const htmlBlock = imageBuffer
-      ? `<p style="margin-top:1.25rem"><img src="cid:club-signature" alt="Fanclub-Signatur" style="max-width:220px;height:auto" /></p><p style="white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`
-      : `<p style="margin-top:1.25rem;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`;
+      ? `<p style="margin:0 0 0.5em"><img src="cid:club-signature" alt="Fanclub-Signatur" style="max-width:220px;height:auto" /></p><p style="margin:0;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`
+      : `<p style="margin:0;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`;
     return {
       text,
       htmlBlock,
@@ -95,8 +95,8 @@ export async function loadMailSignature(
   }
 
   const htmlBlock = imageBuffer
-    ? `<p style="margin-top:1.25rem"><img src="cid:${CID}" alt="Signatur" style="max-width:220px;height:auto" /></p><p style="white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`
-    : `<p style="margin-top:1.25rem;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`;
+    ? `<p style="margin:0 0 0.5em"><img src="cid:${CID}" alt="Signatur" style="max-width:220px;height:auto" /></p><p style="margin:0;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`
+    : `<p style="margin:0;white-space:pre-line;font-size:14px;color:#334155">${escapeHtml(text)}</p>`;
 
   return {
     text,

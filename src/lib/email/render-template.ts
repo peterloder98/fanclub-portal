@@ -70,8 +70,19 @@ export function stripTemplateBodyArtifacts(body: string): string {
 
 function appendSignatureToPlainText(body: string, signatureText: string) {
   const core = stripTemplateBodyArtifacts(body);
-  if (!signatureText.trim()) return core;
-  return core ? `${core}\n\n${signatureText.trim()}` : signatureText.trim();
+  const sig = signatureText.trim();
+  if (!sig) return core;
+  // Genau eine Leerzeile zwischen Text und Signatur
+  return core ? `${core}\n\n${sig}` : sig;
+}
+
+function appendSignatureToHtml(bodyHtml: string, signatureHtml: string) {
+  const core = bodyHtml.trimEnd();
+  const sig = signatureHtml.trim();
+  if (!sig) return core;
+  if (!core) return sig;
+  // Visuell eine Leerzeile (Absatz) zwischen Text und Signatur
+  return `${core}<p style="margin:0 0 1em;line-height:1.5">&nbsp;</p>${sig}`;
 }
 
 function textToHtmlParagraphs(text: string) {
@@ -184,7 +195,7 @@ export async function renderEmailFromTemplate(
       )
     : textToHtmlParagraphs(replaceVars(bodyCore, allVars));
   const bodyHtml = sig.htmlBlock?.trim()
-    ? `${bodyHtmlCore}${sig.htmlBlock}`
+    ? appendSignatureToHtml(bodyHtmlCore, sig.htmlBlock)
     : bodyHtmlCore;
 
   const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f8fafc;padding:24px"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0">${bodyHtml}</div></body></html>`;

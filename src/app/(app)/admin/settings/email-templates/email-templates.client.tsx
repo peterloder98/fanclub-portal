@@ -174,13 +174,12 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Signatur in Vorlagen</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-slate-600">
+            <CardContent className="grid gap-2 text-sm text-slate-600">
               <p>
-                Vorlagen und automatische System-E-Mails nutzen immer die allgemeine{" "}
-                <span className="font-medium text-slate-800">Fanclub-Signatur</span> über{" "}
-                <code className="text-xs">{`{{admin_signature_text}}`}</code>. Persönliche
-                Admin-Unterschriften können nur beim manuellen Versand einzelner E-Mails gewählt
-                werden.
+                Vorlagen und automatische System-E-Mails hängen die allgemeine{" "}
+                <span className="font-medium text-slate-800">Fanclub-Signatur</span> automatisch
+                an — mit genau einer Leerzeile Abstand. Signatur-Platzhalter in der Vorlage sind
+                nicht nötig und werden beim Versand ignoriert.
               </p>
               <Link
                 href="/admin/signatures"
