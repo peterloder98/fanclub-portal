@@ -98,7 +98,7 @@ export function EmailTemplatesClient({ initialTab = "email" }: { initialTab?: Ta
           )}
         >
           <Cake className="h-4 w-4" aria-hidden />
-          Vorlagen Geburtstagsgruß
+          Geburtstagsposts
         </button>
       </div>
 

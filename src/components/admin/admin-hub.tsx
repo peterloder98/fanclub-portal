@@ -21,6 +21,7 @@ import {
   CreditCard,
   ShoppingBag,
   FileCheck,
+  Server,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
@@ -39,54 +40,53 @@ type AdminHubSection = {
   items: AdminHubItem[];
 };
 
-/** Abwechselnde CI-Verläufe — kein Regenbogen mehr. */
-const CI_ICON_GRADIENTS = [
-  "from-fc-navy to-fc-blue",
-  "from-fc-blue to-fc-sky",
-  "from-fc-sky to-fc-navy",
-  "from-fc-navy to-fc-sky",
-] as const;
-
 const SECTIONS: AdminHubSection[] = [
   {
     id: "members",
     title: "Mitglieder",
-    subtitle: "Anträge prüfen, Profile pflegen, Formular & Einladungen.",
+    subtitle: "Anträge, Profile und Einladungen",
     items: [
       {
         href: "/admin/members",
         title: "Mitglieder & Anträge",
-        description: "Liste, Freischaltung, Detailansicht und PDF.",
+        description: "Liste, Freischaltung, Details und PDF",
         icon: Users,
       },
       {
         href: "/admin/members/profile-changes",
         title: "Stammdaten freigeben",
-        description: "Mitglieder-Änderungen prüfen und bestätigen.",
+        description: "Änderungswünsche prüfen und bestätigen",
         icon: FileCheck,
       },
       {
         href: "/admin/membership-form",
         title: "Antragsformular",
-        description: "Öffentlicher Link, E-Mail-Versand an Interessenten.",
+        description: "Öffentlicher Link und Versand an Interessenten",
         icon: FileText,
       },
       {
         href: "/admin/referrals",
         title: "Empfehlungen",
-        description: "Versendete Einladungen und erfolgreich geworbene Mitglieder.",
+        description: "Einladungen und geworbene Mitglieder",
         icon: UserPlus,
       },
+    ],
+  },
+  {
+    id: "finance",
+    title: "Finanzen & Shop",
+    subtitle: "Beiträge, Buchungen und Merchandise",
+    items: [
       {
         href: "/admin/payments",
         title: "Zahlungen",
-        description: "Offene Posten, Testmodus PayPal/Stripe, manuelle Freigabe.",
+        description: "Offene Posten und manuelle Freigabe",
         icon: CreditCard,
       },
       {
         href: "/admin/accounting",
         title: "Buchhaltung",
-        description: "Einnahmen, Ausgaben und bestätigte Buchungen.",
+        description: "Einnahmen, Ausgaben und bestätigte Buchungen",
         icon: Wallet,
       },
       ...(FEATURE_FLAGS.merchandise
@@ -94,7 +94,7 @@ const SECTIONS: AdminHubSection[] = [
             {
               href: "/admin/merchandise",
               title: "Merchandise",
-              description: "Fanschals, Kugelschreiber — Bestand, Größen, Fotos.",
+              description: "Artikel, Bestand, Bestellungen",
               icon: ShoppingBag,
             } satisfies AdminHubItem,
           ]
@@ -103,50 +103,50 @@ const SECTIONS: AdminHubSection[] = [
   },
   {
     id: "email",
-    title: "Kommunikation",
-    subtitle: "SMTP, Vorlagen, Signaturen und Mitglieder-Mails.",
+    title: "E-Mail & Kommunikation",
+    subtitle: "Versand, Vorlagen und Benachrichtigungen",
     items: [
       {
         href: "/admin/settings/email",
-        title: "E-Mail / SMTP",
-        description: "Versandserver, Absender und Verbindungstest.",
-        icon: Mail,
+        title: "SMTP-Einstellungen",
+        description: "Server, Absender und Verbindungstest",
+        icon: Server,
       },
       {
         href: "/admin/settings/email-templates",
-        title: "E-Mail & Geburtstagsgrüße",
-        description: "System-Mails, Geburtstagspost-Vorlagen, Platzhalter.",
+        title: "E-Mail-Vorlagen",
+        description: "System-Mails und Geburtstagsposts",
         icon: Mails,
       },
       {
         href: "/admin/signatures",
         title: "Signaturen",
-        description: "Fanclub-Signatur und persönliche Admin-Unterschrift.",
+        description: "Club-Signatur und Admin-Unterschrift",
         icon: PenLine,
       },
       {
         href: "/admin/settings/notifications",
-        title: "Mitglieder-Benachrichtigungen",
-        description: "E-Mail bei neuem Gewinnspiel oder neuer Umfrage.",
+        title: "Benachrichtigungen",
+        description: "Automatische Hinweise an Mitglieder",
         icon: Bell,
       },
       {
         href: "/admin/settings/email-log",
         title: "E-Mail-Historie",
-        description: "Gesendet, fehlgeschlagen — erneut senden.",
+        description: "Gesendet, fehlgeschlagen, erneut senden",
         icon: Mail,
       },
     ],
   },
   {
     id: "community",
-    title: "Community & Engagement",
-    subtitle: "Votings, Umfragen und Mitglieder-Aktivität.",
+    title: "Community",
+    subtitle: "Beiträge und Engagement",
     items: [
       {
         href: "/admin/posts",
-        title: "Posts freigeben",
-        description: "Mitgliederbeiträge annehmen oder ablehnen.",
+        title: "Beiträge freigeben",
+        description: "Mitgliederposts annehmen oder ablehnen",
         icon: FileCheck,
       },
       ...(FEATURE_FLAGS.votings
@@ -154,28 +154,15 @@ const SECTIONS: AdminHubSection[] = [
             {
               href: "/admin/radio-votings",
               title: "Radio-Votings",
-              description: "Hörer-Charts pflegen, Enddaten, neue Runden starten.",
+              description: "Charts pflegen und neue Runden starten",
               icon: Radio,
             } satisfies AdminHubItem,
           ]
         : []),
-    ],
-  },
-  {
-    id: "system",
-    title: "System",
-    subtitle: "Integrationen und technische Einstellungen.",
-    items: [
-      {
-        href: "/admin/settings/spotify",
-        title: "Spotify",
-        description: "Web-Player im Portal und Extended Quota.",
-        icon: Music2,
-      },
       {
         href: "/admin/advent-calendar",
         title: "Adventskalender",
-        description: "24 Türchen — Funktion in Vorbereitung.",
+        description: "24 Türchen — in Vorbereitung",
         icon: Gift,
       },
     ],
@@ -183,111 +170,122 @@ const SECTIONS: AdminHubSection[] = [
   {
     id: "events",
     title: "Events & Treffen",
-    subtitle: "Artistflow-Termine, eigene Fanclub-Treffen und Karte.",
+    subtitle: "Termine, Sync und Reise-Infos",
     items: [
       {
         href: "/admin/treffen",
-        title: "Fanclub Treffen",
-        description: "Eigene Treffen anlegen — News-Seite mit Teilnahme für Mitglieder.",
+        title: "Fanclub-Treffen",
+        description: "Eigene Treffen anlegen und verwalten",
         icon: HeartHandshake,
       },
       {
         href: "/events",
         title: "Events & Reise-Infos",
-        description: "Termine ansehen — Admins bearbeiten Bahnhof/Hotel in der Eventliste.",
+        description: "Termine und Bahnhof/Hotel bearbeiten",
         icon: Train,
       },
       {
         href: "/admin/events-sync",
-        title: "Artistflow Sync",
-        description: "Sync, Teilnehmer & Pins reparieren, Geocoding und Logs.",
+        title: "Artistflow-Sync",
+        description: "Sync, Geocoding und Diagnose",
         icon: MapPinned,
+      },
+    ],
+  },
+  {
+    id: "system",
+    title: "System",
+    subtitle: "Integrationen und Protokoll",
+    items: [
+      {
+        href: "/admin/settings/spotify",
+        title: "Spotify",
+        description: "Player und Verbindung",
+        icon: Music2,
       },
       {
         href: "/admin/audit",
         title: "Audit-Log",
-        description: "Nachvollziehen, welcher Admin was geändert hat.",
+        description: "Wer hat wann was geändert",
         icon: ScrollText,
       },
     ],
   },
 ];
 
-let tileGradientIndex = 0;
-
-function AdminHubTile({ item }: { item: AdminHubItem }) {
+function AdminHubRow({ item, isLast }: { item: AdminHubItem; isLast: boolean }) {
   const Icon = item.icon;
-  const gradient = CI_ICON_GRADIENTS[tileGradientIndex++ % CI_ICON_GRADIENTS.length];
-
   return (
     <Link
       href={item.href}
-      className="group flex gap-4 rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/40 hover:shadow-md hover:shadow-fc-navy/8"
+      className={cn(
+        "group flex items-center gap-3 px-4 py-3.5 transition hover:bg-fc-ice/70",
+        !isLast && "border-b border-slate-100",
+      )}
     >
-      <div
-        className={cn(
-          "grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br text-white shadow-sm",
-          gradient,
-        )}
-      >
-        <Icon className="h-5 w-5" aria-hidden />
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-fc-navy/5 text-fc-navy transition group-hover:bg-fc-navy group-hover:text-white">
+        <Icon className="h-4 w-4" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-snug text-fc-navy group-hover:text-fc-blue">
-            {item.title}
-          </h3>
-          <ArrowRight
-            className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-fc-blue"
-            aria-hidden
-          />
-        </div>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">{item.description}</p>
+        <p className="text-sm font-semibold text-fc-navy group-hover:text-fc-blue">{item.title}</p>
+        <p className="mt-0.5 text-xs leading-snug text-slate-500 sm:text-sm">{item.description}</p>
       </div>
+      <ArrowRight
+        className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-fc-blue"
+        aria-hidden
+      />
     </Link>
   );
 }
 
 export function AdminHub() {
-  tileGradientIndex = 0;
-
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8">
-      <div className="rounded-2xl border border-fc-sky/25 bg-gradient-to-br from-fc-ice via-white to-fc-mist px-5 py-5 shadow-sm shadow-fc-navy/5">
-        <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm">
-            <Shield className="h-5 w-5" aria-hidden />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold tracking-tight text-fc-navy">Admin-Bereich</h2>
-            <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-slate-600">
-              Alles für Moderation, Mitglieder und technische Einstellungen — nach Bereichen
-              sortiert. Inhaltliche Verwaltung von Umfragen und Gewinnspielen erfolgt direkt in den
-              jeweiligen Menüpunkten der App.
-            </p>
-          </div>
+    <div className="mx-auto w-full max-w-3xl space-y-6">
+      <div className="flex items-start gap-3 px-0.5">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
+          <Shield className="h-5 w-5" aria-hidden />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight text-fc-navy">Admin</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Nach Bereichen sortiert — Umfragen und Gewinnspiele pflegst du in den jeweiligen App-Menüs.
+          </p>
         </div>
       </div>
 
-      <div className="space-y-8">
+      <nav
+        className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3"
+        aria-label="Admin-Bereiche"
+      >
         {SECTIONS.map((section) => (
-          <section key={section.id} className="space-y-3">
-            <div className="px-0.5">
-              <h3 className="text-base font-semibold text-fc-navy">{section.title}</h3>
-              <p className="mt-0.5 text-sm text-slate-500">{section.subtitle}</p>
+          <a
+            key={section.id}
+            href={`#admin-${section.id}`}
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-fc-ice hover:text-fc-navy"
+          >
+            {section.title}
+          </a>
+        ))}
+      </nav>
+
+      <div className="space-y-5">
+        {SECTIONS.map((section) => (
+          <section key={section.id} id={`admin-${section.id}`} className="scroll-mt-20">
+            <div className="mb-2 px-0.5">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/80">
+                {section.title}
+              </h3>
+              <p className="text-xs text-slate-500">{section.subtitle}</p>
             </div>
-            <ul
-              className={cn(
-                "grid gap-3",
-                section.items.length > 1 ? "sm:grid-cols-2" : "max-w-xl",
-              )}
-            >
-              {section.items.map((item) => (
-                <li key={item.href}>
-                  <AdminHubTile item={item} />
-                </li>
-              ))}
-            </ul>
+            <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-900/5">
+              <ul>
+                {section.items.map((item, index) => (
+                  <li key={item.href}>
+                    <AdminHubRow item={item} isLast={index === section.items.length - 1} />
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
         ))}
       </div>

@@ -19,8 +19,8 @@ export default async function AdminEmailTemplatesPage({
   return (
     <div className="min-h-screen">
       <Topbar
-        title="E-Mail & Geburtstagsgrüße"
-        subtitle="System-E-Mails und rotierende Geburtstagspost-Vorlagen"
+        title="E-Mail-Vorlagen"
+        subtitle="System-Mails und Geburtstagsposts im Feed"
       />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />
