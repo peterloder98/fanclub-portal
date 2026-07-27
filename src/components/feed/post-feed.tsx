@@ -1363,7 +1363,7 @@ function PostFeedInner({
   }
 
   return (
-    <div className="grid gap-3">
+    <div className="grid w-full min-w-0 max-w-full gap-3 overflow-hidden">
       <Card className="overflow-hidden border-blue-100/90 bg-gradient-to-br from-sky-50/80 via-white to-rose-50/50 shadow-sm shadow-blue-900/5">
         <CardContent ref={composerRef} className="pt-4">
           <div className="flex items-start gap-3">

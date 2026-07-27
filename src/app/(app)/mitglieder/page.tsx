@@ -138,7 +138,7 @@ export default async function MitgliederPage() {
         title="Mitglieder & Treffen"
         subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
       />
-      <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-x-hidden overflow-hidden px-3 pb-2 pt-3 sm:px-4 lg:px-8">
+      <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-hidden py-3 lg:px-8">
         <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-fc-ice" />}>
           <MitgliederTabs
             mapSection={mapSection}

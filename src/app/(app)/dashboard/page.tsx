@@ -81,13 +81,13 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen min-w-0 max-w-full overflow-x-hidden">
+    <div className="min-h-screen min-w-0 w-full max-w-full overflow-x-clip">
       <Topbar
         title="Dashboard"
         subtitle="Willkommen zurück — hier siehst du alles Wichtige auf einen Blick."
       />
 
-      <main className="min-w-0 max-w-full overflow-x-hidden px-3 py-4 pb-2 sm:px-4 lg:px-6 lg:py-4 lg:pb-0">
+      <main className="min-w-0 w-full max-w-full py-4 pb-2 lg:py-4 lg:pb-0">
         {nextMeeting ? <DashboardMeetingHighlight meeting={nextMeeting} /> : null}
         {/* Mobile: Nächster Auftritt ganz oben */}
         <div className="mb-4 lg:hidden">

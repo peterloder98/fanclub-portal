@@ -143,10 +143,10 @@ export function TopbarChrome() {
     <>
       <header
         className={cn(
-          "fixed top-0 z-[200] flex items-center gap-2 border-b bg-[color:var(--background)]/95 px-2.5 backdrop-blur sm:gap-3 sm:px-4",
+          "fixed top-0 z-[200] flex w-full max-w-full items-center gap-1.5 overflow-hidden border-b bg-[color:var(--background)]/95 px-2 backdrop-blur sm:gap-2 sm:px-4",
           "min-h-[var(--fanclub-chrome-header-height,4rem)] pt-[env(safe-area-inset-top,0px)]",
           profileOpen && "z-[9998]",
-          "inset-x-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0 lg:px-8",
+          "left-0 right-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0 lg:px-8",
           className,
         )}
         style={{
@@ -154,8 +154,8 @@ export function TopbarChrome() {
         }}
       >
         <MobileNavDrawer isAdmin={role === "admin"} />
-        <div className="min-w-0 flex-1" title={subtitle}>
-          <div className="truncate text-base font-semibold leading-tight text-fc-navy">
+        <div className="min-w-0 flex-1 overflow-hidden" title={subtitle}>
+          <div className="truncate text-sm font-semibold leading-tight text-fc-navy sm:text-base">
             {title}
           </div>
           {subtitle ? (
@@ -165,10 +165,10 @@ export function TopbarChrome() {
           ) : null}
         </div>
 
-        <div className="ml-auto flex h-10 shrink-0 items-center gap-1 sm:gap-2">
+        <div className="ml-auto flex h-10 min-w-0 items-center gap-0.5 sm:gap-2">
           <Link
             href="/punkte"
-            className="relative flex h-10 min-w-9 flex-col items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-1.5 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/30 sm:min-w-[4.5rem] sm:px-2.5"
+            className="relative flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/30 sm:h-10 sm:w-auto sm:min-w-[4.5rem] sm:rounded-xl sm:px-2.5"
             aria-label={`${ANNI_STARS_LABEL}: ${points}, Rang ${rank}`}
           >
             <PointsBurst />
@@ -179,15 +179,12 @@ export function TopbarChrome() {
               id={POINTS_TARGET_ID}
               data-points-target="true"
               ref={(el) => setPointsTargetElement(el)}
-              className="inline-flex items-center gap-0.5 text-center text-sm font-bold leading-none tabular-nums text-fc-navy"
+              className="inline-flex items-center gap-0.5 text-center text-xs font-bold leading-none tabular-nums text-fc-navy sm:text-sm"
             >
-              <span style={{ color: ANNI_STAR_COLOR }} className="text-[11px]" aria-hidden>
+              <span style={{ color: ANNI_STAR_COLOR }} className="text-[10px] sm:text-[11px]" aria-hidden>
                 {ANNI_STAR_SYMBOL}
               </span>
               {profileLoaded ? points : "…"}
-              <span style={{ color: ANNI_STAR_COLOR }} className="text-[11px]" aria-hidden>
-                {ANNI_STAR_SYMBOL}
-              </span>
             </span>
           </Link>
           <div className="hidden h-10 min-w-[4.5rem] items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-rose-50/40 px-2.5 text-center shadow-sm shadow-slate-900/5 sm:flex">

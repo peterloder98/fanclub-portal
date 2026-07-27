@@ -65,7 +65,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col overflow-hidden lg:h-dvh lg:max-h-dvh lg:flex-row">
+    <div className="flex min-h-dvh w-full max-w-full flex-col overflow-x-clip lg:h-dvh lg:max-h-dvh lg:flex-row">
       <SkipToContent />
       <Sidebar user={await loadUser()} />
       <AppShellClient>{children}</AppShellClient>

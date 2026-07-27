@@ -16,7 +16,7 @@ export function Card(props: ComponentProps<"div">) {
 
 export function CardHeader(props: ComponentProps<"div">) {
   const { className, ...rest } = props;
-  return <div className={cn("px-5 pt-5", className)} {...rest} />;
+  return <div className={cn("px-3 pt-3 sm:px-5 sm:pt-5", className)} {...rest} />;
 }
 
 export function CardTitle(props: ComponentProps<"h3">) {
@@ -38,6 +38,6 @@ export function CardDescription(props: ComponentProps<"p">) {
 
 export function CardContent(props: ComponentProps<"div">) {
   const { className, ...rest } = props;
-  return <div className={cn("px-5 pb-5", className)} {...rest} />;
+  return <div className={cn("px-3 pb-3 sm:px-5 sm:pb-5", className)} {...rest} />;
 }
 

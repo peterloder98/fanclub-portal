@@ -12,20 +12,13 @@ export function MainScrollRegion({ children }: { children: ReactNode }) {
     ref.current?.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [pathname]);
 
-  const fillViewport =
-    pathname === "/events" || pathname === "/chat" || pathname === "/mitglieder";
-
   const bottomPad =
     "pb-[calc(var(--fanclub-chat-dock,0px)+var(--fanclub-mobile-tab-bar,0px))]";
 
   return (
     <div
       ref={ref}
-      className={
-        fillViewport
-          ? `flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain ${bottomPad}`
-          : `flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain ${bottomPad}`
-      }
+      className={`fc-page-canvas flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-x-clip overflow-y-auto overscroll-y-contain ${bottomPad}`}
     >
       {children}
     </div>
