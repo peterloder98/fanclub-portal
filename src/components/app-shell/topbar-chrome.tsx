@@ -155,17 +155,17 @@ export function TopbarChrome() {
     <>
       <header
         className={cn(
-          "fixed top-0 z-[200] flex w-full max-w-full items-center overflow-visible border-b bg-[color:var(--background)]/95 backdrop-blur",
+          "fixed inset-x-0 top-0 z-[200] flex items-center overflow-visible border-b bg-[color:var(--background)]/95 backdrop-blur",
           "min-h-[var(--fanclub-chrome-header-height,4rem)] pt-[env(safe-area-inset-top,0px)]",
           profileOpen && "z-[9998]",
-          "left-0 right-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0",
+          "lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0",
           className,
         )}
         style={{
           height: "calc(var(--fanclub-chrome-header-height, 4rem) + env(safe-area-inset-top, 0px))",
         }}
       >
-        <div className="mx-auto flex h-full w-full min-w-0 max-w-full items-center gap-1.5 px-3 sm:gap-2 sm:px-4 lg:px-6">
+        <div className="flex h-full w-full min-w-0 items-center gap-1.5 px-3 sm:gap-2 sm:px-4 lg:px-6">
         <MobileNavDrawer isAdmin={role === "admin"} />
         <div className="min-w-0 flex-1 overflow-hidden" title={subtitle}>
           <div className="truncate text-sm font-semibold leading-tight text-fc-navy sm:text-base">

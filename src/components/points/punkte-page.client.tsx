@@ -34,7 +34,6 @@ export function PunktePageClient({
     <div className="space-y-6">
       <PointsSummaryHeader userId={userId} />
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-        <PointsHistoryList userId={userId} />
         <section className="rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-900/5">
           <div className="border-b border-slate-100 px-4 py-3">
             <h3 className="text-base font-semibold text-fc-navy">Top 10 der Anni-Stars</h3>
@@ -44,6 +43,7 @@ export function PunktePageClient({
             <PointsLeaderboard data={leaderboard} />
           </ol>
         </section>
+        <PointsHistoryList userId={userId} />
       </div>
       <AchievementsPanel achievements={achievements} />
       <BadgesGuideCard />

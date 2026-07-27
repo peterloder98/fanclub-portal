@@ -135,7 +135,7 @@ export default async function MitgliederPage() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <Topbar
-        title="Mitglieder & Treffen"
+        title="Mitglieder"
         subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
       />
       <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-hidden py-3 lg:px-8">

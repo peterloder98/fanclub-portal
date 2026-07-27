@@ -275,7 +275,6 @@ export function GroupChatPanel({
           fullscreen && "max-h-none",
         )}
       >
-        <div className={cn(fullscreen && "mx-auto w-full max-w-3xl")}>
         {!messages.length ? (
           <div className="grid h-full min-h-[12rem] place-items-center px-4 text-center">
             <div>
@@ -348,7 +347,6 @@ export function GroupChatPanel({
             })}
           </ul>
         )}
-        </div>
       </div>
 
       <footer
@@ -363,7 +361,7 @@ export function GroupChatPanel({
             {error}
           </p>
         ) : null}
-        <div className={cn("flex items-end gap-1.5", fullscreen && "mx-auto w-full max-w-3xl")}>
+        <div className="flex items-end gap-1.5">
           <MentionInput
             value={draft}
             onChange={onDraftChange}

@@ -57,26 +57,25 @@ export function EventsInteractivePanel({
     ...events.map((e) => ({
       key: `event-${e.id}`,
       sortAt: e.start_at ?? "",
-      node:
-        (() => {
-          const part = participationByEventId[e.id] ?? {
-            count: 0,
-            joined: false,
-            attendees: [],
-          };
-          return (
-            <EventListItem
-              key={`event-${e.id}`}
-              event={e}
-              active={highlightedId === e.id}
-              isAdmin={isAdmin}
-              participation={part}
-              travelNote={travelNotesByEventId?.[e.id]}
-              onMouseEnter={() => setHighlightedId(e.id)}
-              onMouseLeave={() => setHighlightedId(null)}
-            />
-          );
-        })(),
+      node: (() => {
+        const part = participationByEventId[e.id] ?? {
+          count: 0,
+          joined: false,
+          attendees: [],
+        };
+        return (
+          <EventListItem
+            key={`event-${e.id}`}
+            event={e}
+            active={highlightedId === e.id}
+            isAdmin={isAdmin}
+            participation={part}
+            travelNote={travelNotesByEventId?.[e.id]}
+            onMouseEnter={() => setHighlightedId(e.id)}
+            onMouseLeave={() => setHighlightedId(null)}
+          />
+        );
+      })(),
     })),
     ...clubMeetings.map((m) => ({
       key: `meeting-${m.id}`,
@@ -117,7 +116,7 @@ export function EventsInteractivePanel({
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
         <div
-          className="h-full overflow-y-auto overscroll-contain px-1 py-2 sm:px-2 sm:py-3 lg:px-3"
+          className="h-full min-h-0 overflow-y-auto overscroll-contain px-1 py-2 sm:px-2 sm:py-3 lg:px-3"
           role="region"
           aria-label="Eventliste"
         >
@@ -128,7 +127,7 @@ export function EventsInteractivePanel({
   );
 
   const mapInner = (
-    <div className="h-[220px] w-full lg:h-[280px]">
+    <div className="h-[220px] w-full lg:h-full lg:min-h-[240px]">
       <EventsMapClient
         events={events}
         highlightedEventId={highlightedId}
@@ -140,47 +139,52 @@ export function EventsInteractivePanel({
     </div>
   );
 
-  const mapToggle = (
-    <Card className="shrink-0 rounded-2xl">
-      <button
-        type="button"
-        onClick={() => setMapOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
-      >
-        <span className="inline-flex items-center gap-2 text-sm font-semibold text-fc-navy">
-          <Map className="h-4 w-4 text-fc-blue" aria-hidden />
-          Karte {mapOpen ? "ausblenden" : "anzeigen"}
-        </span>
-        <ChevronDown
-          className={cn("h-5 w-5 shrink-0 text-slate-500 transition", mapOpen && "rotate-180")}
-          aria-hidden
-        />
-      </button>
-      {mapOpen ? <div className="border-t p-2">{mapInner}</div> : null}
-    </Card>
-  );
-
   return (
-  <>
-      <div className={cn("flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:hidden", className)}>
-        <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-        {mapToggle}
-        <div className="min-h-0 shrink-0">{list}</div>
-      </div>
-
+    <>
+      {/* Mobile: Countdown → Karte eingeklappt → Liste */}
       <div
         className={cn(
-          "hidden min-h-0 h-full flex-1 flex-col gap-3 overflow-hidden lg:flex",
+          "flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:hidden",
           className,
         )}
       >
         <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-        <div className="grid min-h-0 flex-1 gap-4 overflow-hidden lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)]">
-          {list}
-          <aside className="flex min-h-0 flex-col gap-3 overflow-hidden">
-            {mapToggle}
-          </aside>
-        </div>
+        <Card className="shrink-0 rounded-2xl">
+          <button
+            type="button"
+            onClick={() => setMapOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+          >
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-fc-navy">
+              <Map className="h-4 w-4 text-fc-blue" aria-hidden />
+              Karte {mapOpen ? "ausblenden" : "anzeigen"}
+            </span>
+            <ChevronDown
+              className={cn("h-5 w-5 shrink-0 text-slate-500 transition", mapOpen && "rotate-180")}
+              aria-hidden
+            />
+          </button>
+          {mapOpen ? <div className="border-t p-2">{mapInner}</div> : null}
+        </Card>
+        <div className="min-h-[50vh] shrink-0">{list}</div>
+      </div>
+
+      {/* Desktop: Liste links (scrollt) | rechts Countdown + Karte ausgeklappt */}
+      <div
+        className={cn(
+          "hidden min-h-0 h-full flex-1 gap-4 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)]",
+          className,
+        )}
+      >
+        {list}
+        <aside className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
+          <div className="shrink-0">
+            <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
+          </div>
+          <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+            <CardContent className="min-h-0 flex-1 p-1.5 sm:p-2">{mapInner}</CardContent>
+          </Card>
+        </aside>
       </div>
     </>
   );

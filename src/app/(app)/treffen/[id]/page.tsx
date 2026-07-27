@@ -68,7 +68,7 @@ export default async function TreffenDetailPage({
           href="/mitglieder?tab=treffen"
           className="text-sm font-medium text-fc-blue hover:underline"
         >
-          ← Mitglieder & Treffen
+          ← Mitglieder
         </Link>
 
         <article className="mt-4 grid gap-4">

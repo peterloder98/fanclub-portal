@@ -201,7 +201,7 @@ export default async function EventsPage({
         title="Events"
         subtitle="Konzerte und TV-Auftritte von Anni"
       />
-      <main className="min-w-0 w-full max-w-full py-2 pt-3 lg:px-6 lg:pt-3 lg:pb-0">
+      <main className="flex min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-hidden py-2 pt-3 lg:pt-3 lg:pb-0">
         {error ? (
           <div className="mb-3 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error.message.includes("end_at") || error.message.includes("date_label")

@@ -39,7 +39,7 @@ export const appNav: AppNavItem[] = [
   ...(FEATURE_FLAGS.merchandise
     ? [{ label: "Merchandise", href: "/merchandise", icon: ShoppingBag } satisfies AppNavItem]
     : []),
-  { label: "Mitglieder & Treffen", href: "/mitglieder", icon: HeartHandshake },
+  { label: "Mitglieder", href: "/mitglieder", icon: HeartHandshake },
   { label: "Anni-Stars", href: "/punkte", icon: Sparkles },
   { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },
 ];

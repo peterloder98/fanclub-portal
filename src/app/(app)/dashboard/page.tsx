@@ -113,7 +113,7 @@ export default async function DashboardPage() {
 
             <DashboardEventsMapCard events={mapEvents} />
 
-            <Card className="mt-auto flex h-[13rem] shrink-0 flex-col overflow-hidden">
+            <Card className="flex h-[13rem] shrink-0 flex-col overflow-hidden">
               <CardContent className="flex min-h-0 flex-1 flex-col p-2 pb-2">
                 <DashboardGiveawaysInline items={giveawayItems} />
               </CardContent>
