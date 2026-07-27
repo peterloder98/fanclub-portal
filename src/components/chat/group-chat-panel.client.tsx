@@ -177,7 +177,6 @@ export function GroupChatPanel({
   const fullscreen = mode === "fullscreen";
   const [composerFocused, setComposerFocused] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
-  const composerRows = composerFocused || draft.includes("\n") ? 3 : 1;
 
   useEffect(() => {
     if (!composerFocused || typeof window === "undefined") return;
@@ -374,15 +373,14 @@ export function GroupChatPanel({
         <div className="flex items-end gap-1.5">
           <MentionInput
             value={draft}
-            onChange={onDraftChange}
-            multiline
-            rows={composerRows}
+            onChange={(v) => onDraftChange(v.replace(/\r?\n/g, " "))}
+            multiline={false}
+            rows={1}
             disabled={sending}
-            placeholder="Nachricht… @ für Markierung"
+            placeholder="Nachricht… @ für Markierung · Enter sendet"
             className="min-w-0 flex-1"
             inputClassName={cn(
-              "w-full min-w-0 max-w-full overflow-x-hidden resize-none rounded-xl border bg-white px-3 text-base text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 transition-[min-height] duration-150 lg:text-sm",
-              composerRows === 1 ? "py-2" : "py-2",
+              "w-full min-w-0 max-w-full overflow-x-hidden rounded-xl border bg-white px-3 py-2 text-base text-fc-navy outline-none placeholder:text-slate-400 focus:ring-2 lg:text-sm",
               overLimit
                 ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200"
                 : "border-fc-navy/15 focus:border-fc-blue focus:ring-fc-sky/30",
@@ -390,9 +388,10 @@ export function GroupChatPanel({
             onFocus={() => setComposerFocused(true)}
             onBlur={() => setComposerFocused(false)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                e.preventDefault();
-              }
+              if (e.key !== "Enter" || e.shiftKey) return;
+              e.preventDefault();
+              if (sending || cooldownActive || !draft.trim() || overLimit) return;
+              void onSend();
             }}
           />
           <button

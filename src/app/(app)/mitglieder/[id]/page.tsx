@@ -222,26 +222,30 @@ export default async function MemberPortalPage({
                     {yearPoints} Anni-Stars · {yearRank}
                   </span>
                 </div>
-                {shortBio ? (
-                  <p className="mt-4 text-sm leading-relaxed text-white/90 sm:max-w-xl">
-                    {shortBio}
-                  </p>
-                ) : null}
               </div>
             </div>
           </div>
 
           <div className="space-y-8 px-5 py-6 sm:px-8">
+            {shortBio ? (
+              <section className="rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
+                  Ein paar Worte über mich
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-fc-navy">{shortBio}</p>
+              </section>
+            ) : null}
+
             {achievements.length ? <MemberPortalBadges achievements={achievements} /> : null}
 
             <section className="space-y-3">
               <div>
                 <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
                   <CalendarDays className="h-4 w-4" aria-hidden />
-                  Dabei
+                  Hier bin ich dabei
                 </h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Konzerte, TV-Auftritte und Fanclub-Treffen, für die eine Teilnahme markiert wurde.
+                  Konzerte, TV-Auftritte und Treffen für die ich mich angemeldet habe.
                 </p>
               </div>
 
@@ -359,17 +363,16 @@ export default async function MemberPortalPage({
               ) : null}
             </section>
 
-            <section className="space-y-3">
-              <div>
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
-                  Kennenlernen
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Fünf freiwillige Fragen — so lernen wir uns besser kennen.
-                </p>
-              </div>
-
-              {answers.length ? (
+            {answers.length ? (
+              <section className="space-y-3">
+                <div>
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
+                    Kennenlernen
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Fünf freiwillige Fragen — so lernen wir uns besser kennen.
+                  </p>
+                </div>
                 <ul className="grid gap-3">
                   {answers.map((q) => (
                     <li
@@ -385,23 +388,16 @@ export default async function MemberPortalPage({
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-center text-sm text-slate-600">
-                  {isSelf
-                    ? "Du hast noch keine Antworten hinterlegt. Trage sie in deinem Profil nach."
-                    : "Hier gibt es noch keine Antworten."}
-                </div>
-              )}
-
-              {isSelf ? (
-                <Link
-                  href="/profile#kennenlernen"
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
-                >
-                  Antworten bearbeiten
-                </Link>
-              ) : null}
-            </section>
+                {isSelf ? (
+                  <Link
+                    href="/profile#kennenlernen"
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
+                  >
+                    Antworten bearbeiten
+                  </Link>
+                ) : null}
+              </section>
+            ) : null}
           </div>
         </div>
       </main>
