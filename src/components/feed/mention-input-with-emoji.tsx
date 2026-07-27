@@ -11,10 +11,14 @@ import { cn } from "@/lib/cn";
 type Props = React.ComponentProps<typeof MentionInput> & {
   emojiSize?: "sm" | "md";
   emojiTone?: "light" | "navy";
+  /** Zusätzliche Klassen für die äußere Flex-Zeile (Input + Emoji). */
   rowClassName?: string;
 };
 
-/** MentionInput plus Emoji-Picker — für Kommentare und ähnliche Composer. */
+/**
+ * MentionInput plus Emoji-Picker.
+ * Die äußere Zeile nimmt flex-1 ein, damit Kommentarleisten nicht kollabieren.
+ */
 export function MentionInputWithEmoji({
   emojiSize = "sm",
   emojiTone = "light",
@@ -24,12 +28,22 @@ export function MentionInputWithEmoji({
 }: Props) {
   const ref = useRef<MentionInputHandle>(null);
   return (
-    <div className={cn("flex min-w-0 items-end gap-1", rowClassName)}>
-      <MentionInput ref={ref} className={cn("min-w-0 flex-1", className)} {...props} />
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 items-center gap-1.5",
+        rowClassName,
+      )}
+    >
+      <MentionInput
+        ref={ref}
+        className={cn("min-w-0 flex-1", className)}
+        {...props}
+      />
       <EmojiPickerButton
         size={emojiSize}
         tone={emojiTone}
         disabled={props.disabled}
+        className="shrink-0"
         onPick={(emoji) => ref.current?.insertText(emoji)}
       />
     </div>
