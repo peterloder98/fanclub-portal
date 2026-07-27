@@ -1495,7 +1495,9 @@ function PostFeedInner({
   useEffect(() => {
     if (!composerExpanded) return;
     const onPointerDown = (e: PointerEvent) => {
-      if (composerRef.current?.contains(e.target as Node)) return;
+      const t = e.target as Element | null;
+      if (composerRef.current?.contains(t as Node)) return;
+      if (t?.closest?.("[data-emoji-picker-portal]")) return;
       tryCollapseComposer();
     };
     document.addEventListener("pointerdown", onPointerDown);
@@ -1613,7 +1615,10 @@ function PostFeedInner({
                 inputRef={composerInputRef}
                 onFocus={() => setComposerExpanded(true)}
                 onBlur={() => {
-                  window.setTimeout(() => tryCollapseComposer(), 120);
+                  window.setTimeout(() => {
+                    if (document.querySelector("[data-emoji-picker-portal]")) return;
+                    tryCollapseComposer();
+                  }, 120);
                 }}
                 placeholder="Schreib etwas…"
                 rows={composerExpanded ? 3 : 1}
@@ -1625,29 +1630,60 @@ function PostFeedInner({
                 )}
               />
 
-              {!composerExpanded ? (
-                <div className="mt-1.5 flex items-center gap-2">
-                  <EmojiPickerButton
-                    size="sm"
-                    placement="down"
-                    label="Emoji"
-                    disabled={!me}
-                    onPick={(emoji) => {
-                      setComposerExpanded(true);
-                      composerMentionRef.current?.insertText(emoji);
-                    }}
-                    buttonClassName="h-8 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
-                  />
+              <div
+                className={cn(
+                  "flex flex-wrap items-center gap-2",
+                  composerExpanded ? "mt-2.5" : "mt-1.5",
+                )}
+              >
+                <EmojiPickerButton
+                  size="sm"
+                  placement="down"
+                  label="Emoji"
+                  disabled={!me}
+                  onOpenChange={(o) => {
+                    if (o) setComposerExpanded(true);
+                  }}
+                  onPick={(emoji) => {
+                    setComposerExpanded(true);
+                    composerMentionRef.current?.insertText(emoji);
+                    requestAnimationFrame(() => composerInputRef.current?.focus());
+                  }}
+                  buttonClassName={cn(
+                    "border border-slate-200/90 bg-white font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50",
+                    composerExpanded
+                      ? "h-9 rounded-xl px-3 text-sm"
+                      : "h-8 rounded-lg px-2.5 text-xs",
+                  )}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!me || composerUploading}
+                  className={cn(
+                    "border border-slate-200/90 bg-white font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50",
+                    composerExpanded
+                      ? "h-9 rounded-xl px-3 text-sm"
+                      : "h-8 rounded-lg px-2.5 text-xs",
+                  )}
+                >
+                  {composerUploading ? "Lädt…" : "Foto auswählen"}
+                </button>
+                {composerExpanded ? (
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={!me || composerUploading}
-                    className="h-8 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
+                    disabled={!me || submitting || !newText.trim()}
+                    onClick={submitNewPost}
+                    className="h-9 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-fc-blue disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {composerUploading ? "Lädt…" : "Foto auswählen"}
+                    {submitting
+                      ? "Sende…"
+                      : me?.role === "member"
+                        ? "Zur Freigabe senden"
+                        : "Posten"}
                   </button>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
 
               {composerExpanded ? (
                 <div className="mt-2.5 grid gap-2.5">
@@ -1675,36 +1711,6 @@ function PostFeedInner({
                         : "border-fc-sky/30/60 bg-gradient-to-r from-white/90 to-sky-50/50",
                     )}
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <EmojiPickerButton
-                        size="sm"
-                        placement="down"
-                        label="Emoji"
-                        disabled={!me}
-                        onPick={(emoji) => composerMentionRef.current?.insertText(emoji)}
-                        buttonClassName="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={!me || composerUploading}
-                        className="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
-                      >
-                        {composerUploading ? "Lädt…" : "Foto auswählen"}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!me || submitting || !newText.trim()}
-                        onClick={submitNewPost}
-                        className="h-9 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white transition-colors hover:bg-fc-blue disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {submitting
-                          ? "Sende…"
-                          : me?.role === "member"
-                            ? "Zur Freigabe senden"
-                            : "Posten"}
-                      </button>
-                    </div>
                     <ComposerMediaGrid
                       items={composerMedia}
                       disabled={composerUploading}
@@ -1714,6 +1720,11 @@ function PostFeedInner({
                       }}
                       onReorder={reorderComposerMedia}
                     />
+                    {!composerMedia.length ? (
+                      <p className="text-center text-xs text-slate-500">
+                        Fotos hierher ziehen oder oben auswählen
+                      </p>
+                    ) : null}
                   </div>
                   {me?.role === "member" ? (
                     <p className="text-xs text-slate-500">
