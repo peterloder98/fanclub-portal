@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useGroupChat } from "@/lib/chat/use-group-chat";
+import { unlockChatAudio } from "@/lib/chat/sound";
 import {
   markChatSeenFromMessages,
   readChatLastSeen,
@@ -154,7 +155,10 @@ export function GroupChatWidget() {
           ) : (
             <button
               type="button"
-              onClick={() => setOpen(true)}
+              onClick={() => {
+                void unlockChatAudio();
+                setOpen(true);
+              }}
               className={cn(
                 "pointer-events-auto relative inline-flex items-center gap-2 rounded-2xl border-2 bg-white px-3 py-2.5",
                 "text-sm font-semibold text-fc-navy shadow-lg shadow-fc-navy/20",

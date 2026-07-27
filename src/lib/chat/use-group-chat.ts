@@ -19,7 +19,7 @@ import {
   type ChatAuthor,
   type OnlineMember,
 } from "@/lib/chat/types";
-import { isChatMuted, playChatBling, setChatMuted } from "@/lib/chat/sound";
+import { installChatAudioUnlock, isChatMuted, playChatBling, setChatMuted, unlockChatAudio } from "@/lib/chat/sound";
 
 export type ChatMessage = GroupChatMessageRow & { author: ChatAuthor };
 
@@ -42,8 +42,8 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const [onlineMembers, setOnlineMembers] = useState<OnlineMember[]>([]);
   const [muted, setMuted] = useState(false);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
-  const seenNewestIdRef = useRef<string | null>(null);
-  const readyForSoundRef = useRef(false);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const soundReadyRef = useRef(false);
 
   const cooldownLeftMs = Math.max(0, cooldownUntil - nowTick);
   const cooldownActive = cooldownLeftMs > 0;
@@ -52,6 +52,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
 
   useEffect(() => {
     setMuted(isChatMuted());
+    installChatAudioUnlock();
   }, []);
 
   useEffect(() => {
@@ -64,6 +65,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     setMuted((prev) => {
       const next = !prev;
       setChatMuted(next);
+      void unlockChatAudio().then(() => {
+        // Beim Einschalten kurzer Test-Ton, damit klar ist: Audio läuft.
+        if (!next) playChatBling({ force: true });
+      });
       return next;
     });
   }
@@ -157,10 +162,12 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       }
     }
 
-    setMessages(await hydrate((data ?? []) as GroupChatMessageRow[]));
-    const newest = (data ?? [])[0]?.id ?? null;
-    seenNewestIdRef.current = newest;
-    readyForSoundRef.current = true;
+    const hydrated = await hydrate((data ?? []) as GroupChatMessageRow[]);
+    setMessages(hydrated);
+    if (!soundReadyRef.current) {
+      knownIdsRef.current = new Set(hydrated.map((m) => m.id));
+      soundReadyRef.current = true;
+    }
     setLoaded(true);
   }, [enabled, hydrate]);
 
@@ -168,6 +175,23 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     if (!enabled) return;
     void refresh();
   }, [enabled, refresh]);
+
+  /** Ton bei neuer Nachricht von anderen (auch wenn Chat minimiert). */
+  useEffect(() => {
+    if (!enabled || !loaded || !userId || !soundReadyRef.current) return;
+    let shouldBling = false;
+    for (const m of messages) {
+      if (knownIdsRef.current.has(m.id)) continue;
+      if (m.author_id !== userId) {
+        shouldBling = true;
+        break;
+      }
+    }
+    knownIdsRef.current = new Set(messages.map((m) => m.id));
+    if (shouldBling) {
+      void unlockChatAudio().then(() => playChatBling());
+    }
+  }, [enabled, loaded, userId, messages]);
 
   useEffect(() => {
     if (!enabled || !userId || !meProfile) return;
@@ -183,14 +207,6 @@ export function useGroupChat({ enabled = true }: Options = {}) {
             void refresh();
             return;
           }
-          if (
-            readyForSoundRef.current &&
-            row.author_id !== userId &&
-            row.id !== seenNewestIdRef.current
-          ) {
-            playChatBling();
-          }
-          seenNewestIdRef.current = row.id;
           void refresh();
         },
       )
@@ -271,6 +287,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     if (!text || sending || cooldownActive) {
       return;
     }
+    void unlockChatAudio();
     if (draft.length > GROUP_CHAT_MAX_LEN) {
       setError(
         `Zeichenlimit überschritten. Maximal ${GROUP_CHAT_MAX_LEN} Zeichen erlaubt.`,
@@ -300,7 +317,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
         authorsRef.current.get(result.message.author_id) ??
         meProfile ??
         ({ id: result.message.author_id, name: "Du", avatarUrl: null } satisfies ChatAuthor);
-      return [{ ...result.message, author }, ...without].slice(0, GROUP_CHAT_PAGE_SIZE);
+      const next = [{ ...result.message, author }, ...without].slice(0, GROUP_CHAT_PAGE_SIZE);
+      // Eigene Nachricht nicht als „fremd“ belingen
+      knownIdsRef.current.add(result.message.id);
+      return next;
     });
   }
 
