@@ -157,6 +157,7 @@ type PanelProps = {
   overLimit: boolean;
   muted: boolean;
   onToggleMuted: () => void;
+  typingIndicator?: { userId: string; name: string } | null;
   onDraftChange: (v: string) => void;
   onSend: () => void;
   onDelete: (id: string) => void;
@@ -180,6 +181,7 @@ export function GroupChatPanel({
   overLimit,
   muted,
   onToggleMuted,
+  typingIndicator = null,
   onDraftChange,
   onSend,
   onDelete,
@@ -397,6 +399,11 @@ export function GroupChatPanel({
         {error && !/warten|cooldown|zu schnell/i.test(error) ? (
           <p className="mb-1.5 text-[11px] text-rose-600" role="alert">
             {error}
+          </p>
+        ) : null}
+        {typingIndicator ? (
+          <p className="mb-1.5 truncate text-[11px] text-slate-500" aria-live="polite">
+            <span className="font-medium text-fc-navy">{typingIndicator.name}</span> tippt…
           </p>
         ) : null}
         <div className="flex items-end gap-1.5">

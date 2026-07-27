@@ -145,6 +145,7 @@ export function GroupChatWidget() {
                 overLimit={chat.overLimit}
                 muted={chat.muted}
                 onToggleMuted={chat.toggleMuted}
+                typingIndicator={chat.typingIndicator}
                 onDraftChange={chat.onDraftChange}
                 onSend={chat.onSend}
                 onDelete={chat.onDelete}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import {
@@ -23,6 +24,21 @@ import { installChatAudioUnlock, isChatMuted, playChatBling, setChatMuted, unloc
 
 export type ChatMessage = GroupChatMessageRow & { author: ChatAuthor };
 
+export type TypingIndicator = {
+  userId: string;
+  name: string;
+};
+
+type PresenceMeta = {
+  user_id?: string;
+  name?: string;
+  avatar_url?: string | null;
+  online_at?: string;
+  typing_since?: string | null;
+};
+
+const TYPING_IDLE_MS = 2800;
+
 type Options = {
   /** When false, skip load/realtime/presence (e.g. dock hidden on /chat). */
   enabled?: boolean;
@@ -40,15 +56,71 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const [nowTick, setNowTick] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState<OnlineMember[]>([]);
+  const [typingIndicator, setTypingIndicator] = useState<TypingIndicator | null>(null);
   const [muted, setMuted] = useState(false);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
   const knownIdsRef = useRef<Set<string>>(new Set());
   const soundReadyRef = useRef(false);
+  const presenceChannelRef = useRef<RealtimeChannel | null>(null);
+  const meProfileRef = useRef<ChatAuthor | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  const typingSinceRef = useRef<string | null>(null);
+  const typingIdleTimerRef = useRef<number | null>(null);
 
   const cooldownLeftMs = Math.max(0, cooldownUntil - nowTick);
   const cooldownActive = cooldownLeftMs > 0;
   const overLimit = draft.length > GROUP_CHAT_MAX_LEN;
   const onlineCount = Math.max(onlineMembers.length ? onlineMembers.length : 0, meProfile ? 1 : 0);
+
+  useEffect(() => {
+    meProfileRef.current = meProfile;
+  }, [meProfile]);
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+
+  const pushPresence = useCallback(async (typingSince: string | null) => {
+    const channel = presenceChannelRef.current;
+    const me = meProfileRef.current;
+    const uid = userIdRef.current;
+    if (!channel || !me || !uid) return;
+    try {
+      await channel.track({
+        user_id: uid,
+        name: me.name,
+        avatar_url: me.avatarUrl,
+        online_at: new Date().toISOString(),
+        typing_since: typingSince,
+      });
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const clearTyping = useCallback(() => {
+    if (typingIdleTimerRef.current) {
+      window.clearTimeout(typingIdleTimerRef.current);
+      typingIdleTimerRef.current = null;
+    }
+    if (typingSinceRef.current == null) return;
+    typingSinceRef.current = null;
+    void pushPresence(null);
+  }, [pushPresence]);
+
+  const bumpTyping = useCallback(() => {
+    if (!typingSinceRef.current) {
+      typingSinceRef.current = new Date().toISOString();
+      void pushPresence(typingSinceRef.current);
+    }
+    if (typingIdleTimerRef.current) {
+      window.clearTimeout(typingIdleTimerRef.current);
+    }
+    typingIdleTimerRef.current = window.setTimeout(() => {
+      typingSinceRef.current = null;
+      typingIdleTimerRef.current = null;
+      void pushPresence(null);
+    }, TYPING_IDLE_MS);
+  }, [pushPresence]);
 
   useEffect(() => {
     setMuted(isChatMuted());
@@ -225,15 +297,12 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     const presenceChannel = supabase.channel(GROUP_CHAT_PRESENCE_CHANNEL, {
       config: { presence: { key: userId } },
     });
+    presenceChannelRef.current = presenceChannel;
 
     const syncPresence = () => {
-      const state = presenceChannel.presenceState<{
-        user_id?: string;
-        name?: string;
-        avatar_url?: string | null;
-        online_at?: string;
-      }>();
+      const state = presenceChannel.presenceState<PresenceMeta>();
       const list: OnlineMember[] = [];
+      const typers: { userId: string; name: string; since: string }[] = [];
       for (const [key, metas] of Object.entries(state)) {
         const meta = metas[0];
         const id = meta?.user_id ?? key;
@@ -243,9 +312,17 @@ export function useGroupChat({ enabled = true }: Options = {}) {
           avatarUrl: meta?.avatar_url ?? null,
           onlineAt: meta?.online_at,
         });
+        const since = meta?.typing_since?.trim();
+        if (since && id !== userId) {
+          typers.push({ userId: id, name: meta?.name ?? "Mitglied", since });
+        }
       }
       list.sort((a, b) => a.name.localeCompare(b.name, "de"));
       setOnlineMembers(list.length ? list : meProfile ? [meProfile] : []);
+      // Nur der, der zuerst angefangen hat zu tippen
+      typers.sort((a, b) => a.since.localeCompare(b.since));
+      const first = typers[0];
+      setTypingIndicator(first ? { userId: first.userId, name: first.name } : null);
     };
 
     presenceChannel
@@ -259,11 +336,18 @@ export function useGroupChat({ enabled = true }: Options = {}) {
             name: meProfile.name,
             avatar_url: meProfile.avatarUrl,
             online_at: new Date().toISOString(),
+            typing_since: typingSinceRef.current,
           });
         }
       });
 
     return () => {
+      presenceChannelRef.current = null;
+      if (typingIdleTimerRef.current) {
+        window.clearTimeout(typingIdleTimerRef.current);
+        typingIdleTimerRef.current = null;
+      }
+      typingSinceRef.current = null;
       void supabase.removeChannel(messagesChannel);
       void supabase.removeChannel(presenceChannel);
     };
@@ -280,6 +364,8 @@ export function useGroupChat({ enabled = true }: Options = {}) {
         prev?.includes("Zeichenlimit") || prev?.includes("kurz warten") ? null : prev,
       );
     }
+    if (next.trim()) bumpTyping();
+    else clearTyping();
   }
 
   async function onSend() {
@@ -288,6 +374,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       return;
     }
     void unlockChatAudio();
+    clearTyping();
     if (draft.length > GROUP_CHAT_MAX_LEN) {
       setError(
         `Zeichenlimit überschritten. Maximal ${GROUP_CHAT_MAX_LEN} Zeichen erlaubt.`,
@@ -352,6 +439,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     overLimit,
     muted,
     toggleMuted,
+    typingIndicator,
     onDraftChange,
     onSend,
     onDelete,

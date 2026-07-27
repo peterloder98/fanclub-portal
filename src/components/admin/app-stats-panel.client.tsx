@@ -20,8 +20,8 @@ import { cn } from "@/lib/cn";
 type ChartMode = "users_day" | "hits_day" | "users_month" | "members_month";
 
 const CHART_OPTIONS: { value: ChartMode; label: string }[] = [
-  { value: "users_day", label: "User / Monat" },
-  { value: "hits_day", label: "App-Zugriffe / Monat" },
+  { value: "users_day", label: "Aktive Mitglieder / Tag" },
+  { value: "hits_day", label: "App-Öffnungen / Tag" },
   { value: "users_month", label: "Monatsvergleich" },
   { value: "members_month", label: "Gesamtmitglieder" },
 ];
@@ -151,22 +151,22 @@ export function AppStatsPanel({ initial }: { initial: AppStatsSnapshot }) {
     switch (chart) {
       case "users_day":
         return {
-          title: "Aktive User je Tag",
-          hint: "Distinct Mitglieder mit App-Nutzung an diesem Tag.",
+          title: "Aktive Mitglieder je Tag",
+          hint: "Wie viele verschiedene Mitglieder die App an diesem Tag genutzt haben.",
           points: dayPoints(stats.usersPerDay),
           dense: true,
         };
       case "hits_day":
         return {
-          title: "App-Zugriffe je Tag",
-          hint: "Heartbeats / Seitenbesuche in der App an diesem Tag.",
+          title: "App-Öffnungen je Tag",
+          hint: "Wie oft die App an diesem Tag genutzt wurde — auch mehrmals von derselben Person.",
           points: dayPoints(stats.hitsPerDay),
           dense: true,
         };
       case "users_month":
         return {
-          title: "Monatsvergleich (angemeldete User)",
-          hint: "Distinct Nutzer mit Login/Aktivität je Monat — 12 Monate bis heute.",
+          title: "Monatsvergleich (aktive Mitglieder)",
+          hint: "Wie viele verschiedene Mitglieder die App in diesem Monat genutzt haben — 12 Monate bis heute.",
           points: monthPoints(stats.usersPerMonth),
           dense: false,
         };
@@ -202,19 +202,19 @@ export function AppStatsPanel({ initial }: { initial: AppStatsSnapshot }) {
           icon={Activity}
           label="In der App registriert"
           value={stats.appRegisteredTotal}
-          hint={`${registeredPct} % · jemals aktiv`}
+          hint={`${registeredPct} % der aktiven Mitglieder`}
         />
         <KpiCard
           icon={Activity}
           label="Aktiv diese Woche"
           value={stats.activeThisWeek}
-          hint="Letzte 7 Tage"
+          hint="Verschiedene Mitglieder, letzte 7 Tage"
         />
         <KpiCard
           icon={Activity}
           label="Aktiv diesen Monat"
           value={stats.activeThisMonth}
-          hint="Laufender Kalendermonat"
+          hint="Verschiedene Mitglieder im laufenden Monat"
         />
       </div>
 
@@ -223,7 +223,7 @@ export function AppStatsPanel({ initial }: { initial: AppStatsSnapshot }) {
           icon={Activity}
           label="Aktiv gestern"
           value={stats.activeYesterday}
-          hint="Distinct Nutzer"
+          hint="Verschiedene Mitglieder"
         />
         <KpiCard
           icon={Users}
