@@ -649,18 +649,21 @@ export function GiveawayDetailClient({
                 </span>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1.5">
                 <MentionInputWithEmoji
+                  multiline={false}
                   value={commentDraft}
                   onChange={setCommentDraft}
                   placeholder="Kommentieren… @ für Markierung"
                   className="min-w-0 flex-1"
-                  inputClassName="h-9 w-full rounded-lg border px-2 text-sm"
+                  emojiSize="sm"
+                  emojiTone="navy"
+                  inputClassName="box-border h-9 min-w-0 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-sm text-slate-900 outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
                 />
                 <button
                   type="button"
                   onClick={() => void addComment()}
-                  className="grid h-9 w-9 place-items-center rounded-lg bg-fc-navy text-white"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-fc-navy text-white transition hover:bg-fc-blue"
                   aria-label="Senden"
                 >
                   <SendHorizontal className="h-3.5 w-3.5" />

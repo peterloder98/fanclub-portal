@@ -1996,7 +1996,7 @@ function PostFeedInner({
                       : "Kommentieren…"
                   }
                   className="min-w-0 flex-1"
-                  inputClassName="box-border h-8 min-w-0 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs leading-8 text-slate-900 outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
+                  inputClassName="box-border h-8 min-w-0 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
                 />
                 {replyingTo?.postId === post.id ? (
                   <button

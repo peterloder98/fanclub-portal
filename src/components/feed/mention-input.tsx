@@ -392,14 +392,13 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
           className={cn(
             "w-full box-border text-left text-fc-navy outline-none",
             singleLineLike
-              ? "block overflow-x-auto overflow-y-hidden whitespace-nowrap py-0 leading-8"
+              ? "flex items-center overflow-x-auto overflow-y-hidden whitespace-nowrap py-0 leading-none [&_*]:leading-none"
               : "overflow-y-auto whitespace-pre-wrap break-words leading-snug",
             disabled && "cursor-not-allowed opacity-60",
             inputClassName,
           )}
           style={{ minHeight: singleLineLike ? undefined : minHeight }}
-        />
-      </div>
+        />      </div>
       {open && filtered.length ? (
         <ul
           className="absolute bottom-full z-40 mb-1 max-h-[11.5rem] w-full overflow-y-auto rounded-xl border bg-white py-1 shadow-lg shadow-slate-900/10"

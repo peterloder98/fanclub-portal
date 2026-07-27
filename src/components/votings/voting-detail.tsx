@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { SendHorizontal } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -309,20 +310,24 @@ export function VotingDetail({ votingId }: { votingId: string }) {
           <CardTitle className="text-base">Kommentare</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1.5">
             <MentionInputWithEmoji
+              multiline={false}
               value={commentDraft}
               onChange={setCommentDraft}
               placeholder="Kommentar schreiben… @ für Markierung"
               className="min-w-0 flex-1"
-              inputClassName="h-10 w-full rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+              emojiSize="md"
+              emojiTone="navy"
+              inputClassName="box-border h-10 min-w-0 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none focus:border-fc-blue focus:ring-4 focus:ring-[color:var(--ring)]"
             />
             <button
               type="button"
               onClick={() => void addComment()}
-              className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white transition hover:bg-fc-blue"
+              aria-label="Kommentar senden"
             >
-              Senden
+              <SendHorizontal className="h-4 w-4" />
             </button>
           </div>
           <div className="grid gap-2">
