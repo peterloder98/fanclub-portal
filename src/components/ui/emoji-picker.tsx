@@ -55,7 +55,7 @@ export function EmojiPickerButton({
   buttonClassName?: string;
   size?: "sm" | "md";
   tone?: "light" | "dark" | "navy";
-  /** Panel bevorzugt nach oben (Chat) oder nach unten (Kommentare/Composer). */
+  /** Panel bevorzugt nach oben-links (Chat) oder nach unten (Kommentare/Composer). */
   placement?: "up" | "down";
   /** Optionaler Text neben dem Smiley (z. B. Composer-Toolbar). */
   label?: string;
@@ -84,27 +84,36 @@ export function EmojiPickerButton({
       const gap = 8;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let left = btn.left;
-      left = Math.min(left, vw - PANEL_W - 8);
-      left = Math.max(8, left);
+      const panelH = panelRef.current?.offsetHeight || PANEL_MAX_H;
 
+      let left: number;
       let top: number;
+
       if (placement === "up") {
-        top = btn.top - PANEL_MAX_H - gap;
-        if (top < 8) top = btn.bottom + gap;
+        // Vom Button aus nach links oben (rechte Kante am Button ausrichten)
+        left = btn.right - PANEL_W;
+        top = btn.top - panelH - gap;
+        if (top < 8) top = Math.max(8, btn.bottom + gap);
       } else {
+        left = btn.left;
         top = btn.bottom + gap;
-        if (top + PANEL_MAX_H > vh - 8) {
-          top = Math.max(8, btn.top - PANEL_MAX_H - gap);
+        if (top + panelH > vh - 8) {
+          top = Math.max(8, btn.top - panelH - gap);
         }
       }
+
+      left = Math.min(left, vw - PANEL_W - 8);
+      left = Math.max(8, left);
       setCoords({ top, left });
     }
 
     place();
+    // Nach erstem Paint echte Panel-Höhe messen und nachjustieren
+    const raf = window.requestAnimationFrame(place);
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
+      window.cancelAnimationFrame(raf);
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
@@ -121,10 +130,11 @@ export function EmojiPickerButton({
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpenSafe(false);
     }
-    document.addEventListener("mousedown", onDoc);
+    // click statt mousedown: sonst schließt der gleiche Klick das Panel sofort wieder
+    document.addEventListener("click", onDoc, true);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("click", onDoc, true);
       document.removeEventListener("keydown", onKey);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setOpenSafe is stable enough for close
@@ -148,7 +158,7 @@ export function EmojiPickerButton({
         aria-label="Emojis"
         data-emoji-picker-portal=""
         style={{ top: coords.top, left: coords.left, width: PANEL_W }}
-        className="fixed z-[300] overflow-hidden rounded-2xl border border-fc-navy/10 bg-white shadow-xl shadow-fc-navy/20 ring-1 ring-black/5"
+        className="fixed z-[2100] overflow-hidden rounded-2xl border border-fc-navy/10 bg-white shadow-xl shadow-fc-navy/20 ring-1 ring-black/5"
       >
         <div className="border-b border-slate-100 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2">
           <p className="text-xs font-semibold tracking-wide text-white">Emoji wählen</p>
@@ -197,8 +207,12 @@ export function EmojiPickerButton({
         onMouseDown={(e) => {
           // Focus im Composer/Kommentar behalten → kein Zuklappen
           e.preventDefault();
+          e.stopPropagation();
         }}
-        onClick={() => setOpenSafe(!open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpenSafe(!open);
+        }}
         className={cn(
           "inline-flex items-center justify-center gap-1.5 rounded-xl transition disabled:opacity-40",
           btnSize,
