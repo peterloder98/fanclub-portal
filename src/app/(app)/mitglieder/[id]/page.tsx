@@ -226,7 +226,7 @@ export default async function MemberPortalPage({
             </div>
           </div>
 
-          <div className="space-y-8 px-5 py-6 sm:px-8">
+          <div className="min-w-0 space-y-8 px-5 py-6 sm:px-8">
             {shortBio ? (
               <section className="rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
@@ -238,7 +238,7 @@ export default async function MemberPortalPage({
 
             {achievements.length ? <MemberPortalBadges achievements={achievements} /> : null}
 
-            <section className="space-y-3">
+            <section className="min-w-0 space-y-3">
               <div>
                 <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
                   <CalendarDays className="h-4 w-4" aria-hidden />
@@ -250,7 +250,7 @@ export default async function MemberPortalPage({
               </div>
 
               {upcomingEvents.length || upcomingMeetings.length ? (
-                <ul className="grid gap-2">
+                <ul className="grid w-full min-w-0 gap-3">
                   {upcomingMeetings.map((m) => {
                     const when = formatEventListDateParts(m.starts_at);
                     const place = formatEventVenueCityLine({
@@ -259,23 +259,23 @@ export default async function MemberPortalPage({
                       country: m.country,
                     });
                     return (
-                      <li key={`meeting-${m.id}`}>
+                      <li key={`meeting-${m.id}`} className="min-w-0">
                         <Link
                           href={`/treffen/${m.id}`}
-                          className="flex gap-3 rounded-2xl border border-fc-navy/10 bg-white/90 p-3 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
+                          className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
                         >
                           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-700">
                             <Sparkles className="h-4 w-4" aria-hidden />
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1 overflow-hidden">
                             <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
                               Fanclub-Treffen · {when.date}
                             </p>
-                            <p className="mt-0.5 truncate text-sm font-semibold text-fc-navy">
+                            <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
                               {m.title}
                             </p>
                             {place ? (
-                              <p className="mt-0.5 truncate text-xs text-slate-500">{place}</p>
+                              <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
                             ) : null}
                           </div>
                         </Link>
@@ -300,24 +300,24 @@ export default async function MemberPortalPage({
                           });
                     const Icon = e.kind === "tv" ? Tv : Music2;
                     return (
-                      <li key={e.id}>
+                      <li key={e.id} className="min-w-0">
                         <Link
                           href={`/events?focus=${e.id}`}
-                          className="flex gap-3 rounded-2xl border border-fc-navy/10 bg-white/90 p-3 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
+                          className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
                         >
                           <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
                             <Icon className="h-4 w-4" aria-hidden />
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1 overflow-hidden">
                             <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
                               {e.kind === "tv" ? "TV" : "Konzert"} · {when.date}
                               {time ? ` · ${time}` : ""}
                             </p>
-                            <p className="mt-0.5 truncate text-sm font-semibold text-fc-navy">
+                            <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
                               {e.title}
                             </p>
                             {place ? (
-                              <p className="mt-0.5 truncate text-xs text-slate-500">{place}</p>
+                              <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
                             ) : null}
                           </div>
                         </Link>
@@ -332,21 +332,21 @@ export default async function MemberPortalPage({
               )}
 
               {pastPreview.length ? (
-                <div className="pt-2">
+                <div className="min-w-0 pt-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Schon dabei gewesen ({pastEvents.length})
                   </p>
-                  <ul className="mt-2 grid gap-1.5">
+                  <ul className="mt-2 grid min-w-0 gap-1.5">
                     {pastPreview.map((e) => {
                       const when = formatEventListDateParts(e.start_at, e.end_at);
                       return (
-                        <li key={e.id}>
+                        <li key={e.id} className="min-w-0">
                           <Link
                             href={`/events?focus=${e.id}`}
-                            className="flex items-baseline justify-between gap-3 rounded-xl px-2 py-1.5 text-sm hover:bg-slate-50"
+                            className="flex w-full min-w-0 items-start justify-between gap-3 overflow-hidden rounded-xl px-2 py-1.5 text-sm hover:bg-slate-50"
                           >
-                            <span className="min-w-0 truncate text-slate-700">{e.title}</span>
-                            <span className="shrink-0 text-xs tabular-nums text-slate-400">
+                            <span className="min-w-0 flex-1 break-words text-slate-700">{e.title}</span>
+                            <span className="shrink-0 pt-0.5 text-xs tabular-nums text-slate-400">
                               {when.date}
                             </span>
                           </Link>
@@ -364,7 +364,7 @@ export default async function MemberPortalPage({
             </section>
 
             {answers.length ? (
-              <section className="space-y-3">
+              <section className="min-w-0 space-y-3">
                 <div>
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
                     Kennenlernen
@@ -373,16 +373,16 @@ export default async function MemberPortalPage({
                     Fünf freiwillige Fragen — so lernen wir uns besser kennen.
                   </p>
                 </div>
-                <ul className="grid gap-3">
+                <ul className="grid w-full min-w-0 gap-3">
                   {answers.map((q) => (
                     <li
                       key={q.key}
-                      className="rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
+                      className="min-w-0 rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
                     >
                       <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
                         {q.label}
                       </p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-fc-navy">
+                      <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-fc-navy">
                         {q.value}
                       </p>
                     </li>
