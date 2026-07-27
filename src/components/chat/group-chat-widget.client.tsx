@@ -109,7 +109,7 @@ export function GroupChatWidget() {
   }, [open, lastSeenAt, chat.messages, chat.userId]);
 
   const unreadCount = unread.length;
-  const latestUnread = unread[0];
+  const hasUnread = unreadCount > 0;
 
   if (hideDock) return null;
 
@@ -160,31 +160,24 @@ export function GroupChatWidget() {
               "text-sm font-semibold text-fc-navy shadow-lg shadow-fc-navy/20",
               "transition hover:border-fc-navy hover:bg-fc-ice",
               "max-sm:w-full max-sm:justify-center",
-              unreadCount > 0
-                ? "border-rose-400 shadow-rose-500/25 ring-2 ring-rose-200/80"
-                : "border-fc-blue",
+              hasUnread ? "border-fc-blue ring-2 ring-fc-sky/70" : "border-fc-blue",
             )}
             aria-expanded={false}
-            aria-label={
-              unreadCount > 0
-                ? `Gruppenchat öffnen, ${unreadCount} neue Nachrichten`
-                : "Gruppenchat öffnen"
-            }
+            aria-label={hasUnread ? "Gruppenchat öffnen, neue Nachrichten" : "Gruppenchat öffnen"}
           >
             <span className="relative">
               <MessageCircle className="h-4 w-4 text-fc-blue" />
-              {unreadCount > 0 ? (
-                <span className="absolute -right-2 -top-2 grid h-4 min-w-4 animate-pulse place-items-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+              {hasUnread ? (
+                <span
+                  className="absolute -right-1.5 -top-1.5 h-2.5 w-2.5 animate-pulse rounded-full bg-rose-500 ring-2 ring-white"
+                  aria-hidden
+                />
               ) : null}
             </span>
             <span>Gruppenchat</span>
-            {unreadCount > 0 ? (
-              <span className="max-w-[9rem] truncate rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-800">
-                {unreadCount === 1 && latestUnread
-                  ? `${latestUnread.author.name.split(" ")[0]} …`
-                  : `${unreadCount} neu`}
+            {hasUnread ? (
+              <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-800">
+                Neu
               </span>
             ) : chat.onlineCount > 0 ? (
               <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">
