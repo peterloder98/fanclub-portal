@@ -172,7 +172,7 @@ export function EventsInteractivePanel({
 
       <div
         className={cn(
-          "hidden min-h-0 h-full flex-1 gap-3 overflow-hidden lg:grid lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,1fr)] lg:gap-4",
+          "hidden min-h-0 h-full flex-1 gap-3 overflow-hidden lg:grid lg:grid-cols-2 lg:gap-4",
           className,
         )}
       >
