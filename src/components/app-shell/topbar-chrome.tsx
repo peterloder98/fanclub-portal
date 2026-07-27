@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { NotificationBell } from "@/components/app-shell/notification-bell.client";
 import { MobileNavDrawer } from "@/components/app-shell/mobile-nav-drawer";
 import { useTopbarMeta } from "@/components/app-shell/topbar-context";
@@ -144,7 +143,7 @@ export function TopbarChrome() {
     <>
       <header
         className={cn(
-          "fixed top-0 z-[200] flex items-center gap-3 border-b bg-[color:var(--background)]/95 px-4 backdrop-blur",
+          "fixed top-0 z-[200] flex items-center gap-2 border-b bg-[color:var(--background)]/95 px-2.5 backdrop-blur sm:gap-3 sm:px-4",
           "min-h-[var(--fanclub-chrome-header-height,4rem)] pt-[env(safe-area-inset-top,0px)]",
           profileOpen && "z-[9998]",
           "inset-x-0 lg:left-[var(--fanclub-sidebar-width,16rem)] lg:right-0 lg:px-8",
@@ -155,7 +154,6 @@ export function TopbarChrome() {
         }}
       >
         <MobileNavDrawer isAdmin={role === "admin"} />
-        <BrandLogo className="lg:hidden" showText={false} imageClassName="h-10 w-10" />
         <div className="min-w-0 flex-1" title={subtitle}>
           <div className="truncate text-base font-semibold leading-tight text-fc-navy">
             {title}
@@ -167,14 +165,16 @@ export function TopbarChrome() {
           ) : null}
         </div>
 
-        <div className="ml-auto flex h-10 items-center gap-1.5 sm:gap-2">
+        <div className="ml-auto flex h-10 shrink-0 items-center gap-1 sm:gap-2">
           <Link
             href="/punkte"
-            className="relative flex h-10 min-w-[3.25rem] flex-col items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-2 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/30 sm:min-w-[4.5rem] sm:px-2.5"
+            className="relative flex h-10 min-w-9 flex-col items-center justify-center rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-blue-50/50 px-1.5 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/30 sm:min-w-[4.5rem] sm:px-2.5"
             aria-label={`${ANNI_STARS_LABEL}: ${points}, Rang ${rank}`}
           >
             <PointsBurst />
-            <span className="text-[9px] font-medium leading-none text-slate-500">Anni-Stars</span>
+            <span className="hidden text-[9px] font-medium leading-none text-slate-500 sm:inline">
+              Anni-Stars
+            </span>
             <span
               id={POINTS_TARGET_ID}
               data-points-target="true"

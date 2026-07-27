@@ -81,13 +81,13 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen min-w-0 max-w-full overflow-x-hidden">
       <Topbar
         title="Dashboard"
         subtitle="Willkommen zurück — hier siehst du alles Wichtige auf einen Blick."
       />
 
-      <main className="px-4 py-4 pb-2 lg:px-6 lg:py-4 lg:pb-0">
+      <main className="min-w-0 max-w-full overflow-x-hidden px-3 py-4 pb-2 sm:px-4 lg:px-6 lg:py-4 lg:pb-0">
         {nextMeeting ? <DashboardMeetingHighlight meeting={nextMeeting} /> : null}
         {/* Mobile: Nächster Auftritt ganz oben */}
         <div className="mb-4 lg:hidden">
@@ -97,12 +97,12 @@ export default async function DashboardPage() {
             nextTitle={nextEvent?.title ?? null}
           />
         </div>
-        <div className="grid items-stretch gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4 lg:min-h-[calc(100dvh-4rem-1rem)]">
-          <section className="min-w-0">
+        <div className="grid min-w-0 max-w-full items-stretch gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(220px,280px)] lg:gap-4 lg:min-h-[calc(100dvh-4rem-1rem)]">
+          <section className="min-w-0 max-w-full">
             <PostFeed embedPollsInFeed />
           </section>
 
-          <aside className="flex min-h-0 flex-col gap-1.5 lg:sticky lg:top-0 lg:h-[calc(100dvh-4rem-1rem)] lg:max-h-[calc(100dvh-4rem-1rem)]">
+          <aside className="flex min-w-0 max-w-full flex-col gap-1.5 lg:sticky lg:top-0 lg:h-[calc(100dvh-4rem-1rem)] lg:max-h-[calc(100dvh-4rem-1rem)]">
             <div className="hidden shrink-0 lg:block">
               <EventsCountdown
                 compact

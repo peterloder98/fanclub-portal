@@ -19,7 +19,7 @@ const PRIMARY_TABS = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/events", label: "Events", icon: CalendarDays },
   { href: "/chat", label: "Chat", icon: MessageCircle },
-  { href: "/mitglieder", label: "Mitglieder", icon: HeartHandshake },
+  { href: "/mitglieder", label: "Club", icon: HeartHandshake },
 ] as const;
 
 function isTabActive(pathname: string, href: string) {
@@ -46,7 +46,7 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-[1050] border-t border-fc-navy/10 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_24px_rgba(20,49,101,0.08)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-[1200] border-t border-fc-navy/10 bg-white/95 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_24px_rgba(20,49,101,0.08)] backdrop-blur lg:hidden"
       aria-label="Hauptnavigation"
     >
       <ul className="grid h-14 grid-cols-5">

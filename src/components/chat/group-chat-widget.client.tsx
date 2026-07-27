@@ -11,8 +11,7 @@ import {
   writeChatLastSeen,
 } from "@/lib/chat/last-seen";
 import { GroupChatPanel } from "@/components/chat/group-chat-panel.client";
-import { ChatUnreadProvider } from "@/components/chat/chat-unread-context";
-import { MobileTabBar } from "@/components/app-shell/mobile-tab-bar";
+import { useChatUnread } from "@/components/chat/chat-unread-context";
 
 const STORAGE_KEY = "fc-group-chat-open";
 
@@ -88,6 +87,8 @@ export function GroupChatWidget() {
     if (!lastSeenAt || newest > lastSeenAt) setLastSeenAt(newest);
   }, [open, chat.messages, lastSeenAt]);
 
+  const { setHasUnread } = useChatUnread();
+
   useEffect(() => {
     if (hideDock) {
       document.documentElement.style.setProperty("--fanclub-chat-dock", "0px");
@@ -119,9 +120,12 @@ export function GroupChatWidget() {
     );
   }, [hideDock, open, lastSeenAt, chat.messages, chat.userId]);
 
+  useEffect(() => {
+    setHasUnread(hasUnread);
+  }, [hasUnread, setHasUnread]);
+
   return (
-    <ChatUnreadProvider hasUnread={hasUnread}>
-      <MobileTabBar />
+    <>
       {hideDock ? null : (
         <div className="pointer-events-none fixed bottom-3 right-3 z-[1100] hidden flex-col items-end gap-2 lg:flex">
           {open ? (
@@ -181,6 +185,6 @@ export function GroupChatWidget() {
           )}
         </div>
       )}
-    </ChatUnreadProvider>
+    </>
   );
 }

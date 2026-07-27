@@ -39,7 +39,7 @@ export function EventsInteractivePanel({
 }) {
   const searchParams = useSearchParams();
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
-  const [mapOpen, setMapOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(true);
 
   const effectiveFocusId = focusEventId ?? searchParams.get("focus");
 
@@ -148,9 +148,8 @@ export function EventsInteractivePanel({
 
   return (
     <>
-      <div className={cn("flex min-h-0 flex-1 flex-col gap-3 lg:hidden", className)}>
+      <div className={cn("flex min-h-0 min-w-0 max-w-full flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:hidden", className)}>
         <EventsCountdown compact nextStartAt={nextStartAt} nextTitle={nextTitle} />
-        <div className="min-h-0 flex-1">{list}</div>
         <Card className="shrink-0 rounded-2xl">
           <button
             type="button"
@@ -168,6 +167,7 @@ export function EventsInteractivePanel({
           </button>
           {mapOpen ? <div className="border-t p-2">{mapInner}</div> : null}
         </Card>
+        <div className="min-h-0 shrink-0">{list}</div>
       </div>
 
       <div

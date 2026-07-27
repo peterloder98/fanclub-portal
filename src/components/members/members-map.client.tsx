@@ -46,6 +46,21 @@ function MapClickDismiss({ onDismiss }: { onDismiss: () => void }) {
   return null;
 }
 
+function MapResizeFix() {
+  const map = useMap();
+  useEffect(() => {
+    const run = () => map.invalidateSize();
+    run();
+    const t1 = window.setTimeout(run, 100);
+    const t2 = window.setTimeout(run, 400);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [map]);
+  return null;
+}
+
 function FitMembersBounds({ points }: { points: Array<{ lat: number; lng: number }> }) {
   const map = useMap();
   const key = points.map((p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join("|");
@@ -158,6 +173,7 @@ export function MembersMapClient({
           aria-label="Mitgliederkarte Deutschland"
         >
           <FitMembersBounds points={markers.map((c) => ({ lat: c.lat, lng: c.lng }))} />
+          <MapResizeFix />
           <MapClickDismiss onDismiss={dismissSelected} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
