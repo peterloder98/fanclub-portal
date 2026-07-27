@@ -38,6 +38,11 @@ import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
 import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
+import {
+  MentionInput,
+  type MentionInputHandle,
+} from "@/components/feed/mention-input";
+import { EmojiPickerButton } from "@/components/ui/emoji-picker";
 import { MentionText } from "@/components/feed/mention-text";
 import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
@@ -211,6 +216,7 @@ function PostFeedInner({
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLDivElement>(null);
+  const composerMentionRef = useRef<MentionInputHandle>(null);
   const commentInputRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
 
@@ -1600,7 +1606,8 @@ function PostFeedInner({
                   if (picked.length) void handleComposerFiles(picked);
                 }}
               />
-              <MentionInputWithEmoji
+              <MentionInput
+                ref={composerMentionRef}
                 value={newText}
                 onChange={setNewText}
                 inputRef={composerInputRef}
@@ -1620,6 +1627,17 @@ function PostFeedInner({
 
               {!composerExpanded ? (
                 <div className="mt-1.5 flex items-center gap-2">
+                  <EmojiPickerButton
+                    size="sm"
+                    placement="down"
+                    label="Emoji"
+                    disabled={!me}
+                    onPick={(emoji) => {
+                      setComposerExpanded(true);
+                      composerMentionRef.current?.insertText(emoji);
+                    }}
+                    buttonClassName="h-8 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
+                  />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
@@ -1658,6 +1676,14 @@ function PostFeedInner({
                     )}
                   >
                     <div className="flex flex-wrap items-center gap-2">
+                      <EmojiPickerButton
+                        size="sm"
+                        placement="down"
+                        label="Emoji"
+                        disabled={!me}
+                        onPick={(emoji) => composerMentionRef.current?.insertText(emoji)}
+                        buttonClassName="h-9 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50"
+                      />
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}

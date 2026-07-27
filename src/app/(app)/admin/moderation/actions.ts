@@ -225,11 +225,17 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   await createUserNotification({
     userId: memberId,
     kind: NOTIFICATION_KINDS.warningIssued,
-    title: `Verwarnung erhalten (${newCount}.)`,
-    body: `Unter „${contextTitle}" wurde eine Verwarnung ausgesprochen.`,
+    title: "Du hast eine Verwarnung erhalten",
+    body: `„${commentSnippet}"`,
     linkUrl: base ? `${base}/profile` : "/profile",
     linkLabel: "Mein Profil",
-    metadata: { warning_id: warningRow?.id, warning_count: newCount },
+    metadata: {
+      warning_id: warningRow?.id,
+      warning_count: newCount,
+      comment_text: commentSnippet,
+      context_kind: contextKind,
+      context_title: contextTitle,
+    },
   }).catch(console.error);
 
   await logMemberActivity({

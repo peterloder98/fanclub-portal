@@ -223,6 +223,52 @@ export function presentNotification(n: UserNotificationRow): PresentedNotificati
   const m = metaRecord(n);
   const { icon, iconClass } = iconForKind(n.kind);
   const href = resolveNotificationHref(n);
+
+  if (n.kind === NOTIFICATION_KINDS.warningIssued) {
+    const count =
+      typeof m.warning_count === "number"
+        ? m.warning_count
+        : Number.parseInt(String(m.warning_count ?? ""), 10) ||
+          Number.parseInt(n.title?.match(/\((\d+)\.?\)/)?.[1] ?? "", 10) ||
+          null;
+    const quote =
+      (typeof m.comment_text === "string" && m.comment_text.trim()) ||
+      extractNotificationQuote(n.body) ||
+      null;
+    // Alte Mails hatten nur den Kontext („Gruppenchat“) im Body — das ist kein Zitat.
+    const legacyContextOnly =
+      Boolean(n.body?.match(/^Unter „.+?" wurde eine Verwarnung/)) &&
+      typeof m.comment_text !== "string";
+
+    return {
+      icon,
+      iconClass,
+      headline: "Du hast eine Verwarnung erhalten",
+      contextLabel: count ? `${count}. Verwarnung` : null,
+      whenLabel: `${formatNotificationDateTime(n.created_at)}:`,
+      quote: legacyContextOnly ? null : quote,
+      href,
+      hasTarget: Boolean(href),
+    };
+  }
+
+  if (n.kind === NOTIFICATION_KINDS.warningRevoked) {
+    const count =
+      typeof m.warning_count === "number"
+        ? m.warning_count
+        : Number.parseInt(String(m.warning_count ?? ""), 10) || null;
+    return {
+      icon,
+      iconClass,
+      headline: n.title?.trim() || "Verwarnung zurückgenommen",
+      contextLabel: count != null ? `Verbleibend: ${count}` : n.body,
+      whenLabel: `${formatNotificationDateTime(n.created_at)}:`,
+      quote: null,
+      href,
+      hasTarget: Boolean(href),
+    };
+  }
+
   const quote = extractNotificationQuote(n.body);
   const headline =
     n.title?.trim() ||
@@ -253,3 +299,4 @@ export function presentNotification(n: UserNotificationRow): PresentedNotificati
     hasTarget: Boolean(href),
   };
 }
+

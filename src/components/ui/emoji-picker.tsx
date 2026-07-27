@@ -39,6 +39,8 @@ export function EmojiPickerButton({
   buttonClassName,
   size = "md",
   tone = "light",
+  placement = "down",
+  label,
 }: {
   onPick: (emoji: string) => void;
   disabled?: boolean;
@@ -46,6 +48,10 @@ export function EmojiPickerButton({
   buttonClassName?: string;
   size?: "sm" | "md";
   tone?: "light" | "dark" | "navy";
+  /** Panel öffnet nach oben (z. B. Chat unten) oder nach unten (Kommentare/Composer). */
+  placement?: "up" | "down";
+  /** Optionaler Text neben dem Smiley (z. B. Composer-Toolbar). */
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -67,7 +73,11 @@ export function EmojiPickerButton({
     };
   }, [open]);
 
-  const btnSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
+  const btnSize = label
+    ? null
+    : size === "sm"
+      ? "h-8 w-8"
+      : "h-10 w-10";
   const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
   const toneClass =
     tone === "dark"
@@ -83,17 +93,19 @@ export function EmojiPickerButton({
         disabled={disabled}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label="Emoji einfügen"
+        aria-label={label ? undefined : "Emoji einfügen"}
         title="Emoji"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "grid place-items-center rounded-xl transition disabled:opacity-40",
+          "inline-flex items-center justify-center gap-1.5 rounded-xl transition disabled:opacity-40",
           btnSize,
+          label ? "font-medium" : "grid place-items-center",
           toneClass,
           buttonClassName,
         )}
       >
         <Smile className={iconSize} aria-hidden />
+        {label ? <span>{label}</span> : null}
       </button>
 
       {open ? (
@@ -101,7 +113,10 @@ export function EmojiPickerButton({
           id={panelId}
           role="dialog"
           aria-label="Emojis"
-          className="absolute bottom-full right-0 z-[80] mb-2 w-[min(18.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-fc-navy/10 bg-white shadow-xl shadow-fc-navy/15 ring-1 ring-black/5"
+          className={cn(
+            "absolute z-[80] w-[min(18.5rem,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-fc-navy/10 bg-white shadow-xl shadow-fc-navy/15 ring-1 ring-black/5",
+            placement === "up" ? "bottom-full right-0 mb-2" : "left-0 top-full mt-2",
+          )}
         >
           <div className="border-b border-slate-100 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2">
             <p className="text-xs font-semibold tracking-wide text-white">Emoji wählen</p>

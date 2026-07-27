@@ -13,6 +13,10 @@ type Props = React.ComponentProps<typeof MentionInput> & {
   emojiTone?: "light" | "navy";
   /** Zusätzliche Klassen für die äußere Flex-Zeile (Input + Emoji). */
   rowClassName?: string;
+  /** Emoji-Panel: Kommentare nach unten, Chat oft nach oben. */
+  emojiPlacement?: "up" | "down";
+  /** Ohne Inline-Emoji — z. B. wenn der Button in einer Toolbar liegt. */
+  hideEmoji?: boolean;
 };
 
 /**
@@ -24,6 +28,8 @@ export function MentionInputWithEmoji({
   emojiTone = "light",
   rowClassName,
   className,
+  emojiPlacement = "down",
+  hideEmoji = false,
   ...props
 }: Props) {
   const ref = useRef<MentionInputHandle>(null);
@@ -39,13 +45,16 @@ export function MentionInputWithEmoji({
         className={cn("min-w-0 flex-1", className)}
         {...props}
       />
-      <EmojiPickerButton
-        size={emojiSize}
-        tone={emojiTone}
-        disabled={props.disabled}
-        className="shrink-0"
-        onPick={(emoji) => ref.current?.insertText(emoji)}
-      />
+      {!hideEmoji ? (
+        <EmojiPickerButton
+          size={emojiSize}
+          tone={emojiTone}
+          placement={emojiPlacement}
+          disabled={props.disabled}
+          className="shrink-0"
+          onPick={(emoji) => ref.current?.insertText(emoji)}
+        />
+      ) : null}
     </div>
   );
 }

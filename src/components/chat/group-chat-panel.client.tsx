@@ -426,6 +426,7 @@ export function GroupChatPanel({
           />
           <EmojiPickerButton
             tone="navy"
+            placement="up"
             disabled={sending}
             onPick={(emoji) => mentionRef.current?.insertText(emoji)}
           />
