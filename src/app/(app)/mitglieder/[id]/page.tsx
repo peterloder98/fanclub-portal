@@ -1,6 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { CalendarDays, MapPin, Music2, Sparkles, Star, Tv } from "lucide-react";
+import {
+  CalendarDays,
+  Heart,
+  MapPin,
+  Mic2,
+  Music2,
+  Pencil,
+  Quote,
+  Sparkles,
+  Star,
+  Tv,
+  UserRound,
+} from "lucide-react";
 import { Topbar } from "@/components/app-shell/topbar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -52,6 +64,14 @@ function formatMemberSince(iso: string | null | undefined) {
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
 }
+
+const INTRO_ANSWER_ICONS: Record<MemberIntroKey, typeof Sparkles> = {
+  intro_discovered_anni: Sparkles,
+  intro_favorite_song: Music2,
+  intro_other_artists: Mic2,
+  intro_hobbies: Heart,
+  intro_perfect_concert: Star,
+};
 
 export default async function MemberPortalPage({
   params,
@@ -232,11 +252,24 @@ export default async function MemberPortalPage({
 
           <div className="min-w-0 space-y-8 px-5 py-6 sm:px-8">
             {shortBio ? (
-              <section className="rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
-                  Ein paar Worte über mich
-                </h2>
-                <p className="mt-2 text-sm leading-relaxed text-fc-navy">{shortBio}</p>
+              <section className="relative overflow-hidden rounded-2xl border border-fc-sky/30 bg-gradient-to-br from-fc-ice/90 via-white to-rose-50/60 p-5 shadow-sm shadow-fc-navy/5 sm:p-6">
+                <div
+                  className="pointer-events-none absolute -right-6 -top-8 h-28 w-28 rounded-full bg-fc-sky/15 blur-2xl"
+                  aria-hidden
+                />
+                <div className="relative flex gap-4">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm">
+                    <Quote className="h-5 w-5" aria-hidden />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
+                      Ein paar Worte über mich
+                    </h2>
+                    <p className="mt-2 text-base font-medium leading-relaxed text-fc-navy sm:text-[1.05rem] sm:leading-relaxed">
+                      {shortBio}
+                    </p>
+                  </div>
+                </div>
               </section>
             ) : null}
 
@@ -244,7 +277,7 @@ export default async function MemberPortalPage({
 
             <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:items-start lg:gap-10">
               <section className="min-w-0 space-y-3">
-                <div>
+                <div className="min-h-[3.75rem]">
                   <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
                     <CalendarDays className="h-4 w-4" aria-hidden />
                     Hier bin ich dabei
@@ -363,60 +396,60 @@ export default async function MemberPortalPage({
                 ) : null}
               </section>
 
-              {answers.length ? (
-                <section className="min-w-0 space-y-3">
-                  <div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
-                      Kennenlernen
+              <section className="min-w-0 space-y-3">
+                <div className="flex min-h-[3.75rem] items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
+                      <UserRound className="h-4 w-4" aria-hidden />
+                      Das bin ich
                     </h2>
                     <p className="mt-1 text-sm text-slate-600">
                       Fünf freiwillige Fragen — so lernen wir uns besser kennen.
                     </p>
                   </div>
+                  {isSelf ? (
+                    <Link
+                      href="/profile#kennenlernen"
+                      className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-fc-navy/15 bg-white px-3 text-xs font-semibold text-fc-navy shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/60"
+                    >
+                      <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      {answers.length ? "Bearbeiten" : "Ausfüllen"}
+                    </Link>
+                  ) : null}
+                </div>
+
+                {answers.length ? (
                   <ul className="grid w-full min-w-0 gap-3">
-                    {answers.map((q) => (
+                    {answers.map((q) => {
+                      const Icon = INTRO_ANSWER_ICONS[q.key as MemberIntroKey] ?? Sparkles;
+                      return (
                       <li
                         key={q.key}
-                        className="min-w-0 rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
+                        className="flex min-w-0 gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
                       >
-                        <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
-                          {q.label}
-                        </p>
-                        <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-fc-navy">
-                          {q.value}
-                        </p>
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
+                            {q.label}
+                          </p>
+                          <p className="mt-0.5 break-words whitespace-pre-wrap text-sm font-semibold leading-snug text-fc-navy">
+                            {q.value}
+                          </p>
+                        </div>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
-                  {isSelf ? (
-                    <Link
-                      href="/profile#kennenlernen"
-                      className="inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
-                    >
-                      Antworten bearbeiten
-                    </Link>
-                  ) : null}
-                </section>
-              ) : (
-                <section className="min-w-0 rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-sm text-slate-600 lg:self-start">
-                  <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
-                    Kennenlernen
-                  </h2>
-                  <p className="mt-2">
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-center text-sm text-slate-600">
                     {isSelf
-                      ? "Noch keine Antworten — unter Profil kannst du die Kennenlernen-Fragen ausfüllen."
-                      : "Noch keine Kennenlernen-Antworten hinterlegt."}
-                  </p>
-                  {isSelf ? (
-                    <Link
-                      href="/profile#kennenlernen"
-                      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
-                    >
-                      Fragen beantworten
-                    </Link>
-                  ) : null}
-                </section>
-              )}
+                      ? "Noch keine Antworten — tippe oben rechts auf Ausfüllen."
+                      : "Noch keine Antworten hinterlegt."}
+                  </div>
+                )}
+              </section>
             </div>
           </div>
         </div>
