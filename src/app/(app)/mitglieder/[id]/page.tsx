@@ -191,7 +191,7 @@ export default async function MemberPortalPage({
   return (
     <div className="min-h-screen">
       <Topbar title={name} subtitle="Mitglieder-Portal" />
-      <main className="mx-auto w-full max-w-3xl px-4 py-6 lg:px-8">
+      <main className="mx-auto w-full max-w-5xl px-4 py-6 lg:px-8">
         <div className="overflow-hidden rounded-3xl border border-fc-navy/10 bg-gradient-to-br from-white via-fc-ice/40 to-rose-50/40 shadow-sm shadow-fc-navy/10">
           <div className="bg-gradient-to-r from-fc-navy to-fc-blue px-6 py-8 text-white sm:px-8">
             <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
@@ -242,161 +242,182 @@ export default async function MemberPortalPage({
 
             {achievements.length ? <MemberPortalBadges achievements={achievements} /> : null}
 
-            <section className="min-w-0 space-y-3">
-              <div>
-                <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
-                  <CalendarDays className="h-4 w-4" aria-hidden />
-                  Hier bin ich dabei
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Konzerte, TV-Auftritte und Treffen für die ich mich angemeldet habe.
-                </p>
-              </div>
-
-              {upcomingEvents.length || upcomingMeetings.length ? (
-                <ul className={`grid w-full min-w-0 gap-3 ${joinedListScrollClass}`}>
-                  {upcomingMeetings.map((m) => {
-                    const when = formatEventListDateParts(m.starts_at);
-                    const place = formatEventVenueCityLine({
-                      venue: m.venue,
-                      city: m.city,
-                      country: m.country,
-                    });
-                    return (
-                      <li key={`meeting-${m.id}`} className="min-w-0">
-                        <Link
-                          href={`/treffen/${m.id}`}
-                          className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
-                        >
-                          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-700">
-                            <Sparkles className="h-4 w-4" aria-hidden />
-                          </div>
-                          <div className="min-w-0 flex-1 overflow-hidden">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
-                              Fanclub-Treffen · {when.date}
-                            </p>
-                            <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
-                              {m.title}
-                            </p>
-                            {place ? (
-                              <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
-                            ) : null}
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                  {upcomingEvents.map((e) => {
-                    const when = formatEventListDateParts(e.start_at, e.end_at);
-                    const time = formatEventListTime(e.start_at);
-                    const place =
-                      e.kind === "tv"
-                        ? formatLocation({
-                            kind: e.kind,
-                            broadcaster: e.broadcaster,
-                            city: e.city,
-                            country: e.country,
-                          })
-                        : formatEventVenueCityLine({
-                            venue: e.venue,
-                            city: e.city,
-                            country: e.country,
-                          });
-                    const Icon = e.kind === "tv" ? Tv : Music2;
-                    return (
-                      <li key={e.id} className="min-w-0">
-                        <Link
-                          href={`/events?focus=${e.id}`}
-                          className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
-                        >
-                          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
-                            <Icon className="h-4 w-4" aria-hidden />
-                          </div>
-                          <div className="min-w-0 flex-1 overflow-hidden">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
-                              {e.kind === "tv" ? "TV" : "Konzert"} · {when.date}
-                              {time ? ` · ${time}` : ""}
-                            </p>
-                            <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
-                              {e.title}
-                            </p>
-                            {place ? (
-                              <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
-                            ) : null}
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-center text-sm text-slate-600">
-                  Aktuell keine kommenden Termine markiert.
-                </div>
-              )}
-
-              {pastEvents.length ? (
-                <div className="min-w-0 pt-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Schon dabei gewesen ({pastEvents.length})
+            <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:items-start lg:gap-10">
+              <section className="min-w-0 space-y-3">
+                <div>
+                  <h2 className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
+                    <CalendarDays className="h-4 w-4" aria-hidden />
+                    Hier bin ich dabei
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Konzerte, TV-Auftritte und Treffen für die ich mich angemeldet habe.
                   </p>
-                  <ul className={`mt-2 grid min-w-0 gap-1.5 ${pastListScrollClass}`}>
-                    {pastEvents.map((e) => {
+                </div>
+
+                {upcomingEvents.length || upcomingMeetings.length ? (
+                  <ul className={`grid w-full min-w-0 gap-3 ${joinedListScrollClass}`}>
+                    {upcomingMeetings.map((m) => {
+                      const when = formatEventListDateParts(m.starts_at);
+                      const place = formatEventVenueCityLine({
+                        venue: m.venue,
+                        city: m.city,
+                        country: m.country,
+                      });
+                      return (
+                        <li key={`meeting-${m.id}`} className="min-w-0">
+                          <Link
+                            href={`/treffen/${m.id}`}
+                            className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
+                          >
+                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-700">
+                              <Sparkles className="h-4 w-4" aria-hidden />
+                            </div>
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+                                Fanclub-Treffen · {when.date}
+                              </p>
+                              <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
+                                {m.title}
+                              </p>
+                              {place ? (
+                                <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
+                              ) : null}
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                    {upcomingEvents.map((e) => {
                       const when = formatEventListDateParts(e.start_at, e.end_at);
+                      const time = formatEventListTime(e.start_at);
+                      const place =
+                        e.kind === "tv"
+                          ? formatLocation({
+                              kind: e.kind,
+                              broadcaster: e.broadcaster,
+                              city: e.city,
+                              country: e.country,
+                            })
+                          : formatEventVenueCityLine({
+                              venue: e.venue,
+                              city: e.city,
+                              country: e.country,
+                            });
+                      const Icon = e.kind === "tv" ? Tv : Music2;
                       return (
                         <li key={e.id} className="min-w-0">
                           <Link
                             href={`/events?focus=${e.id}`}
-                            className="flex w-full min-w-0 items-start justify-between gap-3 overflow-hidden rounded-xl px-2 py-1.5 text-sm hover:bg-slate-50"
+                            className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
                           >
-                            <span className="min-w-0 flex-1 break-words text-slate-700">{e.title}</span>
-                            <span className="shrink-0 pt-0.5 text-xs tabular-nums text-slate-400">
-                              {when.date}
-                            </span>
+                            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
+                              <Icon className="h-4 w-4" aria-hidden />
+                            </div>
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
+                                {e.kind === "tv" ? "TV" : "Konzert"} · {when.date}
+                                {time ? ` · ${time}` : ""}
+                              </p>
+                              <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
+                                {e.title}
+                              </p>
+                              {place ? (
+                                <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
+                              ) : null}
+                            </div>
                           </Link>
                         </li>
                       );
                     })}
                   </ul>
-                </div>
-              ) : null}
-            </section>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-center text-sm text-slate-600">
+                    Aktuell keine kommenden Termine markiert.
+                  </div>
+                )}
 
-            {answers.length ? (
-              <section className="min-w-0 space-y-3">
-                <div>
+                {pastEvents.length ? (
+                  <div className="min-w-0 pt-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Schon dabei gewesen ({pastEvents.length})
+                    </p>
+                    <ul className={`mt-2 grid min-w-0 gap-1.5 ${pastListScrollClass}`}>
+                      {pastEvents.map((e) => {
+                        const when = formatEventListDateParts(e.start_at, e.end_at);
+                        return (
+                          <li key={e.id} className="min-w-0">
+                            <Link
+                              href={`/events?focus=${e.id}`}
+                              className="flex w-full min-w-0 items-start justify-between gap-3 overflow-hidden rounded-xl px-2 py-1.5 text-sm hover:bg-slate-50"
+                            >
+                              <span className="min-w-0 flex-1 break-words text-slate-700">{e.title}</span>
+                              <span className="shrink-0 pt-0.5 text-xs tabular-nums text-slate-400">
+                                {when.date}
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ) : null}
+              </section>
+
+              {answers.length ? (
+                <section className="min-w-0 space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
+                      Kennenlernen
+                    </h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                      Fünf freiwillige Fragen — so lernen wir uns besser kennen.
+                    </p>
+                  </div>
+                  <ul className="grid w-full min-w-0 gap-3">
+                    {answers.map((q) => (
+                      <li
+                        key={q.key}
+                        className="min-w-0 rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
+                      >
+                        <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
+                          {q.label}
+                        </p>
+                        <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-fc-navy">
+                          {q.value}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                  {isSelf ? (
+                    <Link
+                      href="/profile#kennenlernen"
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
+                    >
+                      Antworten bearbeiten
+                    </Link>
+                  ) : null}
+                </section>
+              ) : (
+                <section className="min-w-0 rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-5 text-sm text-slate-600 lg:self-start">
                   <h2 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/70">
                     Kennenlernen
                   </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Fünf freiwillige Fragen — so lernen wir uns besser kennen.
+                  <p className="mt-2">
+                    {isSelf
+                      ? "Noch keine Antworten — unter Profil kannst du die Kennenlernen-Fragen ausfüllen."
+                      : "Noch keine Kennenlernen-Antworten hinterlegt."}
                   </p>
-                </div>
-                <ul className="grid w-full min-w-0 gap-3">
-                  {answers.map((q) => (
-                    <li
-                      key={q.key}
-                      className="min-w-0 rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
+                  {isSelf ? (
+                    <Link
+                      href="/profile#kennenlernen"
+                      className="mt-3 inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
                     >
-                      <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
-                        {q.label}
-                      </p>
-                      <p className="mt-2 break-words whitespace-pre-wrap text-sm leading-relaxed text-fc-navy">
-                        {q.value}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-                {isSelf ? (
-                  <Link
-                    href="/profile#kennenlernen"
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
-                  >
-                    Antworten bearbeiten
-                  </Link>
-                ) : null}
-              </section>
-            ) : null}
+                      Fragen beantworten
+                    </Link>
+                  ) : null}
+                </section>
+              )}
+            </div>
           </div>
         </div>
       </main>
