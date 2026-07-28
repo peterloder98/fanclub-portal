@@ -86,6 +86,7 @@ const createSchema = z.object({
     .object({
       text: z.string().min(3),
       options: z.array(z.string().min(1)).min(2).max(12),
+      correctIndex: z.number().int().min(0),
     })
     .optional(),
 });
@@ -140,6 +141,12 @@ export async function createGiveaway(formData: FormData): Promise<{ ok: true; id
   if (input.entry_mode === "question") {
     if (!input.singleQuestion || input.singleQuestion.options.length < 2) {
       throw new Error("Frage-Gewinnspiel: eine Frage mit mindestens 2 Antwortoptionen.");
+    }
+    if (
+      input.singleQuestion.correctIndex < 0 ||
+      input.singleQuestion.correctIndex >= input.singleQuestion.options.length
+    ) {
+      throw new Error("Frage-Gewinnspiel: bitte die korrekte Antwort markieren.");
     }
   }
 
@@ -212,7 +219,7 @@ export async function createGiveaway(formData: FormData): Promise<{ ok: true; id
         question_id: qRow.id,
         label,
         sort_order: oi,
-        is_correct: false,
+        is_correct: oi === sq.correctIndex,
       })),
     );
   }
@@ -448,17 +455,21 @@ export async function participateQuestion(giveawayId: string, answersJson: strin
 
   const { data: options } = await admin
     .from("giveaway_question_options")
-    .select("id,question_id")
+    .select("id,question_id,is_correct")
     .eq("question_id", answer.questionId);
   const validOption = (options ?? []).some((o) => o.id === answer.optionId);
   if (!validOption) throw new Error("Ungültige Antwort.");
+
+  const correctOption = (options ?? []).find((o) => o.is_correct);
+  if (!correctOption) throw new Error("Frage-Gewinnspiel ist unvollständig konfiguriert.");
+  const correct = answer.optionId === correctOption.id;
 
   const { data: entry, error: eErr } = await supabase
     .from("giveaway_entries")
     .insert({
       giveaway_id: giveawayId,
       user_id: userId,
-      is_eligible: true,
+      is_eligible: correct,
     })
     .select("id")
     .single();
@@ -477,7 +488,7 @@ export async function participateQuestion(giveawayId: string, answersJson: strin
   revalidatePath(`/giveaways/${giveawayId}`);
   revalidatePath("/giveaways");
 
-  return { ok: true as const };
+  return { eligible: correct, correctOptionId: correctOption.id };
 }
 
 export async function setupYearEndGiveaway(pointsYear?: number) {

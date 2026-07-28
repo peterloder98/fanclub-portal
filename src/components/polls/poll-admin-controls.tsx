@@ -28,7 +28,6 @@ export function PollAdminControls({
   const [error, setError] = useState<string | null>(null);
   const [question, setQuestion] = useState(poll.question);
   const [allowMultiple, setAllowMultiple] = useState(poll.allow_multiple);
-  const allowMultipleLocked = poll.allow_multiple;
   const [options, setOptions] = useState(
     initialOptions.map((o) => ({ id: o.id, label: o.label })),
   );
@@ -137,23 +136,13 @@ export function PollAdminControls({
               <input
                 type="checkbox"
                 checked={allowMultiple}
-                disabled={allowMultipleLocked}
-                onChange={(e) => {
-                  if (allowMultipleLocked) return;
-                  setAllowMultiple(e.target.checked);
-                }}
+                onChange={(e) => setAllowMultiple(e.target.checked)}
               />
-              Mehrfachauswahl
+              Mehrfachauswahl möglich
             </span>
-            {allowMultipleLocked ? (
-              <span className="text-slate-500">
-                Bereits aktiv — kann nicht mehr abgeschaltet werden (Stimmen bleiben gültig).
-              </span>
-            ) : (
-              <span className="text-slate-500">
-                Nachträglich nur aktivieren möglich, nicht wieder deaktivieren.
-              </span>
-            )}
+            <span className="text-slate-500">
+              Aus = Einfachauswahl (eine Antwort). An = mehrere Optionen erlaubt.
+            </span>
           </label>
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-slate-600">Antwortmöglichkeiten</span>

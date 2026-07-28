@@ -319,6 +319,9 @@ export function GiveawayAdminControls({
                       />
                     </label>
                   ))}
+                  <p className="mt-1 text-[10px] text-slate-500">
+                    Ausgewählte Option = korrekte Antwort
+                  </p>
                 </div>
               ))}
             </div>

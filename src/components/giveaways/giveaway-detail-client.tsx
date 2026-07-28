@@ -222,7 +222,7 @@ export function GiveawayDetailClient({
     setBusy(true);
     setError(null);
     try {
-      await participateQuestion(
+      const result = await participateQuestion(
         giveaway.id,
         JSON.stringify([{ questionId: q.id, optionId: quizAnswers[q.id]! }]),
       );
@@ -231,8 +231,10 @@ export function GiveawayDetailClient({
         questionText: q.text,
         optionLabel: chosen?.label ?? "",
       });
-      setLocalEntered({ is_eligible: true });
-      flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
+      setLocalEntered({ is_eligible: result.eligible });
+      if (result.eligible) {
+        flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Teilnahme fehlgeschlagen");
     } finally {

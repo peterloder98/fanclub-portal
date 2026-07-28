@@ -23,7 +23,11 @@ export function GiveawayAdminCreate() {
     { text: "", options: ["", "", ""], correctIndex: 0 },
     { text: "", options: ["", "", ""], correctIndex: 0 },
   ]);
-  const [singleQuestion, setSingleQuestion] = useState({ text: "", options: ["", ""] });
+  const [singleQuestion, setSingleQuestion] = useState({
+    text: "",
+    options: ["", ""],
+    correctIndex: 0,
+  });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -56,6 +60,7 @@ export function GiveawayAdminCreate() {
         JSON.stringify({
           text: singleQuestion.text.trim(),
           options: singleQuestion.options.map((o) => o.trim()).filter(Boolean),
+          correctIndex: singleQuestion.correctIndex,
         }),
       );
     }
@@ -195,7 +200,15 @@ export function GiveawayAdminCreate() {
                 </button>
               </div>
               {singleQuestion.options.map((opt, oi) => (
-                <div key={oi} className="flex gap-2">
+                <label key={oi} className="flex gap-2">
+                  <input
+                    type="radio"
+                    name="single-correct"
+                    checked={singleQuestion.correctIndex === oi}
+                    onChange={() => setSingleQuestion((q) => ({ ...q, correctIndex: oi }))}
+                    className="mt-2"
+                    title="Korrekte Antwort"
+                  />
                   <input
                     value={opt}
                     onChange={(e) =>
@@ -212,10 +225,16 @@ export function GiveawayAdminCreate() {
                     <button
                       type="button"
                       onClick={() =>
-                        setSingleQuestion((q) => ({
-                          ...q,
-                          options: q.options.filter((_, j) => j !== oi),
-                        }))
+                        setSingleQuestion((q) => {
+                          const next = q.options.filter((_, j) => j !== oi);
+                          const correctIndex =
+                            oi < q.correctIndex
+                              ? q.correctIndex - 1
+                              : oi === q.correctIndex
+                                ? 0
+                                : Math.min(q.correctIndex, next.length - 1);
+                          return { ...q, options: next, correctIndex };
+                        })
                       }
                       className="grid h-8 w-8 place-items-center rounded-lg border text-rose-600"
                       aria-label="Option entfernen"
@@ -223,10 +242,11 @@ export function GiveawayAdminCreate() {
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   ) : null}
-                </div>
+                </label>
               ))}
               <p className="text-[10px] text-slate-500">
-                Mindestens 2 Optionen — Mitglieder wählen genau eine Antwort.
+                Ausgewählte Option = korrekte Antwort. Nach korrekter Beantwortung ist die Person
+                automatisch teilnahmeberechtigt.
               </p>
             </div>
           ) : null}
@@ -303,7 +323,7 @@ export function GiveawayAdminCreate() {
                     </label>
                   ))}
                   <p className="mt-1 text-[10px] text-slate-500">
-                    Radio = richtige Antwort für diese Frage
+                    Ausgewählte Option = korrekte Antwort
                   </p>
                 </div>
               ))}

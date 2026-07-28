@@ -94,21 +94,34 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "antraege",
         number: "2.1",
         title: "Neue Mitglieder aufnehmen",
-        summary: "Antrag prüfen und freischalten",
+        summary: "Antrag prüfen, Beitrag, freischalten",
         blocks: [
+          {
+            type: "p",
+            text: "Sobald jemand den digitalen Antrag absendet, werdet ihr als Vorstand sofort informiert: per E-Mail und per Benachrichtigung in der App. In der Benachrichtigung könnt ihr direkt auf den Antrag tippen und ihn öffnen.",
+          },
           {
             type: "ol",
             items: [
-              "Admin → „Mitglieder & Anträge“ öffnen.",
+              "Admin → „Mitglieder & Anträge“ öffnen (oder den Link in der Benachrichtigung/E-Mail antippen).",
               "Offenen Antrag antippen und Daten sowie Unterschrift prüfen.",
-              "Wenn alles passt: freigeben. Die Person bekommt eine Mitgliedsnummer und die Einladung, den App-Zugang einzurichten.",
-              "Der Jahresbeitrag (15 € für das laufende Kalenderjahr) wird erwartet — Erinnerung könnt ihr später aus dem Mitglieder-Detail senden.",
+              "Mit dem Antrag wird automatisch eine offene Zahlung per Banküberweisung angelegt. Der Beitrag (15 € für das laufende Kalenderjahr) muss auf dem Vereinskonto eingegangen sein.",
+              "Erst wenn der Beitrag verbucht/bestätigt ist: Antrag freigeben. Die Person bekommt eine Mitgliedsnummer und die Einladung, den App-Zugang einzurichten.",
             ],
+          },
+          {
+            type: "note",
+            text: "Freigabe erst nach Zahlungseingang — so startet die Mitgliedschaft erst, wenn der Beitrag da ist.",
           },
           {
             type: "link",
             href: "/admin/members",
             label: "Mitglieder & Anträge",
+          },
+          {
+            type: "link",
+            href: "/admin/payments",
+            label: "Zahlungen prüfen",
           },
           {
             type: "link",
@@ -220,6 +233,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "„Neue Umfrage erstellen“ antippen.",
               "Frage eingeben und ein Enddatum setzen (Standard: in 14 Tagen).",
+              "Auswahl-Art prüfen: Standard ist Einfachauswahl. Bei Bedarf „Mehrfachauswahl möglich“ einschalten.",
               "3 bis 10 Antwortoptionen eintragen („+ Option“).",
               "„Umfrage veröffentlichen“ tippen — danach können Mitglieder abstimmen.",
             ],
@@ -231,8 +245,8 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ul",
             items: [
-              "Beim Anlegen immer Einfachauswahl: jedes Mitglied wählt genau eine Antwort.",
-              "Später beim Bearbeiten könnt ihr „Mehrfachauswahl“ einschalten (dann mehrere Antworten möglich). Ausschalten geht danach nicht mehr zurück.",
+              "Einfachauswahl (Standard-Vorauswahl): jedes Mitglied wählt genau eine Antwort.",
+              "Mehrfachauswahl: Mitglieder dürfen mehrere Optionen ankreuzen. Beim Anlegen oder später beim Bearbeiten umschaltbar.",
             ],
           },
           {
@@ -243,7 +257,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "„Vorzeitig beenden“: Abstimmung endet sofort (nach Bestätigung).",
-              "Stift „Bearbeiten“: Frage, Optionen, Ende und ggf. Mehrfachauswahl anpassen und speichern. Optionen mit bereits abgegebenen Stimmen könnt ihr nicht löschen.",
+              "Stift „Bearbeiten“: Frage, Optionen, Ende und Auswahl-Art (Einfach/Mehrfach) anpassen und speichern. Optionen mit bereits abgegebenen Stimmen könnt ihr nicht löschen.",
               "Papierkorb „Löschen“: Umfrage unwiderruflich entfernen (nach Bestätigung).",
             ],
           },
@@ -285,8 +299,8 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "„Einfach teilnehmen“: ein Tippen auf „Jetzt teilnehmen“ reicht — alle Teilnehmenden sind auslosungsberechtigt.",
-              "„Eine Frage“: eine Multiple-Choice-Frage; nach der Antwort ist die Person teilnahmeberechtigt.",
-              "„Quiz (mind. 3 Fragen)“: mehrere Fragen mit je drei Antworten; nur wer alle richtig hat, kommt in die Auslosung.",
+              "„Eine Frage“: eine Multiple-Choice-Frage mit markierter korrekter Antwort (Hinweis: „Ausgewählte Option = korrekte Antwort“). Nach korrekter Beantwortung ist die Person automatisch teilnahmeberechtigt.",
+              "„Quiz (mind. 3 Fragen)“: mehrere Fragen mit je drei Antworten. Beim Anlegen markiert ihr pro Frage die korrekte Antwort (Hinweis: „Ausgewählte Option = korrekte Antwort“). Nur wer alle Fragen richtig beantwortet, kommt in die Auslosung.",
             ],
           },
           {
@@ -345,7 +359,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ul",
             items: [
-              "Bei gleicher Sternzahl entscheidet nicht der Zufall zuerst, sondern: mehr Anni-Stars-Aktivitäten im Jahr, dann früheres Eintrittsdatum, dann Nachname alphabetisch.",
+              "Bei gleicher Anzahl Anni-Stars entscheidet nicht der Zufall zuerst, sondern: mehr Anni-Stars-Aktivitäten im Jahr, dann früheres Eintrittsdatum, dann Nachname alphabetisch.",
               "Pausieren und vorzeitiges Beenden sind bei der Jahresendverlosung nicht vorgesehen.",
             ],
           },
@@ -400,11 +414,15 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         summary: "Posts sichtbar machen oder ablehnen",
         blocks: [
           {
+            type: "p",
+            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App (antippen öffnet die Freigabe) und zusätzlich per E-Mail.",
+          },
+          {
             type: "ol",
             items: [
-              "Admin → „Beiträge freigeben“ öffnen.",
+              "Admin → „Beiträge freigeben“ öffnen (oder den Link in der Benachrichtigung/E-Mail).",
               "Eingereichten Beitrag prüfen.",
-              "Annehmen (erscheint im Feed) oder ablehnen.",
+              "Annehmen (erscheint im Feed) oder ablehnen — das Mitglied wird in der App über das Ergebnis informiert.",
             ],
           },
           {
@@ -425,15 +443,32 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "treffen",
         number: "4.1",
         title: "Fanclub-Treffen anlegen",
-        summary: "Eigene Treffen mit Ort und Kosten",
+        summary: "Treffen, Ort, Kosten und Anreise",
         blocks: [
           {
             type: "ol",
             items: [
               "Admin → „Fanclub-Treffen“ öffnen.",
               "Neues Treffen anlegen: Titel, Zeit, Ort, ggf. Kosten.",
-              "Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
+              "Im gleichen Formular den Block „Anreise & Unterkunft“ ausfüllen (siehe unten).",
+              "Speichern. Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
             ],
+          },
+          {
+            type: "p",
+            text: "Anreise & Unterkunft (gehört zum Treffen dazu):",
+          },
+          {
+            type: "ul",
+            items: [
+              "Bahnhof / Anreise und Adresse",
+              "Hotel-Empfehlung und Hotel-Adresse",
+              "Weitere Hinweise (freier Text)",
+            ],
+          },
+          {
+            type: "p",
+            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“.",
           },
           {
             type: "link",
@@ -457,14 +492,15 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Unter „Events“ den gewünschten Konzert-Termin finden.",
               "„Reiseinfos +“ bzw. „Reiseinfos“ antippen.",
-              "Nächsten Bahnhof eintragen (Name und Adresse).",
-              "Bis zu drei Hotels mit Name und Adresse ergänzen („+ Hotel“).",
+              "Nächsten Bahnhof eintragen (Name und exakte Adresse mit Straße, Hausnummer, PLZ und Ort).",
+              "Bis zu drei Hotels mit Name und vollständiger Adresse ergänzen („+ Hotel“).",
               "„Speichern“ tippen. Zum Entfernen aller Angaben: „Löschen“.",
             ],
           },
           {
             type: "ul",
             items: [
+              "Für die Fußweg-Berechnung von der Event-Location zum Bahnhof/Hotel braucht die App die exakte und korrekte Adresse (Straße, Hausnummer, PLZ und Ort) — sonst kann die Entfernung nicht zuverlässig berechnet werden.",
               "Mitglieder sehen Bahnhof und Hotels; wenn möglich, wird die Fußweg-Entfernung angezeigt.",
               "Öffentliche Konzert-/TV-Termine kommen oft automatisch — wenn etwas fehlt: Admin → „Termine abgleichen“.",
             ],
@@ -478,30 +514,6 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/events-sync",
             label: "Termine abgleichen",
-          },
-        ],
-      },
-      {
-        id: "reiseinfos-treffen",
-        number: "4.3",
-        title: "Anreise bei Fanclub-Treffen",
-        summary: "Hinweise im Treffen-Formular",
-        blocks: [
-          {
-            type: "p",
-            text: "Beim Anlegen oder Bearbeiten eines Fanclub-Treffens gibt es den Block „Anreise & Unterkunft“:",
-          },
-          {
-            type: "ul",
-            items: [
-              "Bahnhof / Anreise und Adresse",
-              "Hotel-Empfehlung und Hotel-Adresse",
-              "Weitere Hinweise (freier Text)",
-            ],
-          },
-          {
-            type: "p",
-            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“.",
           },
         ],
       },
@@ -519,9 +531,22 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         summary: "Mails ohne jedes Mal neu tippen",
         blocks: [
           {
+            type: "p",
+            text: "E-Mail-Konten (SMTP) einrichten und pflegen:",
+          },
+          {
             type: "ol",
             items: [
-              "„Email Konten“: Absender der App prüfen; Verbindung testen, wenn Mails nicht ankommen.",
+              "Admin → System → „Email Konten verwalten“ öffnen.",
+              "„Neues Konto“: Host (SMTP-Server), Port, Verschlüsselung (SSL/TLS/STARTTLS), E-Mail/Login, Passwort, optional Anzeigename und Antwortadresse. Haken „Standard-Konto“, wenn dieses Konto für den Versand genutzt werden soll.",
+              "Speichern. Danach „Test“ (Verbindung) oder „Test-Mail“ (Probeschreiben an euch).",
+              "Bestehendes Konto: „Bearbeiten“ — Daten ändern; Passwort leer lassen, wenn es unverändert bleiben soll. „Als Standard“ setzen, wenn nötig.",
+              "Löschen: nur möglich, wenn noch mindestens ein anderes Konto bleibt (nach Bestätigung).",
+            ],
+          },
+          {
+            type: "ol",
+            items: [
               "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt.",
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
@@ -530,6 +555,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "note",
             text: "Zurzeit gehen Test-Mails nur an die Vorstände und die offizielle App-Adresse. So landet versehentlich nichts bei der ganzen Mitgliedschaft. Wenn ihr an alle schreiben wollt, sagt Bescheid — dann wird der Versand freigeschaltet.",
+          },
+          {
+            type: "link",
+            href: "/admin/settings/email",
+            label: "Email Konten",
           },
           {
             type: "link",
@@ -585,11 +615,40 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         summary: "Überblick behalten",
         blocks: [
           {
+            type: "p",
+            text: "App-Statistik erreichen: Admin-Bereich → System → „App-Statistik“ (oder direkt den Link unten).",
+          },
+          {
+            type: "p",
+            text: "Oben seht ihr Kennzahlen auf einen Blick:",
+          },
+          {
             type: "ul",
             items: [
-              "App-Statistik: aktive Mitglieder und Nutzung der App.",
-              "Protokoll (Audit): wer im Admin-Bereich wann wichtige Dinge geändert hat.",
+              "Aktive Mitglieder (Status aktiv gesamt)",
+              "In der App registriert (und Anteil an den Aktiven)",
+              "Aktiv diese Woche / diesen Monat (verschiedene Personen)",
+              "Aktiv gestern",
+              "Noch nie in der App (aktive Mitglieder ohne Login)",
+              "Beiträge diesen Monat und Chat-Nachrichten im Gruppenchat",
             ],
+          },
+          {
+            type: "p",
+            text: "Darunter wählt ihr unter „Anzeige“, welche Statistik als Diagramm gezeigt wird:",
+          },
+          {
+            type: "ul",
+            items: [
+              "Aktive Mitglieder / Tag — wie viele verschiedene Personen die App an dem Tag genutzt haben (Monat per Pfeile wechseln).",
+              "App-Öffnungen / Tag — wie oft die App genutzt wurde (auch mehrmals von derselben Person).",
+              "Monatsvergleich — aktive Mitglieder je Monat (12 Monate).",
+              "Gesamtmitglieder — Mitgliederstand zum jeweiligen Monatsende (12 Monate).",
+            ],
+          },
+          {
+            type: "p",
+            text: "Zusätzlich: Admin → „Protokoll“ zeigt, wer im Admin-Bereich wann wichtige Änderungen gemacht hat (Audit-Log).",
           },
           {
             type: "link",

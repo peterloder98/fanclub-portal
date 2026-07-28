@@ -29,7 +29,7 @@ const createPollSchema = z.object({
   question: z.string().min(3),
   ends_at: z.string().min(1),
   allow_multiple: z
-    .string()
+    .union([z.literal("on"), z.literal("true"), z.literal("false"), z.literal("")])
     .optional()
     .transform((v) => v === "on" || v === "true"),
   options: z.array(z.string().min(1)).min(3).max(10),
@@ -47,7 +47,7 @@ export async function createPoll(formData: FormData) {
   const input = createPollSchema.parse({
     question: String(formData.get("question") ?? "").trim(),
     ends_at: String(formData.get("ends_at") ?? ""),
-    allow_multiple: formData.get("allow_multiple"),
+    allow_multiple: String(formData.get("allow_multiple") ?? ""),
     options,
   });
 
@@ -86,5 +86,5 @@ export async function createPoll(formData: FormData) {
 
   revalidatePath("/polls");
   revalidatePath("/dashboard");
-  redirect("/polls?refresh=1");
+  return { ok: true as const, pollId: poll.id };
 }

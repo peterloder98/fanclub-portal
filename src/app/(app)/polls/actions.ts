@@ -1,5 +1,6 @@
 "use server";
 
+import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -59,6 +60,7 @@ export async function deletePoll(pollId: string) {
   const { admin, actorId } = await requireAdmin();
   const { error } = await admin.from("polls").delete().eq("id", pollId);
   if (error) throw new Error(error.message);
+  await deleteNotificationsByMetadata("poll_id", pollId);
   await logAdminAction(admin, {
     actorId,
     action: "poll.delete",
@@ -99,22 +101,12 @@ export async function updatePoll(formData: FormData) {
     .maybeSingle();
   if (curErr || !currentPoll) throw new Error("Umfrage nicht gefunden.");
 
-  // Mehrfachauswahl darf nachträglich nur aktiviert, nicht wieder deaktiviert werden.
-  const allowMultiple = currentPoll.allow_multiple
-    ? true
-    : input.allow_multiple;
-  if (currentPoll.allow_multiple && !input.allow_multiple) {
-    throw new Error(
-      "Mehrfachauswahl kann nach dem Start nicht mehr abgeschaltet werden — sonst passen die Ergebnisse nicht mehr.",
-    );
-  }
-
   const { error: pollErr } = await admin
     .from("polls")
     .update({
       question: input.question,
       ends_at: endsAt.toISOString(),
-      allow_multiple: allowMultiple,
+      allow_multiple: input.allow_multiple,
     })
     .eq("id", input.poll_id);
   if (pollErr) throw new Error(pollErr.message);
