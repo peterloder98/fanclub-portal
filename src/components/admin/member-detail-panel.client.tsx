@@ -153,6 +153,14 @@ export function MemberDetailPanel({
     ? (member.membership.fee_cents / 100).toFixed(2).replace(".", ",")
     : "15,00";
 
+  const [visibleWarnings, setVisibleWarnings] = useState(warnings);
+  const [warningCount, setWarningCount] = useState(member.warning_count);
+
+  useEffect(() => {
+    setVisibleWarnings(warnings);
+    setWarningCount(member.warning_count);
+  }, [warnings, member.warning_count]);
+
   function handleDelete() {
     if (!window.confirm(`Mitglied „${fullName}" wirklich löschen?`)) return;
     setActionError(null);
@@ -210,7 +218,9 @@ export function MemberDetailPanel({
     setActionError(null);
     startTransition(async () => {
       try {
-        await revokeMemberWarning(warningId);
+        const result = await revokeMemberWarning(warningId);
+        setVisibleWarnings((prev) => prev.filter((w) => w.id !== warningId));
+        setWarningCount(result.warningCount);
         router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "Zurücknahme fehlgeschlagen");
@@ -349,10 +359,10 @@ export function MemberDetailPanel({
           <CardHeader>
             <CardTitle className="flex flex-wrap items-center gap-2">
               Stammdaten
-              {member.warning_count > 0 ? (
+              {warningCount > 0 ? (
                 <Badge variant="danger" className="inline-flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" aria-hidden />
-                  {member.warning_count} Verwarnung{member.warning_count === 1 ? "" : "en"}
+                  {warningCount} Verwarnung{warningCount === 1 ? "" : "en"}
                 </Badge>
               ) : null}
             </CardTitle>
@@ -433,13 +443,13 @@ export function MemberDetailPanel({
         </Card>
       </div>
 
-      {warnings.length > 0 ? (
+      {visibleWarnings.length > 0 ? (
         <Card className="border-rose-200">
           <CardHeader>
             <CardTitle className="text-rose-900">Verwarnungen</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {warnings.map((w) => (
+            {visibleWarnings.map((w) => (
               <div
                 key={w.id}
                 className="rounded-xl border border-rose-200 bg-rose-50/60 px-4 py-3 text-sm"

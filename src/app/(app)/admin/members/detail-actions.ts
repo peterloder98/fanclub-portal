@@ -56,10 +56,23 @@ export async function revokeMemberWarning(warningId: string) {
   if (mErr) throw new Error(mErr.message);
   if (!member) throw new Error("Mitglied nicht gefunden.");
 
-  const { error: delErr } = await admin.from("member_warnings").delete().eq("id", warningId);
+  const { data: deleted, error: delErr } = await admin
+    .from("member_warnings")
+    .delete()
+    .eq("id", warningId)
+    .select("id");
   if (delErr) throw new Error(delErr.message);
+  if (!deleted?.length) {
+    throw new Error("Verwarnung konnte nicht gelöscht werden (nicht gefunden).");
+  }
 
-  const newCount = Math.max(0, (member.warning_count ?? 1) - 1);
+  const { count, error: countErr } = await admin
+    .from("member_warnings")
+    .select("*", { count: "exact", head: true })
+    .eq("member_id", member.id);
+  if (countErr) throw new Error(countErr.message);
+  const newCount = count ?? 0;
+
   const { error: upErr } = await admin
     .from("profiles")
     .update({ warning_count: newCount })
