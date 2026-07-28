@@ -26,6 +26,7 @@ import {
   getMemberContributionYears,
   listOpenContributions,
   pickPrimaryContribution,
+  resolveMemberPaymentReference,
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import {
@@ -167,7 +168,12 @@ export async function getMemberPaymentReminderDraft(
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
       ...clubBankEmailVars(),
-      bank_reference: contribVars.payment_reference || clubBankEmailVars().bank_reference,
+      bank_reference: resolveMemberPaymentReference({
+        calendarYear: calendarYear ?? contrib?.calendarYear ?? new Date().getFullYear(),
+        membershipNumber: profile.membership_number,
+        lastName: profile.last_name,
+        fromContribution: contribVars.payment_reference,
+      }),
     },
     { signatureId: useSignatureId },
   );
@@ -193,7 +199,7 @@ export async function sendMemberPaymentReminderEmail(input: {
   const admin = createSupabaseAdminClient();
   const { data: profile, error: pErr } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email,gender")
+    .select("id,first_name,last_name,email,gender,membership_number")
     .eq("id", input.userId)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -237,7 +243,12 @@ export async function sendMemberPaymentReminderEmail(input: {
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
       ...clubBankEmailVars(),
-      bank_reference: contribVars.payment_reference || clubBankEmailVars().bank_reference,
+      bank_reference: resolveMemberPaymentReference({
+        calendarYear: input.calendarYear ?? contrib?.calendarYear ?? new Date().getFullYear(),
+        membershipNumber: profile.membership_number,
+        lastName: profile.last_name,
+        fromContribution: contribVars.payment_reference,
+      }),
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );

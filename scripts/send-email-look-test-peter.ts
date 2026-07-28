@@ -8,6 +8,7 @@ import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { resolveMemberPaymentReference } from "@/lib/club/membership-contribution";
 
 const TO = "mail@peter-loder.de";
 const BASE = (
@@ -61,8 +62,12 @@ async function main() {
       fee_paid_eur: "0,00 €",
       fee_open_eur: "15,00 €",
       membership_period: String(new Date().getFullYear()),
-      bank_reference: `Beitrag ${new Date().getFullYear()}, Nr. 042, Loder`,
       ...bank,
+      bank_reference: resolveMemberPaymentReference({
+        calendarYear: new Date().getFullYear(),
+        membershipNumber: "042",
+        lastName: "Loder",
+      }),
     },
   );
 

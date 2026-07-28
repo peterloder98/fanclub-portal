@@ -19,12 +19,28 @@ export function wrapEmailDocument(innerHtml: string) {
   return `<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/></head><body style="margin:0;padding:24px;background:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1e293b"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0">${innerHtml}</div></body></html>`;
 }
 
+/** Eine Leerzeile zwischen Inhalt und Signatur (HTML). */
+export const EMAIL_SIGNATURE_GAP_HTML =
+  '<p style="margin:0;font-size:15px;line-height:1.55"><br></p>';
+
+function trimTrailingEmptyParagraphs(html: string) {
+  return html.replace(/(<p style="[^"]*">\s*(?:&nbsp;|\s|<br\s*\/?>)*\s*<\/p>\s*)+$/gi, "");
+}
+
+/** Unteren Absatz-Abstand vor der Signatur entfernen — sonst doppelte Lücke. */
+function trimTrailingBodyMargin(html: string) {
+  const marker = '<p style="margin:0 0 1em;';
+  const idx = html.lastIndexOf(marker);
+  if (idx === -1) return html;
+  return `${html.slice(0, idx)}<p style="margin:0;${html.slice(idx + marker.length)}`;
+}
+
 export function appendSignatureToEmailHtml(bodyHtml: string, signatureHtml: string) {
-  const core = bodyHtml.trimEnd();
+  const core = trimTrailingBodyMargin(trimTrailingEmptyParagraphs(bodyHtml.trimEnd()));
   const sig = signatureHtml.trim();
   if (!sig) return core;
   if (!core) return sig;
-  return `${core}<p style="margin:0 0 1em;line-height:1.5">&nbsp;</p>${sig}`;
+  return `${core}${EMAIL_SIGNATURE_GAP_HTML}${sig}`;
 }
 
 export function stripPlainSignatureSuffix(body: string, signatureText: string) {
@@ -90,7 +106,7 @@ export function resolveSignatureHtmlFromSource(source?: string): string | undefi
   if (legacy) return legacy[0];
   if (!input.includes("<!DOCTYPE")) return input;
   const fromRendered = input.match(
-    /<p style="margin:0 0 1em;line-height:1\.5">&nbsp;<\/p>\s*([\s\S]+?)\s*<\/div>\s*<\/body>/i,
+    /<p style="margin:0;font-size:15px;line-height:1\.55"><br><\/p>\s*([\s\S]+?)\s*<\/div>\s*<\/body>/i,
   );
   return fromRendered?.[1]?.trim() || undefined;
 }

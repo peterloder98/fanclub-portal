@@ -88,6 +88,22 @@ export function formatMembershipPaymentReference(
   return `Beitrag ${year}, Nr. ${nr}, ${name}`;
 }
 
+/** Verwendungszweck für Zahlungserinnerungen — immer mit Namen des Empfängers. */
+export function resolveMemberPaymentReference(input: {
+  calendarYear: number;
+  membershipNumber?: string | null;
+  lastName?: string | null;
+  fromContribution?: string | null;
+}): string {
+  const fromContribution = input.fromContribution?.trim();
+  if (fromContribution) return fromContribution;
+  return formatMembershipPaymentReference(
+    input.calendarYear,
+    input.membershipNumber,
+    input.lastName ?? "",
+  );
+}
+
 export function formatDueDateDe(dateStr: string): string {
   const [y, m, d] = dateStr.split("-");
   if (!y || !m || !d) return dateStr;

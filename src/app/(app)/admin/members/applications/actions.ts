@@ -30,6 +30,7 @@ import { storeApprovedMemberContractPdf } from "@/lib/membership/application-pdf
 import {
   formatContributionEmailVars,
   getMemberContributionInfo,
+  resolveMemberPaymentReference,
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 
@@ -202,6 +203,16 @@ export async function getPaymentReminderDraft(
 
   const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
   const contrib = app.user_id ? await getMemberContributionInfo(app.user_id) : null;
+  let membershipNumber: string | null = null;
+  if (app.user_id) {
+    const { data: memberProfile } = await admin
+      .from("profiles")
+      .select("membership_number")
+      .eq("id", app.user_id)
+      .maybeSingle();
+    membershipNumber = memberProfile?.membership_number ?? null;
+  }
+  const reminderYear = contrib?.calendarYear ?? new Date().getFullYear();
   const contribVars = contrib
     ? formatContributionEmailVars(contrib)
     : {
@@ -223,6 +234,12 @@ export async function getPaymentReminderDraft(
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
       ...clubBankEmailVars(),
+      bank_reference: resolveMemberPaymentReference({
+        calendarYear: reminderYear,
+        membershipNumber,
+        lastName: app.last_name,
+        fromContribution: contrib?.paymentReference,
+      }),
     },
     { signatureId: useSignatureId },
   );
@@ -255,6 +272,16 @@ export async function sendPaymentReminderEmail(input: {
 
   const feeEur = `${((app.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
   const contrib = app.user_id ? await getMemberContributionInfo(app.user_id) : null;
+  let membershipNumber: string | null = null;
+  if (app.user_id) {
+    const { data: memberProfile } = await admin
+      .from("profiles")
+      .select("membership_number")
+      .eq("id", app.user_id)
+      .maybeSingle();
+    membershipNumber = memberProfile?.membership_number ?? null;
+  }
+  const reminderYear = contrib?.calendarYear ?? new Date().getFullYear();
   const contribVars = contrib
     ? formatContributionEmailVars(contrib)
     : {
@@ -276,6 +303,12 @@ export async function sendPaymentReminderEmail(input: {
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
       ...clubBankEmailVars(),
+      bank_reference: resolveMemberPaymentReference({
+        calendarYear: reminderYear,
+        membershipNumber,
+        lastName: app.last_name,
+        fromContribution: contrib?.paymentReference,
+      }),
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );

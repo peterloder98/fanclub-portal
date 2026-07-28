@@ -6,6 +6,7 @@ import {
   deriveContributionStatus,
   dueDateForContributionYear,
   formatMembershipPaymentReference,
+  resolveMemberPaymentReference,
   paymentBelongsToCalendarYear,
   paymentDeadlineForContributionYear,
   pickPrimaryContribution,
@@ -49,6 +50,24 @@ describe("calendar year contributions", () => {
     expect(formatMembershipPaymentReference(2027, "42", "Müller")).toBe(
       "Beitrag 2027, Nr. 42, Müller",
     );
+  });
+
+  it("resolves payment reference from member data when contribution missing", () => {
+    expect(
+      resolveMemberPaymentReference({
+        calendarYear: 2027,
+        membershipNumber: "42",
+        lastName: "Müller",
+      }),
+    ).toBe("Beitrag 2027, Nr. 42, Müller");
+    expect(
+      resolveMemberPaymentReference({
+        calendarYear: 2027,
+        membershipNumber: "42",
+        lastName: "Müller",
+        fromContribution: "Beitrag 2027, Nr. 42, Müller",
+      }),
+    ).toBe("Beitrag 2027, Nr. 42, Müller");
   });
 
   it("picks oldest overdue year first", () => {
