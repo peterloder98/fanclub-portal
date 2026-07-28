@@ -1,0 +1,16 @@
+---
+description: Admin-Handbuch bei Feature-/Bedienungsänderungen mitpflegen
+alwaysApply: true
+---
+
+# Admin-Handbuch aktualisieren
+
+Die Vorstands-Hilfe lebt unter `/admin/hilfe` und wird aus `src/lib/admin/admin-handbook.ts` gerendert (nur `role=admin`).
+
+Wenn du Admin-Workflows, E-Mail-/Beitrags-/Mitglieder-Logik, Punkte/Badges oder Go-Live-Schritte änderst oder neu baust:
+
+1. Die passende Sektion in `ADMIN_HANDBOOK_SECTIONS` ergänzen oder anpassen.
+2. `ADMIN_HANDBOOK_UPDATED` auf das aktuelle Datum (YYYY-MM-DD) setzen.
+3. Neue Admin-Seiten ggf. als `link`-Block verlinken und im Admin-Hub erwähnen, falls sinnvoll.
+
+Nicht fragen — mitpflegen, sobald die Aufgabe Admin-Bedienung betrifft. Keine Secrets oder internen Env-Werte ins Handbuch schreiben.

@@ -73,6 +73,15 @@ const INTRO_ANSWER_ICONS: Record<MemberIntroKey, typeof Sparkles> = {
   intro_perfect_concert: Star,
 };
 
+const PORTAL_CARD_CLASS =
+  "flex min-h-[5.75rem] w-full min-w-0 max-w-full items-start gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm";
+const PORTAL_CARD_LINK_CLASS = `${PORTAL_CARD_CLASS} transition hover:border-fc-blue/40 hover:bg-fc-ice/50`;
+const PORTAL_CARD_TITLE_CLASS =
+  "mt-0.5 line-clamp-2 break-words text-sm font-semibold leading-snug text-fc-navy";
+const PORTAL_CARD_META_CLASS =
+  "text-xs font-semibold uppercase tracking-wide text-fc-blue";
+const PORTAL_CARD_SUB_CLASS = "mt-0.5 line-clamp-1 break-words text-xs text-slate-500";
+
 export default async function MemberPortalPage({
   params,
 }: {
@@ -300,7 +309,7 @@ export default async function MemberPortalPage({
                         <li key={`meeting-${m.id}`} className="min-w-0">
                           <Link
                             href={`/treffen/${m.id}`}
-                            className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
+                            className={PORTAL_CARD_LINK_CLASS}
                           >
                             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-700">
                               <Sparkles className="h-4 w-4" aria-hidden />
@@ -309,12 +318,8 @@ export default async function MemberPortalPage({
                               <p className="text-xs font-semibold uppercase tracking-wide text-rose-700">
                                 Fanclub-Treffen · {when.date}
                               </p>
-                              <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
-                                {m.title}
-                              </p>
-                              {place ? (
-                                <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
-                              ) : null}
+                              <p className={PORTAL_CARD_TITLE_CLASS}>{m.title}</p>
+                              {place ? <p className={PORTAL_CARD_SUB_CLASS}>{place}</p> : null}
                             </div>
                           </Link>
                         </li>
@@ -341,22 +346,18 @@ export default async function MemberPortalPage({
                         <li key={e.id} className="min-w-0">
                           <Link
                             href={`/events?focus=${e.id}`}
-                            className="flex w-full min-w-0 max-w-full gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm transition hover:border-fc-blue/40 hover:bg-fc-ice/50"
+                            className={PORTAL_CARD_LINK_CLASS}
                           >
                             <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
                               <Icon className="h-4 w-4" aria-hidden />
                             </div>
                             <div className="min-w-0 flex-1 overflow-hidden">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
+                              <p className={PORTAL_CARD_META_CLASS}>
                                 {e.kind === "tv" ? "TV" : "Konzert"} · {when.date}
                                 {time ? ` · ${time}` : ""}
                               </p>
-                              <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-fc-navy">
-                                {e.title}
-                              </p>
-                              {place ? (
-                                <p className="mt-0.5 break-words text-xs text-slate-500">{place}</p>
-                              ) : null}
+                              <p className={PORTAL_CARD_TITLE_CLASS}>{e.title}</p>
+                              {place ? <p className={PORTAL_CARD_SUB_CLASS}>{place}</p> : null}
                             </div>
                           </Link>
                         </li>
@@ -423,20 +424,13 @@ export default async function MemberPortalPage({
                     {answers.map((q) => {
                       const Icon = INTRO_ANSWER_ICONS[q.key as MemberIntroKey] ?? Sparkles;
                       return (
-                      <li
-                        key={q.key}
-                        className="flex min-w-0 gap-3 overflow-hidden rounded-2xl border border-fc-navy/10 bg-white/90 p-4 shadow-sm"
-                      >
+                      <li key={q.key} className={PORTAL_CARD_CLASS}>
                         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
                           <Icon className="h-4 w-4" aria-hidden />
                         </div>
                         <div className="min-w-0 flex-1 overflow-hidden">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-fc-blue">
-                            {q.label}
-                          </p>
-                          <p className="mt-0.5 break-words whitespace-pre-wrap text-sm font-semibold leading-snug text-fc-navy">
-                            {q.value}
-                          </p>
+                          <p className={`line-clamp-1 ${PORTAL_CARD_META_CLASS}`}>{q.label}</p>
+                          <p className={PORTAL_CARD_TITLE_CLASS}>{q.value}</p>
                         </div>
                       </li>
                       );

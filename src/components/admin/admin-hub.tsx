@@ -21,6 +21,7 @@ import {
   FileCheck,
   Server,
   Activity,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
@@ -190,6 +191,12 @@ const SECTIONS: AdminHubSection[] = [
     title: "System",
     subtitle: "Statistik und Protokoll",
     items: [
+      {
+        href: "/admin/hilfe",
+        title: "Admin-Handbuch",
+        description: "Was die App kann und wie ihr sie bedient",
+        icon: BookOpen,
+      },
       {
         href: "/admin/app-stats",
         title: "App-Statistik",
