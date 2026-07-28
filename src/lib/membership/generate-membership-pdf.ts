@@ -89,10 +89,10 @@ function drawFieldText(
 
 function drawCheckbox(page: PDFPage, font: PDFFont, checked: boolean, coord: { x: number; y: number; size?: number }) {
   if (!checked) return;
-  const size = coord.size ?? 11;
+  const size = coord.size ?? 10;
   page.drawText("X", {
-    x: coord.x + 1,
-    y: coord.y - 1,
+    x: coord.x + 2,
+    y: coord.y + 1,
     size,
     font,
     color: rgb(0.05, 0.05, 0.12),
@@ -158,7 +158,7 @@ export async function generateMembershipPdf(
 ) {
   const templateBytes = await loadTemplateBytes();
   const doc = await PDFDocument.load(templateBytes);
-  const font = await doc.embedFont(StandardFonts.TimesRoman);
+  const font = await doc.embedFont(StandardFonts.Helvetica);
   const pages = doc.getPages();
 
   if (pages.length < 4) {
@@ -226,12 +226,10 @@ export async function generateMembershipPdf(
   ];
   const bankLineCoords = coords.page2.bankDetailsLines;
   bankLines.forEach((line, i) => {
-    page2.drawText(line, {
+    drawFieldText(page2, font, line, {
       x: bankLineCoords.x,
       y: bankLineCoords.y - i * bankLineCoords.lineHeight,
-      size: bankLineCoords.fontSize,
-      font,
-      color: rgb(0.05, 0.05, 0.12),
+      fontSize: bankLineCoords.fontSize,
     });
   });
 
