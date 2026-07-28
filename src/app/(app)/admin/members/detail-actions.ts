@@ -272,7 +272,7 @@ export async function sendMemberPaymentReminderEmail(input: {
       const reason = "reason" in result ? String(result.reason) : "";
       if (reason.includes("outbound_test_mode")) {
         throw new Error(
-          "E-Mail blockiert: Testmodus aktiv (kein Versand an echte Mitglieder). EMAIL_OUTBOUND_MODE=live erst nach Go-Live setzen.",
+          "E-Mail blockiert: Testmodus aktiv (nur Vorstände und offizielle App-Adresse). EMAIL_OUTBOUND_MODE=live erst nach Go-Live setzen.",
         );
       }
       throw new Error(

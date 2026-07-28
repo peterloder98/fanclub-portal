@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { evaluateOutboundEmail, getOutboundEmailMode } from "./outbound-policy";
+import {
+  clearOutboundTestAllowlistCache,
+  evaluateOutboundEmailAgainstAllowlist,
+  getOutboundEmailMode,
+} from "./outbound-policy";
 
 describe("outbound email policy", () => {
   const env = process.env;
 
   afterEach(() => {
     process.env = { ...env };
+    clearOutboundTestAllowlistCache();
   });
 
   it("defaults to test mode", () => {
@@ -14,20 +19,20 @@ describe("outbound email policy", () => {
   });
 
   it("blocks recipients not on allowlist in test mode", () => {
-    process.env.EMAIL_OUTBOUND_MODE = "test";
-    process.env.EMAIL_OUTBOUND_ALLOWLIST = "test@example.com";
-    const decision = evaluateOutboundEmail("member@real.de");
+    const allowlist = new Set(["vorstand@example.com", "app@fanclub.de"]);
+    const decision = evaluateOutboundEmailAgainstAllowlist("member@real.de", allowlist);
     expect(decision.allow).toBe(false);
   });
 
   it("allows allowlisted recipients in test mode", () => {
-    process.env.EMAIL_OUTBOUND_MODE = "test";
-    process.env.EMAIL_OUTBOUND_ALLOWLIST = "test@example.com";
-    expect(evaluateOutboundEmail("test@example.com").allow).toBe(true);
+    const allowlist = new Set(["vorstand@example.com", "app@fanclub.de"]);
+    expect(evaluateOutboundEmailAgainstAllowlist("vorstand@example.com", allowlist).allow).toBe(
+      true,
+    );
   });
 
-  it("allows all in live mode", () => {
+  it("allows all in live mode via getOutboundEmailMode", () => {
     process.env.EMAIL_OUTBOUND_MODE = "live";
-    expect(evaluateOutboundEmail("anyone@example.com").allow).toBe(true);
+    expect(getOutboundEmailMode()).toBe("live");
   });
 });

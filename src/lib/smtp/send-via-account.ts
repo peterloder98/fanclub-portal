@@ -15,7 +15,7 @@ export type SendViaAccountInput = {
 };
 
 export async function sendEmailViaAccount(input: SendViaAccountInput) {
-  const policy = evaluateOutboundEmail(input.to);
+  const policy = await evaluateOutboundEmail(input.to);
   if (!policy.allow) {
     console.warn("[email] Versand blockiert (Testmodus):", policy.reason, input.subject);
     return {
