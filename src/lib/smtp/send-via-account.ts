@@ -1,4 +1,5 @@
 import { buildEmailFromPlainText } from "@/lib/email/email-layout";
+import { evaluateOutboundEmail } from "@/lib/email/outbound-policy";
 import type { Attachment } from "nodemailer/lib/mailer";
 import { getDefaultSmtpAccountWithPassword, getSmtpAccountWithPassword } from "@/lib/smtp/accounts";
 import { createTransportFromCredentials, formatFromHeader } from "@/lib/smtp/transport";
@@ -14,6 +15,16 @@ export type SendViaAccountInput = {
 };
 
 export async function sendEmailViaAccount(input: SendViaAccountInput) {
+  const policy = evaluateOutboundEmail(input.to);
+  if (!policy.allow) {
+    console.warn("[email] Versand blockiert (Testmodus):", policy.reason, input.subject);
+    return {
+      ok: false as const,
+      skipped: true as const,
+      reason: policy.reason as "no_smtp_account",
+    };
+  }
+
   const creds = input.accountId
     ? await getSmtpAccountWithPassword(input.accountId)
     : await getDefaultSmtpAccountWithPassword();

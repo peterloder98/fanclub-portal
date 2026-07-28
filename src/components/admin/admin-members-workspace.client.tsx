@@ -609,7 +609,9 @@ export function AdminMembersWorkspace({
                             ? "success"
                             : m.membership_status === "applied"
                               ? "warning"
-                              : "neutral"
+                              : m.membership_status === "suspended"
+                                ? "danger"
+                                : "neutral"
                         }
                       >
                         {membershipStatusLabel(m.membership_status)}

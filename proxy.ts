@@ -11,6 +11,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/supabase-check",
   "/mitgliedschaft",
   "/mitgliedschaft/ausstehend",
+  "/gesperrt",
   "/documents",
   "/api/membership",
   "/api/cron",
@@ -93,6 +94,15 @@ export async function proxy(request: NextRequest) {
       if (pathname !== pendingPath && !pathname.startsWith("/api/")) {
         const url = request.nextUrl.clone();
         url.pathname = pendingPath;
+        return NextResponse.redirect(url);
+      }
+    }
+
+    if (membership?.status === "suspended") {
+      const allowedWhenSuspended = pathname === "/gesperrt";
+      if (!allowedWhenSuspended && !pathname.startsWith("/api/")) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/gesperrt";
         return NextResponse.redirect(url);
       }
     }

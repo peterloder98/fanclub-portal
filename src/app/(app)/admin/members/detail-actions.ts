@@ -269,6 +269,12 @@ export async function sendMemberPaymentReminderEmail(input: {
 
   if (!result.ok) {
     if (result.skipped) {
+      const reason = "reason" in result ? String(result.reason) : "";
+      if (reason.includes("outbound_test_mode")) {
+        throw new Error(
+          "E-Mail blockiert: Testmodus aktiv (kein Versand an echte Mitglieder). EMAIL_OUTBOUND_MODE=live erst nach Go-Live setzen.",
+        );
+      }
       throw new Error(
         "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
       );
@@ -294,6 +300,93 @@ export async function sendMemberPaymentReminderEmail(input: {
   }).catch((e) => console.error("[activity] Zahlungserinnerung:", e));
 
   revalidatePath(`/admin/members/${profile.id}`);
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+export async function suspendMemberAppAccess(input: { userId: string; reason?: string }) {
+  const { user, profile: adminProfile } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+
+  const { data: membership, error: mErr } = await admin
+    .from("memberships")
+    .select("id,status,user_id")
+    .eq("user_id", input.userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (mErr) throw new Error(mErr.message);
+  if (!membership) throw new Error("Mitgliedschaft nicht gefunden.");
+  if (membership.status !== "active") {
+    throw new Error("Nur aktive Mitglieder können vorübergehend gesperrt werden.");
+  }
+
+  const reason = input.reason?.trim() || "Bitte wende dich an den Vorstand.";
+  const { error: updErr } = await admin
+    .from("memberships")
+    .update({
+      status: "suspended",
+      suspended_at: new Date().toISOString(),
+      suspension_reason: reason,
+    })
+    .eq("id", membership.id);
+  if (updErr) throw new Error(updErr.message);
+
+  const adminName =
+    `${adminProfile.first_name ?? ""} ${adminProfile.last_name ?? ""}`.trim() || "Admin";
+
+  await logMemberActivity({
+    userId: input.userId,
+    eventType: MEMBER_ACTIVITY_TYPES.appAccessSuspended,
+    title: "App-Zugang vorübergehend gesperrt",
+    details: `${adminName}: ${reason}`,
+    createdBy: user.id,
+  }).catch(console.error);
+
+  revalidatePath(`/admin/members/${input.userId}`);
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+export async function reactivateMemberAppAccess(userId: string) {
+  const { user, profile: adminProfile } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+
+  const { data: membership, error: mErr } = await admin
+    .from("memberships")
+    .select("id,status,user_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (mErr) throw new Error(mErr.message);
+  if (!membership) throw new Error("Mitgliedschaft nicht gefunden.");
+  if (membership.status !== "suspended") {
+    throw new Error("Nur gesperrte Mitglieder können wieder freigeschaltet werden.");
+  }
+
+  const { error: updErr } = await admin
+    .from("memberships")
+    .update({
+      status: "active",
+      suspended_at: null,
+      suspension_reason: null,
+    })
+    .eq("id", membership.id);
+  if (updErr) throw new Error(updErr.message);
+
+  const adminName =
+    `${adminProfile.first_name ?? ""} ${adminProfile.last_name ?? ""}`.trim() || "Admin";
+
+  await logMemberActivity({
+    userId,
+    eventType: MEMBER_ACTIVITY_TYPES.appAccessReactivated,
+    title: "App-Zugang wieder freigeschaltet",
+    details: `Freischaltung durch ${adminName}.`,
+    createdBy: user.id,
+  }).catch(console.error);
+
+  revalidatePath(`/admin/members/${userId}`);
   revalidatePath("/admin/members");
   return { ok: true };
 }

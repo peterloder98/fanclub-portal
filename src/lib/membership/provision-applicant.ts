@@ -184,6 +184,8 @@ export function membershipStatusLabel(status: string | null | undefined) {
       return "Aktiv";
     case "inactive":
       return "Inaktiv";
+    case "suspended":
+      return "App gesperrt";
     default:
       return status ?? "—";
   }

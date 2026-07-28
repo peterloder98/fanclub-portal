@@ -48,7 +48,7 @@ export default async function AdminMemberDetailPage({
 
   const { data: membership } = await admin
     .from("memberships")
-    .select("start_date,end_date,status,fee_cents")
+    .select("start_date,end_date,status,fee_cents,suspension_reason")
     .eq("user_id", id)
     .order("end_date", { ascending: false })
     .limit(1)
@@ -135,6 +135,7 @@ export default async function AdminMemberDetailPage({
           end_date: membership.end_date,
           status: membership.status,
           fee_cents: membership.fee_cents,
+          suspension_reason: membership.suspension_reason ?? null,
         }
       : null,
     application_id: application?.id ?? null,

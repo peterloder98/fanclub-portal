@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Mail, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Ban, Mail, Pencil, ShieldCheck, Trash2 } from "lucide-react";
 import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,8 @@ import {
   getMemberPaymentReminderDraft,
   revokeMemberWarning,
   sendMemberPaymentReminderEmail,
+  suspendMemberAppAccess,
+  reactivateMemberAppAccess,
 } from "@/app/(app)/admin/members/detail-actions";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
@@ -70,6 +72,7 @@ export type MemberDetailData = {
     end_date: string | null;
     status: string | null;
     fee_cents: number | null;
+    suspension_reason?: string | null;
   } | null;
   application_id: string | null;
 };
@@ -363,6 +366,54 @@ export function MemberDetailPanel({
               ? `Beitrags-Erinnerung (${formatEur(openContributions.reduce((s, c) => s + c.openCents, 0))} offen)`
               : "Beitrags-Erinnerung senden"}
         </button>
+        {member.membership?.status === "active" ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              const reason = window.prompt(
+                "Grund der Sperre (optional, wird dem Mitglied angezeigt):",
+                "Offener Mitgliedsbeitrag — bitte Vorstand kontaktieren.",
+              );
+              if (reason === null) return;
+              setActionError(null);
+              startTransition(async () => {
+                try {
+                  await suspendMemberAppAccess({ userId: member.id, reason });
+                  router.refresh();
+                } catch (e) {
+                  setActionError(e instanceof Error ? e.message : "Sperren fehlgeschlagen");
+                }
+              });
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 transition hover:bg-rose-100 disabled:opacity-50"
+          >
+            <Ban className="h-4 w-4" aria-hidden />
+            App sperren
+          </button>
+        ) : null}
+        {member.membership?.status === "suspended" ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (!window.confirm("App-Zugang für dieses Mitglied wieder freischalten?")) return;
+              setActionError(null);
+              startTransition(async () => {
+                try {
+                  await reactivateMemberAppAccess(member.id);
+                  router.refresh();
+                } catch (e) {
+                  setActionError(e instanceof Error ? e.message : "Freischaltung fehlgeschlagen");
+                }
+              });
+            }}
+            className="inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-50"
+          >
+            <ShieldCheck className="h-4 w-4" aria-hidden />
+            App freischalten
+          </button>
+        ) : null}
         <AdminIconButton
           label="Mitglied löschen"
           icon={Trash2}
@@ -413,6 +464,9 @@ export function MemberDetailPanel({
           <CardContent>
             <dl>
               <InfoRow label="Status" value={membershipStatusLabel(member.membership?.status ?? "")} />
+              {member.membership?.status === "suspended" && member.membership.suspension_reason ? (
+                <InfoRow label="Sperrgrund" value={member.membership.suspension_reason} />
+              ) : null}
               <InfoRow label="Beitrittsdatum" value={formatDE(member.membership?.start_date ?? null)} />
               <InfoRow label="Ende" value={formatDE(member.membership?.end_date ?? null)} />
               <InfoRow label="Jahresbeitrag" value={`${feeEur} €`} />
