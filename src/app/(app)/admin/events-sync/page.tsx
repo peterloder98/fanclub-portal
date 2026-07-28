@@ -27,8 +27,8 @@ export default async function AdminEventsSyncPage() {
   return (
     <div className="min-h-screen">
       <Topbar
-        title="Artistflow Sync"
-        subtitle="Sync, Reparatur (Teilnehmer & Pins) und Geocoding"
+        title="Event Synchronisation"
+        subtitle="Konzerttermine abgleichen, Geocoding und Diagnose"
       />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink />

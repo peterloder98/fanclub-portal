@@ -58,6 +58,21 @@ export type ApplicationDetailData = {
   payment_method_label: string | null;
 };
 
+function applicationStatusLabel(status: string) {
+  switch (status) {
+    case "submitted":
+      return "Antrag wurde eingereicht";
+    case "reviewed":
+      return "Antrag in Prüfung";
+    case "approved":
+      return "Antrag freigegeben";
+    case "rejected":
+      return "Antrag abgelehnt";
+    default:
+      return status;
+  }
+}
+
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-0.5 border-b border-slate-100 py-2 sm:grid-cols-[9rem_1fr]">
@@ -140,7 +155,7 @@ export function ApplicationDetailPanels({
         <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 pb-2">
           <CardTitle className="text-base">Antragsdaten</CardTitle>
           <div className="flex flex-wrap gap-1">
-            <Badge variant="neutral">Antrag: {app.status}</Badge>
+            <Badge variant="neutral">{applicationStatusLabel(app.status)}</Badge>
             {app.membership_status ? (
               <Badge variant={app.membership_status === "applied" ? "warning" : "success"}>
                 {app.membership_status_label}

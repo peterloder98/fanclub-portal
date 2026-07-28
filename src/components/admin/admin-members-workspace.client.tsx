@@ -217,7 +217,7 @@ export function AdminMembersWorkspace({
   function applicationStatusLabel(status: string) {
     switch (status) {
       case "submitted":
-        return "Eingegangen";
+        return "Antrag wurde eingereicht";
       case "reviewed":
         return "In Prüfung";
       case "approved":

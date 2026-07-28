@@ -5,11 +5,10 @@ import {
   Bell,
   FileText,
   Gift,
-  HeartHandshake,
   UserPlus,
   Mail,
   Mails,
-  MapPinned,
+  RefreshCw,
   PenLine,
   Radio,
   ScrollText,
@@ -108,7 +107,7 @@ const SECTIONS: AdminHubSection[] = [
     items: [
       {
         href: "/admin/settings/email",
-        title: "Email Konten verwalten",
+        title: "E-Mail-Konten",
         description: "Server, Absender und Verbindungstest",
         icon: Server,
       },
@@ -168,34 +167,21 @@ const SECTIONS: AdminHubSection[] = [
     ],
   },
   {
-    id: "events",
-    title: "Events & Treffen",
-    subtitle: "Termine und Sync",
-    items: [
-      {
-        href: "/admin/treffen",
-        title: "Fanclub-Treffen",
-        description: "Eigene Treffen anlegen und verwalten",
-        icon: HeartHandshake,
-      },
-      {
-        href: "/admin/events-sync",
-        title: "Artistflow-Sync",
-        description: "Sync, Geocoding und Diagnose",
-        icon: MapPinned,
-      },
-    ],
-  },
-  {
     id: "system",
     title: "System",
-    subtitle: "Statistik und Protokoll",
+    subtitle: "Hilfe, Sync, Statistik und Protokoll",
     items: [
       {
         href: "/admin/hilfe",
         title: "Admin-Handbuch",
         description: "Was die App kann und wie ihr sie bedient",
         icon: BookOpen,
+      },
+      {
+        href: "/admin/events-sync",
+        title: "Event Synchronisation",
+        description: "Konzerttermine abgleichen, Geocoding und Diagnose",
+        icon: RefreshCw,
       },
       {
         href: "/admin/app-stats",
@@ -205,7 +191,7 @@ const SECTIONS: AdminHubSection[] = [
       },
       {
         href: "/admin/audit",
-        title: "Audit-Log",
+        title: "Protokoll",
         description: "Wer hat wann was geändert",
         icon: ScrollText,
       },
@@ -219,16 +205,20 @@ function AdminHubRow({ item, isLast }: { item: AdminHubItem; isLast: boolean }) 
     <Link
       href={item.href}
       className={cn(
-        "group flex items-center gap-3 px-4 py-3.5 transition hover:bg-fc-ice/70",
+        "group flex items-center gap-3.5 px-4 py-3.5 transition hover:bg-gradient-to-r hover:from-fc-ice/80 hover:to-white",
         !isLast && "border-b border-slate-100",
       )}
     >
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-fc-navy/5 text-fc-navy transition group-hover:bg-fc-navy group-hover:text-white">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy/[0.06] text-fc-navy shadow-sm shadow-slate-900/5 transition group-hover:bg-fc-navy group-hover:text-white group-hover:shadow-md group-hover:shadow-fc-navy/20">
         <Icon className="h-4 w-4" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-fc-navy group-hover:text-fc-blue">{item.title}</p>
-        <p className="mt-0.5 text-xs leading-snug text-slate-500 sm:text-sm">{item.description}</p>
+        <p className="text-sm font-semibold tracking-tight text-fc-navy transition group-hover:text-fc-blue">
+          {item.title}
+        </p>
+        <p className="mt-0.5 text-xs leading-snug text-slate-500 sm:text-[13px]">
+          {item.description}
+        </p>
       </div>
       <ArrowRight
         className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-fc-blue"
@@ -240,44 +230,49 @@ function AdminHubRow({ item, isLast }: { item: AdminHubItem; isLast: boolean }) 
 
 export function AdminHub() {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
-      <div className="flex items-start gap-3 px-0.5">
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
-          <Shield className="h-5 w-5" aria-hidden />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight text-fc-navy">Admin</h2>
-          <p className="mt-0.5 text-sm text-slate-500">
-            Nach Bereichen sortiert — Umfragen und Gewinnspiele pflegst du in den jeweiligen App-Menüs.
-          </p>
+    <div className="mx-auto w-full max-w-6xl space-y-7">
+      <div className="overflow-hidden rounded-2xl border border-fc-navy/10 bg-gradient-to-br from-fc-navy via-fc-navy to-fc-blue px-5 py-5 text-white shadow-lg shadow-fc-navy/15 sm:px-6">
+        <div className="flex items-start gap-3.5">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/15 ring-1 ring-white/20">
+            <Shield className="h-5 w-5" aria-hidden />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold tracking-tight sm:text-xl">Admin-Bereich</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/80">
+              Nach Themen sortiert. Umfragen, Gewinnspiele und Fanclub-Treffen pflegst du direkt in
+              den jeweiligen App-Menüs — hier findest du Freigaben, Finanzen und System.
+            </p>
+          </div>
         </div>
       </div>
 
-      <nav
-        className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3"
-        aria-label="Admin-Bereiche"
-      >
+      <nav className="flex flex-wrap gap-2" aria-label="Admin-Bereiche">
         {SECTIONS.map((section) => (
           <a
             key={section.id}
             href={`#admin-${section.id}`}
-            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-fc-ice hover:text-fc-navy"
+            className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-600 shadow-sm shadow-slate-900/5 transition hover:border-fc-sky/40 hover:bg-fc-ice hover:text-fc-navy"
           >
             {section.title}
           </a>
         ))}
       </nav>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         {SECTIONS.map((section) => (
-          <section key={section.id} id={`admin-${section.id}`} className="scroll-mt-20">
-            <div className="mb-2 px-0.5">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-fc-navy/80">
-                {section.title}
-              </h3>
-              <p className="text-xs text-slate-500">{section.subtitle}</p>
+          <section key={section.id} id={`admin-${section.id}`} className="scroll-mt-24">
+            <div className="mb-2.5 flex items-end justify-between gap-3 px-0.5">
+              <div>
+                <h3 className="text-[13px] font-bold uppercase tracking-[0.08em] text-fc-navy">
+                  {section.title}
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-500">{section.subtitle}</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-slate-500">
+                {section.items.length}
+              </span>
             </div>
-            <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-900/5">
+            <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm shadow-slate-900/[0.04] ring-1 ring-slate-900/[0.02]">
               <ul>
                 {section.items.map((item, index) => (
                   <li key={item.href}>

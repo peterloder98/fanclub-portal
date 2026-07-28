@@ -44,12 +44,12 @@ export function EventsAdminToolbar() {
           href="/admin/events-sync"
           className="inline-flex h-9 items-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 shadow-sm hover:bg-slate-50"
         >
-          Artistflow Sync
+          Event Synchronisation
         </Link>
       </div>
       <p className="mt-2 text-xs text-amber-900/80">
-        Wenn Events fehlen: „Events wiederherstellen“. Für fehlende Teilnehmer oder Pins: Artistflow
-        Sync öffnen.
+        Wenn Events fehlen: „Events wiederherstellen“. Für fehlende Teilnehmer oder Pins: Event
+        Synchronisation öffnen.
       </p>
       {message ? (
         <p

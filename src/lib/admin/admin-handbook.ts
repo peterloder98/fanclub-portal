@@ -448,8 +448,8 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ol",
             items: [
-              "Admin → „Fanclub-Treffen“ öffnen.",
-              "Neues Treffen anlegen: Titel, Zeit, Ort, ggf. Kosten.",
+              "Im App-Menü „Treffen“ öffnen.",
+              "Als Vorstand: neues Treffen anlegen — Titel, Zeit, Ort, ggf. Kosten.",
               "Im gleichen Formular den Block „Anreise & Unterkunft“ ausfüllen (siehe unten).",
               "Speichern. Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
             ],
@@ -472,8 +472,8 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "link",
-            href: "/admin/treffen",
-            label: "Fanclub-Treffen",
+            href: "/treffen",
+            label: "Zu den Fanclub-Treffen",
           },
         ],
       },
@@ -502,7 +502,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Für die Fußweg-Berechnung von der Event-Location zum Bahnhof/Hotel braucht die App die exakte und korrekte Adresse (Straße, Hausnummer, PLZ und Ort) — sonst kann die Entfernung nicht zuverlässig berechnet werden.",
               "Mitglieder sehen Bahnhof und Hotels; wenn möglich, wird die Fußweg-Entfernung angezeigt.",
-              "Öffentliche Konzert-/TV-Termine kommen oft automatisch — wenn etwas fehlt: Admin → „Termine abgleichen“.",
+              "Öffentliche Konzert-/TV-Termine kommen oft automatisch — wenn etwas fehlt: Admin → System → „Event Synchronisation“.",
             ],
           },
           {
@@ -513,7 +513,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "link",
             href: "/admin/events-sync",
-            label: "Termine abgleichen",
+            label: "Event Synchronisation",
           },
         ],
       },

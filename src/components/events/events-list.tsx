@@ -76,7 +76,7 @@ export function EventsList({
         </CardHeader>
         <CardContent className="grid gap-3 text-sm text-slate-600">
           <p>
-            Die Terminliste wird aus Artistflow synchronisiert. Sobald ein Sync
+            Die Terminliste wird automatisch synchronisiert. Sobald ein Sync
             gelaufen ist, erscheinen hier die Konzerte.
           </p>
           {isAdmin ? (
