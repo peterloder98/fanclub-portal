@@ -67,7 +67,7 @@ export function SmtpSettingsClient() {
         </div>
       ) : null}
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <div className="whitespace-pre-line rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
         </div>
       ) : null}
@@ -269,9 +269,21 @@ export function SmtpSettingsClient() {
                 }
               }}
             >
+            <p className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600 sm:col-span-2">
+              Hostinger-Standard: Host <code className="font-mono">smtp.hostinger.com</code>, Port{" "}
+              <code className="font-mono">465</code>, Verschlüsselung <strong>SSL</strong>. Login =
+              vollständige E-Mail-Adresse, Passwort = Postfach-Passwort aus dem E-Mail-Bereich im
+              Hoster-Panel (nicht das Website-/hPanel-Passwort).
+            </p>
               <label className="grid gap-1 sm:col-span-2">
                 <span className="text-sm font-medium">Host</span>
-                <input name="server" required defaultValue={editing === "new" ? "" : editing.server} className="h-11 rounded-xl border px-3 text-sm" />
+                <input
+                  name="server"
+                  required
+                  placeholder="smtp.hostinger.com"
+                  defaultValue={editing === "new" ? "smtp.hostinger.com" : editing.server}
+                  className="h-11 rounded-xl border px-3 text-sm"
+                />
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-medium">Port</span>
@@ -289,13 +301,30 @@ export function SmtpSettingsClient() {
               </label>
               <label className="grid gap-1 sm:col-span-2">
                 <span className="text-sm font-medium">E-Mail / Login</span>
-                <input name="email" type="email" required defaultValue={editing === "new" ? "" : editing.email} className="h-11 rounded-xl border px-3 text-sm" />
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="fanclub@deine-domain.de"
+                  defaultValue={editing === "new" ? "" : editing.email}
+                  className="h-11 rounded-xl border px-3 text-sm"
+                />
               </label>
               <label className="grid gap-1 sm:col-span-2">
                 <span className="text-sm font-medium">
                   Passwort{editing !== "new" ? " (leer = unverändert)" : ""}
                 </span>
-                <input name="password" type="password" required={editing === "new"} className="h-11 rounded-xl border px-3 text-sm" />
+                <input
+                  name="password"
+                  type="password"
+                  required={editing === "new"}
+                  autoComplete="new-password"
+                  className="h-11 rounded-xl border px-3 text-sm"
+                />
+                <span className="text-xs text-slate-500">
+                  Bei Bearbeitung: Passwort neu eintragen, wenn der Test 535 meldet — speichern, dann
+                  erneut „Test“.
+                </span>
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-medium">Anzeigename</span>

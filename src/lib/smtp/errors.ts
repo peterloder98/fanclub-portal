@@ -21,7 +21,13 @@ export function formatSmtpError(e: unknown): string {
   }
 
   if (/Invalid login|authentication|535|534/i.test(msg)) {
-    return `SMTP-Anmeldung fehlgeschlagen: ${msg}. E-Mail und Passwort im Konto prüfen.`;
+    return (
+      "SMTP-Anmeldung abgelehnt (535). Typische Ursachen:\n" +
+      "• Falsches Passwort — bitte das Postfach-Passwort aus dem Hoster-Panel (z. B. Hostinger E-Mail-Konten), nicht das Login-Passwort der Website.\n" +
+      "• Login muss die vollständige E-Mail-Adresse sein (z. B. fanclub@deine-domain.de).\n" +
+      "• Bei Hostinger meist: Host smtp.hostinger.com, Port 465, Verschlüsselung SSL.\n" +
+      "• Konto bearbeiten, Passwort erneut eintragen und speichern, danach „Test“."
+    );
   }
 
   return msg || "SMTP-Fehler";
