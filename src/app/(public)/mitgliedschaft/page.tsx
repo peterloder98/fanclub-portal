@@ -16,7 +16,7 @@ export default async function MitgliedschaftPage() {
   const memberCountLabel = formatMemberCountLabel(memberCount);
 
   return (
-    <div className="grid gap-8 sm:gap-12 lg:gap-16">
+    <div className="grid gap-6 sm:gap-8 lg:gap-10">
       <MembershipLanding memberCountLabel={memberCountLabel} />
       {/* Form stays readable on wide screens / phones */}
       <div className="mx-auto w-full max-w-3xl">

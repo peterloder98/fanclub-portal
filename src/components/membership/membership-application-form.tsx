@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, Heart, Sparkles } from "lucide-react";
+import { Heart, Sparkles } from "lucide-react";
 import { SignaturePad } from "@/components/profile/signature-pad";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelect } from "@/components/ui/country-select";
 import { PostalCodeInput } from "@/components/ui/postal-code-input";
 import {
@@ -21,10 +21,16 @@ import {
 import { BirthdateSegmentInput, AppDateInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
-import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
+import {
+  CLUB_BANK,
+  formatApplicationPaymentReference,
+  formatClubIbanDisplay,
+} from "@/lib/payments/club-bank";
+import { FEATURE_BADGE_HOVER } from "@/components/membership/membership-landing";
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 import { MEMBERSHIP_FEE_EUR } from "@/lib/membership/constants";
+
 const SATZUNG_PDF = "/documents/satzung.pdf";
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -329,6 +335,7 @@ export function MembershipApplicationForm() {
             paymentToken={paymentToken}
             feeCents={feeCents}
             applicantFirstName={firstName}
+            applicantLastName={doneLastName}
             applicantGender={doneGender}
           />
         ) : null}
@@ -337,26 +344,7 @@ export function MembershipApplicationForm() {
   }
 
   return (
-    <div className="grid gap-6">
-      <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/80 via-white to-fc-ice/40 p-5 shadow-sm">
-        <p className="text-base font-semibold text-fc-navy">
-          Nur noch wenige Minuten bis zu deiner Mitgliedschaft
-        </p>
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {[
-            "digitale Anmeldung",
-            "digitale Unterschrift",
-            "keine Ausdrucke notwendig",
-            "jederzeit am PC oder Smartphone möglich",
-          ].map((item) => (
-            <li key={item} className="flex items-center gap-2 text-sm text-slate-700">
-              <Check className="h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} aria-hidden />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-
+    <div className="grid gap-4 sm:gap-5">
       <Card>
         <CardHeader>
           <CardTitle>Persönliche Daten</CardTitle>
@@ -494,23 +482,23 @@ export function MembershipApplicationForm() {
             </p>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             "Community",
             "Gewinnspiele",
             "Umfragen",
             "Konzertplanung",
-            "Reiseinformationen",
+            "Reiseinfos",
             "Fanshop",
             "Anni-Stars",
             "Grüße von Anni",
-          ].map((item) => (
+          ].map((item, i) => (
             <span
               key={item}
-              className="inline-flex items-center gap-1.5 rounded-full border border-fc-sky/25 bg-white px-3 py-1 text-xs font-medium text-fc-navy shadow-sm"
+              className={`inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-fc-sky/25 bg-white px-2 py-2 text-center text-xs font-medium text-fc-navy shadow-sm transition ${FEATURE_BADGE_HOVER[i % FEATURE_BADGE_HOVER.length]}`}
             >
-              <Sparkles className="h-3 w-3 text-fc-blue" aria-hidden />
-              {item}
+              <Sparkles className="h-3 w-3 shrink-0 text-fc-blue" aria-hidden />
+              <span className="leading-snug">{item}</span>
             </span>
           ))}
         </div>
@@ -536,7 +524,9 @@ export function MembershipApplicationForm() {
               <dt className="text-slate-500">BIC</dt>
               <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
               <dt className="text-slate-500">VWZ</dt>
-              <dd>{CLUB_BANK.reference_hint}</dd>
+              <dd className="font-medium">
+                {formatApplicationPaymentReference(form.first_name, form.last_name)}
+              </dd>
             </dl>
           </div>
         </CardContent>
@@ -545,10 +535,6 @@ export function MembershipApplicationForm() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Antrag & Bestätigungen</CardTitle>
-          <CardDescription>
-            Vorschau deines Antragstextes — Name und Handynummer werden live aus deinen Angaben
-            übernommen.
-          </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-5">
           {contractPreview}

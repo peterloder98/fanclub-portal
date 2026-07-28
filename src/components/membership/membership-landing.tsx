@@ -20,7 +20,6 @@ type Benefit = {
   title: string;
   description: string;
   tags?: string[];
-  wide?: boolean;
 };
 
 const BENEFITS: Benefit[] = [
@@ -48,7 +47,6 @@ const BENEFITS: Benefit[] = [
       "Anni-Stars",
       "Fanshop",
     ],
-    wide: true,
   },
   {
     icon: <Car className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />,
@@ -68,6 +66,17 @@ const BENEFITS: Benefit[] = [
   },
 ];
 
+/** Farbige Hover-Akzente für Feature-Badges (Landing + Antrag). */
+const FEATURE_BADGE_HOVER = [
+  "hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900",
+  "hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900",
+  "hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900",
+  "hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900",
+  "hover:border-rose-300 hover:bg-rose-50 hover:text-rose-900",
+  "hover:border-fc-blue/40 hover:bg-fc-ice hover:text-fc-navy",
+  "hover:border-orange-300 hover:bg-orange-50 hover:text-orange-900",
+] as const;
+
 const STEPS = [
   "Formular ausfüllen",
   "Digital unterschreiben",
@@ -85,7 +94,7 @@ function scrollToForm() {
 
 export function MembershipLanding({ memberCountLabel }: { memberCountLabel: string }) {
   return (
-    <div className="grid gap-10 pb-2 sm:gap-14 lg:gap-20">
+    <div className="grid gap-10 pb-2 sm:gap-14 lg:gap-16">
       {/* Hero */}
       <section className="relative overflow-hidden rounded-2xl border border-fc-sky/25 bg-gradient-to-br from-fc-ice via-white to-white shadow-sm sm:rounded-3xl">
         <div
@@ -93,7 +102,6 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
           className="pointer-events-none absolute -right-16 -top-16 hidden h-64 w-64 rounded-full bg-fc-sky/15 blur-3xl sm:block"
         />
         <div className="grid items-center gap-5 p-4 sm:gap-8 sm:p-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10 lg:p-10">
-          {/* Text first on mobile for faster CTA */}
           <div className="order-1 flex flex-col gap-4 sm:gap-5 lg:order-2">
             <div className="flex items-center gap-2.5 sm:gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -154,7 +162,6 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
             </button>
           </div>
 
-          {/* Image below text on mobile */}
           <div className="relative order-2 lg:order-1">
             <div className="relative aspect-[16/10] overflow-hidden rounded-xl shadow-lg shadow-fc-navy/10 ring-1 ring-black/5 sm:aspect-[4/3] sm:rounded-2xl">
               <Image
@@ -175,9 +182,8 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
         </div>
       </section>
 
-      {/* Benefits — 2 columns from sm, App card full width */}
       <section>
-        <div className="mx-auto max-w-2xl text-center px-1">
+        <div className="mx-auto max-w-2xl px-1 text-center">
           <h2 className="text-xl font-bold text-fc-navy sm:text-3xl">
             Warum solltest du dabei sein?
           </h2>
@@ -189,16 +195,12 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
           {BENEFITS.map((benefit) => (
             <article
               key={benefit.title}
-              className={`group flex flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-fc-sky/40 hover:shadow-md sm:p-5 ${
-                benefit.wide
-                  ? "sm:col-span-2 lg:col-span-3 lg:flex-row lg:items-start lg:gap-6"
-                  : ""
-              }`}
+              className="group flex h-full flex-col rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:border-fc-sky/40 hover:shadow-md sm:p-5"
             >
-              <span className="mb-3 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm transition-transform group-hover:scale-105 sm:mb-4 sm:h-12 sm:w-12 sm:rounded-2xl lg:mb-0">
+              <span className="mb-3 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fc-navy to-fc-blue text-white shadow-sm transition-transform group-hover:scale-105 sm:mb-4 sm:h-12 sm:w-12 sm:rounded-2xl">
                 {benefit.icon}
               </span>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <h3 className="text-[15px] font-semibold text-fc-navy sm:text-base">
                   {benefit.title}
                 </h3>
@@ -207,10 +209,10 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
                 </p>
                 {benefit.tags ? (
                   <div className="mt-2.5 flex flex-wrap gap-1.5 sm:mt-3">
-                    {benefit.tags.map((tag) => (
+                    {benefit.tags.map((tag, i) => (
                       <span
                         key={tag}
-                        className="rounded-full bg-fc-ice px-2 py-0.5 text-[11px] font-medium text-fc-navy sm:px-2.5 sm:text-xs"
+                        className={`rounded-full border border-transparent bg-fc-ice px-2 py-0.5 text-[11px] font-medium text-fc-navy transition sm:px-2.5 sm:text-xs ${FEATURE_BADGE_HOVER[i % FEATURE_BADGE_HOVER.length]}`}
                       >
                         {tag}
                       </span>
@@ -223,20 +225,18 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
         </div>
       </section>
 
-      {/* Steps — vertical timeline on mobile, horizontal from sm */}
       <section className="rounded-2xl border border-slate-200/80 bg-gradient-to-b from-slate-50 to-white p-4 sm:rounded-3xl sm:p-8">
         <h2 className="text-center text-xl font-bold text-fc-navy sm:text-2xl">
           So einfach funktioniert&apos;s
         </h2>
 
-        {/* Mobile: vertical connected list */}
         <ol className="mt-5 space-y-0 sm:hidden">
           {STEPS.map((step, i) => (
             <li key={step} className="relative flex gap-3 pb-5 last:pb-0">
               {i < STEPS.length - 1 ? (
                 <span
                   aria-hidden
-                  className="absolute left-[1.15rem] top-10 bottom-0 w-0.5 bg-gradient-to-b from-fc-sky to-fc-blue/30"
+                  className="absolute bottom-0 left-[1.15rem] top-10 w-0.5 bg-gradient-to-b from-fc-sky to-fc-blue/30"
                 />
               ) : null}
               <span className="relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-fc-navy text-sm font-bold text-white shadow-md">
@@ -252,7 +252,6 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
           ))}
         </ol>
 
-        {/* Desktop / tablet: horizontal */}
         <ol className="mt-8 hidden gap-3 sm:grid sm:grid-cols-5">
           {STEPS.map((step, i) => (
             <li key={step} className="relative flex flex-col items-center text-center">
@@ -274,7 +273,6 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
         </ol>
       </section>
 
-      {/* Form intro */}
       <section id={MEMBERSHIP_FORM_ANCHOR_ID} className="scroll-mt-4 sm:scroll-mt-6">
         <div className="rounded-2xl border-2 border-fc-navy/15 bg-gradient-to-br from-fc-navy to-fc-blue p-5 text-white shadow-lg sm:rounded-3xl sm:p-8">
           <h2 className="text-lg font-bold sm:text-2xl">Jetzt Mitglied werden</h2>
@@ -286,3 +284,5 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
     </div>
   );
 }
+
+export { FEATURE_BADGE_HOVER };

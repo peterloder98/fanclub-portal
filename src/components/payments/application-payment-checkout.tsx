@@ -8,7 +8,7 @@ import { PaymentConfirmation } from "@/components/payments/payment-confirmation"
 import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
 import type { PaymentCheckoutResult, PaymentMethod, PaymentSettingsRow } from "@/lib/payments/types";
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
-import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
+import { CLUB_BANK, formatApplicationPaymentReference, formatClubIbanDisplay } from "@/lib/payments/club-bank";
 
 function payButtonLabel(method: PaymentMethod | null, pending: boolean) {
   if (pending) return "Wird angelegt…";
@@ -23,12 +23,14 @@ export function ApplicationPaymentCheckout({
   paymentToken,
   feeCents,
   applicantFirstName,
+  applicantLastName,
   applicantGender,
 }: {
   applicationId: string;
   paymentToken: string;
   feeCents: number;
   applicantFirstName?: string | null;
+  applicantLastName?: string | null;
   applicantGender?: string | null;
 }) {
   const [methods, setMethods] = useState<PaymentSettingsRow[]>([]);
@@ -122,7 +124,12 @@ export function ApplicationPaymentCheckout({
           <dt className="text-slate-500">BIC</dt>
           <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
           <dt className="text-slate-500">VWZ</dt>
-          <dd>{CLUB_BANK.reference_hint}</dd>
+          <dd className="font-medium">
+            {formatApplicationPaymentReference(
+              applicantFirstName ?? "",
+              applicantLastName ?? "",
+            )}
+          </dd>
         </dl>
       </div>
 
