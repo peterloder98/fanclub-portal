@@ -64,6 +64,9 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const [muted, setMuted] = useState(false);
   const authorsRef = useRef<Map<string, ChatAuthor>>(new Map());
   const knownIdsRef = useRef<Set<string>>(new Set());
+  /** Nach erstem Laden: nur Nachrichten danach akustisch melden (kein Fehlalarm bei Refresh/Reconnect). */
+  const soundBaselineAtRef = useRef<string | null>(null);
+  const lastBlingMessageIdRef = useRef<string | null>(null);
   const soundReadyRef = useRef(false);
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
   const meProfileRef = useRef<ChatAuthor | null>(null);
@@ -79,6 +82,28 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const cooldownActive = cooldownLeftMs > 0;
   const overLimit = draft.length > GROUP_CHAT_MAX_LEN;
   const onlineCount = Math.max(onlineMembers.length ? onlineMembers.length : 0, meProfile ? 1 : 0);
+
+  const shouldPlaySoundForMessage = useCallback(
+    (authorId: string, createdAt: string) => {
+      const uid = userIdRef.current;
+      if (!uid || !soundReadyRef.current) return false;
+      if (authorId === uid) return false;
+      const baseline = soundBaselineAtRef.current;
+      if (baseline && createdAt <= baseline) return false;
+      return true;
+    },
+    [],
+  );
+
+  const maybePlaySoundForMessage = useCallback(
+    (messageId: string, authorId: string, createdAt: string) => {
+      if (!shouldPlaySoundForMessage(authorId, createdAt)) return;
+      if (lastBlingMessageIdRef.current === messageId) return;
+      lastBlingMessageIdRef.current = messageId;
+      playChatBling();
+    },
+    [shouldPlaySoundForMessage],
+  );
 
   useEffect(() => {
     meProfileRef.current = meProfile;
@@ -275,6 +300,8 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     setMessages(hydrated);
     if (!soundReadyRef.current) {
       knownIdsRef.current = new Set(hydrated.map((m) => m.id));
+      soundBaselineAtRef.current =
+        hydrated[0]?.created_at ?? new Date().toISOString();
       soundReadyRef.current = true;
     }
     setLoaded(true);
@@ -285,22 +312,15 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     void refresh();
   }, [enabled, refresh]);
 
-  /** Ton bei neuer Nachricht von anderen (auch wenn Chat minimiert). */
+  /** Ton bei neuer Nachricht von anderen (Fallback wenn Realtime-Event verpasst wurde). */
   useEffect(() => {
     if (!enabled || !loaded || !userId || !soundReadyRef.current) return;
-    let shouldBling = false;
     for (const m of messages) {
       if (knownIdsRef.current.has(m.id)) continue;
-      if (m.author_id !== userId) {
-        shouldBling = true;
-        break;
-      }
+      maybePlaySoundForMessage(m.id, m.author_id, m.created_at);
     }
     knownIdsRef.current = new Set(messages.map((m) => m.id));
-    if (shouldBling) {
-      playChatBling();
-    }
-  }, [enabled, loaded, userId, messages]);
+  }, [enabled, loaded, userId, messages, maybePlaySoundForMessage]);
 
   useEffect(() => {
     if (!enabled || !userId) return;
@@ -310,16 +330,17 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_chat_messages" },
-        () => void refresh(),
+        (payload) => {
+          const row = payload.new as GroupChatMessageRow;
+          if (row?.id && row.author_id && row.created_at) {
+            maybePlaySoundForMessage(row.id, row.author_id, row.created_at);
+          }
+          void refresh();
+        },
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "group_chat_messages" },
-        () => void refresh(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "group_chat_messages" },
         () => void refresh(),
       )
       .subscribe();
@@ -327,7 +348,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     return () => {
       void supabase.removeChannel(messagesChannel);
     };
-  }, [enabled, userId, refresh]);
+  }, [enabled, userId, refresh, maybePlaySoundForMessage]);
 
   useEffect(() => {
     if (!enabled || !userId || !meProfile) return;
@@ -504,8 +525,14 @@ export function useGroupChat({ enabled = true }: Options = {}) {
         meProfile ??
         ({ id: result.message.author_id, name: "Du", avatarUrl: null } satisfies ChatAuthor);
       const next = [{ ...result.message, author }, ...without].slice(0, GROUP_CHAT_PAGE_SIZE);
-      // Eigene Nachricht nicht als „fremd“ belingen
+      // Eigene Nachricht nicht als „fremd“ belingen; Baseline nach vorne schieben
       knownIdsRef.current.add(result.message.id);
+      if (
+        !soundBaselineAtRef.current ||
+        result.message.created_at > soundBaselineAtRef.current
+      ) {
+        soundBaselineAtRef.current = result.message.created_at;
+      }
       return next;
     });
   }
