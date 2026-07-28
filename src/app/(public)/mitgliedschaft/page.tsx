@@ -16,9 +16,12 @@ export default async function MitgliedschaftPage() {
   const memberCountLabel = formatMemberCountLabel(memberCount);
 
   return (
-    <div className="grid gap-12 lg:gap-16">
+    <div className="grid gap-8 sm:gap-12 lg:gap-16">
       <MembershipLanding memberCountLabel={memberCountLabel} />
-      <MembershipApplicationForm />
+      {/* Form stays readable on wide screens / phones */}
+      <div className="mx-auto w-full max-w-3xl">
+        <MembershipApplicationForm />
+      </div>
     </div>
   );
 }
