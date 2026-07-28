@@ -23,7 +23,6 @@ import {
 } from "@/lib/club/ledger";
 import {
   formatContributionEmailVars,
-  getMemberContributionInfo,
   getMemberContributionYears,
   listOpenContributions,
   pickPrimaryContribution,
