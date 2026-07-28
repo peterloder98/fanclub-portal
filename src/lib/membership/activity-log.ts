@@ -137,6 +137,14 @@ export function isMemberVisibleActivity(type: string) {
   return MEMBER_VISIBLE_ACTIVITY_TYPES.has(type);
 }
 
+export function activityRowTone(
+  type: string,
+): "warning" | "success" | "default" {
+  if (type === MEMBER_ACTIVITY_TYPES.warningIssued) return "warning";
+  if (type === MEMBER_ACTIVITY_TYPES.warningRevoked) return "success";
+  return "default";
+}
+
 export function activityTypeLabel(type: string) {
   const map: Record<string, string> = {
     application_submitted: "Antrag eingegangen",

@@ -155,6 +155,7 @@ export function MemberDetailPanel({
 
   const [visibleWarnings, setVisibleWarnings] = useState(warnings);
   const [warningCount, setWarningCount] = useState(member.warning_count);
+  const [activityRefreshNonce, setActivityRefreshNonce] = useState(0);
 
   useEffect(() => {
     setVisibleWarnings(warnings);
@@ -221,6 +222,7 @@ export function MemberDetailPanel({
         const result = await revokeMemberWarning(warningId);
         setVisibleWarnings((prev) => prev.filter((w) => w.id !== warningId));
         setWarningCount(result.warningCount);
+        setActivityRefreshNonce((n) => n + 1);
         router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "Zurücknahme fehlgeschlagen");
@@ -724,7 +726,11 @@ export function MemberDetailPanel({
       </Card>
 
       <div id="member-activity">
-        <MemberActivityTimeline userId={member.id} applicationId={null} />
+        <MemberActivityTimeline
+          userId={member.id}
+          applicationId={null}
+          refreshNonce={activityRefreshNonce}
+        />
       </div>
 
       {showPaymentDialog ? (

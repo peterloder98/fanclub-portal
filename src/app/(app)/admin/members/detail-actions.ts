@@ -107,6 +107,7 @@ export async function revokeMemberWarning(warningId: string) {
 
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/${member.id}`);
+  revalidatePath("/profile");
   return { ok: true, warningCount: newCount };
 }
 

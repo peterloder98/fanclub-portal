@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import {
+  activityRowTone,
   activityTypeLabel,
   type MemberActivityRow,
 } from "@/lib/membership/activity-log";
@@ -18,12 +19,26 @@ function formatWhen(iso: string) {
   });
 }
 
+function rowClassName(eventType: string) {
+  const tone = activityRowTone(eventType);
+  if (tone === "warning") {
+    return "rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs";
+  }
+  if (tone === "success") {
+    return "rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-xs";
+  }
+  return "rounded-lg border bg-white px-3 py-2 text-xs";
+}
+
 export function MemberActivityTimeline({
   userId,
   applicationId,
+  refreshNonce = 0,
 }: {
   userId?: string | null;
   applicationId?: string | null;
+  /** Erhöhen, um die Liste neu zu laden (z. B. nach Verwarnung zurücknehmen). */
+  refreshNonce?: number;
 }) {
   const [rows, setRows] = useState<MemberActivityRow[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +66,7 @@ export function MemberActivityTimeline({
   useEffect(() => {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, applicationId]);
+  }, [userId, applicationId, refreshNonce]);
 
   function addNote() {
     if (!noteTitle.trim()) return;
@@ -91,15 +106,7 @@ export function MemberActivityTimeline({
             const ledgerId =
               typeof r.metadata?.ledger_entry_id === "string" ? r.metadata.ledger_entry_id : null;
             return (
-            <li
-              key={r.id}
-              id={`activity-${r.id}`}
-              className={
-                r.event_type === "warning_issued"
-                  ? "rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-2 text-xs"
-                  : "rounded-lg border bg-white px-3 py-2 text-xs"
-              }
-            >
+            <li key={r.id} id={`activity-${r.id}`} className={rowClassName(r.event_type)}>
               <div className="flex flex-wrap items-baseline justify-between gap-1">
                 <span className="font-semibold text-fc-navy">{r.title}</span>
                 <span className="text-slate-500">{formatWhen(r.created_at)}</span>

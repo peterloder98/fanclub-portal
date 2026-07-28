@@ -37,7 +37,7 @@ import {
 } from "@/lib/avatars/constants";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { formatEur } from "@/lib/club/ledger";
-import { activityTypeLabel } from "@/lib/membership/activity-log";
+import { activityTypeLabel, activityRowTone } from "@/lib/membership/activity-log";
 import {
   loadMyProfileBundle,
   updateMyEmail,
@@ -145,6 +145,17 @@ function ProfileSection({
   );
 }
 
+function activityHistoryRowClass(eventType: string) {
+  const tone = activityRowTone(eventType);
+  if (tone === "warning") {
+    return "rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-2.5 text-sm";
+  }
+  if (tone === "success") {
+    return "rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-2.5 text-sm";
+  }
+  return "rounded-xl border bg-slate-50/80 px-3 py-2.5 text-sm";
+}
+
 function WarningsSection({ warnings, warningCount }: { warnings: MyWarningRow[]; warningCount: number }) {
   const description =
     warnings.length === 0 && warningCount === 0
@@ -195,6 +206,9 @@ function WarningsSection({ warnings, warningCount }: { warnings: MyWarningRow[];
         {" "}
         (WhatsApp-Gruppe & App)
       </p>
+      <p className="text-xs text-slate-500">
+        Zurückgenommene Verwarnungen bleiben in der Historie weiter unten dokumentiert.
+      </p>
     </ProfileSection>
   );
 }
@@ -228,14 +242,7 @@ function ActivityHistorySection({ rows }: { rows: MemberActivityRow[] }) {
           ) : (
             <ul className="max-h-80 space-y-2 overflow-y-auto pr-1">
               {rows.map((r) => (
-                <li
-                  key={r.id}
-                  className={
-                    r.event_type === "warning_issued"
-                      ? "rounded-xl border border-rose-200 bg-rose-50/70 px-3 py-2.5 text-sm"
-                      : "rounded-xl border bg-slate-50/80 px-3 py-2.5 text-sm"
-                  }
-                >
+                <li key={r.id} className={activityHistoryRowClass(r.event_type)}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <span className="font-semibold text-slate-900">{r.title}</span>
                     <span className="text-xs text-slate-500">{formatWhen(r.created_at)}</span>
@@ -450,6 +457,14 @@ export function ProfilePageClient() {
   useEffect(() => {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") reload();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   const avatarUrl = getAvatarPublicUrl(bundle?.profile.avatar_path ?? null);
