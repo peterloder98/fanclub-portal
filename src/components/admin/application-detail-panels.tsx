@@ -10,6 +10,7 @@ import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename"
 import { PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
 import { genderDisplayLabel } from "@/lib/person/gender";
+import { formatMemberMobile, formatWhatsAppDisplay } from "@/lib/person/contact-display";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -159,23 +160,8 @@ export function ApplicationDetailPanels({
           <Field label="Ort" value={app.city} />
           <Field label="Land" value={app.country} />
           <Field label="E-Mail" value={app.email} />
-          <Field label="Telefon" value={app.phone} />
-          <Field
-            label="Handynr."
-            value={
-              app.mobile_number
-                ? `${app.mobile_dial_code ?? ""}${app.mobile_number}`
-                : "—"
-            }
-          />
-          <Field
-            label="WhatsApp"
-            value={
-              app.whatsapp_opt_in
-                ? `Ja — ${app.whatsapp_dial_code ?? ""}${app.whatsapp_number ?? ""}`
-                : "Nein"
-            }
-          />
+          <Field label="Mobil" value={formatMemberMobile(app)} />
+          <Field label="WhatsApp" value={formatWhatsAppDisplay(app)} />
           <Field label="Instagram" value={app.instagram ?? "—"} />
           <Field label="Facebook" value={app.facebook ?? "—"} />
           <Field

@@ -26,6 +26,7 @@ import {
   getMemberContributionInfo,
   listOpenContributions,
 } from "@/lib/club/membership-contribution";
+import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import {
   listOpenMeetingCharges,
   markMeetingChargePaid,
@@ -140,6 +141,7 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
+      ...clubBankEmailVars(),
     },
     { signatureId: useSignatureId },
   );
@@ -200,6 +202,7 @@ export async function sendMemberPaymentReminderEmail(input: {
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
+      ...clubBankEmailVars(),
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );

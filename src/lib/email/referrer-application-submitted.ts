@@ -2,23 +2,26 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { buildEmailSalutation } from "@/lib/email/salutation-block";
+import { normalizeGender, pronounDative } from "@/lib/person/gender";
 
 export const REFERRER_APPLICATION_SUBMITTED_SUBJECT =
-  "Du hast erfolgreich ein neues Mitglied geworben";
+  "Dein Geworbener hat den Mitgliedsantrag eingereicht";
 
 export function composeReferrerApplicationSubmittedBody(input: {
-  referrerFirstName: string;
+  referrerSalutation: string;
   applicantFullName: string;
+  applicantPronounDative: string;
   signatureText: string;
 }) {
-  const vorname = input.referrerFirstName.trim() || "du";
   const name = input.applicantFullName.trim() || "die eingeladene Person";
 
-  return `Hey ${vorname},
+  return `${input.referrerSalutation},
 
-nochmal danke für deine Empfehlung für den Anni Perka Fanclub und dass du ${name} eingeladen hast.
+herzlichen Dank, dass du ${name} in den Anni Perka Fanclub eingeladen hast!
 
-Der Antrag wurde nun digital unterzeichnet und bei uns eingereicht, sobald der Mitgliedsbeitrag bezahlt ist wird ${name} bei uns aufgenommen und du erhältst deine 100 Punkte Werbeprämie.
+Der Antrag wurde von ${input.applicantPronounDative} soeben digital unterzeichnet und bei uns eingereicht.
+Sobald der Mitgliedsbeitrag bezahlt ist, werden wir ${name} bei uns herzlich aufnehmen und du erhältst selbstverständlich deine 100 Anni-Stars als Dankeschön fürs Werben.
 
 ${input.signatureText.trim()}`.trim();
 }
@@ -27,11 +30,12 @@ export async function notifyReferrerApplicationSubmitted(input: {
   referrerUserId: string;
   applicantFirstName: string;
   applicantLastName: string;
+  applicantGender?: string | null;
 }) {
   const admin = createSupabaseAdminClient();
   const { data: referrer } = await admin
     .from("profiles")
-    .select("email,first_name,last_name")
+    .select("email,first_name,last_name,gender")
     .eq("id", input.referrerUserId)
     .maybeSingle();
 
@@ -45,11 +49,17 @@ export async function notifyReferrerApplicationSubmitted(input: {
     `${input.applicantFirstName.trim()} ${input.applicantLastName.trim()}`.trim() ||
     "die eingeladene Person";
   const referrerFirstName =
-    referrer?.first_name?.trim() || referrer?.last_name?.trim() || "du";
+    referrer?.first_name?.trim() || referrer?.last_name?.trim() || "Fan";
+  const referrerSalutation = buildEmailSalutation(
+    referrerFirstName,
+    referrer?.gender,
+  );
+  const applicantPronounDative = pronounDative(normalizeGender(input.applicantGender));
 
   const text = composeReferrerApplicationSubmittedBody({
-    referrerFirstName,
+    referrerSalutation,
     applicantFullName,
+    applicantPronounDative,
     signatureText: sig.text,
   });
   const html = buildHtmlFromPlain(text, sig.htmlBlock);

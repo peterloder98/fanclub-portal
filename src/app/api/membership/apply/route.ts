@@ -233,6 +233,7 @@ export async function POST(request: Request) {
           referrerUserId: referredByUserId,
           applicantFirstName: input.first_name.trim(),
           applicantLastName: input.last_name.trim(),
+          applicantGender: input.gender,
         });
         if (notifyResult.ok) {
           await admin

@@ -28,6 +28,7 @@ import {
   formatContributionEmailVars,
   getMemberContributionInfo,
 } from "@/lib/club/membership-contribution";
+import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
@@ -218,6 +219,7 @@ export async function getPaymentReminderDraft(
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
+      ...clubBankEmailVars(),
     },
     { signatureId: useSignatureId },
   );
@@ -270,6 +272,7 @@ export async function sendPaymentReminderEmail(input: {
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
+      ...clubBankEmailVars(),
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );

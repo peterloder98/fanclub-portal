@@ -48,6 +48,10 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "fee_paid_eur", label: "Bereits gezahlt" },
     { key: "fee_open_eur", label: "Offener Betrag" },
     { key: "membership_period", label: "Beitragszeitraum" },
+    { key: "bank_account_holder", label: "Kontoinhaber" },
+    { key: "bank_iban", label: "IBAN" },
+    { key: "bank_bic", label: "BIC" },
+    { key: "bank_reference", label: "Verwendungszweck" },
   ],
   [EMAIL_TEMPLATE_KEYS.membershipFormInvite]: [
     { key: "greeting_name", label: "Anrede (z. B. Vorname nach „Hey“)" },

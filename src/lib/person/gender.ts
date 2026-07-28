@@ -26,6 +26,13 @@ export function salutation(firstName: string, gender: NormalizedGender): string 
   return `Liebe/r ${name}`;
 }
 
+/** Dativ: „von ihm“ / „von ihr“ */
+export function pronounDative(gender: NormalizedGender): string {
+  if (gender === "m") return "ihm";
+  if (gender === "w") return "ihr";
+  return "ihm/ihr";
+}
+
 export function isValidGenderInput(raw: string): boolean {
   return ["m", "w", "d", "männlich", "weiblich", "divers"].includes(raw.trim().toLowerCase()) ||
     GENDER_OPTIONS.some((o) => o.value === raw.trim().toLowerCase());

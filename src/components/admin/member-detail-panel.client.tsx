@@ -363,7 +363,7 @@ export function MemberDetailPanel({
               <InfoRow label="Name" value={fullName} />
               <InfoRow label="E-Mail" value={member.email ?? "—"} />
               <InfoRow label="Benutzername" value={member.username ?? "—"} />
-              <InfoRow label="Telefon" value={member.phone ?? "—"} />
+              <InfoRow label="Mobil" value={member.phone ?? "—"} />
               <InfoRow label="Geburtsdatum" value={formatDE(member.birthdate)} />
               <InfoRow label="Geschlecht" value={genderDisplayLabel(member.gender)} />
               <InfoRow

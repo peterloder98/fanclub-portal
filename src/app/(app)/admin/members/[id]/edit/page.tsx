@@ -129,7 +129,7 @@ export default async function AdminMemberEditPage({
                 </label>
 
                 <label className="grid gap-1">
-                  <span className="text-sm font-medium text-slate-700">Telefon</span>
+                  <span className="text-sm font-medium text-slate-700">Mobil</span>
                   <input
                     name="phone"
                     defaultValue={profile.phone ?? ""}
