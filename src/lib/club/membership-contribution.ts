@@ -81,10 +81,12 @@ export function paymentDeadlineForContributionYear(year: number, membershipStart
 export function formatMembershipPaymentReference(
   year: number,
   membershipNumber: string | null | undefined,
+  firstName: string,
   lastName: string,
 ): string {
   const nr = membershipNumber?.trim() || "—";
-  const name = lastName.trim() || "Mitglied";
+  const name =
+    [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || "Mitglied";
   return `Beitrag ${year}, Nr. ${nr}, ${name}`;
 }
 
@@ -92,6 +94,7 @@ export function formatMembershipPaymentReference(
 export function resolveMemberPaymentReference(input: {
   calendarYear: number;
   membershipNumber?: string | null;
+  firstName?: string | null;
   lastName?: string | null;
   fromContribution?: string | null;
 }): string {
@@ -100,6 +103,7 @@ export function resolveMemberPaymentReference(input: {
   return formatMembershipPaymentReference(
     input.calendarYear,
     input.membershipNumber,
+    input.firstName ?? "",
     input.lastName ?? "",
   );
 }
@@ -222,6 +226,7 @@ export function computeYearContribution(
     paymentReference: formatMembershipPaymentReference(
       year,
       profile.membership_number,
+      profile.first_name,
       profile.last_name,
     ),
   };

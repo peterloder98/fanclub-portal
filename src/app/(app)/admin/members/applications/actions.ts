@@ -237,6 +237,7 @@ export async function getPaymentReminderDraft(
       bank_reference: resolveMemberPaymentReference({
         calendarYear: reminderYear,
         membershipNumber,
+        firstName: app.first_name,
         lastName: app.last_name,
         fromContribution: contrib?.paymentReference,
       }),
@@ -306,6 +307,7 @@ export async function sendPaymentReminderEmail(input: {
       bank_reference: resolveMemberPaymentReference({
         calendarYear: reminderYear,
         membershipNumber,
+        firstName: app.first_name,
         lastName: app.last_name,
         fromContribution: contrib?.paymentReference,
       }),

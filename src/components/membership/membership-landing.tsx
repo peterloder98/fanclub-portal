@@ -45,7 +45,6 @@ const BENEFITS: Benefit[] = [
       "Eventinfos",
       "Gewinnspiele",
       "Anni-Stars",
-      "Fanshop",
     ],
   },
   {
@@ -68,13 +67,14 @@ const BENEFITS: Benefit[] = [
 
 /** Farbige Hover-Akzente für Feature-Badges (Landing + Antrag). */
 const FEATURE_BADGE_HOVER = [
-  "hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900",
-  "hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900",
-  "hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900",
-  "hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900",
-  "hover:border-rose-300 hover:bg-rose-50 hover:text-rose-900",
-  "hover:border-fc-blue/40 hover:bg-fc-ice hover:text-fc-navy",
-  "hover:border-orange-300 hover:bg-orange-50 hover:text-orange-900",
+  "hover:border-sky-400 hover:bg-sky-100 hover:text-sky-950",
+  "hover:border-violet-400 hover:bg-violet-100 hover:text-violet-950",
+  "hover:border-emerald-400 hover:bg-emerald-100 hover:text-emerald-950",
+  "hover:border-amber-400 hover:bg-amber-100 hover:text-amber-950",
+  "hover:border-rose-400 hover:bg-rose-100 hover:text-rose-950",
+  "hover:border-orange-400 hover:bg-orange-100 hover:text-orange-950",
+  "hover:border-cyan-400 hover:bg-cyan-100 hover:text-cyan-950",
+  "hover:border-fuchsia-400 hover:bg-fuchsia-100 hover:text-fuchsia-950",
 ] as const;
 
 const STEPS = [
@@ -188,7 +188,7 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
             Warum solltest du dabei sein?
           </h2>
           <p className="mt-1.5 text-sm text-slate-600 sm:mt-2 sm:text-base">
-            Nicht 15 Vorteile — nur 6 starke.
+            Keine zig Versprechen — dafür 6 große Vorteile!
           </p>
         </div>
         <div className="mt-5 grid grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">

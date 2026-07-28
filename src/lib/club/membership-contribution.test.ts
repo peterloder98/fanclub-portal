@@ -47,8 +47,8 @@ describe("calendar year contributions", () => {
   });
 
   it("formats payment reference", () => {
-    expect(formatMembershipPaymentReference(2027, "42", "Müller")).toBe(
-      "Beitrag 2027, Nr. 42, Müller",
+    expect(formatMembershipPaymentReference(2027, "42", "Sabine", "Müller")).toBe(
+      "Beitrag 2027, Nr. 42, Sabine Müller",
     );
   });
 
@@ -57,17 +57,19 @@ describe("calendar year contributions", () => {
       resolveMemberPaymentReference({
         calendarYear: 2027,
         membershipNumber: "42",
+        firstName: "Sabine",
         lastName: "Müller",
       }),
-    ).toBe("Beitrag 2027, Nr. 42, Müller");
+    ).toBe("Beitrag 2027, Nr. 42, Sabine Müller");
     expect(
       resolveMemberPaymentReference({
         calendarYear: 2027,
         membershipNumber: "42",
+        firstName: "Sabine",
         lastName: "Müller",
-        fromContribution: "Beitrag 2027, Nr. 42, Müller",
+        fromContribution: "Beitrag 2027, Nr. 42, Sabine Müller",
       }),
-    ).toBe("Beitrag 2027, Nr. 42, Müller");
+    ).toBe("Beitrag 2027, Nr. 42, Sabine Müller");
   });
 
   it("picks oldest overdue year first", () => {
@@ -82,6 +84,6 @@ describe("calendar year contributions", () => {
     const y2026 = computeYearContribution(profile, "2026-11-01", 1500, 2026, [], new Date("2026-12-27"));
     const block = buildOpenContributionsBlock([y2026]);
     expect(block).toContain("2026");
-    expect(block).toContain("Beitrag 2026, Nr. 42, Müller");
+    expect(block).toContain("Beitrag 2026, Nr. 42, Sabine Müller");
   });
 });

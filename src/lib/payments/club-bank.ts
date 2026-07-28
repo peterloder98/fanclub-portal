@@ -5,7 +5,7 @@ export const CLUB_BANK = {
   /** Ostseesparkasse Rostock (BLZ 13050000) */
   bic: "NOLADE21ROS",
   bank_name: "Ostseesparkasse Rostock",
-  reference_hint: "Mitgliedsbeitrag / Name, Vorname",
+  reference_hint: "Mitgliedsbeitrag / Vorname Nachname",
 } as const;
 
 export function formatClubIbanDisplay(iban: string = CLUB_BANK.iban) {
@@ -13,7 +13,7 @@ export function formatClubIbanDisplay(iban: string = CLUB_BANK.iban) {
   return compact.replace(/(.{4})/g, "$1 ").trim();
 }
 
-/** Verwendungszweck im Antrag — live aus Vor-/Nachname, Format wie reference_hint. */
+/** Verwendungszweck im Antrag — live aus Vor-/Nachname. */
 export function formatApplicationPaymentReference(
   firstName: string,
   lastName: string,
@@ -21,6 +21,5 @@ export function formatApplicationPaymentReference(
   const first = firstName.trim();
   const last = lastName.trim();
   if (!first && !last) return CLUB_BANK.reference_hint;
-  if (last && first) return `Mitgliedsbeitrag / ${last}, ${first}`;
-  return `Mitgliedsbeitrag / ${last || first}`;
+  return `Mitgliedsbeitrag / ${[first, last].filter(Boolean).join(" ")}`;
 }

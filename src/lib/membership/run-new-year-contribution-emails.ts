@@ -154,6 +154,7 @@ export async function runNewYearContributionEmails(
     const paymentReference = formatMembershipPaymentReference(
       targetYear,
       profile.membership_number,
+      profile.first_name,
       profile.last_name,
     );
 

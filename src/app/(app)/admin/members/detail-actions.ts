@@ -171,6 +171,7 @@ export async function getMemberPaymentReminderDraft(
       bank_reference: resolveMemberPaymentReference({
         calendarYear: calendarYear ?? contrib?.calendarYear ?? new Date().getFullYear(),
         membershipNumber: profile.membership_number,
+        firstName: profile.first_name,
         lastName: profile.last_name,
         fromContribution: contribVars.payment_reference,
       }),
@@ -246,6 +247,7 @@ export async function sendMemberPaymentReminderEmail(input: {
       bank_reference: resolveMemberPaymentReference({
         calendarYear: input.calendarYear ?? contrib?.calendarYear ?? new Date().getFullYear(),
         membershipNumber: profile.membership_number,
+        firstName: profile.first_name,
         lastName: profile.last_name,
         fromContribution: contribVars.payment_reference,
       }),

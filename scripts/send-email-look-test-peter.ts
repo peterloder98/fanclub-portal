@@ -66,6 +66,7 @@ async function main() {
       bank_reference: resolveMemberPaymentReference({
         calendarYear: new Date().getFullYear(),
         membershipNumber: "042",
+        firstName: "Peter",
         lastName: "Loder",
       }),
     },
@@ -85,7 +86,7 @@ async function main() {
       fee_eur: "15,00 €",
       due_date: `01.01.${new Date().getFullYear() + 1}`,
       payment_deadline: `14.01.${new Date().getFullYear() + 1}`,
-      payment_reference: `Beitrag ${new Date().getFullYear() + 1}, Nr. 042, Loder`,
+      payment_reference: `Beitrag ${new Date().getFullYear() + 1}, Nr. 042, Peter Loder`,
       open_contributions_block: "",
       ...bank,
     },

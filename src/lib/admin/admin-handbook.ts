@@ -1,8 +1,7 @@
 /**
  * Admin-Handbuch (nur für Vorstände / role=admin).
  *
- * Diese Datei ist die Quelle der Wahrheit für /admin/hilfe.
- * Bei neuen Features oder geänderter Bedienung hier ergänzen/aktualisieren.
+ * Quelle für /admin/hilfe. Bei neuen Admin-Abläufen hier ergänzen.
  */
 
 export type AdminHandbookBlock =
@@ -22,132 +21,124 @@ export type AdminHandbookSection = {
 export const ADMIN_HANDBOOK_UPDATED = "2026-07-28";
 
 export const ADMIN_HANDBOOK_INTRO =
-  "Diese Seite erklärt, was die Fanclub-App kann und wie ihr als Vorstand die wichtigsten Admin-Aufgaben bedient. Nur Admins sehen diese Hilfe. Bei neuen Funktionen wird dieses Handbuch weitergeführt.";
+  "Hier steht in Ruhe, was die Fanclub-App kann und wie ihr als Vorstand die wichtigsten Dinge erledigt. Nur der Vorstand sieht diese Seite. Einfach dem jeweiligen Thema folgen — Schritt für Schritt.";
 
 export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
   {
-    id: "ueberblick",
-    title: "Was die App kann",
-    summary: "Kurzüberblick für Mitglieder und Vorstand",
+    id: "start",
+    title: "So findest du den Admin-Bereich",
+    summary: "Einstieg und Übersicht",
     blocks: [
       {
         type: "p",
-        text: "Die App ist das digitale Zuhause des Anni Perka Fanclubs: Community, Termine, Punkte, Shop und Verwaltung.",
+        text: "Nach dem Login siehst du in der App oben oder im Menü den Bereich „Admin“. Dort sind alle Verwaltungsaufgaben nach Themen sortiert (Mitglieder, Finanzen, E-Mail, Community, …).",
       },
       {
-        type: "ul",
+        type: "ol",
         items: [
-          "Mitglieder: Profile, Verzeichnis, Kennenlernen-Fragen, Badges und Anni-Stars",
-          "Community: Beiträge, Kommentare, Gruppenchat, Umfragen, Gewinnspiele",
-          "Termine: Konzerte & TV (Artistflow), Fanclub-Treffen, Teilnahme markieren",
-          "Finanzen: Mitgliedsbeiträge (Kalenderjahr), Buchhaltung, optional Merchandise",
-          "E-Mail: Vorlagen, Signatur, Versandprotokoll — im Testmodus nur an Vorstände und die offizielle App-Adresse",
+          "In der App anmelden (wie jedes Mitglied).",
+          "„Admin“ öffnen — du landest auf der Übersicht.",
+          "Ein Thema antippen (z. B. „Mitglieder & Anträge“) und dort weiterarbeiten.",
         ],
       },
       {
         type: "note",
-        text: "Umfragen und Gewinnspiele pflegt ihr in den normalen App-Menüs (nicht nur im Admin-Hub). Admin-Rechte braucht ihr für Freigaben, Beiträge, Finanzen und Einstellungen.",
-      },
-    ],
-  },
-  {
-    id: "zugang",
-    title: "Admin-Zugang",
-    summary: "Wer darf was und wo findet man den Admin-Bereich",
-    blocks: [
-      {
-        type: "ul",
-        items: [
-          "Nur Profile mit Rolle „admin“ (Vorstand) sehen Admin-Seiten und diese Hilfe",
-          "Einstieg: Menü / Dashboard → Admin-Hub unter /admin",
-          "Eigene Mitgliedsseite und App-Nutzung bleiben für Admins wie für Mitglieder möglich",
-        ],
+        text: "Du kannst die App weiterhin ganz normal als Mitglied nutzen (Chat, Events, Profil). Der Admin-Bereich ist zusätzlich — nur für den Vorstand sichtbar.",
       },
       {
         type: "link",
         href: "/admin",
-        label: "Zum Admin-Hub",
-        hint: "Übersicht aller Verwaltungsbereiche",
+        label: "Zur Admin-Übersicht",
       },
     ],
   },
   {
-    id: "mitglieder",
-    title: "Mitglieder & Anträge",
-    summary: "Freischalten, Beiträge, Sperre, Stammdaten",
+    id: "was-kann-die-app",
+    title: "Was die App für Mitglieder kann",
+    summary: "Damit du weißt, was Mitglieder erleben",
     blocks: [
       {
-        type: "ol",
-        items: [
-          "Neue Anträge erscheinen unter Mitglieder & Anträge (Status „beantragt“).",
-          "Antrag prüfen (PDF/Daten) → freigeben: Mitgliedsnummer, Willkommens-Mail / App-Zugang.",
-          "Offener Beitrag: Beitrags-Erinnerung senden (Verwendungszweck mit Name und Nr.).",
-          "Bei Zahlungsrückstand: „Vorübergehend deaktivieren“ — Mitglied sieht Hinweis und kann die App nicht nutzen, bis ihr wieder freischaltet.",
-          "Stammdaten-Änderungen von Mitgliedern unter „Stammdaten freigeben“ bestätigen.",
-        ],
+        type: "p",
+        text: "Die App ist der digitale Treffpunkt des Fanclubs. Mitglieder können u. a.:",
       },
       {
         type: "ul",
         items: [
-          "Beitrag = 15 € pro Kalenderjahr (auch bei Beitritt mitten im Jahr).",
-          "Mehrere offene Jahre möglich; Erinnerungen können pro Jahr gesendet werden.",
-          "Überfällig nach 14 Tagen ab Fälligkeit.",
-          "Jahres-Mail am 27.12. (Cron) an aktive Mitglieder — Vorlage „Jahresbeitrag“.",
+          "Beiträge lesen und schreiben, kommentieren und im Gruppenchat schreiben",
+          "an Umfragen und Gewinnspielen teilnehmen",
+          "Konzerte und Fanclub-Treffen sehen und „Ich bin dabei“ markieren",
+          "andere Mitglieder im Verzeichnis finden und Profile anschauen",
+          "Anni-Stars sammeln und Badges freischalten",
+          "den Mitgliedsantrag digital ausfüllen und den Beitrag überweisen",
         ],
+      },
+      {
+        type: "p",
+        text: "Umfragen und Gewinnspiele legst du nicht im Admin-Hub an, sondern in den normalen Menüpunkten „Umfragen“ bzw. „Gewinnspiele“ — dort hast du als Vorstand zusätzliche Buttons zum Steuern.",
+      },
+    ],
+  },
+  {
+    id: "antraege",
+    title: "Neue Mitglieder aufnehmen",
+    summary: "Vom Antrag bis zur Freischaltung",
+    blocks: [
+      {
+        type: "p",
+        text: "Interessierte melden sich über die Seite „Mitglied werden“. Der Antrag landet bei euch zur Prüfung.",
+      },
+      {
+        type: "ol",
+        items: [
+          "Öffne Admin → „Mitglieder & Anträge“.",
+          "Schau dir offene Anträge an (Daten, Unterschrift, PDF).",
+          "Wenn alles passt: Antrag freigeben. Die Person bekommt eine Mitgliedsnummer und die Einladung, den App-Zugang einzurichten.",
+          "Der Mitgliedsbeitrag (15 € für das laufende Kalenderjahr) wird danach erwartet — Erinnerung kannst du aus dem Mitglieder-Detail senden.",
+        ],
+      },
+      {
+        type: "note",
+        text: "Der Verwendungszweck bei Überweisungen lautet z. B. „Beitrag 2026, Nr. 42, Max Mustermann“ (Jahr, Nummer, Vorname Nachname). So findet ihr Zahlungen leichter zu.",
       },
       {
         type: "link",
         href: "/admin/members",
-        label: "Mitglieder & Anträge",
-      },
-      {
-        type: "link",
-        href: "/admin/members/profile-changes",
-        label: "Stammdaten freigeben",
+        label: "Mitglieder & Anträge öffnen",
       },
       {
         type: "link",
         href: "/admin/membership-form",
-        label: "Antragsformular / Link",
+        label: "Antrags-Link / Formular",
+        hint: "Zum Teilen mit Interessierten",
       },
     ],
   },
   {
-    id: "empfehlungen",
-    title: "Empfehlungen (Werbung)",
-    summary: "Einladungen und Anni-Stars",
+    id: "beitraege",
+    title: "Mitgliedsbeiträge erinnern und prüfen",
+    summary: "Offene Beträge, Erinnerungs-Mails, App-Zugang sperren",
     blocks: [
       {
         type: "p",
-        text: "Mitglieder können unter „Neues Mitglied werben“ Einladungen verschicken. Dafür gibt es Anni-Stars und das Badge „Werbeprofi“.",
+        text: "Der Beitrag gilt immer für ein Kalenderjahr (1. Januar bis 31. Dezember), auch wenn jemand mitten im Jahr beitritt. Ab dem nächsten 1. Januar ist das neue Jahr wieder fällig.",
       },
       {
-        type: "ul",
+        type: "ol",
         items: [
-          "Beim Versand der Einladung: +20 Anni-Stars (einmal pro Empfänger-Adresse)",
-          "Nach Freischaltung des geworbenen Mitglieds: +70 Anni-Stars",
-          "Übersicht der Empfehlungen: Admin → Empfehlungen",
+          "Mitglied in „Mitglieder & Anträge“ öffnen.",
+          "Unter Beiträgen siehst du offene Jahre (und ob etwas überfällig ist — das ist 14 Tage nach Fälligkeit).",
+          "„Beitrags-Erinnerung senden“ tippen: Die Mail geht an das Mitglied mit Betrag, Kontodaten und dem richtigen Verwendungszweck.",
+          "Wenn das Geld da ist: Zahlung in der Buchhaltung / bei den Zahlungen zuordnen bzw. bestätigen.",
         ],
+      },
+      {
+        type: "p",
+        text: "Zahlt jemand länger nicht, könnt ihr den App-Zugang vorübergehend deaktivieren. Das Mitglied sieht dann einen Hinweis und kann die App nicht nutzen, bis ihr den Zugang wieder freischaltet.",
       },
       {
         type: "link",
-        href: "/admin/referrals",
-        label: "Empfehlungen",
-      },
-    ],
-  },
-  {
-    id: "finanzen",
-    title: "Finanzen & Shop",
-    summary: "Beiträge, Buchhaltung, Merchandise",
-    blocks: [
-      {
-        type: "ul",
-        items: [
-          "Zahlungen: offene Posten sehen und manuell freigeben/zuordnen",
-          "Buchhaltung: Einnahmen/Ausgaben, Belege, Kategorien",
-          "Merchandise (falls aktiv): Artikel, Bestand, Bestellungen, Versand",
-        ],
+        href: "/admin/members",
+        label: "Zur Mitgliederliste",
       },
       {
         type: "link",
@@ -162,27 +153,70 @@ export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
     ],
   },
   {
-    id: "email",
-    title: "E-Mail & Kommunikation",
-    summary: "SMTP, Vorlagen, Signatur, Testmodus",
+    id: "stammdaten",
+    title: "Stammdaten-Änderungen freigeben",
+    summary: "Wenn Mitglieder Adresse oder Daten ändern wollen",
     blocks: [
       {
         type: "ol",
         items: [
-          "SMTP-Konto unter „Email Konten“ prüfen (Absender = offizielle App-Adresse).",
-          "Vorlagen unter E-Mail-Vorlagen bearbeiten (Anrede {{salutation}}, Signatur wird automatisch angehängt).",
-          "Club-Signatur unter Signaturen pflegen.",
-          "Versand im E-Mail-Log kontrollieren; fehlgeschlagene Mails ggf. erneut senden.",
+          "Mitglieder können im Profil Änderungen beantragen (z. B. Adresse).",
+          "Unter Admin → „Stammdaten freigeben“ erscheint die Warteschlange.",
+          "Prüfen und annehmen oder ablehnen — erst dann gilt die Änderung offiziell.",
+        ],
+      },
+      {
+        type: "link",
+        href: "/admin/members/profile-changes",
+        label: "Stammdaten freigeben",
+      },
+    ],
+  },
+  {
+    id: "empfehlungen",
+    title: "Mitglieder werben",
+    summary: "Einladungen und Sterne fürs Werben",
+    blocks: [
+      {
+        type: "p",
+        text: "Mitglieder können unter „Neues Mitglied werben“ eine Einladung per E-Mail schicken. Dafür gibt es Anni-Stars als Dankeschön.",
+      },
+      {
+        type: "ul",
+        items: [
+          "Beim erfolgreichen Versand der Einladung: 20 Anni-Stars",
+          "Wenn die eingeladene Person freigeschaltet wird: zusätzlich 70 Anni-Stars",
+          "Unter Admin → „Empfehlungen“ seht ihr, wer wen eingeladen hat",
+        ],
+      },
+      {
+        type: "link",
+        href: "/admin/referrals",
+        label: "Empfehlungen ansehen",
+      },
+    ],
+  },
+  {
+    id: "emails",
+    title: "E-Mails schreiben und prüfen",
+    summary: "Vorlagen, Absender, Signatur, Versandkontrolle",
+    blocks: [
+      {
+        type: "p",
+        text: "Viele Mails (Willkommen, Beitragserinnerung, App-Zugang, …) kommen aus fertigen Vorlagen. Ihr müsst den Text nicht jedes Mal neu tippen — nur bei Bedarf anpassen.",
+      },
+      {
+        type: "ol",
+        items: [
+          "„Email Konten“: Hier steht der Absender der App (offizielle Fanclub-Adresse). Verbindung einmal testen, wenn etwas nicht ankommt.",
+          "„E-Mail-Vorlagen“: Texte und Betreffzeilen ändern. Die Anrede (Lieber/Liebe …) und die Unterschrift werden automatisch eingesetzt.",
+          "„Signaturen“: Die gemeinsame Fanclub-Unterschrift pflegen (Text und ggf. Bild).",
+          "„E-Mail-Historie“: Nachschauen, ob eine Mail rausging — und bei Bedarf erneut senden.",
         ],
       },
       {
         type: "note",
-        text: "Solange EMAIL_OUTBOUND_MODE nicht auf „live“ steht, gehen Mails nur an Admin-Adressen und die offizielle SMTP-/Reply-Adresse. So bleiben echte Mitglieder während Tests geschützt. Go-Live: in Vercel EMAIL_OUTBOUND_MODE=live setzen und neu deployen.",
-      },
-      {
-        type: "link",
-        href: "/admin/settings/email",
-        label: "Email Konten",
+        text: "Zurzeit dürfen Test-Mails nur an die Vorstände und die offizielle App-Adresse gehen. So schreiben wir versehentlich niemandem aus der Mitgliedschaft. Wenn ihr echte Mitglieder anschreiben wollt, sagt Bescheid — dann wird der Versand freigeschaltet.",
       },
       {
         type: "link",
@@ -191,29 +225,27 @@ export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
       },
       {
         type: "link",
-        href: "/admin/signatures",
-        label: "Signaturen",
+        href: "/admin/settings/email-log",
+        label: "E-Mail-Historie",
       },
       {
         type: "link",
-        href: "/admin/settings/email-log",
-        label: "E-Mail-Historie",
+        href: "/admin/signatures",
+        label: "Signaturen",
       },
     ],
   },
   {
     id: "community",
-    title: "Community & Moderation",
-    summary: "Beiträge, Chat, Verwarnungen, Punkte",
+    title: "Beiträge freigeben und Fairplay",
+    summary: "Moderation im Alltag",
     blocks: [
       {
-        type: "ul",
+        type: "ol",
         items: [
-          "Mitgliederposts unter Beiträge freigeben oder ablehnen",
-          "Verwarnungen über Moderation (Kommentar/Chat) — E-Mail und Hinweis in der App",
-          "Umfragen und Gewinnspiele in den App-Menüs anlegen; Admins sehen Admin-Steuerung",
-          "Anni-Stars & Badges: Jahresränge und Erfolge unter /punkte für Mitglieder",
-          "Radio-Votings (falls aktiv): Charts und Runden unter Admin → Radio-Votings",
+          "Mitglieder können Beiträge einreichen — unter „Beiträge freigeben“ entscheidet ihr: sichtbar machen oder ablehnen.",
+          "Bei Regelverstößen könnt ihr Verwarnungen aussprechen (das Mitglied bekommt einen Hinweis in der App und per E-Mail).",
+          "Umfragen und Gewinnspiele: im jeweiligen Menü anlegen, pausieren oder auslosen — dort erscheinen eure Admin-Schaltflächen.",
         ],
       },
       {
@@ -225,15 +257,19 @@ export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
   },
   {
     id: "termine",
-    title: "Events & Treffen",
-    summary: "Artistflow und eigene Fanclub-Treffen",
+    title: "Termine und Fanclub-Treffen",
+    summary: "Konzerte, TV und eigene Treffen",
     blocks: [
       {
-        type: "ul",
+        type: "p",
+        text: "Öffentliche Konzerte und TV-Termine kommen in der Regel automatisch in die App (Sync). Eigene Fanclub-Treffen legt ihr selbst an.",
+      },
+      {
+        type: "ol",
         items: [
-          "Konzerte/TV kommen über Artistflow-Sync (Admin → Artistflow-Sync).",
-          "Eigene Fanclub-Treffen unter Admin → Fanclub-Treffen anlegen (Ort, Kosten, Teilnahme).",
-          "Mitglieder melden Teilnahme in der App — sichtbar im Profil unter „Hier bin ich dabei“.",
+          "Fanclub-Treffen: Admin → „Fanclub-Treffen“ → neues Treffen mit Ort, Zeit und ggf. Kosten.",
+          "Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
+          "Wenn Termine fehlen oder veraltet sind: unter „Artistflow-Sync“ den Abgleich anstoßen bzw. prüfen.",
         ],
       },
       {
@@ -244,42 +280,44 @@ export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
       {
         type: "link",
         href: "/admin/events-sync",
-        label: "Artistflow-Sync",
+        label: "Termine abgleichen",
       },
     ],
   },
   {
     id: "punkte",
-    title: "Anni-Stars, Ränge & Badges",
-    summary: "Fairness und Jahreswertung",
+    title: "Anni-Stars und Badges",
+    summary: "Was Mitglieder sammeln — und warum",
     blocks: [
+      {
+        type: "p",
+        text: "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, …). Die Sterne zählen für das laufende Kalenderjahr und starten jedes Jahr neu. Badges (z. B. Konzertprofi) bleiben dauerhaft.",
+      },
       {
         type: "ul",
         items: [
-          "Anni-Stars zählen pro Kalenderjahr; am 1. Januar startet die Zählung neu",
-          "Ränge (Jahres-Sterne): Fan → Aktiv-Fan → Treue-Fan → Silber-Fan → Gold-Fan → Diamond-Fan",
-          "Badges (dauerhaft): z. B. Konzertprofi, Votingheld, Werbeprofi, Merch-Legende",
-          "Keine Sterne für Eigenaktionen (eigener Beitrag, eigene Umfrage, …)",
-          "Jahresende: Top 10 der Jahres-Sterne für die Sonderverlosung (Gewinnspiele)",
+          "Ränge zeigen den Stand im Jahr (z. B. Aktiv-Fan, Gold-Fan).",
+          "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne — das bleibt fair.",
+          "Zum Jahresende nehmen die Top 10 der Jahres-Sterne an einer Sonderverlosung teil.",
         ],
       },
       {
         type: "link",
         href: "/punkte",
-        label: "Punkte-Seite (Mitgliederansicht)",
+        label: "So sehen Mitglieder ihre Sterne",
       },
     ],
   },
   {
-    id: "system",
-    title: "System & Statistik",
-    summary: "Nutzung und Audit",
+    id: "statistik",
+    title: "App-Statistik und Protokoll",
+    summary: "Überblick behalten",
     blocks: [
       {
         type: "ul",
         items: [
-          "App-Statistik: aktive Mitglieder, App-Nutzung, Monatskurve",
-          "Audit-Log: wichtige Admin-Aktionen nachvollziehen",
+          "App-Statistik: Wie viele aktive Mitglieder es gibt und wie die App genutzt wird.",
+          "Audit-Log: Wer im Admin-Bereich wann wichtige Dinge geändert hat — zur Nachvollziehbarkeit.",
         ],
       },
       {
@@ -290,28 +328,7 @@ export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
       {
         type: "link",
         href: "/admin/audit",
-        label: "Audit-Log",
-      },
-    ],
-  },
-  {
-    id: "checkliste",
-    title: "Checkliste vor dem Go-Live",
-    summary: "Kurz prüfen, bevor echte Mitglieder Mails bekommen",
-    blocks: [
-      {
-        type: "ol",
-        items: [
-          "Genau die drei Vorstände haben role = admin (keine Test-Admins unnötig).",
-          "SMTP und Signatur getestet (Look-Test an Vorstandsadresse).",
-          "SQL-Migrationen für Beiträge (115), Sperre (116) und Badges (070/117) ausgeführt.",
-          "Beitrags-Erinnerung und App-Zugang an einem Vorstand getestet.",
-          "Erst dann EMAIL_OUTBOUND_MODE=live in Vercel setzen.",
-        ],
-      },
-      {
-        type: "note",
-        text: "Dieses Handbuch wird bei neuen Features und Admin-Workflows weitergeführt — Anweisungen an die Entwicklung: „Admin-Handbuch aktualisieren“.",
+        label: "Protokoll (Audit)",
       },
     ],
   },
