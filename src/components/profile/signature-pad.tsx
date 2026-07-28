@@ -7,13 +7,19 @@ import { cropSignatureCanvas } from "@/lib/images/crop-signature-canvas";
 export function SignaturePad({
   disabled,
   onSave,
+  onClear,
+  /** Speichert nach jedem Strich automatisch — ohne extra Button (Mitgliedsantrag). */
+  autoSave = false,
 }: {
   disabled?: boolean;
   onSave: (blob: Blob) => Promise<void> | void;
+  onClear?: () => void;
+  autoSave?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const last = useRef<{ x: number; y: number } | null>(null);
+  const hasInkRef = useRef(false);
   const [hasInk, setHasInk] = useState(false);
 
   const dpr = useMemo(() => (typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1), []);
@@ -76,12 +82,17 @@ export function SignaturePad({
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
     last.current = p;
+    hasInkRef.current = true;
     setHasInk(true);
   }
 
   function end() {
+    const wasDrawing = drawing.current;
     drawing.current = false;
     last.current = null;
+    if (autoSave && wasDrawing && hasInkRef.current) {
+      void save();
+    }
   }
 
   function clear() {
@@ -91,7 +102,9 @@ export function SignaturePad({
     if (!ctx) return;
     const r = c.getBoundingClientRect();
     ctx.clearRect(0, 0, r.width, r.height);
+    hasInkRef.current = false;
     setHasInk(false);
+    onClear?.();
   }
 
   async function save() {
@@ -133,15 +146,20 @@ export function SignaturePad({
         >
           Leeren
         </button>
-        <button
-          type="button"
-          disabled={disabled || !hasInk}
-          onClick={() => void save()}
-          className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 disabled:opacity-60"
-        >
-          Unterschrift speichern
-        </button>
+        {autoSave ? null : (
+          <button
+            type="button"
+            disabled={disabled || !hasInk}
+            onClick={() => void save()}
+            className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 disabled:opacity-60"
+          >
+            Unterschrift speichern
+          </button>
+        )}
       </div>
+      {autoSave ? (
+        <p className="text-xs text-slate-500">Einfach unterschreiben — wird automatisch übernommen.</p>
+      ) : null}
     </div>
   );
 }

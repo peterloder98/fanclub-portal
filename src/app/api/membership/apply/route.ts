@@ -23,6 +23,8 @@ import { formatMembershipEmailWarning } from "@/lib/smtp/email-warning";
 import { resolveMembershipReferrer } from "@/lib/membership/resolve-referrer";
 import { notifyReferrerApplicationSubmitted } from "@/lib/email/referrer-application-submitted";
 import { cropSignaturePng } from "@/lib/images/crop-signature-png";
+import { createApplicationMembershipPayment } from "@/lib/payments/application-payment";
+import type { PaymentCheckoutResult } from "@/lib/payments/types";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
 
@@ -54,8 +56,10 @@ const schema = z
     whatsapp_dial_code: z.string().optional(),
     whatsapp_number: z.string().optional(),
     signed_at_place: z.string().min(1),
-    signed_at_date: z.string().min(1),
-    signature_applicant: z.string().min(1),
+    signed_at_date: z.string().optional(),
+    signature_applicant: z
+      .string()
+      .min(1, "Die Unterschrift fehlt. Bitte unterschreibe im vorgesehenen Feld."),
     referrer_user_id: z.string().uuid().optional(),
     instagram: z.string().max(120).optional(),
     facebook: z.string().max(120).optional(),
@@ -119,6 +123,7 @@ export async function POST(request: Request) {
 
   const input = parsed.data;
   const membershipStartDate = new Date().toISOString().slice(0, 10);
+  const signedAtDate = membershipStartDate;
   const countryCode = normalizeMemberCountryCode(input.country_code, "");
   if (!countryCode || countryCode.length !== 2) {
     return NextResponse.json({ error: "Land ist Pflichtfeld." }, { status: 400 });
@@ -127,6 +132,13 @@ export async function POST(request: Request) {
   const birth = new Date(input.birthdate);
   if (Number.isNaN(birth.getTime())) {
     return NextResponse.json({ error: "Ungültiges Geburtsdatum" }, { status: 400 });
+  }
+
+  if (!input.signature_applicant?.startsWith("data:image")) {
+    return NextResponse.json(
+      { error: "Die Unterschrift fehlt. Bitte unterschreibe im vorgesehenen Feld." },
+      { status: 400 },
+    );
   }
 
   const admin = createSupabaseAdminClient();
@@ -167,7 +179,7 @@ export async function POST(request: Request) {
       membership_start_date: membershipStartDate,
     });
 
-    const signedDate = new Date(input.signed_at_date);
+    const signedDate = new Date(signedAtDate);
     if (Number.isNaN(signedDate.getTime())) {
       return NextResponse.json({ error: "Ungültiges Datum" }, { status: 400 });
     }
@@ -210,7 +222,7 @@ export async function POST(request: Request) {
       signature_applicant_path: applicantPath,
       signature_guardian_path: null,
       signed_at_place: input.signed_at_place.trim(),
-      signed_at_date: input.signed_at_date,
+      signed_at_date: signedAtDate,
     });
 
     if (insErr) {
@@ -324,6 +336,17 @@ export async function POST(request: Request) {
     const pdfPath = `/api/membership/applications/${appId}/pdf?token=${encodeURIComponent(downloadToken)}`;
     const pdfDownloadUrl = appBase ? `${appBase}${pdfPath}` : pdfPath;
 
+    let payment: PaymentCheckoutResult | null = null;
+    try {
+      payment = await createApplicationMembershipPayment({
+        applicationId: appId,
+        token: downloadToken,
+        paymentMethod: "bank_transfer",
+      });
+    } catch (e) {
+      console.error("[membership] Automatische Überweisung-Zahlung fehlgeschlagen:", e);
+    }
+
     return NextResponse.json({
       ok: true,
       id: appId,
@@ -333,6 +356,7 @@ export async function POST(request: Request) {
       emailWarning,
       paymentToken: downloadToken,
       feeCents: 1500,
+      payment,
     });
   } catch (e) {
     return NextResponse.json({ error: formatApiError(e) }, { status: 500 });

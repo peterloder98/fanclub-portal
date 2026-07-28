@@ -58,7 +58,7 @@ export function PaymentConfirmation({
       {result.bankDetails ? (
         <div className="rounded-xl border bg-white p-3 text-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Bankverbindung (Platzhalter)
+            Bankverbindung für die Überweisung
           </p>
           <dl className="mt-2 grid gap-1">
             <div>

@@ -37,7 +37,7 @@ const BENEFITS: Benefit[] = [
     icon: <Smartphone className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />,
     title: "Moderne Fanclub-App",
     description:
-      "Eine Community, die es so vermutlich kein zweiter Fanclub in Deutschland bietet.",
+      "Eine Community, die so vermutlich kein zweiter Fanclub in Deutschland bietet.",
     tags: [
       "Chat",
       "Umfragen",

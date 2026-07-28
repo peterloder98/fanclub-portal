@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Heart, Sparkles } from "lucide-react";
+import { Download, Heart, Sparkles } from "lucide-react";
 import { SignaturePad } from "@/components/profile/signature-pad";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -18,9 +18,10 @@ import {
   readReferrerIdFromSearchParams,
   readReferralTokenFromSearchParams,
 } from "@/lib/membership/referral-link";
-import { BirthdateSegmentInput, AppDateInput } from "@/components/ui/birthdate-segment-input";
+import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
-import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
+import { PaymentConfirmation } from "@/components/payments/payment-confirmation";
+import type { PaymentCheckoutResult } from "@/lib/payments/types";
 import {
   CLUB_BANK,
   formatApplicationPaymentReference,
@@ -30,6 +31,7 @@ import { FEATURE_BADGE_HOVER } from "@/components/membership/membership-landing"
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 import { MEMBERSHIP_FEE_EUR } from "@/lib/membership/constants";
+import { formatEur } from "@/lib/club/ledger";
 
 const SATZUNG_PDF = "/documents/satzung.pdf";
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -100,8 +102,8 @@ export function MembershipApplicationForm() {
   const [doneLastName, setDoneLastName] = useState<string | null>(null);
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
-  const [paymentToken, setPaymentToken] = useState<string | null>(null);
   const [feeCents, setFeeCents] = useState(MEMBERSHIP_FEE_EUR * 100);
+  const [paymentResult, setPaymentResult] = useState<PaymentCheckoutResult | null>(null);
 
   useEffect(() => {
     if (!form.whatsapp_opt_in || whatsappTouched) return;
@@ -211,7 +213,7 @@ export function MembershipApplicationForm() {
       return;
     }
     if (!signature) {
-      setError("Bitte mit deiner Unterschrift den gesamten Antrag bestätigen.");
+      setError("Die Unterschrift fehlt. Bitte unterschreibe im vorgesehenen Feld.");
       return;
     }
     if (!form.birthdate || !/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate)) {
@@ -251,6 +253,7 @@ export function MembershipApplicationForm() {
           privacy_accepted: true,
           statute_accepted: true,
           signature_applicant: signature,
+          signed_at_date: todayIso(),
           referrer_user_id: referrerUserId,
         }),
       });
@@ -261,8 +264,8 @@ export function MembershipApplicationForm() {
         pdfDownloadUrl?: string;
         applicantName?: string;
         emailWarning?: string | null;
-        paymentToken?: string;
         feeCents?: number;
+        payment?: PaymentCheckoutResult;
       };
       if (!res.ok || !json.ok) {
         throw new Error(typeof json.error === "string" ? json.error : "Antrag fehlgeschlagen");
@@ -274,8 +277,8 @@ export function MembershipApplicationForm() {
       setDoneLastName(form.last_name.trim() || null);
       setDoneGender(form.gender || null);
       setEmailWarning(json.emailWarning ?? null);
-      setPaymentToken(json.paymentToken ?? null);
       setFeeCents(json.feeCents ?? MEMBERSHIP_FEE_EUR * 100);
+      setPaymentResult(json.payment ?? null);
       setDone(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Antrag fehlgeschlagen");
@@ -318,26 +321,41 @@ export function MembershipApplicationForm() {
               <a
                 href={pdfDownloadUrl}
                 download={pdfFilename}
-                className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-fc-navy bg-white text-sm font-semibold text-fc-navy"
+                className="mt-1 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-fc-navy px-5 text-sm font-semibold text-white shadow-md shadow-fc-navy/20 transition hover:bg-fc-blue"
               >
-                Antrag inkl. Satzung als PDF herunterladen
+                <Download className="h-4 w-4 shrink-0" aria-hidden />
+                Antrag als PDF herunterladen
               </a>
             ) : null}
             <p className="text-xs text-slate-500">
-              Falls keine E-Mail ankommt, prüfe den Spam-Ordner oder lade das PDF hier herunter.
+              Falls keine E-Mail ankommt, prüfe den Spam-Ordner oder lade das PDF hier herunter
+              (Antrag inkl. Satzung).
             </p>
           </CardContent>
         </Card>
 
-        {applicationId && paymentToken ? (
-          <ApplicationPaymentCheckout
-            applicationId={applicationId}
-            paymentToken={paymentToken}
-            feeCents={feeCents}
-            applicantFirstName={firstName}
-            applicantLastName={doneLastName}
-            applicantGender={doneGender}
-          />
+        {paymentResult ? (
+          <PaymentConfirmation result={paymentResult} />
+        ) : applicationId ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
+            <p className="text-sm font-semibold text-amber-950">Mitgliedsbeitrag per Überweisung</p>
+            <p className="mt-2 text-sm leading-relaxed text-amber-950">
+              Der Jahresbeitrag beträgt <strong>{formatEur(feeCents)}</strong>. Bitte überweise ihn
+              mit dem Verwendungszweck unten — der Vorstand bestätigt den Eingang manuell.
+            </p>
+            <dl className="mt-3 grid gap-1 rounded-xl border border-amber-200/80 bg-white/70 px-3 py-3 text-sm text-slate-800 sm:grid-cols-[5.5rem_1fr]">
+              <dt className="text-slate-500">Empfänger</dt>
+              <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
+              <dt className="text-slate-500">IBAN</dt>
+              <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
+              <dt className="text-slate-500">BIC</dt>
+              <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
+              <dt className="text-slate-500">VWZ</dt>
+              <dd className="font-medium">
+                {formatApplicationPaymentReference(firstName ?? "", doneLastName ?? "")}
+              </dd>
+            </dl>
+          </div>
         ) : null}
       </div>
     );
@@ -380,7 +398,6 @@ export function MembershipApplicationForm() {
               value={form.gender}
               onChange={(gender) => setForm((f) => ({ ...f, gender }))}
             />
-            <span className="text-xs text-slate-500">Für persönliche Anrede (z. B. Geburtstagsgrüße)</span>
           </label>
           <label className="grid gap-1 sm:col-span-2">
             <span className="text-sm font-medium text-slate-700">Straße *</span>
@@ -510,9 +527,9 @@ export function MembershipApplicationForm() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <p className="sm:col-span-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-800">
-            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> — Zahlung nach Antragstellung
-            per Zahlungsanbieter oder Überweisung. Der Beitrag gilt immer für das laufende
-            Kalenderjahr; dein Beitritt beginnt mit dem Datum deines Antrags.
+            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> — Zahlung per
+            Banküberweisung. Der Beitrag gilt immer für das laufende Kalenderjahr; dein Beitritt
+            beginnt mit dem Datum deines Antrags.
           </p>
           <div className="sm:col-span-2 rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
             <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>
@@ -676,19 +693,22 @@ export function MembershipApplicationForm() {
                 className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
               />
             </label>
-            <AppDateInput
-              label="Datum"
-              required
-              value={form.signed_at_date}
-              onChange={(signed_at_date) => setForm((f) => ({ ...f, signed_at_date }))}
-            />
+            <div className="grid gap-1">
+              <span className="text-sm font-medium text-slate-700">Datum</span>
+              <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700">
+                {new Date(form.signed_at_date || todayIso()).toLocaleDateString("de-DE")}
+              </div>
+              <span className="text-xs text-slate-500">Wird automatisch auf heute gesetzt.</span>
+            </div>
           </div>
 
           {signature ? (
-            <p className="text-xs text-emerald-700">Unterschrift gespeichert.</p>
+            <p className="text-xs text-emerald-700">Unterschrift übernommen.</p>
           ) : null}
           <SignaturePad
             disabled={busy}
+            autoSave
+            onClear={() => setSignature(null)}
             onSave={async (blob) => {
               setSignature(await blobToDataUrl(blob));
             }}
