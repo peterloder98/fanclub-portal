@@ -188,6 +188,13 @@ function WarningsSection({ warnings, warningCount }: { warnings: MyWarningRow[];
         ))}
       </div>
       ) : null}
+      <p className="text-sm text-slate-600">
+        <Link href="/regeln" className="font-medium text-fc-blue hover:underline">
+          Fanclub-Regeln ansehen
+        </Link>
+        {" "}
+        (WhatsApp-Gruppe & App)
+      </p>
     </ProfileSection>
   );
 }

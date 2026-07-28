@@ -9,9 +9,9 @@ import { pingAppActivity } from "@/app/(app)/mitglieder/intro-actions";
  * Heartbeat bei Navigation (gedrosselt), damit App-Zugriffe sinnvoll zählen.
  */
 export function AppActivityAndOnboarding({
-  needsIntroOnboarding,
+  needsWelcomeOnboarding,
 }: {
-  needsIntroOnboarding: boolean;
+  needsWelcomeOnboarding: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -26,11 +26,12 @@ export function AppActivityAndOnboarding({
   }, [pathname]);
 
   useEffect(() => {
-    if (!needsIntroOnboarding) return;
+    if (!needsWelcomeOnboarding) return;
     if (pathname === "/willkommen" || pathname?.startsWith("/willkommen/")) return;
+    if (pathname === "/regeln" || pathname?.startsWith("/regeln/")) return;
     if (pathname === "/profile" || pathname?.startsWith("/setup-account")) return;
     router.replace("/willkommen");
-  }, [needsIntroOnboarding, pathname, router]);
+  }, [needsWelcomeOnboarding, pathname, router]);
 
   return null;
 }

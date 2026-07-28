@@ -26,7 +26,7 @@ export function AppShellClient({
         >
           <TopbarChrome />
           <MainScrollRegion>{children}</MainScrollRegion>
-          <AppActivityAndOnboarding needsIntroOnboarding={needsIntroOnboarding} />
+          <AppActivityAndOnboarding needsWelcomeOnboarding={needsIntroOnboarding} />
           <Suspense fallback={null}>
             <GroupChatWidget />
           </Suspense>

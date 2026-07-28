@@ -1,4 +1,5 @@
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
+import { communityRulesUrl } from "@/lib/community/rules";
 
 export function buildCommentWarningEmail(input: {
   firstName: string;
@@ -9,6 +10,7 @@ export function buildCommentWarningEmail(input: {
   contextKind: "post" | "poll" | "giveaway" | "chat";
   contextAuthorName: string;
   adminSignature: string;
+  rulesUrl?: string;
 }): { subject: string; text: string } {
   const isChat = input.contextKind === "chat";
   const contextLabel =
@@ -29,6 +31,7 @@ export function buildCommentWarningEmail(input: {
     : `leider mussten wir deinen Kommentar "${input.commentText}" vom ${input.commentDateLabel} unter der ${contextLabel} "${input.contextTitle}" von ${input.contextAuthorName} löschen.`;
 
   const greeting = buildEmailSalutation(input.firstName, input.gender);
+  const rulesLink = input.rulesUrl ?? communityRulesUrl();
 
   const text = [
     `${greeting},`,
@@ -37,7 +40,8 @@ export function buildCommentWarningEmail(input: {
     "",
     "Hierfür müssen wir leider eine Verwarnung aussprechen.",
     "",
-    "Bitte halte dich zukünftig an die Gruppenregeln für ein angenehmes Miteinander und den Spaß am gemeinsamen Fanclub :-)",
+    "Bitte halte dich künftig an unsere Fanclub-Regeln (WhatsApp-Gruppe und Fanclub App):",
+    rulesLink,
     "",
     input.adminSignature.trim(),
   ].join("\n");

@@ -151,9 +151,11 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.referralCompleted:
     case NOTIFICATION_KINDS.membershipApproved:
     case NOTIFICATION_KINDS.paymentReceived:
-    case NOTIFICATION_KINDS.warningIssued:
-    case NOTIFICATION_KINDS.warningRevoked:
       return null;
+    case NOTIFICATION_KINDS.warningIssued:
+      return "/regeln";
+    case NOTIFICATION_KINDS.warningRevoked:
+      return "/profile";
     default:
       return n.link_url;
   }

@@ -27,12 +27,14 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     points: 0,
     rank: rankFromPoints(0),
   };
-  let needsIntroOnboarding = false;
+  let needsWelcomeOnboarding = false;
 
   if (user) {
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("first_name,last_name,role,avatar_path,updated_at,intro_onboarding_dismissed_at")
+      .select(
+        "first_name,last_name,role,avatar_path,updated_at,intro_onboarding_dismissed_at,community_rules_accepted_at",
+      )
       .eq("id", user.id)
       .maybeSingle();
 
@@ -73,18 +75,26 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         : null,
     };
 
-    needsIntroOnboarding =
+    const rulesAccepted =
+      safeProfile != null &&
+      "community_rules_accepted_at" in safeProfile &&
+      (safeProfile as { community_rules_accepted_at?: string | null }).community_rules_accepted_at !=
+        null;
+
+    const introPending =
       safeProfile != null &&
       "intro_onboarding_dismissed_at" in safeProfile &&
       (safeProfile as { intro_onboarding_dismissed_at?: string | null }).intro_onboarding_dismissed_at ==
         null;
+
+    needsWelcomeOnboarding = !rulesAccepted || introPending;
   }
 
   return (
     <div className="flex h-dvh max-h-dvh w-full max-w-full flex-col overflow-hidden lg:flex-row">
       <SkipToContent />
       <Sidebar user={sidebarUser} />
-      <AppShellClient needsIntroOnboarding={needsIntroOnboarding}>{children}</AppShellClient>
+      <AppShellClient needsIntroOnboarding={needsWelcomeOnboarding}>{children}</AppShellClient>
     </div>
   );
 }

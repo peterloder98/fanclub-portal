@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { MemberIntroOnboardingClient } from "@/components/members/member-intro-onboarding.client";
+import { WelcomeOnboardingClient } from "@/components/members/welcome-onboarding.client";
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +13,21 @@ export default async function WillkommenPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("intro_onboarding_dismissed_at")
+    .select("intro_onboarding_dismissed_at,community_rules_accepted_at")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profile?.intro_onboarding_dismissed_at) {
+  const needsRulesAcceptance = !profile?.community_rules_accepted_at;
+  const needsIntroOnboarding = !profile?.intro_onboarding_dismissed_at;
+
+  if (!needsRulesAcceptance && !needsIntroOnboarding) {
     redirect("/dashboard");
   }
 
-  return <MemberIntroOnboardingClient />;
+  return (
+    <WelcomeOnboardingClient
+      needsRulesAcceptance={needsRulesAcceptance}
+      needsIntroOnboarding={needsIntroOnboarding}
+    />
+  );
 }

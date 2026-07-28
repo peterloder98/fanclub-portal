@@ -16,6 +16,7 @@ import {
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
+import { communityRulesUrl } from "@/lib/community/rules";
 
 export type CommentWarningInput = {
   commentType: "post" | "poll" | "giveaway" | "chat";
@@ -237,9 +238,9 @@ export async function issueCommentWarning(input: CommentWarningInput) {
     userId: memberId,
     kind: NOTIFICATION_KINDS.warningIssued,
     title: "Du hast eine Verwarnung erhalten",
-    body: `„${commentSnippet}"`,
-    linkUrl: base ? `${base}/profile` : "/profile",
-    linkLabel: "Mein Profil",
+    body: `„${commentSnippet}" — Bitte unsere Fanclub-Regeln beachten.`,
+    linkUrl: base ? `${base}/regeln` : "/regeln",
+    linkLabel: "Fanclub-Regeln",
     metadata: {
       warning_id: warningRow?.id,
       warning_count: newCount,
@@ -291,6 +292,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
       contextKind,
       contextAuthorName,
       adminSignature: adminSig,
+      rulesUrl: base ? `${base}/regeln` : communityRulesUrl(),
     });
     const html = buildHtmlFromPlain(text, sigMail.htmlBlock, adminSig);
     await sendEmailViaAccount({
