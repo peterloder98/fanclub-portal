@@ -68,7 +68,6 @@ export function MembershipApplicationForm() {
     city: "",
     country: DEFAULT_COUNTRY.name,
     email: "",
-    membership_start_date: todayIso(),
     signed_at_place: "",
     signed_at_date: todayIso(),
     privacy_accepted: false,
@@ -524,7 +523,7 @@ export function MembershipApplicationForm() {
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <p className="sm:col-span-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-800">
             Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> — Zahlung nach Antragstellung
-            per Zahlungsanbieter oder Überweisung.
+            per Zahlungsanbieter oder Überweisung. Dein Beitritt beginnt mit dem Datum deines Antrags.
           </p>
           <div className="sm:col-span-2 rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
             <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>
@@ -539,15 +538,6 @@ export function MembershipApplicationForm() {
               <dd>{CLUB_BANK.reference_hint}</dd>
             </dl>
           </div>
-          <AppDateInput
-            label="Gewünschter Beginn"
-            required
-            value={form.membership_start_date}
-            onChange={(membership_start_date) =>
-              setForm((f) => ({ ...f, membership_start_date }))
-            }
-            className="sm:col-span-2"
-          />
         </CardContent>
       </Card>
 

@@ -46,7 +46,7 @@ const schema = z
     mobile_dial_code: z.string().min(1),
     mobile_number: digitsOnly.min(5),
     email: z.string().email(),
-    membership_start_date: z.string().optional(),
+    membership_start_date: z.string().optional(), // ignored — set server-side to application date
     privacy_accepted: z.literal(true),
     statute_accepted: z.literal(true),
     media_consent: z.boolean().optional(),
@@ -118,6 +118,7 @@ export async function POST(request: Request) {
   }
 
   const input = parsed.data;
+  const membershipStartDate = new Date().toISOString().slice(0, 10);
   const countryCode = normalizeMemberCountryCode(input.country_code, "");
   if (!countryCode || countryCode.length !== 2) {
     return NextResponse.json({ error: "Land ist Pflichtfeld." }, { status: 400 });
@@ -163,7 +164,7 @@ export async function POST(request: Request) {
       country: countryCode,
       country_code: countryCode,
       phone: input.phone,
-      membership_start_date: input.membership_start_date,
+      membership_start_date: membershipStartDate,
     });
 
     const signedDate = new Date(input.signed_at_date);
@@ -196,7 +197,7 @@ export async function POST(request: Request) {
       mobile_dial_code: input.mobile_dial_code.trim(),
       mobile_number: input.mobile_number.trim(),
       email: emailNorm,
-      membership_start_date: input.membership_start_date || null,
+      membership_start_date: membershipStartDate,
       privacy_accepted: true,
       statute_accepted: true,
       media_consent: Boolean(input.media_consent),
