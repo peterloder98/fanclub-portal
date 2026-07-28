@@ -15,18 +15,19 @@ export function formatSmtpError(e: unknown): string {
   if (/ECONNREFUSED|ETIMEDOUT|ESOCKET|ETIMEOUT|Connection timeout|Greeting timeout/i.test(msg)) {
     return (
       `SMTP-Server nicht erreichbar (${msg}). ` +
-      "Prüfe Host smtp.hostinger.com, Port 465, Verschlüsselung SSL. " +
-      "Manche Hoster blockieren Verbindungen von Cloud-Servern — dann SMTP-Freigabe beim Provider anfragen."
+      "Bei web.de: Host smtp.web.de, Port 587, Verschlüsselung STARTTLS. " +
+      "Außerdem in den web.de-Einstellungen POP3/IMAP/SMTP-Zugriff freischalten."
     );
   }
 
   if (/Invalid login|authentication|535|534/i.test(msg)) {
     return (
-      "SMTP-Anmeldung abgelehnt (535). Typische Ursachen:\n" +
-      "• Falsches Passwort — bitte das Postfach-Passwort aus dem Hoster-Panel (z. B. Hostinger E-Mail-Konten), nicht das Login-Passwort der Website.\n" +
-      "• Login muss die vollständige E-Mail-Adresse sein (z. B. fanclub@deine-domain.de).\n" +
-      "• Bei Hostinger meist: Host smtp.hostinger.com, Port 465, Verschlüsselung SSL.\n" +
-      "• Konto bearbeiten, Passwort erneut eintragen und speichern, danach „Test“."
+      "SMTP-Anmeldung abgelehnt (535). Authentifizierung (AUTH LOGIN) ist in der App immer aktiv.\n" +
+      "Bei web.de bitte prüfen:\n" +
+      "• In web.de unter Einstellungen → E-Mail-Programme: POP3/IMAP/SMTP-Zugriff einschalten (sonst schlägt Login fehl).\n" +
+      "• Host smtp.web.de, Port 587, Verschlüsselung STARTTLS (oder Port 465 + SSL).\n" +
+      "• Login = vollständige Adresse (…@web.de), Passwort = dein web.de-Passwort.\n" +
+      "• Konto bearbeiten, Passwort erneut speichern, danach „Test“."
     );
   }
 
