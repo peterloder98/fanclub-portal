@@ -11,6 +11,7 @@ const templatePath = path.join(
 /** Keep in sync with src/lib/membership/membershipPdfCoordinates.ts */
 const fields = {
   page1: [
+    { key: "membershipNumber", x: 200, y: 756, text: "1234" },
     { key: "fullName", x: 72, y: 593, text: "Max Mustermann" },
     { key: "birthdate", x: 72, y: 549, text: "01.01.1990" },
     { key: "street", x: 72, y: 505, text: "Musterstraße 1" },
@@ -41,7 +42,7 @@ async function main() {
   for (const f of fields.page1) {
     if (f.text) {
       pages[0].drawText(f.text, { x: f.x, y: f.y, size: 11, font, color: rgb(0.1, 0.2, 0.6) });
-    } else {
+    } else if (f.w) {
       pages[0].drawRectangle({
         x: f.x,
         y: f.y,
@@ -55,7 +56,7 @@ async function main() {
   for (const f of fields.page2) {
     if (f.text) {
       pages[1].drawText(f.text, { x: f.x, y: f.y, size: 11, font, color: rgb(0.1, 0.2, 0.6) });
-    } else {
+    } else if (f.w) {
       pages[1].drawRectangle({
         x: f.x,
         y: f.y,

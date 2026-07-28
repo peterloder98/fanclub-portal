@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { approveMembershipApplication } from "@/app/(app)/admin/members/applications/actions";
 import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
+import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 import { PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
 import { genderDisplayLabel } from "@/lib/person/gender";
@@ -222,7 +223,10 @@ export function ApplicationDetailPanels({
         </CardContent>
       </Card>
 
-      <MembershipPdfPanel applicationId={app.id} />
+      <MembershipPdfPanel
+        applicationId={app.id}
+        downloadFilename={membershipApplicationPdfFilename(app.first_name, app.last_name)}
+      />
     </div>
   );
 }

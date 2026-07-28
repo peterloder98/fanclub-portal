@@ -135,11 +135,13 @@ export async function loadApplicationPdfBytes(applicationId: string) {
     .eq("id", applicationId)
     .maybeSingle();
 
-  const path = row?.application_pdf_path ?? cachedPdfPath(applicationId);
-  const { data: cached, error: dlErr } = await admin.storage.from(BUCKET).download(path);
-
-  if (!dlErr && cached) {
-    return new Uint8Array(await cached.arrayBuffer());
+  if (row?.application_pdf_path) {
+    const { data: file, error } = await admin.storage
+      .from(BUCKET)
+      .download(row.application_pdf_path);
+    if (!error && file) {
+      return new Uint8Array(await file.arrayBuffer());
+    }
   }
 
   const bytes = await buildPdfForApplication(applicationId);

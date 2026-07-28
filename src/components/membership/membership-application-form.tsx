@@ -16,14 +16,18 @@ import { isValidPostalCode, postalCodeErrorMessage } from "@/lib/postal-code";
 import {
   MEMBERSHIP_REFERRER_STORAGE_KEY,
   readReferrerIdFromSearchParams,
+  readReferralTokenFromSearchParams,
 } from "@/lib/membership/referral-link";
 import { BirthdateSegmentInput, AppDateInput } from "@/components/ui/birthdate-segment-input";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { ApplicationPaymentCheckout } from "@/components/payments/application-payment-checkout";
 import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
+import { buildEmailSalutation } from "@/lib/email/salutation-block";
+import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 
 const MEMBERSHIP_FEE_EUR = 15;
 const SATZUNG_PDF = "/documents/satzung.pdf";
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 function SatzungDownloadLink({ children }: { children: ReactNode }) {
   return (
@@ -65,9 +69,9 @@ export function MembershipApplicationForm() {
     city: "",
     country: DEFAULT_COUNTRY.name,
     email: "",
-    membership_start_date: "",
+    membership_start_date: todayIso(),
     signed_at_place: "",
-    signed_at_date: new Date().toISOString().slice(0, 10),
+    signed_at_date: todayIso(),
     privacy_accepted: false,
     statute_accepted: false,
     media_consent: false,
@@ -87,6 +91,9 @@ export function MembershipApplicationForm() {
   const [done, setDone] = useState(false);
   const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
   const [doneName, setDoneName] = useState<string | null>(null);
+  const [doneGender, setDoneGender] = useState<string | null>(null);
+  const [doneFirstName, setDoneFirstName] = useState<string | null>(null);
+  const [doneLastName, setDoneLastName] = useState<string | null>(null);
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [paymentToken, setPaymentToken] = useState<string | null>(null);
@@ -99,7 +106,8 @@ export function MembershipApplicationForm() {
   }, [form.whatsapp_opt_in, mobileDial, mobileNumber, whatsappTouched]);
 
   useEffect(() => {
-    const fromUrl = readReferrerIdFromSearchParams(window.location.search);
+    const search = window.location.search;
+    const fromUrl = readReferrerIdFromSearchParams(search);
     if (fromUrl) {
       try {
         sessionStorage.setItem(MEMBERSHIP_REFERRER_STORAGE_KEY, fromUrl);
@@ -107,6 +115,41 @@ export function MembershipApplicationForm() {
         /* ignore */
       }
     }
+
+    const inviteToken = readReferralTokenFromSearchParams(search);
+    if (!inviteToken) return;
+
+    void fetch(`/api/membership/invite-prefill?token=${encodeURIComponent(inviteToken)}`)
+      .then((r) => r.json())
+      .then(
+        (json: {
+          ok?: boolean;
+          referrerUserId?: string;
+          email?: string;
+          firstName?: string;
+          lastName?: string;
+          gender?: string | null;
+        }) => {
+          if (!json.ok) return;
+          if (json.referrerUserId) {
+            try {
+              sessionStorage.setItem(MEMBERSHIP_REFERRER_STORAGE_KEY, json.referrerUserId);
+            } catch {
+              /* ignore */
+            }
+          }
+          setForm((f) => ({
+            ...f,
+            ...(json.firstName ? { first_name: json.firstName } : {}),
+            ...(json.lastName ? { last_name: json.lastName } : {}),
+            ...(json.email ? { email: json.email } : {}),
+            ...(json.gender === "m" || json.gender === "w" ? { gender: json.gender } : {}),
+          }));
+        },
+      )
+      .catch(() => {
+        /* ignore */
+      });
   }, []);
 
   const mobileFull = formatFullPhone(mobileDial, mobileNumber);
@@ -223,6 +266,9 @@ export function MembershipApplicationForm() {
       setApplicationId(json.id ?? null);
       setPdfDownloadUrl(json.pdfDownloadUrl ?? null);
       setDoneName(json.applicantName ?? null);
+      setDoneFirstName(form.first_name.trim() || null);
+      setDoneLastName(form.last_name.trim() || null);
+      setDoneGender(form.gender || null);
       setEmailWarning(json.emailWarning ?? null);
       setPaymentToken(json.paymentToken ?? null);
       setFeeCents(json.feeCents ?? MEMBERSHIP_FEE_EUR * 100);
@@ -235,7 +281,14 @@ export function MembershipApplicationForm() {
   }
 
   if (done) {
-    const firstName = doneName?.split(" ")[0] ?? null;
+    const firstName = doneFirstName ?? doneName?.split(" ")[0] ?? null;
+    const salutation = firstName
+      ? buildEmailSalutation(firstName, doneGender)
+      : null;
+    const pdfFilename =
+      doneFirstName && doneLastName
+        ? membershipApplicationPdfFilename(doneFirstName, doneLastName)
+        : "Mitgliedsantrag.pdf";
     return (
       <div className="grid gap-4">
         <Card>
@@ -244,7 +297,11 @@ export function MembershipApplicationForm() {
           </CardHeader>
           <CardContent className="grid gap-3 text-sm text-slate-700">
             <p>
-              Vielen Dank{firstName ? `, ${firstName}` : ""}! Dein Antrag ist bei uns eingegangen.
+              {salutation
+                ? `${salutation}, vielen Dank! Dein Antrag ist bei uns eingegangen.`
+                : "Vielen Dank! Dein Antrag ist bei uns eingegangen."}
+            </p>
+            <p>
               Du erhältst in Kürze eine Bestätigungs-E-Mail mit deinem Antrag und der Satzung als
               PDF-Anhang. Der Vorstand wurde ebenfalls benachrichtigt.
             </p>
@@ -256,7 +313,7 @@ export function MembershipApplicationForm() {
             {pdfDownloadUrl ? (
               <a
                 href={pdfDownloadUrl}
-                download
+                download={pdfFilename}
                 className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-fc-navy bg-white text-sm font-semibold text-fc-navy"
               >
                 Antrag inkl. Satzung als PDF herunterladen
@@ -274,6 +331,7 @@ export function MembershipApplicationForm() {
             paymentToken={paymentToken}
             feeCents={feeCents}
             applicantFirstName={firstName}
+            applicantGender={doneGender}
           />
         ) : null}
       </div>
@@ -464,6 +522,7 @@ export function MembershipApplicationForm() {
           </p>
           <AppDateInput
             label="Gewünschter Beginn"
+            required
             value={form.membership_start_date}
             onChange={(membership_start_date) =>
               setForm((f) => ({ ...f, membership_start_date }))

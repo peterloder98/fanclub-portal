@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { loadApplicationPdfBytes } from "@/lib/membership/application-pdf-service";
 import { verifyMembershipDownloadToken } from "@/lib/membership/download-token";
+import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(
@@ -36,8 +38,18 @@ export async function GET(
   }
 
   try {
+    const admin = createSupabaseAdminClient();
+    const { data: appRow } = await admin
+      .from("membership_applications")
+      .select("first_name,last_name")
+      .eq("id", id)
+      .maybeSingle();
+
     const pdf = await loadApplicationPdfBytes(id);
-    const filename = `Mitgliedsantrag_${id.slice(0, 8)}.pdf`;
+    const filename = membershipApplicationPdfFilename(
+      appRow?.first_name ?? "",
+      appRow?.last_name ?? "",
+    );
     const disposition = forceDownload
       ? `attachment; filename="${filename}"`
       : `inline; filename="${filename}"`;

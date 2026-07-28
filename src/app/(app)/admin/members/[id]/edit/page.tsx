@@ -1,5 +1,6 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
+import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -63,7 +64,7 @@ export default async function AdminMemberEditPage({
 
   const { data: application } = await admin
     .from("membership_applications")
-    .select("id")
+    .select("id,first_name,last_name")
     .eq("user_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -259,7 +260,13 @@ export default async function AdminMemberEditPage({
           </Card>
 
           {application?.id ? (
-            <MembershipPdfPanel applicationId={application.id} />
+            <MembershipPdfPanel
+              applicationId={application.id}
+              downloadFilename={membershipApplicationPdfFilename(
+                application.first_name,
+                application.last_name,
+              )}
+            />
           ) : (
             <Card>
               <CardContent className="py-8 text-sm text-slate-500">

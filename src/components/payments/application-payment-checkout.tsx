@@ -7,6 +7,8 @@ import { PaymentMethodPicker } from "@/components/payments/payment-method-picker
 import { PaymentConfirmation } from "@/components/payments/payment-confirmation";
 import { PAYMENT_METHOD_LABELS } from "@/lib/payments/labels";
 import type { PaymentCheckoutResult, PaymentMethod, PaymentSettingsRow } from "@/lib/payments/types";
+import { buildEmailSalutation } from "@/lib/email/salutation-block";
+import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
 
 function payButtonLabel(method: PaymentMethod | null, pending: boolean) {
   if (pending) return "Wird angelegt…";
@@ -21,11 +23,13 @@ export function ApplicationPaymentCheckout({
   paymentToken,
   feeCents,
   applicantFirstName,
+  applicantGender,
 }: {
   applicationId: string;
   paymentToken: string;
   feeCents: number;
   applicantFirstName?: string | null;
+  applicantGender?: string | null;
 }) {
   const [methods, setMethods] = useState<PaymentSettingsRow[]>([]);
   const [method, setMethod] = useState<PaymentMethod | null>(null);
@@ -83,18 +87,44 @@ export function ApplicationPaymentCheckout({
     );
   }
 
+  const salutation =
+    applicantFirstName?.trim()
+      ? buildEmailSalutation(applicantFirstName, applicantGender)
+      : null;
+
   return (
     <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-amber-950">
         <Wallet className="h-4 w-4" />
         Mitgliedsbeitrag bezahlen
       </div>
-      <p className="mt-2 text-sm text-amber-950">
-        {applicantFirstName ? `${applicantFirstName}, ` : ""}
-        der Jahresbeitrag beträgt{" "}
-        <strong>{formatEur(feeCents)}</strong>. Wähle eine Zahlungsart — der Betrag wird zunächst
-        als offener Posten erfasst und vom Vorstand bestätigt.
-      </p>
+      <div className="mt-2 space-y-2 text-sm leading-relaxed text-amber-950">
+        <p>
+          {salutation ? `${salutation},` : "Hallo,"} der Jahresbeitrag für den Anni Perka Fanclub
+          beträgt <strong>{formatEur(feeCents)}</strong>.
+        </p>
+        <p>
+          Wähle bitte eine Zahlungsart aus — der Beitrag wird erst nach Eingang vom Vorstand
+          bestätigt.
+        </p>
+        <p>
+          Unmittelbar danach erfolgt die aktive Aufnahme in den Fanclub sowie die Einladung in die
+          Fanclub App.
+        </p>
+      </div>
+      <div className="mt-3 rounded-xl border border-amber-200/80 bg-white/70 px-3 py-3 text-sm text-slate-800">
+        <p className="font-semibold text-fc-navy">Banküberweisung</p>
+        <dl className="mt-2 grid gap-1 sm:grid-cols-[5.5rem_1fr]">
+          <dt className="text-slate-500">Empfänger</dt>
+          <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
+          <dt className="text-slate-500">IBAN</dt>
+          <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
+          <dt className="text-slate-500">BIC</dt>
+          <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
+          <dt className="text-slate-500">VWZ</dt>
+          <dd>{CLUB_BANK.reference_hint}</dd>
+        </dl>
+      </div>
 
       {methods.length ? (
         <div className="mt-4">

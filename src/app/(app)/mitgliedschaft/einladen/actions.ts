@@ -1,10 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
 import {
-  MEMBER_REFERRAL_SUBJECT,
+  memberReferralSubject,
   composeMemberReferralBody,
+  buildMemberReferralHtml,
 } from "@/lib/email/member-referral-template";
 import { getMembershipApplicationFormUrlForReferrer } from "@/lib/membership/referral-link";
 import { awardMembershipReferralPoints } from "@/lib/points/award-membership-referral";
@@ -32,11 +32,11 @@ export async function getMemberReferralPrefillAction() {
   const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id);
 
   return {
-    subject: MEMBER_REFERRAL_SUBJECT,
+    subject: memberReferralSubject(senderName),
     applicationLink,
     senderName,
     body: composeMemberReferralBody({
-      recipientName: "",
+      recipientFirstName: "",
       senderName: senderName || "…",
       applicationLink,
     }),
@@ -45,7 +45,9 @@ export async function getMemberReferralPrefillAction() {
 
 export async function sendMemberReferralEmailAction(input: {
   to: string;
-  recipientName: string;
+  recipientFirstName: string;
+  recipientLastName: string;
+  recipientGender: string;
   senderName: string;
   subject: string;
   body: string;
@@ -53,18 +55,34 @@ export async function sendMemberReferralEmailAction(input: {
   const { user } = await requireMemberAction();
 
   const to = input.to.trim();
-  const recipientName = input.recipientName.trim();
+  const recipientFirstName = input.recipientFirstName.trim();
+  const recipientLastName = input.recipientLastName.trim();
+  const recipientGender = input.recipientGender.trim();
   const senderName = input.senderName.trim();
   if (!to || !to.includes("@")) {
     throw new Error("Bitte eine gültige E-Mail-Adresse eingeben.");
   }
-  if (!recipientName) throw new Error("Bitte den Namen der Empfängerin / des Empfängers eingeben.");
+  if (!recipientFirstName) throw new Error("Bitte den Vornamen der Empfängerin / des Empfängers eingeben.");
+  if (!recipientLastName) throw new Error("Bitte den Nachnamen der Empfängerin / des Empfängers eingeben.");
+  if (recipientGender !== "m" && recipientGender !== "w") {
+    throw new Error("Bitte Geschlecht wählen (für Anrede).");
+  }
   if (!senderName) throw new Error("Bitte deinen Namen als Absender/in eingeben.");
 
-  const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id);
-  const subject = MEMBER_REFERRAL_SUBJECT;
-  const text = composeMemberReferralBody({ recipientName, senderName, applicationLink });
-  const html = buildHtmlFromPlain(text, "");
+  const { awarded, points, referralToken } = await awardMembershipReferralPoints(user.id, to, {
+    firstName: recipientFirstName,
+    lastName: recipientLastName,
+    gender: recipientGender,
+  });
+
+  const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id, referralToken);
+  const subject = memberReferralSubject(senderName);
+  const text = composeMemberReferralBody({
+    recipientFirstName,
+    senderName,
+    applicationLink,
+  });
+  const html = buildMemberReferralHtml(text);
 
   const result = await sendEmailViaAccount({ to, subject, text, html });
 
@@ -76,8 +94,6 @@ export async function sendMemberReferralEmailAction(input: {
     }
     throw new Error(result.error ?? "E-Mail konnte nicht gesendet werden (SMTP prüfen).");
   }
-
-  const { awarded, points } = await awardMembershipReferralPoints(user.id, to);
 
   return { ok: true as const, pointsAwarded: awarded ? points : 0 };
 }

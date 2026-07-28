@@ -15,6 +15,7 @@ import { composeMemberReferralBody } from "@/lib/email/member-referral-template"
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 import { EmailDialogShell } from "@/components/ui/email-dialog-shell";
+import { GenderSelect } from "@/components/ui/gender-select";
 
 type Variant = "admin" | "member";
 
@@ -31,7 +32,9 @@ export function MembershipInviteEmailDialog({
 }) {
   const [pending, startTransition] = useTransition();
   const [mailTo, setMailTo] = useState("");
-  const [recipientName, setRecipientName] = useState("");
+  const [recipientFirstName, setRecipientFirstName] = useState("");
+  const [recipientLastName, setRecipientLastName] = useState("");
+  const [recipientGender, setRecipientGender] = useState("");
   const [senderName, setSenderName] = useState("");
   const [greetingName, setGreetingName] = useState("");
   const [heyNameInBody, setHeyNameInBody] = useState("du");
@@ -60,7 +63,7 @@ export function MembershipInviteEmailDialog({
     setSignatureTexts(draft.signatureTexts);
     setActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
     setApplicationLink(draft.applicationUrl);
-    const used = (name?.trim() || "du");
+    const used = name?.trim() || "du";
     setHeyNameInBody(used);
     setGreetingName(name ?? "");
   }, []);
@@ -71,7 +74,9 @@ export function MembershipInviteEmailDialog({
     setApplicationLink(prefill.applicationLink);
     setSenderName(prefill.senderName);
     setMailBody(prefill.body);
-    setRecipientName("");
+    setRecipientFirstName("");
+    setRecipientLastName("");
+    setRecipientGender("");
   }, []);
 
   useEffect(() => {
@@ -101,24 +106,29 @@ export function MembershipInviteEmailDialog({
     setHeyNameInBody(next);
   }
 
-  function syncMemberBody(nextRecipient: string, nextSender: string) {
+  function syncMemberBody(first: string, last: string, sender: string) {
     setMailBody(
       composeMemberReferralBody({
-        recipientName: nextRecipient,
-        senderName: nextSender,
+        recipientFirstName: first,
+        senderName: sender,
         applicationLink,
       }),
     );
   }
 
-  function onMemberRecipientChange(value: string) {
-    setRecipientName(value);
-    syncMemberBody(value, senderName);
+  function onMemberRecipientFirstChange(value: string) {
+    setRecipientFirstName(value);
+    syncMemberBody(value, recipientLastName, senderName);
+  }
+
+  function onMemberRecipientLastChange(value: string) {
+    setRecipientLastName(value);
+    syncMemberBody(recipientFirstName, value, senderName);
   }
 
   function onMemberSenderChange(value: string) {
     setSenderName(value);
-    syncMemberBody(recipientName, value);
+    syncMemberBody(recipientFirstName, recipientLastName, value);
   }
 
   function onSignatureChange(id: string) {
@@ -132,7 +142,13 @@ export function MembershipInviteEmailDialog({
 
   const canSend = isAdmin
     ? Boolean(mailTo.trim() && signatureId)
-    : Boolean(mailTo.trim() && recipientName.trim() && senderName.trim());
+    : Boolean(
+        mailTo.trim() &&
+          recipientFirstName.trim() &&
+          recipientLastName.trim() &&
+          recipientGender &&
+          senderName.trim(),
+      );
 
   if (!open) return null;
 
@@ -158,7 +174,9 @@ export function MembershipInviteEmailDialog({
             } else {
               const result = await sendMemberReferralEmailAction({
                 to: mailTo,
-                recipientName,
+                recipientFirstName,
+                recipientLastName,
+                recipientGender,
                 senderName,
                 subject: mailSubject,
                 body: mailBody,
@@ -204,105 +222,124 @@ export function MembershipInviteEmailDialog({
         </div>
       ) : null}
 
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-slate-700">E-Mail Empfänger/in *</span>
+      <label className="grid gap-1">
+        <span className="text-sm font-medium text-slate-700">E-Mail Empfänger/in *</span>
+        <input
+          type="email"
+          value={mailTo}
+          onChange={(e) => setMailTo(e.target.value)}
+          className="h-11 rounded-xl border px-3 text-sm"
+          placeholder="name@beispiel.de"
+        />
+      </label>
+
+      {isAdmin ? (
+        <label className="mt-3 grid gap-1">
+          <span className="text-sm font-medium text-slate-700">Anrede (nach „Hey“)</span>
           <input
-            type="email"
-            value={mailTo}
-            onChange={(e) => setMailTo(e.target.value)}
+            value={greetingName}
+            onChange={(e) => onAdminGreetingChange(e.target.value)}
             className="h-11 rounded-xl border px-3 text-sm"
-            placeholder="name@beispiel.de"
+            placeholder="z. B. Vorname — leer = „du“"
           />
         </label>
-
-        {isAdmin ? (
+      ) : (
+        <>
           <label className="mt-3 grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Anrede (nach „Hey“)</span>
+            <span className="text-sm font-medium text-slate-700">Vorname Empfänger/in *</span>
             <input
-              value={greetingName}
-              onChange={(e) => onAdminGreetingChange(e.target.value)}
+              value={recipientFirstName}
+              onChange={(e) => onMemberRecipientFirstChange(e.target.value)}
               className="h-11 rounded-xl border px-3 text-sm"
-              placeholder="z. B. Vorname — leer = „du“"
+              placeholder="Vorname"
+              required
             />
           </label>
-        ) : (
-          <>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Name Empfänger/in *</span>
-              <input
-                value={recipientName}
-                onChange={(e) => onMemberRecipientChange(e.target.value)}
-                className="h-11 rounded-xl border px-3 text-sm"
-                placeholder="Vorname oder Name"
-                required
-              />
-            </label>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Dein Name (Absender) *</span>
-              <input
-                value={senderName}
-                onChange={(e) => onMemberSenderChange(e.target.value)}
-                className="h-11 rounded-xl border px-3 text-sm"
-                placeholder="Wie du unterschreibst"
-                required
-              />
-            </label>
-          </>
-        )}
-
-        {isAdmin ? (
           <label className="mt-3 grid gap-1">
-            <span className="text-sm font-medium text-slate-700">Signatur</span>
-            <select
-              value={signatureId}
-              disabled={loading}
-              onChange={(e) => onSignatureChange(e.target.value)}
+            <span className="text-sm font-medium text-slate-700">Nachname Empfänger/in *</span>
+            <input
+              value={recipientLastName}
+              onChange={(e) => onMemberRecipientLastChange(e.target.value)}
               className="h-11 rounded-xl border px-3 text-sm"
-            >
-              {signatures.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Nachname"
+              required
+            />
           </label>
-        ) : null}
+          <label className="mt-3 grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Geschlecht Empfänger/in *</span>
+            <GenderSelect
+              binaryOnly
+              value={recipientGender}
+              onChange={setRecipientGender}
+            />
+            <span className="text-xs text-slate-500">Für Anrede im Antrag</span>
+          </label>
+          <label className="mt-3 grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Dein Name (Absender) *</span>
+            <input
+              value={senderName}
+              onChange={(e) => onMemberSenderChange(e.target.value)}
+              className="h-11 rounded-xl border px-3 text-sm"
+              placeholder="Vorname Nachname"
+              required
+            />
+          </label>
+        </>
+      )}
 
-        {isAdmin ? (
-          <>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Betreff</span>
-              <input
-                value={mailSubject}
-                onChange={(e) => setMailSubject(e.target.value)}
-                className="h-11 rounded-xl border px-3 text-sm"
-              />
-            </label>
-            <label className="mt-3 grid gap-1">
-              <span className="text-sm font-medium text-slate-700">Nachricht</span>
-              <textarea
-                value={mailBody}
-                onChange={(e) => setMailBody(e.target.value)}
-                rows={12}
-                disabled={loading}
-                className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
-              />
-            </label>
-          </>
-        ) : (
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              E-Mail-Vorschau (fest)
-            </p>
-            <p className="mt-2 text-sm font-medium text-slate-800">Betreff: {mailSubject}</p>
-            <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-700">
-              {mailBody}
-            </pre>
-            <p className="mt-2 text-xs text-slate-500">
-              Der Text wird automatisch aus deinen Angaben erzeugt und kann nicht bearbeitet werden.
-            </p>
-          </div>
-        )}
+      {isAdmin ? (
+        <label className="mt-3 grid gap-1">
+          <span className="text-sm font-medium text-slate-700">Signatur</span>
+          <select
+            value={signatureId}
+            disabled={loading}
+            onChange={(e) => onSignatureChange(e.target.value)}
+            className="h-11 rounded-xl border px-3 text-sm"
+          >
+            {signatures.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {isAdmin ? (
+        <>
+          <label className="mt-3 grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Betreff</span>
+            <input
+              value={mailSubject}
+              onChange={(e) => setMailSubject(e.target.value)}
+              className="h-11 rounded-xl border px-3 text-sm"
+            />
+          </label>
+          <label className="mt-3 grid gap-1">
+            <span className="text-sm font-medium text-slate-700">Nachricht</span>
+            <textarea
+              value={mailBody}
+              onChange={(e) => setMailBody(e.target.value)}
+              rows={12}
+              disabled={loading}
+              className="rounded-xl border px-3 py-2 text-sm disabled:opacity-60"
+            />
+          </label>
+        </>
+      ) : (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            E-Mail-Vorschau (fest)
+          </p>
+          <p className="mt-2 text-sm font-medium text-slate-800">Betreff: {mailSubject}</p>
+          <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-700">
+            {mailBody}
+          </pre>
+          <p className="mt-2 text-xs text-slate-500">
+            Der Text wird automatisch aus deinen Angaben erzeugt und kann nicht bearbeitet werden.
+          </p>
+        </div>
+      )}
     </EmailDialogShell>
   );
 }

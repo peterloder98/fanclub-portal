@@ -187,6 +187,9 @@ export async function generateMembershipPdf(
     drawFieldText(page1, font, applicationData.facebook, coords.page1.facebook);
   }
 
+  const signedLine = `${applicationData.signed_at_place}, ${formatDE(applicationData.signed_at_date)}`;
+  drawFieldText(page1, font, signedLine, coords.page1.signedPlaceDate);
+
   const startDate = applicationData.membership_start_date
     ? formatDE(applicationData.membership_start_date)
     : formatDE(applicationData.signed_at_date);
@@ -224,10 +227,10 @@ export async function generateMembershipPdf(
     drawFieldText(page2, font, formatWhatsappMobile(applicationData), coords.page2.whatsappMobile);
   }
 
-  const signedLine = `${applicationData.signed_at_place}, ${formatDE(applicationData.signed_at_date)}`;
   drawFieldText(page2, font, signedLine, coords.page2.signedPlaceDate);
 
   if (signaturePng?.length) {
+    await drawSignature(doc, page1, signaturePng, coords.page1.signature);
     await drawSignature(doc, page2, signaturePng, coords.page2.signature);
   }
 

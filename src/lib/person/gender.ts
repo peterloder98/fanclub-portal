@@ -8,6 +8,8 @@ export const GENDER_OPTIONS: { value: NormalizedGender; label: string }[] = [
   { value: "d", label: "Divers / keine Angabe" },
 ];
 
+export const GENDER_OPTIONS_BINARY = GENDER_OPTIONS.filter((o) => o.value !== "d");
+
 export function normalizeGender(raw: string | null | undefined): NormalizedGender {
   const g = (raw ?? "").trim().toLowerCase();
   if (["m", "männlich", "male", "mann", "herr", "männer"].includes(g)) return "m";
