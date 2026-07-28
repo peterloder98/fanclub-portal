@@ -40,6 +40,35 @@ const TYPING_IDLE_MS = 2800;
 /** Presence-Updates lösen kurz Leave+Join aus — Removals verzögern, damit die Online-Zahl nicht flackert. */
 const ONLINE_LEAVE_GRACE_MS = 2500;
 const TYPING_BROADCAST_EVENT = "typing";
+const RECENT_BLING_MAX = 64;
+
+/** Prozessweit: Ton pro Nachricht-ID nur einmal (auch bei mehreren Hook-Instanzen / Reconnect). */
+const recentBlingMessageIds = new Set<string>();
+
+function chatMessageTimeMs(iso: string): number {
+  const ms = Date.parse(iso);
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function maxChatTimestamp(
+  isoA: string | null | undefined,
+  isoB: string | null | undefined,
+): string {
+  const a = isoA ? chatMessageTimeMs(isoA) : 0;
+  const b = isoB ? chatMessageTimeMs(isoB) : 0;
+  if (a >= b) return isoA ?? isoB ?? new Date().toISOString();
+  return isoB ?? isoA ?? new Date().toISOString();
+}
+
+function markBlingPlayed(messageId: string): boolean {
+  if (recentBlingMessageIds.has(messageId)) return false;
+  recentBlingMessageIds.add(messageId);
+  if (recentBlingMessageIds.size > RECENT_BLING_MAX) {
+    const oldest = recentBlingMessageIds.values().next().value;
+    if (oldest) recentBlingMessageIds.delete(oldest);
+  }
+  return true;
+}
 
 type Options = {
   /** When false, skip load/realtime/presence (e.g. dock hidden on /chat). */
@@ -66,8 +95,8 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const knownIdsRef = useRef<Set<string>>(new Set());
   /** Nach erstem Laden: nur Nachrichten danach akustisch melden (kein Fehlalarm bei Refresh/Reconnect). */
   const soundBaselineAtRef = useRef<string | null>(null);
-  const lastBlingMessageIdRef = useRef<string | null>(null);
   const soundReadyRef = useRef(false);
+  const messagesRef = useRef<ChatMessage[]>([]);
   const presenceChannelRef = useRef<RealtimeChannel | null>(null);
   const meProfileRef = useRef<ChatAuthor | null>(null);
   const userIdRef = useRef<string | null>(null);
@@ -84,12 +113,15 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const onlineCount = Math.max(onlineMembers.length ? onlineMembers.length : 0, meProfile ? 1 : 0);
 
   const shouldPlaySoundForMessage = useCallback(
-    (authorId: string, createdAt: string) => {
+    (messageId: string, authorId: string, createdAt: string) => {
       const uid = userIdRef.current;
       if (!uid || !soundReadyRef.current) return false;
       if (authorId === uid) return false;
+      if (recentBlingMessageIds.has(messageId)) return false;
       const baseline = soundBaselineAtRef.current;
-      if (baseline && createdAt <= baseline) return false;
+      if (baseline && chatMessageTimeMs(createdAt) <= chatMessageTimeMs(baseline)) {
+        return false;
+      }
       return true;
     },
     [],
@@ -97,13 +129,28 @@ export function useGroupChat({ enabled = true }: Options = {}) {
 
   const maybePlaySoundForMessage = useCallback(
     (messageId: string, authorId: string, createdAt: string) => {
-      if (!shouldPlaySoundForMessage(authorId, createdAt)) return;
-      if (lastBlingMessageIdRef.current === messageId) return;
-      lastBlingMessageIdRef.current = messageId;
+      if (!shouldPlaySoundForMessage(messageId, authorId, createdAt)) return;
+      if (!markBlingPlayed(messageId)) return;
+      knownIdsRef.current.add(messageId);
       playChatBling();
     },
     [shouldPlaySoundForMessage],
   );
+
+  const resyncSoundAfterTabReturn = useCallback(() => {
+    if (!soundReadyRef.current) return;
+    const list = messagesRef.current;
+    if (!list.length) return;
+    soundBaselineAtRef.current = maxChatTimestamp(
+      soundBaselineAtRef.current,
+      list[0]?.created_at,
+    );
+    for (const m of list) knownIdsRef.current.add(m.id);
+  }, []);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   useEffect(() => {
     meProfileRef.current = meProfile;
@@ -186,6 +233,22 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     setMuted(isChatMuted());
     installChatAudioUnlock();
   }, []);
+
+  /** Tab-/App-Wechsel: Realtime-Reconnect darf alte INSERTs nicht erneut belingen. */
+  useEffect(() => {
+    const onReturn = () => {
+      if (document.visibilityState !== "visible") return;
+      resyncSoundAfterTabReturn();
+    };
+    document.addEventListener("visibilitychange", onReturn);
+    window.addEventListener("focus", onReturn);
+    window.addEventListener("pageshow", onReturn);
+    return () => {
+      document.removeEventListener("visibilitychange", onReturn);
+      window.removeEventListener("focus", onReturn);
+      window.removeEventListener("pageshow", onReturn);
+    };
+  }, [resyncSoundAfterTabReturn]);
 
   useEffect(() => {
     if (!cooldownActive) return;
@@ -303,6 +366,8 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       soundBaselineAtRef.current =
         hydrated[0]?.created_at ?? new Date().toISOString();
       soundReadyRef.current = true;
+    } else {
+      for (const m of hydrated) knownIdsRef.current.add(m.id);
     }
     setLoaded(true);
   }, [enabled, hydrate]);
@@ -330,13 +395,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "group_chat_messages" },
-        (payload) => {
-          const row = payload.new as GroupChatMessageRow;
-          if (row?.id && row.author_id && row.created_at) {
-            maybePlaySoundForMessage(row.id, row.author_id, row.created_at);
-          }
-          void refresh();
-        },
+        () => void refresh(),
       )
       .on(
         "postgres_changes",
@@ -348,7 +407,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     return () => {
       void supabase.removeChannel(messagesChannel);
     };
-  }, [enabled, userId, refresh, maybePlaySoundForMessage]);
+  }, [enabled, userId, refresh]);
 
   useEffect(() => {
     if (!enabled || !userId || !meProfile) return;
@@ -527,12 +586,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
       const next = [{ ...result.message, author }, ...without].slice(0, GROUP_CHAT_PAGE_SIZE);
       // Eigene Nachricht nicht als „fremd“ belingen; Baseline nach vorne schieben
       knownIdsRef.current.add(result.message.id);
-      if (
-        !soundBaselineAtRef.current ||
-        result.message.created_at > soundBaselineAtRef.current
-      ) {
-        soundBaselineAtRef.current = result.message.created_at;
-      }
+      soundBaselineAtRef.current = maxChatTimestamp(
+        soundBaselineAtRef.current,
+        result.message.created_at,
+      );
       return next;
     });
   }
