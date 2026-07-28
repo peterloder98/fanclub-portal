@@ -155,8 +155,6 @@ export default async function MemberPortalPage({
   const pastEvents = joinedEvents
     .filter((e) => !isEventUpcoming(e))
     .sort((a, b) => String(b.start_at).localeCompare(String(a.start_at)));
-  const pastPreview = pastEvents.slice(0, 5);
-  const pastMore = Math.max(0, pastEvents.length - pastPreview.length);
 
   const { data: meetingParts } = await supabase
     .from("club_meeting_participations")
@@ -183,6 +181,12 @@ export default async function MemberPortalPage({
   const upcomingMeetings = joinedMeetings
     .filter((m) => m.starts_at >= nowIso)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+
+  const upcomingCount = upcomingMeetings.length + upcomingEvents.length;
+  const joinedListScrollClass =
+    upcomingCount > 5 ? "max-h-[26.5rem] overflow-y-auto overscroll-contain pr-1" : "";
+  const pastListScrollClass =
+    pastEvents.length > 5 ? "max-h-[14rem] overflow-y-auto overscroll-contain pr-1" : "";
 
   return (
     <div className="min-h-screen">
@@ -250,7 +254,7 @@ export default async function MemberPortalPage({
               </div>
 
               {upcomingEvents.length || upcomingMeetings.length ? (
-                <ul className="grid w-full min-w-0 gap-3">
+                <ul className={`grid w-full min-w-0 gap-3 ${joinedListScrollClass}`}>
                   {upcomingMeetings.map((m) => {
                     const when = formatEventListDateParts(m.starts_at);
                     const place = formatEventVenueCityLine({
@@ -331,13 +335,13 @@ export default async function MemberPortalPage({
                 </div>
               )}
 
-              {pastPreview.length ? (
+              {pastEvents.length ? (
                 <div className="min-w-0 pt-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Schon dabei gewesen ({pastEvents.length})
                   </p>
-                  <ul className="mt-2 grid min-w-0 gap-1.5">
-                    {pastPreview.map((e) => {
+                  <ul className={`mt-2 grid min-w-0 gap-1.5 ${pastListScrollClass}`}>
+                    {pastEvents.map((e) => {
                       const when = formatEventListDateParts(e.start_at, e.end_at);
                       return (
                         <li key={e.id} className="min-w-0">
@@ -354,11 +358,6 @@ export default async function MemberPortalPage({
                       );
                     })}
                   </ul>
-                  {pastMore > 0 ? (
-                    <p className="mt-1 px-2 text-xs text-slate-500">
-                      und {pastMore} weitere
-                    </p>
-                  ) : null}
                 </div>
               ) : null}
             </section>
