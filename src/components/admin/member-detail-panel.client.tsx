@@ -342,39 +342,36 @@ export function MemberDetailPanel({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <AdminIconButton
-          label="Bearbeiten"
-          icon={Pencil}
-          variant="edit"
-          href={`/admin/members/${member.id}/edit`}
-        />
-        <button
-          type="button"
-          disabled={pending || paymentLoading || !member.email}
-          onClick={() => void openPaymentDialog()}
-          className={
-            primaryContribution && primaryContribution.status !== "paid"
-              ? "inline-flex h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
-              : "fc-btn-secondary h-10 disabled:opacity-50"
-          }
-        >
-          <Mail className="h-4 w-4" aria-hidden />
-          {paymentLoading
-            ? "Lade…"
-            : primaryContribution && primaryContribution.status !== "paid"
-              ? `Beitrags-Erinnerung (${formatEur(openContributions.reduce((s, c) => s + c.openCents, 0))} offen)`
-              : "Beitrags-Erinnerung senden"}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={pending || paymentLoading || !member.email}
+            onClick={() => void openPaymentDialog()}
+            className={
+              primaryContribution && primaryContribution.status !== "paid"
+                ? "inline-flex h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
+                : "fc-btn-secondary inline-flex h-10 items-center gap-2 disabled:opacity-50"
+            }
+          >
+            <Mail className="h-4 w-4 shrink-0" aria-hidden />
+            <span>
+              {paymentLoading
+                ? "Lade…"
+                : primaryContribution && primaryContribution.status !== "paid"
+                  ? `Beitrags-Erinnerung (${formatEur(openContributions.reduce((s, c) => s + c.openCents, 0))} offen)`
+                  : "Beitrags-Erinnerung senden"}
+            </span>
+          </button>
         {member.membership?.status === "active" ? (
           <button
             type="button"
             disabled={pending}
             onClick={() => {
-              const reason = window.prompt(
-                "Grund der Sperre (optional, wird dem Mitglied angezeigt):",
-                "Offener Mitgliedsbeitrag — bitte Vorstand kontaktieren.",
-              );
+                const reason = window.prompt(
+                  "Grund der Deaktivierung (optional, wird dem Mitglied angezeigt):",
+                  "Offener Mitgliedsbeitrag — bitte Vorstand kontaktieren.",
+                );
               if (reason === null) return;
               setActionError(null);
               startTransition(async () => {
@@ -382,14 +379,14 @@ export function MemberDetailPanel({
                   await suspendMemberAppAccess({ userId: member.id, reason });
                   router.refresh();
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : "Sperren fehlgeschlagen");
+                  setActionError(e instanceof Error ? e.message : "Deaktivierung fehlgeschlagen");
                 }
               });
             }}
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 text-sm font-semibold text-rose-800 transition hover:bg-rose-100 disabled:opacity-50"
           >
-            <Ban className="h-4 w-4" aria-hidden />
-            App sperren
+            <Ban className="h-4 w-4 shrink-0" aria-hidden />
+            <span>Vorübergehend deaktivieren</span>
           </button>
         ) : null}
         {member.membership?.status === "suspended" ? (
@@ -410,17 +407,26 @@ export function MemberDetailPanel({
             }}
             className="inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100 disabled:opacity-50"
           >
-            <ShieldCheck className="h-4 w-4" aria-hidden />
-            App freischalten
+            <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
+            <span>App freischalten</span>
           </button>
         ) : null}
-        <AdminIconButton
+        </div>
+        <div className="flex items-center gap-2">
+          <AdminIconButton
+            label="Bearbeiten"
+            icon={Pencil}
+            variant="edit"
+            href={`/admin/members/${member.id}/edit`}
+          />
+          <AdminIconButton
           label="Mitglied löschen"
           icon={Trash2}
           variant="delete"
           disabled={pending}
           onClick={handleDelete}
         />
+        </div>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
