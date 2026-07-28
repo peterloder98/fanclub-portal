@@ -1,7 +1,6 @@
 /**
  * Admin-Handbuch (nur für Vorstände / role=admin).
- *
- * Quelle für /admin/hilfe. Bei neuen Admin-Abläufen hier ergänzen.
+ * Quelle für /admin/hilfe — bei neuen Admin-Abläufen hier ergänzen.
  */
 
 export type AdminHandbookBlock =
@@ -13,323 +12,602 @@ export type AdminHandbookBlock =
 
 export type AdminHandbookSection = {
   id: string;
+  /** Fortlaufende Nummer im Inhaltsverzeichnis, z. B. „3.2“ */
+  number: string;
   title: string;
   summary: string;
   blocks: AdminHandbookBlock[];
 };
 
+export type AdminHandbookChapter = {
+  id: string;
+  /** Kapitelnummer, z. B. „3“ */
+  number: string;
+  title: string;
+  sections: AdminHandbookSection[];
+};
+
 export const ADMIN_HANDBOOK_UPDATED = "2026-07-28";
 
 export const ADMIN_HANDBOOK_INTRO =
-  "Hier steht in Ruhe, was die Fanclub-App kann und wie ihr als Vorstand die wichtigsten Dinge erledigt. Nur der Vorstand sieht diese Seite. Einfach dem jeweiligen Thema folgen — Schritt für Schritt.";
+  "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
 
-export const ADMIN_HANDBOOK_SECTIONS: AdminHandbookSection[] = [
+export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
   {
-    id: "start",
-    title: "So findest du den Admin-Bereich",
-    summary: "Einstieg und Übersicht",
-    blocks: [
+    id: "einstieg",
+    number: "1",
+    title: "Einstieg",
+    sections: [
       {
-        type: "p",
-        text: "Nach dem Login siehst du in der App oben oder im Menü den Bereich „Admin“. Dort sind alle Verwaltungsaufgaben nach Themen sortiert (Mitglieder, Finanzen, E-Mail, Community, …).",
-      },
-      {
-        type: "ol",
-        items: [
-          "In der App anmelden (wie jedes Mitglied).",
-          "„Admin“ öffnen — du landest auf der Übersicht.",
-          "Ein Thema antippen (z. B. „Mitglieder & Anträge“) und dort weiterarbeiten.",
+        id: "admin-finden",
+        number: "1.1",
+        title: "Admin-Bereich öffnen",
+        summary: "Wo ihr die Verwaltung findet",
+        blocks: [
+          {
+            type: "ol",
+            items: [
+              "Wie gewohnt in der App anmelden.",
+              "Im Menü oder auf dem Dashboard „Admin“ öffnen.",
+              "Ihr seht eine Übersicht mit Themen (Mitglieder, Finanzen, E-Mail, …).",
+              "Ein Thema antippen und dort weiterarbeiten.",
+            ],
+          },
+          {
+            type: "note",
+            text: "Wichtig: Umfragen und Gewinnspiele liegen nicht im Admin-Hub, sondern in den normalen Menüpunkten „Umfragen“ und „Gewinnspiele“. Dort erscheinen für euch zusätzliche Buttons.",
+          },
+          {
+            type: "link",
+            href: "/admin",
+            label: "Zur Admin-Übersicht",
+          },
         ],
       },
       {
-        type: "note",
-        text: "Du kannst die App weiterhin ganz normal als Mitglied nutzen (Chat, Events, Profil). Der Admin-Bereich ist zusätzlich — nur für den Vorstand sichtbar.",
-      },
-      {
-        type: "link",
-        href: "/admin",
-        label: "Zur Admin-Übersicht",
+        id: "was-kann-die-app",
+        number: "1.2",
+        title: "Was Mitglieder in der App können",
+        summary: "Kurzüberblick",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "Beiträge lesen und schreiben, kommentieren, im Gruppenchat schreiben",
+              "an Umfragen und Gewinnspielen teilnehmen",
+              "Konzerte und Fanclub-Treffen sehen und „Ich bin dabei“ markieren",
+              "andere Mitglieder finden und Profile anschauen",
+              "Anni-Stars sammeln und Badges freischalten",
+              "sich digital als Mitglied anmelden und den Beitrag überweisen",
+            ],
+          },
+        ],
       },
     ],
   },
   {
-    id: "was-kann-die-app",
-    title: "Was die App für Mitglieder kann",
-    summary: "Damit du weißt, was Mitglieder erleben",
-    blocks: [
+    id: "mitglieder",
+    number: "2",
+    title: "Mitglieder & Beiträge",
+    sections: [
       {
-        type: "p",
-        text: "Die App ist der digitale Treffpunkt des Fanclubs. Mitglieder können u. a.:",
-      },
-      {
-        type: "ul",
-        items: [
-          "Beiträge lesen und schreiben, kommentieren und im Gruppenchat schreiben",
-          "an Umfragen und Gewinnspielen teilnehmen",
-          "Konzerte und Fanclub-Treffen sehen und „Ich bin dabei“ markieren",
-          "andere Mitglieder im Verzeichnis finden und Profile anschauen",
-          "Anni-Stars sammeln und Badges freischalten",
-          "den Mitgliedsantrag digital ausfüllen und den Beitrag überweisen",
+        id: "antraege",
+        number: "2.1",
+        title: "Neue Mitglieder aufnehmen",
+        summary: "Antrag prüfen und freischalten",
+        blocks: [
+          {
+            type: "ol",
+            items: [
+              "Admin → „Mitglieder & Anträge“ öffnen.",
+              "Offenen Antrag antippen und Daten sowie Unterschrift prüfen.",
+              "Wenn alles passt: freigeben. Die Person bekommt eine Mitgliedsnummer und die Einladung, den App-Zugang einzurichten.",
+              "Der Jahresbeitrag (15 € für das laufende Kalenderjahr) wird erwartet — Erinnerung könnt ihr später aus dem Mitglieder-Detail senden.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/members",
+            label: "Mitglieder & Anträge",
+          },
+          {
+            type: "link",
+            href: "/admin/membership-form",
+            label: "Antrags-Link zum Teilen",
+          },
         ],
       },
       {
-        type: "p",
-        text: "Umfragen und Gewinnspiele legst du nicht im Admin-Hub an, sondern in den normalen Menüpunkten „Umfragen“ bzw. „Gewinnspiele“ — dort hast du als Vorstand zusätzliche Buttons zum Steuern.",
-      },
-    ],
-  },
-  {
-    id: "antraege",
-    title: "Neue Mitglieder aufnehmen",
-    summary: "Vom Antrag bis zur Freischaltung",
-    blocks: [
-      {
-        type: "p",
-        text: "Interessierte melden sich über die Seite „Mitglied werden“. Der Antrag landet bei euch zur Prüfung.",
-      },
-      {
-        type: "ol",
-        items: [
-          "Öffne Admin → „Mitglieder & Anträge“.",
-          "Schau dir offene Anträge an (Daten, Unterschrift, PDF).",
-          "Wenn alles passt: Antrag freigeben. Die Person bekommt eine Mitgliedsnummer und die Einladung, den App-Zugang einzurichten.",
-          "Der Mitgliedsbeitrag (15 € für das laufende Kalenderjahr) wird danach erwartet — Erinnerung kannst du aus dem Mitglieder-Detail senden.",
+        id: "beitraege",
+        number: "2.2",
+        title: "Mitgliedsbeiträge erinnern",
+        summary: "Offene Beträge und App-Zugang",
+        blocks: [
+          {
+            type: "p",
+            text: "Der Beitrag gilt für ein Kalenderjahr (1. Januar bis 31. Dezember), auch bei Beitritt mitten im Jahr. Ab dem nächsten 1. Januar ist das neue Jahr wieder fällig.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Mitglied in der Liste öffnen.",
+              "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
+              "„Beitrags-Erinnerung senden“: Mail mit Betrag, Kontodaten und Verwendungszweck (z. B. „Beitrag 2026, Nr. 42, Max Mustermann“).",
+              "Wenn das Geld da ist: unter Zahlungen bzw. Buchhaltung zuordnen oder bestätigen.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Zahlt jemand länger nicht, könnt ihr den App-Zugang vorübergehend deaktivieren. Das Mitglied sieht einen Hinweis und kommt nicht weiter in die App, bis ihr wieder freischaltet.",
+          },
+          {
+            type: "link",
+            href: "/admin/payments",
+            label: "Zahlungen",
+          },
+          {
+            type: "link",
+            href: "/admin/accounting",
+            label: "Buchhaltung",
+          },
         ],
       },
       {
-        type: "note",
-        text: "Der Verwendungszweck bei Überweisungen lautet z. B. „Beitrag 2026, Nr. 42, Max Mustermann“ (Jahr, Nummer, Vorname Nachname). So findet ihr Zahlungen leichter zu.",
-      },
-      {
-        type: "link",
-        href: "/admin/members",
-        label: "Mitglieder & Anträge öffnen",
-      },
-      {
-        type: "link",
-        href: "/admin/membership-form",
-        label: "Antrags-Link / Formular",
-        hint: "Zum Teilen mit Interessierten",
-      },
-    ],
-  },
-  {
-    id: "beitraege",
-    title: "Mitgliedsbeiträge erinnern und prüfen",
-    summary: "Offene Beträge, Erinnerungs-Mails, App-Zugang sperren",
-    blocks: [
-      {
-        type: "p",
-        text: "Der Beitrag gilt immer für ein Kalenderjahr (1. Januar bis 31. Dezember), auch wenn jemand mitten im Jahr beitritt. Ab dem nächsten 1. Januar ist das neue Jahr wieder fällig.",
-      },
-      {
-        type: "ol",
-        items: [
-          "Mitglied in „Mitglieder & Anträge“ öffnen.",
-          "Unter Beiträgen siehst du offene Jahre (und ob etwas überfällig ist — das ist 14 Tage nach Fälligkeit).",
-          "„Beitrags-Erinnerung senden“ tippen: Die Mail geht an das Mitglied mit Betrag, Kontodaten und dem richtigen Verwendungszweck.",
-          "Wenn das Geld da ist: Zahlung in der Buchhaltung / bei den Zahlungen zuordnen bzw. bestätigen.",
+        id: "stammdaten",
+        number: "2.3",
+        title: "Stammdaten-Änderungen freigeben",
+        summary: "Adresse und Daten prüfen",
+        blocks: [
+          {
+            type: "ol",
+            items: [
+              "Mitglieder können im Profil Änderungen beantragen (z. B. Adresse).",
+              "Admin → „Stammdaten freigeben“ öffnen.",
+              "Änderung prüfen und annehmen oder ablehnen.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/members/profile-changes",
+            label: "Stammdaten freigeben",
+          },
         ],
       },
       {
-        type: "p",
-        text: "Zahlt jemand länger nicht, könnt ihr den App-Zugang vorübergehend deaktivieren. Das Mitglied sieht dann einen Hinweis und kann die App nicht nutzen, bis ihr den Zugang wieder freischaltet.",
-      },
-      {
-        type: "link",
-        href: "/admin/members",
-        label: "Zur Mitgliederliste",
-      },
-      {
-        type: "link",
-        href: "/admin/payments",
-        label: "Zahlungen",
-      },
-      {
-        type: "link",
-        href: "/admin/accounting",
-        label: "Buchhaltung",
-      },
-    ],
-  },
-  {
-    id: "stammdaten",
-    title: "Stammdaten-Änderungen freigeben",
-    summary: "Wenn Mitglieder Adresse oder Daten ändern wollen",
-    blocks: [
-      {
-        type: "ol",
-        items: [
-          "Mitglieder können im Profil Änderungen beantragen (z. B. Adresse).",
-          "Unter Admin → „Stammdaten freigeben“ erscheint die Warteschlange.",
-          "Prüfen und annehmen oder ablehnen — erst dann gilt die Änderung offiziell.",
+        id: "empfehlungen",
+        number: "2.4",
+        title: "Mitglieder werben",
+        summary: "Einladungen und Anni-Stars",
+        blocks: [
+          {
+            type: "p",
+            text: "Mitglieder können unter „Neues Mitglied werben“ eine Einladung per E-Mail schicken.",
+          },
+          {
+            type: "ul",
+            items: [
+              "Beim Versand der Einladung: 20 Anni-Stars",
+              "Wenn die Person freigeschaltet wird: zusätzlich 70 Anni-Stars",
+              "Übersicht: Admin → „Empfehlungen“",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/referrals",
+            label: "Empfehlungen",
+          },
         ],
-      },
-      {
-        type: "link",
-        href: "/admin/members/profile-changes",
-        label: "Stammdaten freigeben",
-      },
-    ],
-  },
-  {
-    id: "empfehlungen",
-    title: "Mitglieder werben",
-    summary: "Einladungen und Sterne fürs Werben",
-    blocks: [
-      {
-        type: "p",
-        text: "Mitglieder können unter „Neues Mitglied werben“ eine Einladung per E-Mail schicken. Dafür gibt es Anni-Stars als Dankeschön.",
-      },
-      {
-        type: "ul",
-        items: [
-          "Beim erfolgreichen Versand der Einladung: 20 Anni-Stars",
-          "Wenn die eingeladene Person freigeschaltet wird: zusätzlich 70 Anni-Stars",
-          "Unter Admin → „Empfehlungen“ seht ihr, wer wen eingeladen hat",
-        ],
-      },
-      {
-        type: "link",
-        href: "/admin/referrals",
-        label: "Empfehlungen ansehen",
-      },
-    ],
-  },
-  {
-    id: "emails",
-    title: "E-Mails schreiben und prüfen",
-    summary: "Vorlagen, Absender, Signatur, Versandkontrolle",
-    blocks: [
-      {
-        type: "p",
-        text: "Viele Mails (Willkommen, Beitragserinnerung, App-Zugang, …) kommen aus fertigen Vorlagen. Ihr müsst den Text nicht jedes Mal neu tippen — nur bei Bedarf anpassen.",
-      },
-      {
-        type: "ol",
-        items: [
-          "„Email Konten“: Hier steht der Absender der App (offizielle Fanclub-Adresse). Verbindung einmal testen, wenn etwas nicht ankommt.",
-          "„E-Mail-Vorlagen“: Texte und Betreffzeilen ändern. Die Anrede (Lieber/Liebe …) und die Unterschrift werden automatisch eingesetzt.",
-          "„Signaturen“: Die gemeinsame Fanclub-Unterschrift pflegen (Text und ggf. Bild).",
-          "„E-Mail-Historie“: Nachschauen, ob eine Mail rausging — und bei Bedarf erneut senden.",
-        ],
-      },
-      {
-        type: "note",
-        text: "Zurzeit dürfen Test-Mails nur an die Vorstände und die offizielle App-Adresse gehen. So schreiben wir versehentlich niemandem aus der Mitgliedschaft. Wenn ihr echte Mitglieder anschreiben wollt, sagt Bescheid — dann wird der Versand freigeschaltet.",
-      },
-      {
-        type: "link",
-        href: "/admin/settings/email-templates",
-        label: "E-Mail-Vorlagen",
-      },
-      {
-        type: "link",
-        href: "/admin/settings/email-log",
-        label: "E-Mail-Historie",
-      },
-      {
-        type: "link",
-        href: "/admin/signatures",
-        label: "Signaturen",
       },
     ],
   },
   {
     id: "community",
-    title: "Beiträge freigeben und Fairplay",
-    summary: "Moderation im Alltag",
-    blocks: [
+    number: "3",
+    title: "Community: Umfragen, Gewinnspiele & Fairplay",
+    sections: [
       {
-        type: "ol",
-        items: [
-          "Mitglieder können Beiträge einreichen — unter „Beiträge freigeben“ entscheidet ihr: sichtbar machen oder ablehnen.",
-          "Bei Regelverstößen könnt ihr Verwarnungen aussprechen (das Mitglied bekommt einen Hinweis in der App und per E-Mail).",
-          "Umfragen und Gewinnspiele: im jeweiligen Menü anlegen, pausieren oder auslosen — dort erscheinen eure Admin-Schaltflächen.",
+        id: "umfragen",
+        number: "3.1",
+        title: "Umfragen erstellen und steuern",
+        summary: "Anlegen, Mehrfachauswahl, beenden, löschen",
+        blocks: [
+          {
+            type: "p",
+            text: "Öffnet im normalen App-Menü „Umfragen“. Als Vorstand seht ihr dort „Neue Umfrage erstellen“.",
+          },
+          {
+            type: "ol",
+            items: [
+              "„Neue Umfrage erstellen“ antippen.",
+              "Frage eingeben und ein Enddatum setzen (Standard: in 14 Tagen).",
+              "3 bis 10 Antwortoptionen eintragen („+ Option“).",
+              "„Umfrage veröffentlichen“ tippen — danach können Mitglieder abstimmen.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Arten der Umfrage:",
+          },
+          {
+            type: "ul",
+            items: [
+              "Beim Anlegen immer Einfachauswahl: jedes Mitglied wählt genau eine Antwort.",
+              "Später beim Bearbeiten könnt ihr „Mehrfachauswahl“ einschalten (dann mehrere Antworten möglich). Ausschalten geht danach nicht mehr zurück.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Steuern einer laufenden Umfrage (Umfrage öffnen):",
+          },
+          {
+            type: "ul",
+            items: [
+              "„Vorzeitig beenden“: Abstimmung endet sofort (nach Bestätigung).",
+              "Stift „Bearbeiten“: Frage, Optionen, Ende und ggf. Mehrfachauswahl anpassen und speichern. Optionen mit bereits abgegebenen Stimmen könnt ihr nicht löschen.",
+              "Papierkorb „Löschen“: Umfrage unwiderruflich entfernen (nach Bestätigung).",
+            ],
+          },
+          {
+            type: "note",
+            text: "Eine Umfrage kann man nicht „pausieren“. Zum Stoppen der Abstimmung dient „Vorzeitig beenden“.",
+          },
+          {
+            type: "link",
+            href: "/polls",
+            label: "Zu den Umfragen",
+          },
         ],
       },
       {
-        type: "link",
-        href: "/admin/posts",
-        label: "Beiträge freigeben",
+        id: "gewinnspiele",
+        number: "3.2",
+        title: "Gewinnspiele erstellen und steuern",
+        summary: "Arten, pausieren, beenden, auslosen",
+        blocks: [
+          {
+            type: "p",
+            text: "Öffnet im Menü „Gewinnspiele“. Oben gibt es die Bereiche „Aktiv“, „Beendet / Ausgelost“ und „Neu anlegen“.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Tab „Neu anlegen“ öffnen.",
+              "Titel, Beschreibung und Ende (Datum & Uhrzeit) eintragen.",
+              "Teilnahme-Modus wählen (siehe unten) und mindestens einen Preis hinzufügen.",
+              "„Gewinnspiel veröffentlichen“ tippen.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Welche Teilnahme-Arten gibt es?",
+          },
+          {
+            type: "ul",
+            items: [
+              "„Einfach teilnehmen“: ein Tippen auf „Jetzt teilnehmen“ reicht — alle Teilnehmenden sind auslosungsberechtigt.",
+              "„Eine Frage“: eine Multiple-Choice-Frage; nach der Antwort ist die Person teilnahmeberechtigt.",
+              "„Quiz (mind. 3 Fragen)“: mehrere Fragen mit je drei Antworten; nur wer alle richtig hat, kommt in die Auslosung.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Steuern (beim geöffneten Gewinnspiel):",
+          },
+          {
+            type: "ul",
+            items: [
+              "„Pausieren“ / „Fortsetzen“: Während der Pause kann niemand neu teilnehmen. Das Gewinnspiel läuft weiter, wenn ihr fortsetzt.",
+              "„Vorzeitig beenden“: Teilnahme ist danach nicht mehr möglich (nach Bestätigung). Status wird „Beendet“.",
+              "„Bearbeiten“: Titel, Text, Ende, Preise und Quiz-Texte anpassen. Wenn schon Teilnahmen existieren, bleibt die richtige Quiz-Antwort gesperrt.",
+              "„Gewinnspiel löschen“: nur möglich, wenn es beendet oder ausgelost ist (nicht bei der Jahresendverlosung).",
+            ],
+          },
+          {
+            type: "p",
+            text: "Auslosung:",
+          },
+          {
+            type: "ol",
+            items: [
+              "Das Gewinnspiel muss beendet sein (Enddatum erreicht oder vorzeitig beendet).",
+              "Button „Jetzt Gewinner ermitteln“ tippen.",
+              "Pro Preis wird zufällig eine berechtigte Person gezogen; niemand gewinnt denselben Lauf mehrfach.",
+              "Danach ist der Status „Ausgelost“ — Gewinner können per E-Mail benachrichtigt werden.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/giveaways",
+            label: "Zu den Gewinnspielen",
+          },
+        ],
+      },
+      {
+        id: "jahresend",
+        number: "3.3",
+        title: "Jahresend-Sonderverlosung",
+        summary: "Top 10 der Anni-Stars, Preise, Auslosung",
+        blocks: [
+          {
+            type: "p",
+            text: "Am Jahreswechsel können die Top 10 der Anni-Stars des abgelaufenen Jahres an einer Sonderverlosung teilnehmen. Die Teilnehmerliste wird automatisch eingetragen — niemand meldet sich selbst an.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Unter „Gewinnspiele“ erscheint bei Bedarf der Hinweis „Jahresverlosung anlegen“ — antippen und bestätigen.",
+              "Es entsteht die Sonderverlosung (z. B. „Sonderverlosung Top-10 Statuspunkte 2026“) mit den Top 10.",
+              "Preise hinzufügen oder anpassen.",
+              "Optional Signatur für die Gewinner-Mails wählen.",
+              "„Bestätigen & auslosen“ tippen — die Auslosung läuft und alle Gewinner bekommen eine E-Mail.",
+            ],
+          },
+          {
+            type: "ul",
+            items: [
+              "Bei gleicher Sternzahl entscheidet nicht der Zufall zuerst, sondern: mehr Anni-Stars-Aktivitäten im Jahr, dann früheres Eintrittsdatum, dann Nachname alphabetisch.",
+              "Pausieren und vorzeitiges Beenden sind bei der Jahresendverlosung nicht vorgesehen.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/giveaways",
+            label: "Gewinnspiele / Jahresverlosung",
+          },
+        ],
+      },
+      {
+        id: "verwarnungen",
+        number: "3.4",
+        title: "Verwarnungen aussprechen und zurücknehmen",
+        summary: "Fairplay in Beiträgen und Chat",
+        blocks: [
+          {
+            type: "p",
+            text: "Verwarnungen gibt es bei Kommentaren und Chat-Nachrichten (Feed, Umfragen, Gewinnspiele, Gruppenchat).",
+          },
+          {
+            type: "ol",
+            items: [
+              "Am Kommentar bzw. an der Nachricht das Symbol „Verwarnung aussprechen“ tippen.",
+              "Erste Nachfrage bestätigen: Verwarnung und automatische E-Mail an das Mitglied.",
+              "Zweite Nachfrage: Soll der Kommentar/die Nachricht zusätzlich gelöscht werden? Bestätigen = löschen + verwarnen, Abbrechen = nur verwarnen (Inhalt bleibt).",
+              "Ab der dritten Verwarnung erscheint ein zusätzlicher Hinweis.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Was das Mitglied merkt: Hinweis in der App („Du hast eine Verwarnung erhalten“), E-Mail und Eintrag unter den eigenen Verwarnungen mit Zitat und Link zu den Fanclub-Regeln.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Zurücknehmen: Admin → Mitglied öffnen → Karte „Verwarnungen“ → „Zurücknehmen“ (nach Bestätigung).",
+              "Der Zähler sinkt; das Mitglied sieht „Verwarnung zurückgenommen“. Die Historie bleibt nachvollziehbar.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/members",
+            label: "Mitglieder (Verwarnungen zurücknehmen)",
+          },
+        ],
+      },
+      {
+        id: "beitraege-freigeben",
+        number: "3.5",
+        title: "Mitglieder-Beiträge freigeben",
+        summary: "Posts sichtbar machen oder ablehnen",
+        blocks: [
+          {
+            type: "ol",
+            items: [
+              "Admin → „Beiträge freigeben“ öffnen.",
+              "Eingereichten Beitrag prüfen.",
+              "Annehmen (erscheint im Feed) oder ablehnen.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/posts",
+            label: "Beiträge freigeben",
+          },
+        ],
       },
     ],
   },
   {
     id: "termine",
-    title: "Termine und Fanclub-Treffen",
-    summary: "Konzerte, TV und eigene Treffen",
-    blocks: [
+    number: "4",
+    title: "Termine & Reiseinfos",
+    sections: [
       {
-        type: "p",
-        text: "Öffentliche Konzerte und TV-Termine kommen in der Regel automatisch in die App (Sync). Eigene Fanclub-Treffen legt ihr selbst an.",
-      },
-      {
-        type: "ol",
-        items: [
-          "Fanclub-Treffen: Admin → „Fanclub-Treffen“ → neues Treffen mit Ort, Zeit und ggf. Kosten.",
-          "Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
-          "Wenn Termine fehlen oder veraltet sind: unter „Artistflow-Sync“ den Abgleich anstoßen bzw. prüfen.",
+        id: "treffen",
+        number: "4.1",
+        title: "Fanclub-Treffen anlegen",
+        summary: "Eigene Treffen mit Ort und Kosten",
+        blocks: [
+          {
+            type: "ol",
+            items: [
+              "Admin → „Fanclub-Treffen“ öffnen.",
+              "Neues Treffen anlegen: Titel, Zeit, Ort, ggf. Kosten.",
+              "Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/treffen",
+            label: "Fanclub-Treffen",
+          },
         ],
       },
       {
-        type: "link",
-        href: "/admin/treffen",
-        label: "Fanclub-Treffen",
+        id: "reiseinfos-events",
+        number: "4.2",
+        title: "Reiseinfos zu Konzerten ergänzen",
+        summary: "Bahnhof und Hotels für Mitglieder",
+        blocks: [
+          {
+            type: "p",
+            text: "Bei Konzerten (nicht bei TV-Terminen) könnt ihr Anreise-Hinweise hinterlegen. Mitglieder sehen sie direkt am Termin.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Unter „Events“ den gewünschten Konzert-Termin finden.",
+              "„Reiseinfos +“ bzw. „Reiseinfos“ antippen.",
+              "Nächsten Bahnhof eintragen (Name und Adresse).",
+              "Bis zu drei Hotels mit Name und Adresse ergänzen („+ Hotel“).",
+              "„Speichern“ tippen. Zum Entfernen aller Angaben: „Löschen“.",
+            ],
+          },
+          {
+            type: "ul",
+            items: [
+              "Mitglieder sehen Bahnhof und Hotels; wenn möglich, wird die Fußweg-Entfernung angezeigt.",
+              "Öffentliche Konzert-/TV-Termine kommen oft automatisch — wenn etwas fehlt: Admin → „Termine abgleichen“.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/events",
+            label: "Zu den Events",
+          },
+          {
+            type: "link",
+            href: "/admin/events-sync",
+            label: "Termine abgleichen",
+          },
+        ],
       },
       {
-        type: "link",
-        href: "/admin/events-sync",
-        label: "Termine abgleichen",
+        id: "reiseinfos-treffen",
+        number: "4.3",
+        title: "Anreise bei Fanclub-Treffen",
+        summary: "Hinweise im Treffen-Formular",
+        blocks: [
+          {
+            type: "p",
+            text: "Beim Anlegen oder Bearbeiten eines Fanclub-Treffens gibt es den Block „Anreise & Unterkunft“:",
+          },
+          {
+            type: "ul",
+            items: [
+              "Bahnhof / Anreise und Adresse",
+              "Hotel-Empfehlung und Hotel-Adresse",
+              "Weitere Hinweise (freier Text)",
+            ],
+          },
+          {
+            type: "p",
+            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“.",
+          },
+        ],
       },
     ],
   },
   {
-    id: "punkte",
-    title: "Anni-Stars und Badges",
-    summary: "Was Mitglieder sammeln — und warum",
-    blocks: [
+    id: "emails",
+    number: "5",
+    title: "E-Mails",
+    sections: [
       {
-        type: "p",
-        text: "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, …). Die Sterne zählen für das laufende Kalenderjahr und starten jedes Jahr neu. Badges (z. B. Konzertprofi) bleiben dauerhaft.",
-      },
-      {
-        type: "ul",
-        items: [
-          "Ränge zeigen den Stand im Jahr (z. B. Aktiv-Fan, Gold-Fan).",
-          "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne — das bleibt fair.",
-          "Zum Jahresende nehmen die Top 10 der Jahres-Sterne an einer Sonderverlosung teil.",
+        id: "email-alltag",
+        number: "5.1",
+        title: "Vorlagen, Signatur und Versand prüfen",
+        summary: "Mails ohne jedes Mal neu tippen",
+        blocks: [
+          {
+            type: "ol",
+            items: [
+              "„Email Konten“: Absender der App prüfen; Verbindung testen, wenn Mails nicht ankommen.",
+              "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt.",
+              "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
+              "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
+            ],
+          },
+          {
+            type: "note",
+            text: "Zurzeit gehen Test-Mails nur an die Vorstände und die offizielle App-Adresse. So landet versehentlich nichts bei der ganzen Mitgliedschaft. Wenn ihr an alle schreiben wollt, sagt Bescheid — dann wird der Versand freigeschaltet.",
+          },
+          {
+            type: "link",
+            href: "/admin/settings/email-templates",
+            label: "E-Mail-Vorlagen",
+          },
+          {
+            type: "link",
+            href: "/admin/settings/email-log",
+            label: "E-Mail-Historie",
+          },
+          {
+            type: "link",
+            href: "/admin/signatures",
+            label: "Signaturen",
+          },
         ],
-      },
-      {
-        type: "link",
-        href: "/punkte",
-        label: "So sehen Mitglieder ihre Sterne",
       },
     ],
   },
   {
-    id: "statistik",
-    title: "App-Statistik und Protokoll",
-    summary: "Überblick behalten",
-    blocks: [
+    id: "sterne-statistik",
+    number: "6",
+    title: "Anni-Stars & Statistik",
+    sections: [
       {
-        type: "ul",
-        items: [
-          "App-Statistik: Wie viele aktive Mitglieder es gibt und wie die App genutzt wird.",
-          "Audit-Log: Wer im Admin-Bereich wann wichtige Dinge geändert hat — zur Nachvollziehbarkeit.",
+        id: "anni-stars",
+        number: "6.1",
+        title: "Anni-Stars und Badges",
+        summary: "Was Mitglieder sammeln",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, …) und zählen für das laufende Kalenderjahr — am 1. Januar geht es wieder bei null los.",
+              "Ränge zeigen den Stand im Jahr (z. B. Aktiv-Fan, Gold-Fan).",
+              "Badges (z. B. Konzertprofi) bleiben dauerhaft.",
+              "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne.",
+              "Zum Jahresende: Top 10 der Jahres-Sterne → Sonderverlosung (siehe 3.3).",
+            ],
+          },
+          {
+            type: "link",
+            href: "/punkte",
+            label: "Punkte-Seite (Mitgliederansicht)",
+          },
         ],
       },
       {
-        type: "link",
-        href: "/admin/app-stats",
-        label: "App-Statistik",
-      },
-      {
-        type: "link",
-        href: "/admin/audit",
-        label: "Protokoll (Audit)",
+        id: "statistik",
+        number: "6.2",
+        title: "App-Statistik und Protokoll",
+        summary: "Überblick behalten",
+        blocks: [
+          {
+            type: "ul",
+            items: [
+              "App-Statistik: aktive Mitglieder und Nutzung der App.",
+              "Protokoll (Audit): wer im Admin-Bereich wann wichtige Dinge geändert hat.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/app-stats",
+            label: "App-Statistik",
+          },
+          {
+            type: "link",
+            href: "/admin/audit",
+            label: "Protokoll",
+          },
+        ],
       },
     ],
   },
 ];
+
+/** Flache Liste aller Abschnitte (für Anker und Rendering). */
+export function flattenHandbookSections(): AdminHandbookSection[] {
+  return ADMIN_HANDBOOK_CHAPTERS.flatMap((chapter) => chapter.sections);
+}
