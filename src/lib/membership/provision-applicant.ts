@@ -11,10 +11,9 @@ function baseUsername(first: string, last: string) {
   return slug || "member";
 }
 
-function addYear(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().slice(0, 10);
+function endOfCalendarYear(dateStr: string) {
+  const y = dateStr.slice(0, 4);
+  return `${y}-12-31`;
 }
 
 async function uniqueUsername(
@@ -120,7 +119,7 @@ async function syncApplicantProfile(
   const start =
     input.membership_start_date?.trim() ||
     new Date().toISOString().slice(0, 10);
-  const end = addYear(start);
+  const end = endOfCalendarYear(start);
   const fee_cents = 1500;
 
   const { error: profileErr } = await admin.from("profiles").upsert(

@@ -523,7 +523,8 @@ export function MembershipApplicationForm() {
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <p className="sm:col-span-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-800">
             Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> — Zahlung nach Antragstellung
-            per Zahlungsanbieter oder Überweisung. Dein Beitritt beginnt mit dem Datum deines Antrags.
+            per Zahlungsanbieter oder Überweisung. Der Beitrag gilt immer für das laufende
+            Kalenderjahr; dein Beitritt beginnt mit dem Datum deines Antrags.
           </p>
           <div className="sm:col-span-2 rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
             <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>

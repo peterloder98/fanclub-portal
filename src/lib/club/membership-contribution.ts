@@ -3,11 +3,18 @@ import { formatEur } from "@/lib/club/ledger";
 
 export type ContributionStatus = "paid" | "open" | "overdue";
 
+/** Tage nach Fälligkeit, ab denen der Beitrag als überfällig gilt. */
+export const CONTRIBUTION_OVERDUE_DAYS = 14;
+
+/** Zahlungsfrist in Tagen ab Fälligkeit (für E-Mails). */
+export const CONTRIBUTION_PAYMENT_DEADLINE_DAYS = 14;
+
 export type MemberContributionInfo = {
   userId: string;
   firstName: string;
   lastName: string;
   membershipNumber: string | null;
+  calendarYear: number;
   feeCents: number;
   paidCents: number;
   openCents: number;
@@ -15,6 +22,9 @@ export type MemberContributionInfo = {
   periodStart: string;
   periodEnd: string;
   periodLabel: string;
+  dueDate: string;
+  paymentDeadline: string;
+  paymentReference: string;
 };
 
 export type ContributionStatusBrief = {
@@ -22,81 +32,109 @@ export type ContributionStatusBrief = {
   openCents: number;
 };
 
-const GRACE_DAYS = 90;
+type MembershipPaymentRow = { member_id: string; amount_cents: number; entry_date: string };
 
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+function parseIsoDate(dateStr: string) {
+  return new Date(`${dateStr}T12:00:00`);
+}
+
+function addDays(dateStr: string, days: number) {
+  const d = parseIsoDate(dateStr);
+  d.setDate(d.getDate() + days);
+  return isoDate(d);
+}
+
+export function calendarYearPeriod(year: number) {
+  return {
+    year,
+    start: `${year}-01-01`,
+    end: `${year}-12-31`,
+    label: String(year),
+  };
+}
+
+/** Kalenderjahre mit Beitragspflicht ab Eintritt bis Referenzjahr (inkl.). */
+export function contributionYearsForMember(membershipStart: string, ref = new Date()): number[] {
+  const joinYear = parseInt(membershipStart.slice(0, 4), 10);
+  if (Number.isNaN(joinYear)) return [ref.getFullYear()];
+  const endYear = ref.getFullYear();
+  const years: number[] = [];
+  for (let y = joinYear; y <= endYear; y++) years.push(y);
+  return years;
+}
+
+/** Fälligkeitsdatum: Eintrittsjahr ab Eintritt, Folgejahre ab 01.01. */
+export function dueDateForContributionYear(year: number, membershipStart: string): string {
+  const joinYear = parseInt(membershipStart.slice(0, 4), 10);
+  if (year === joinYear) return membershipStart;
+  return `${year}-01-01`;
+}
+
+export function paymentDeadlineForContributionYear(year: number, membershipStart: string): string {
+  return addDays(dueDateForContributionYear(year, membershipStart), CONTRIBUTION_PAYMENT_DEADLINE_DAYS);
+}
+
+export function formatMembershipPaymentReference(
+  year: number,
+  membershipNumber: string | null | undefined,
+  lastName: string,
+): string {
+  const nr = membershipNumber?.trim() || "—";
+  const name = lastName.trim() || "Mitglied";
+  return `Beitrag ${year}, Nr. ${nr}, ${name}`;
+}
+
+export function formatDueDateDe(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  if (!y || !m || !d) return dateStr;
+  return `${d}.${m}.${y}`;
+}
+
+/**
+ * @deprecated Nutze calendarYearPeriod — rollierende Perioden werden nicht mehr verwendet.
+ */
 export function currentMembershipPeriod(startDate: string, ref = new Date()) {
-  const start = new Date(`${startDate}T12:00:00`);
-  if (Number.isNaN(start.getTime())) {
-    const y = ref.getFullYear();
-    return {
-      start: `${y}-01-01`,
-      end: `${y}-12-31`,
-      label: String(y),
-    };
-  }
+  const year = ref.getFullYear();
+  const p = calendarYearPeriod(year);
+  return { start: p.start, end: p.end, label: p.label };
+}
 
-  let periodStart = new Date(start);
-  for (let i = 0; i < 80; i++) {
-    const periodEnd = new Date(periodStart);
-    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    periodEnd.setDate(periodEnd.getDate() - 1);
-    if (ref >= periodStart && ref <= periodEnd) {
-      const label = `${isoDate(periodStart).slice(0, 4)}/${isoDate(periodEnd).slice(0, 4)}`;
-      return { start: isoDate(periodStart), end: isoDate(periodEnd), label };
-    }
-    if (ref < periodStart) break;
-    periodStart = new Date(periodStart);
-    periodStart.setFullYear(periodStart.getFullYear() + 1);
-  }
+export function paymentBelongsToCalendarYear(paymentDate: string, year: number): boolean {
+  return paymentDate.slice(0, 4) === String(year);
+}
 
-  const y = ref.getFullYear();
-  return { start: `${y}-01-01`, end: `${y}-12-31`, label: String(y) };
+/** @deprecated Kalenderjahr-Zuordnung über entry_date-Jahr. */
+export function paymentBelongsToPeriod(
+  paymentDate: string,
+  _membershipStart: string,
+  periodStart: string,
+  periodEnd: string,
+): boolean {
+  const y = periodStart.slice(0, 4);
+  return paymentDate >= periodStart && paymentDate <= periodEnd && paymentDate.slice(0, 4) === y;
 }
 
 export function deriveContributionStatus(
   feeCents: number,
   paidCents: number,
-  periodStart: string,
+  dueDate: string,
   ref = new Date(),
 ): ContributionStatus {
   const openCents = Math.max(0, feeCents - paidCents);
   if (openCents <= 0) return "paid";
 
-  const start = new Date(`${periodStart}T12:00:00`);
-  const daysSinceStart = Math.floor((ref.getTime() - start.getTime()) / 86_400_000);
-  return daysSinceStart > GRACE_DAYS ? "overdue" : "open";
+  const due = parseIsoDate(dueDate);
+  const daysSinceDue = Math.floor((ref.getTime() - due.getTime()) / 86_400_000);
+  return daysSinceDue > CONTRIBUTION_OVERDUE_DAYS ? "overdue" : "open";
 }
 
-type MembershipPaymentRow = { member_id: string; amount_cents: number; entry_date: string };
-
-/**
- * Ordnet eine Zahlung dem Mitgliedschaftsjahr zu.
- * Zahlungen vor dem Eintritt zählen für die erste Periode (ab Eintrittsdatum).
- */
-export function paymentBelongsToPeriod(
-  paymentDate: string,
-  membershipStart: string,
-  periodStart: string,
-  periodEnd: string,
-): boolean {
-  const effective = paymentDate < membershipStart ? membershipStart : paymentDate;
-  return effective >= periodStart && effective <= periodEnd;
-}
-
-function paidCentsForPeriod(
-  payments: MembershipPaymentRow[],
-  membershipStart: string,
-  periodStart: string,
-  periodEnd: string,
-): number {
+function paidCentsForCalendarYear(payments: MembershipPaymentRow[], year: number): number {
   return payments
-    .filter((p) =>
-      paymentBelongsToPeriod(p.entry_date, membershipStart, periodStart, periodEnd),
-    )
+    .filter((p) => paymentBelongsToCalendarYear(p.entry_date, year))
     .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
 }
 
@@ -131,38 +169,127 @@ async function loadMembershipPaymentsForUsers(
   return map;
 }
 
+export function computeYearContribution(
+  profile: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    membership_number: string | null;
+  },
+  membershipStart: string,
+  feeCents: number,
+  year: number,
+  payments: MembershipPaymentRow[],
+  ref = new Date(),
+): MemberContributionInfo {
+  const period = calendarYearPeriod(year);
+  const paidCents = paidCentsForCalendarYear(payments, year);
+  const openCents = Math.max(0, feeCents - paidCents);
+  const dueDate = dueDateForContributionYear(year, membershipStart);
+  const status = deriveContributionStatus(feeCents, paidCents, dueDate, ref);
+
+  return {
+    userId: profile.id,
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    membershipNumber: profile.membership_number,
+    calendarYear: year,
+    feeCents,
+    paidCents,
+    openCents,
+    status,
+    periodStart: period.start,
+    periodEnd: period.end,
+    periodLabel: period.label,
+    dueDate,
+    paymentDeadline: paymentDeadlineForContributionYear(year, membershipStart),
+    paymentReference: formatMembershipPaymentReference(
+      year,
+      profile.membership_number,
+      profile.last_name,
+    ),
+  };
+}
+
+function statusRank(status: ContributionStatus): number {
+  if (status === "overdue") return 0;
+  if (status === "open") return 1;
+  return 2;
+}
+
+/** Dringlichster offener Beitrag, sonst aktuelles Kalenderjahr. */
+export function pickPrimaryContribution(
+  years: MemberContributionInfo[],
+): MemberContributionInfo | null {
+  if (!years.length) return null;
+  const open = years.filter((y) => y.status !== "paid");
+  if (!open.length) return years[years.length - 1] ?? null;
+  open.sort((a, b) => {
+    const r = statusRank(a.status) - statusRank(b.status);
+    if (r !== 0) return r;
+    return a.calendarYear - b.calendarYear;
+  });
+  return open[0] ?? null;
+}
+
+export function computeMemberContributionYears(
+  profile: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    membership_number: string | null;
+  },
+  membershipStart: string,
+  feeCents: number,
+  payments: MembershipPaymentRow[],
+  ref = new Date(),
+  includeNextYear = false,
+): MemberContributionInfo[] {
+  const years = contributionYearsForMember(membershipStart, ref);
+  if (includeNextYear) {
+    const next = ref.getFullYear() + 1;
+    if (!years.includes(next)) years.push(next);
+  }
+  return years.map((year) =>
+    computeYearContribution(profile, membershipStart, feeCents, year, payments, ref),
+  );
+}
+
 function computeContributionFromPayments(
   userId: string,
   startDate: string,
   feeCents: number,
   paymentsByMember: Map<string, MembershipPaymentRow[]>,
+  profile: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    membership_number: string | null;
+  },
   ref = new Date(),
 ): ContributionStatusBrief {
-  const period = currentMembershipPeriod(startDate, ref);
   const payments = paymentsByMember.get(userId) ?? [];
-  const paidCents = paidCentsForPeriod(
-    payments,
-    startDate,
-    period.start,
-    period.end,
-  );
-  const openCents = Math.max(0, feeCents - paidCents);
-  return {
-    status: deriveContributionStatus(feeCents, paidCents, period.start, ref),
-    openCents,
-  };
+  const years = computeMemberContributionYears(profile, startDate, feeCents, payments, ref);
+  const primary = pickPrimaryContribution(years);
+  if (!primary) return { status: "paid", openCents: 0 };
+  if (primary.status === "paid") return { status: "paid", openCents: 0 };
+  const totalOpen = years
+    .filter((y) => y.status !== "paid")
+    .reduce((s, y) => s + y.openCents, 0);
+  return { status: primary.status, openCents: totalOpen };
 }
 
-export async function getMemberContributionInfo(
+export async function getMemberContributionYears(
   userId: string,
-): Promise<MemberContributionInfo | null> {
+  options?: { includeNextYear?: boolean },
+): Promise<MemberContributionInfo[]> {
   const admin = createSupabaseAdminClient();
   const { data: profile } = await admin
     .from("profiles")
     .select("id,first_name,last_name,membership_number")
     .eq("id", userId)
     .maybeSingle();
-  if (!profile) return null;
+  if (!profile) return [];
 
   const { data: membership } = await admin
     .from("memberships")
@@ -173,41 +300,27 @@ export async function getMemberContributionInfo(
     .limit(1)
     .maybeSingle();
 
-  if (!membership?.start_date) return null;
+  if (!membership?.start_date) return [];
 
-  const feeCents = membership.fee_cents ?? 1500;
-  const period = currentMembershipPeriod(membership.start_date);
   const paymentsByMember = await loadMembershipPaymentsForUsers(admin, [userId]);
-  const brief = computeContributionFromPayments(
-    userId,
-    membership.start_date,
-    feeCents,
-    paymentsByMember,
-  );
   const payments = paymentsByMember.get(userId) ?? [];
-  const paidCents = paidCentsForPeriod(
-    payments,
+  return computeMemberContributionYears(
+    profile,
     membership.start_date,
-    period.start,
-    period.end,
+    membership.fee_cents ?? 1500,
+    payments,
+    new Date(),
+    options?.includeNextYear,
   );
-
-  return {
-    userId: profile.id,
-    firstName: profile.first_name,
-    lastName: profile.last_name,
-    membershipNumber: profile.membership_number,
-    feeCents,
-    paidCents,
-    openCents: brief.openCents,
-    status: brief.status,
-    periodStart: period.start,
-    periodEnd: period.end,
-    periodLabel: period.label,
-  };
 }
 
-/** Batch: 2–3 DB-Abfragen statt N×Einzelabfragen (skaliert bis ~500+ Mitglieder). */
+export async function getMemberContributionInfo(
+  userId: string,
+): Promise<MemberContributionInfo | null> {
+  const years = await getMemberContributionYears(userId);
+  return pickPrimaryContribution(years);
+}
+
 export async function batchMemberContributionStatus(
   userIds: string[],
 ): Promise<Map<string, ContributionStatusBrief | null>> {
@@ -225,12 +338,20 @@ export async function batchMemberContributionStatus(
   if (mErr) throw new Error(mErr.message);
   if (!memberships?.length) return map;
 
+  const { data: profiles } = await admin
+    .from("profiles")
+    .select("id,first_name,last_name,membership_number")
+    .in("id", memberships.map((m) => m.user_id));
+
+  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
   const activeIds = memberships.map((m) => m.user_id);
   const paymentsByMember = await loadMembershipPaymentsForUsers(admin, activeIds);
   const now = new Date();
 
   for (const m of memberships) {
     if (!m.start_date) continue;
+    const profile = profileById.get(m.user_id);
+    if (!profile) continue;
     map.set(
       m.user_id,
       computeContributionFromPayments(
@@ -238,6 +359,7 @@ export async function batchMemberContributionStatus(
         m.start_date,
         m.fee_cents ?? 1500,
         paymentsByMember,
+        profile,
         now,
       ),
     );
@@ -272,51 +394,28 @@ export async function listOpenContributions(): Promise<MemberContributionInfo[]>
     const p = profileById.get(m.user_id);
     if (!p || !m.start_date) continue;
     const feeCents = m.fee_cents ?? 1500;
-    const period = currentMembershipPeriod(m.start_date, now);
-    const brief = computeContributionFromPayments(
-      m.user_id,
-      m.start_date,
-      feeCents,
-      paymentsByMember,
-      now,
-    );
-    if (brief.status === "paid") continue;
-
     const payments = paymentsByMember.get(m.user_id) ?? [];
-    const paidCents = paidCentsForPeriod(
-      payments,
-      m.start_date,
-      period.start,
-      period.end,
-    );
-
-    results.push({
-      userId: p.id,
-      firstName: p.first_name,
-      lastName: p.last_name,
-      membershipNumber: p.membership_number,
-      feeCents,
-      paidCents,
-      openCents: brief.openCents,
-      status: brief.status,
-      periodStart: period.start,
-      periodEnd: period.end,
-      periodLabel: period.label,
-    });
+    const years = computeMemberContributionYears(p, m.start_date, feeCents, payments, now);
+    for (const y of years) {
+      if (y.status !== "paid") results.push(y);
+    }
   }
 
   results.sort((a, b) => {
-    const rank = (s: ContributionStatus) => (s === "overdue" ? 0 : 1);
-    return rank(a.status) - rank(b.status) || b.openCents - a.openCents;
+    const r = statusRank(a.status) - statusRank(b.status);
+    if (r !== 0) return r;
+    if (a.calendarYear !== b.calendarYear) return a.calendarYear - b.calendarYear;
+    return b.openCents - a.openCents;
   });
 
   return results;
 }
 
-export function contributionStatusLabel(status: ContributionStatus) {
-  if (status === "paid") return "Beitrag bezahlt";
-  if (status === "overdue") return "Beitrag überfällig";
-  return "Beitrag offen";
+export function contributionStatusLabel(status: ContributionStatus, year?: number) {
+  const suffix = year ? ` (${year})` : "";
+  if (status === "paid") return `Beitrag bezahlt${suffix}`;
+  if (status === "overdue") return `Beitrag überfällig${suffix}`;
+  return `Beitrag offen${suffix}`;
 }
 
 export function formatContributionEmailVars(info: MemberContributionInfo) {
@@ -325,5 +424,22 @@ export function formatContributionEmailVars(info: MemberContributionInfo) {
     fee_paid_eur: formatEur(info.paidCents),
     fee_open_eur: formatEur(info.openCents),
     membership_period: info.periodLabel,
+    payment_reference: info.paymentReference,
+    due_date: formatDueDateDe(info.dueDate),
+    payment_deadline: formatDueDateDe(info.paymentDeadline),
+    contribution_year: String(info.calendarYear),
   };
+}
+
+/** Textblock für offene Vorjahre (Jahres-Mail). */
+export function buildOpenContributionsBlock(years: MemberContributionInfo[]): string {
+  const openPrior = years.filter((y) => y.status !== "paid");
+  if (!openPrior.length) return "";
+
+  const lines = openPrior.map(
+    (y) =>
+      `Für das Kalenderjahr ${y.calendarYear} ist dein Mitgliedsbeitrag noch nicht vollständig bei uns eingegangen (noch offen: ${formatEur(y.openCents)}).\nVerwendungszweck: ${y.paymentReference}`,
+  );
+
+  return `Hinweis zu noch offenen Beiträgen:\n\n${lines.join("\n\n")}\n\nBitte kläre das zeitnah mit uns, falls du Fragen hast.`;
 }

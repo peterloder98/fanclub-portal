@@ -24,7 +24,9 @@ import {
 import {
   formatContributionEmailVars,
   getMemberContributionInfo,
+  getMemberContributionYears,
   listOpenContributions,
+  pickPrimaryContribution,
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import {
@@ -111,12 +113,16 @@ export async function revokeMemberWarning(warningId: string) {
   return { ok: true, warningCount: newCount };
 }
 
-export async function getMemberPaymentReminderDraft(userId: string, signatureId?: string) {
+export async function getMemberPaymentReminderDraft(
+  userId: string,
+  signatureId?: string,
+  calendarYear?: number,
+) {
   await requireAdminAction();
   const admin = createSupabaseAdminClient();
   const { data: profile, error: pErr } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email,gender")
+    .select("id,first_name,last_name,email,gender,membership_number")
     .eq("id", userId)
     .maybeSingle();
   if (pErr) throw new Error(pErr.message);
@@ -132,7 +138,10 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
 
   const { signatures, defaultSignatureId, signatureTexts } = await loadSignaturePickerData();
   const useSignatureId = signatureId ?? defaultSignatureId;
-  const contrib = await getMemberContributionInfo(userId);
+  const allYears = await getMemberContributionYears(userId);
+  const contrib = calendarYear
+    ? allYears.find((y) => y.calendarYear === calendarYear) ?? null
+    : pickPrimaryContribution(allYears);
   const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
   const contribVars = contrib
     ? formatContributionEmailVars(contrib)
@@ -140,7 +149,11 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
         fee_eur: feeEur,
         fee_paid_eur: "0,00 €",
         fee_open_eur: feeEur.replace(" EUR", " €"),
-        membership_period: String(new Date().getFullYear()),
+        membership_period: String(calendarYear ?? new Date().getFullYear()),
+        payment_reference: "",
+        due_date: "",
+        payment_deadline: "",
+        contribution_year: String(calendarYear ?? new Date().getFullYear()),
       };
 
   const rendered = await renderEmailFromTemplate(
@@ -154,8 +167,8 @@ export async function getMemberPaymentReminderDraft(userId: string, signatureId?
       fee_eur: contribVars.fee_eur,
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
-      membership_period: contribVars.membership_period,
       ...clubBankEmailVars(),
+      bank_reference: contribVars.payment_reference || clubBankEmailVars().bank_reference,
     },
     { signatureId: useSignatureId },
   );
@@ -175,6 +188,7 @@ export async function sendMemberPaymentReminderEmail(input: {
   subject: string;
   body: string;
   signatureId: string;
+  calendarYear?: number;
 }) {
   const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
@@ -194,7 +208,10 @@ export async function sendMemberPaymentReminderEmail(input: {
     .limit(1)
     .maybeSingle();
 
-  const contrib = await getMemberContributionInfo(input.userId);
+  const allYears = await getMemberContributionYears(input.userId);
+  const contrib = input.calendarYear
+    ? allYears.find((y) => y.calendarYear === input.calendarYear) ?? null
+    : pickPrimaryContribution(allYears);
   const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
   const contribVars = contrib
     ? formatContributionEmailVars(contrib)
@@ -202,7 +219,11 @@ export async function sendMemberPaymentReminderEmail(input: {
         fee_eur: feeEur,
         fee_paid_eur: "0,00 €",
         fee_open_eur: feeEur.replace(" EUR", " €"),
-        membership_period: String(new Date().getFullYear()),
+        membership_period: String(input.calendarYear ?? new Date().getFullYear()),
+        payment_reference: "",
+        due_date: "",
+        payment_deadline: "",
+        contribution_year: String(input.calendarYear ?? new Date().getFullYear()),
       };
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipPaymentReminder,
@@ -217,6 +238,7 @@ export async function sendMemberPaymentReminderEmail(input: {
       fee_open_eur: contribVars.fee_open_eur,
       membership_period: contribVars.membership_period,
       ...clubBankEmailVars(),
+      bank_reference: contribVars.payment_reference || clubBankEmailVars().bank_reference,
     },
     { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
   );
@@ -268,6 +290,7 @@ export async function sendMemberPaymentReminderEmail(input: {
       signature_id: input.signatureId,
       fee_open_cents: contrib?.openCents ?? null,
       membership_period: contrib?.periodLabel ?? null,
+      calendar_year: contrib?.calendarYear ?? input.calendarYear ?? null,
     },
   }).catch((e) => console.error("[activity] Zahlungserinnerung:", e));
 

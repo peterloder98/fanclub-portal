@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/year-end-lottery",
       "schedule": "0 6 1 1 *"
+    },
+    {
+      "path": "/api/cron/membership-contribution-new-year",
+      "schedule": "0 8 27 12 *"
     }
   ]
 }

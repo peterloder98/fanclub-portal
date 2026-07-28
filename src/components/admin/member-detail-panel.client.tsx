@@ -113,16 +113,30 @@ export function MemberDetailPanel({
   ledgerEntries,
   ledgerAvailable,
   contribution,
+  contributions = [],
   autoOpenReminder = false,
 }: {
   member: MemberDetailData;
   warnings: MemberWarningRow[];
   ledgerEntries: ClubLedgerRow[];
   ledgerAvailable: boolean;
-  contribution: MemberContributionInfo | null;
+  /** @deprecated Nutze contributions — primärer/offener Beitrag */
+  contribution?: MemberContributionInfo | null;
+  contributions?: MemberContributionInfo[];
   autoOpenReminder?: boolean;
 }) {
   const router = useRouter();
+  const openContributions = contributions
+    .filter((c) => c.status !== "paid")
+    .sort((a, b) => {
+      const rank = (s: MemberContributionInfo["status"]) => (s === "overdue" ? 0 : 1);
+      return rank(a.status) - rank(b.status) || a.calendarYear - b.calendarYear;
+    });
+  const primaryContribution =
+    openContributions[0] ??
+    contributions[contributions.length - 1] ??
+    contribution ??
+    null;
   const [pending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -132,6 +146,7 @@ export function MemberDetailPanel({
   const [paymentSignatureId, setPaymentSignatureId] = useState("");
   const [paymentSignatureTexts, setPaymentSignatureTexts] = useState<Record<string, string>>({});
   const [paymentActiveSignatureText, setPaymentActiveSignatureText] = useState("");
+  const [paymentCalendarYear, setPaymentCalendarYear] = useState<number | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   const [ledgerType, setLedgerType] = useState<"income" | "expense">("income");
@@ -174,11 +189,12 @@ export function MemberDetailPanel({
     });
   }
 
-  async function openPaymentDialog() {
+  async function openPaymentDialog(calendarYear?: number) {
     setActionError(null);
     setPaymentLoading(true);
+    setPaymentCalendarYear(calendarYear ?? null);
     try {
-      const draft = await getMemberPaymentReminderDraft(member.id);
+      const draft = await getMemberPaymentReminderDraft(member.id, undefined, calendarYear);
       setPaymentSubject(draft.subject);
       setPaymentBody(draft.body);
       setPaymentSignatures(draft.signatures);
@@ -335,7 +351,7 @@ export function MemberDetailPanel({
           disabled={pending || paymentLoading || !member.email}
           onClick={() => void openPaymentDialog()}
           className={
-            contribution && contribution.status !== "paid"
+            primaryContribution && primaryContribution.status !== "paid"
               ? "inline-flex h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
               : "fc-btn-secondary h-10 disabled:opacity-50"
           }
@@ -343,8 +359,8 @@ export function MemberDetailPanel({
           <Mail className="h-4 w-4" aria-hidden />
           {paymentLoading
             ? "Lade…"
-            : contribution && contribution.status !== "paid"
-              ? `Beitrags-Erinnerung (${formatEur(contribution.openCents)} offen)`
+            : primaryContribution && primaryContribution.status !== "paid"
+              ? `Beitrags-Erinnerung (${formatEur(openContributions.reduce((s, c) => s + c.openCents, 0))} offen)`
               : "Beitrags-Erinnerung senden"}
         </button>
         <AdminIconButton
@@ -401,31 +417,47 @@ export function MemberDetailPanel({
               <InfoRow label="Ende" value={formatDE(member.membership?.end_date ?? null)} />
               <InfoRow label="Jahresbeitrag" value={`${feeEur} €`} />
               <InfoRow
-                label="Beitragsstatus"
+                label="Beiträge"
                 value={
-                  contribution ? (
-                    <span className="inline-flex flex-wrap items-center gap-2">
-                      <ContributionStatusBadge status={contribution.status} />
-                      {contribution.status !== "paid" ? (
-                        <>
+                  contributions.length ? (
+                    <ul className="space-y-2">
+                      {contributions.map((c) => (
+                        <li
+                          key={c.calendarYear}
+                          className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-2 last:border-0 last:pb-0"
+                        >
+                          <ContributionStatusBadge status={c.status} />
                           <span className="text-xs text-slate-600">
-                            Offen: {formatEur(contribution.openCents)} · Periode{" "}
-                            {contribution.periodLabel}
+                            {c.calendarYear}:{" "}
+                            {c.status === "paid"
+                              ? "bezahlt"
+                              : `offen ${formatEur(c.openCents)}`}
+                            {c.status !== "paid" ? (
+                              <>
+                                {" "}
+                                · VWZ: <span className="font-mono">{c.paymentReference}</span>
+                              </>
+                            ) : null}
                           </span>
-                          <button
-                            type="button"
-                            disabled={pending || paymentLoading || !member.email}
-                            onClick={() => void openPaymentDialog()}
-                            className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
-                          >
-                            Erinnerung senden
-                          </button>
-                        </>
-                      ) : (
-                        <span className="text-xs text-slate-600">
-                          Periode {contribution.periodLabel}
-                        </span>
-                      )}
+                          {c.status !== "paid" ? (
+                            <button
+                              type="button"
+                              disabled={pending || paymentLoading || !member.email}
+                              onClick={() => void openPaymentDialog(c.calendarYear)}
+                              className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
+                            >
+                              Erinnerung {c.calendarYear}
+                            </button>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : primaryContribution ? (
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      <ContributionStatusBadge status={primaryContribution.status} />
+                      <span className="text-xs text-slate-600">
+                        {primaryContribution.periodLabel}
+                      </span>
                     </span>
                   ) : (
                     "—"
@@ -751,6 +783,7 @@ export function MemberDetailPanel({
                       subject: paymentSubject,
                       body: paymentBody,
                       signatureId: paymentSignatureId,
+                      calendarYear: paymentCalendarYear ?? undefined,
                     });
                     setShowPaymentDialog(false);
                     router.refresh();
