@@ -123,7 +123,22 @@ async function drawSignature(
 
 async function loadTemplateBytes() {
   const templatePath = path.join(process.cwd(), MEMBERSHIP_PDF_TEMPLATE_PATH);
-  return readFile(templatePath);
+  try {
+    return await readFile(templatePath);
+  } catch (e) {
+    const publicPath = MEMBERSHIP_PDF_TEMPLATE_PATH.replace(/^public\//, "");
+    const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+      /\/$/,
+      "",
+    );
+    if (base) {
+      const res = await fetch(`${base}/${publicPath}`);
+      if (res.ok) return Buffer.from(await res.arrayBuffer());
+    }
+    throw new Error(
+      `PDF-Vorlage nicht gefunden (${templatePath}): ${e instanceof Error ? e.message : "unbekannt"}`,
+    );
+  }
 }
 
 function shouldDrawMembershipNumber(value?: string | null) {

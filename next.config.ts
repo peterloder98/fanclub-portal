@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: "/api/membership/applications/:id/pdf",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: securityHeaders,
       },

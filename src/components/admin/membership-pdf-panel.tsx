@@ -1,33 +1,122 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+async function fetchMembershipPdf(
+  url: string,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const res = await fetch(url, { credentials: "include", signal });
+  if (!res.ok) {
+    let message = `PDF konnte nicht geladen werden (${res.status})`;
+    try {
+      const json = (await res.json()) as { error?: string };
+      if (json.error?.trim()) message = json.error.trim();
+    } catch {
+      /* Antwort war kein JSON */
+    }
+    throw new Error(message);
+  }
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("pdf")) {
+    throw new Error("Server hat kein PDF geliefert. Bitte Seite neu laden oder Support melden.");
+  }
+  return res.blob();
+}
 
 export function MembershipPdfPanel({
   applicationId,
   title = "Vertrags-PDF (Antrag + Satzung)",
-  downloadFilename,
+  downloadFilename = "Mitgliedsantrag.pdf",
 }: {
   applicationId: string;
   title?: string;
   downloadFilename?: string;
 }) {
   const [showPdf, setShowPdf] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
 
   const pdfViewUrl = `/api/membership/applications/${applicationId}/pdf`;
   const pdfDownloadUrl = `${pdfViewUrl}?download=1`;
 
+  const revokeBlobUrl = useCallback(() => {
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    setPdfBlobUrl(null);
+  }, []);
+
   useEffect(() => {
-    if (!showPdf) return;
+    return () => {
+      if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    revokeBlobUrl();
+    setShowPdf(false);
     setLoadError(null);
-    const timer = window.setTimeout(() => {
-      setLoadError(
-        "Das PDF lädt länger als erwartet. Bitte „PDF speichern“ nutzen oder die Seite neu laden.",
-      );
-    }, 25_000);
-    return () => window.clearTimeout(timer);
-  }, [showPdf, applicationId]);
+    setLoading(false);
+  }, [applicationId, revokeBlobUrl]);
+
+  const loadPdf = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    revokeBlobUrl();
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 45_000);
+    try {
+      const blob = await fetchMembershipPdf(pdfViewUrl, controller.signal);
+      const url = URL.createObjectURL(blob);
+      blobUrlRef.current = url;
+      setPdfBlobUrl(url);
+      setShowPdf(true);
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.name === "AbortError"
+          ? "Das PDF hat zu lange gedauert. Bitte „PDF speichern“ versuchen oder die Seite neu laden."
+          : e instanceof Error
+            ? e.message
+            : "PDF konnte nicht geladen werden.";
+      setLoadError(msg);
+      setShowPdf(false);
+    } finally {
+      window.clearTimeout(timeout);
+      setLoading(false);
+    }
+  }, [pdfViewUrl, revokeBlobUrl]);
+
+  async function handleDownload() {
+    setLoadError(null);
+    setLoading(true);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 45_000);
+    try {
+      const blob = await fetchMembershipPdf(pdfDownloadUrl, controller.signal);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = downloadFilename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.name === "AbortError"
+          ? "Download hat zu lange gedauert. Bitte erneut versuchen."
+          : e instanceof Error
+            ? e.message
+            : "Download fehlgeschlagen.";
+      setLoadError(msg);
+    } finally {
+      window.clearTimeout(timeout);
+      setLoading(false);
+    }
+  }
 
   return (
     <Card className="overflow-hidden">
@@ -38,42 +127,43 @@ export function MembershipPdfPanel({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => {
-              setShowPdf(true);
-              setLoadError(null);
-            }}
-            className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            onClick={() => void loadPdf()}
+            disabled={loading}
+            className="h-10 rounded-xl border bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
-            PDF anzeigen
+            {loading ? "Bitte warten…" : "PDF anzeigen"}
           </button>
-          <a
-            href={pdfDownloadUrl}
-            download={downloadFilename}
-            className="inline-flex h-10 items-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
+          <button
+            type="button"
+            onClick={() => void handleDownload()}
+            disabled={loading}
+            className="inline-flex h-10 items-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
           >
             PDF speichern
-          </a>
+          </button>
         </div>
 
-        {showPdf ? (
+        {loadError ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {loadError}
+          </p>
+        ) : null}
+
+        {showPdf && pdfBlobUrl ? (
           <div className="mt-3">
-            {loadError ? (
-              <p className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                {loadError}
-              </p>
-            ) : (
-              <p className="mb-2 text-xs text-slate-500">PDF wird geladen…</p>
-            )}
-            <iframe
-              title={title}
-              src={pdfViewUrl}
-              onLoad={() => setLoadError(null)}
+            <object
+              data={pdfBlobUrl}
+              type="application/pdf"
               className="h-[min(70vh,640px)] w-full rounded-xl border bg-slate-50"
-            />
+            >
+              <p className="p-4 text-sm text-slate-600">
+                PDF-Vorschau wird von diesem Browser nicht unterstützt. Bitte „PDF speichern“ nutzen.
+              </p>
+            </object>
           </div>
         ) : (
           <p className="mt-3 text-sm text-slate-500">
-            Vorschau erst auf Klick — gespeicherte PDF wird bevorzugt (schneller).
+            Vorschau auf Klick — gespeicherte PDF-Datei wird bevorzugt (schneller, ca. 1&nbsp;MB).
           </p>
         )}
       </CardContent>

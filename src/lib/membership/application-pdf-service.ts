@@ -142,6 +142,11 @@ export async function loadApplicationPdfBytes(applicationId: string) {
     if (!error && file) {
       return new Uint8Array(await file.arrayBuffer());
     }
+    console.warn(
+      "[pdf] Cache-Miss für",
+      applicationId,
+      error?.message ?? "Datei fehlt",
+    );
   }
 
   const bytes = await buildPdfForApplication(applicationId);

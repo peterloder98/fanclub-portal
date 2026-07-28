@@ -5,6 +5,8 @@ import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+export const maxDuration = 60;
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
