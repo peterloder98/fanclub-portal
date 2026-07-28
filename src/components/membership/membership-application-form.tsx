@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { HeartHandshake } from "lucide-react";
+import { Check, Heart, Sparkles } from "lucide-react";
 import { SignaturePad } from "@/components/profile/signature-pad";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -24,8 +24,7 @@ import { ApplicationPaymentCheckout } from "@/components/payments/application-pa
 import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
-
-const MEMBERSHIP_FEE_EUR = 15;
+import { MEMBERSHIP_FEE_EUR } from "@/lib/membership/constants";
 const SATZUNG_PDF = "/documents/satzung.pdf";
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -340,53 +339,23 @@ export function MembershipApplicationForm() {
 
   return (
     <div className="grid gap-6">
-      <div className="overflow-hidden rounded-2xl border bg-gradient-to-br from-fc-ice via-white to-white shadow-sm">
-        <div className="border-b border-fc-sky/20 bg-fc-navy/5 px-5 py-4">
-          <div className="flex items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white">
-              <HeartHandshake className="h-5 w-5" aria-hidden />
-            </span>
-            <div>
-              <h2 className="text-lg font-bold text-fc-navy">Schön, dass du hier bist!</h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Toll, dass du die Mitgliedschaft im Anni Perka Fanclub unterstützen möchtest.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="space-y-3 px-5 py-4 text-sm leading-relaxed text-slate-700">
-          <p>
-            Fülle das Formular Schritt für Schritt aus, lies die{" "}
-            <SatzungDownloadLink>Satzung des Anni Perka Fanclubs</SatzungDownloadLink> und bestätige
-            deine Angaben. Mit deiner digitalen Unterschrift wird dein Antrag verbindlich.
-          </p>
-          <p>
-            Danach kannst du dein unterzeichnetes Antrags-PDF inkl. Satzung herunterladen und den
-            Jahresbeitrag von <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> direkt per
-            Zahlungsanbieter oder per eigener Überweisung begleichen.
-          </p>
-          <div className="rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
-            <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>
-            <dl className="mt-2 grid gap-1 text-slate-700 sm:grid-cols-[7.5rem_1fr]">
-              <dt className="text-slate-500">Empfänger</dt>
-              <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
-              <dt className="text-slate-500">IBAN</dt>
-              <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
-              <dt className="text-slate-500">BIC</dt>
-              <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
-              <dt className="text-slate-500">VWZ</dt>
-              <dd>{CLUB_BANK.reference_hint}</dd>
-            </dl>
-          </div>
-          <p>
-            Nach Bestätigung durch den Vorstand wirst du in der Anni Perka Fanclub App freigeschaltet
-            und – wenn du möchtest – in die WhatsApp-Gruppe des Fanclubs aufgenommen.
-          </p>
-          <p className="rounded-xl border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-amber-950">
-            <strong>Jahresbeitrag: {MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> — bitte alle
-            notwendigen Felder ausfüllen und bestätigen.
-          </p>
-        </div>
+      <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/80 via-white to-fc-ice/40 p-5 shadow-sm">
+        <p className="text-base font-semibold text-fc-navy">
+          Nur noch wenige Minuten bis zu deiner Mitgliedschaft
+        </p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {[
+            "digitale Anmeldung",
+            "digitale Unterschrift",
+            "keine Ausdrucke notwendig",
+            "jederzeit am PC oder Smartphone möglich",
+          ].map((item) => (
+            <li key={item} className="flex items-center gap-2 text-sm text-slate-700">
+              <Check className="h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} aria-hidden />
+              {item}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <Card>
@@ -511,15 +480,65 @@ export function MembershipApplicationForm() {
         </CardContent>
       </Card>
 
+      <div className="overflow-hidden rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50/70 via-white to-fc-ice/50 p-5 shadow-sm sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-100 text-rose-600">
+            <Heart className="h-5 w-5" aria-hidden />
+          </span>
+          <div>
+            <h2 className="text-lg font-bold text-fc-navy">
+              Darauf kannst du dich freuen <span aria-hidden>❤️</span>
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Als Mitglied erhältst du Zugang zu unserem digitalen Fanclub-Portal mit vielen
+              exklusiven Funktionen:
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
+            "Community",
+            "Gewinnspiele",
+            "Umfragen",
+            "Konzertplanung",
+            "Reiseinformationen",
+            "Fanshop",
+            "Anni-Stars",
+            "Grüße von Anni",
+          ].map((item) => (
+            <span
+              key={item}
+              className="inline-flex items-center gap-1.5 rounded-full border border-fc-sky/25 bg-white px-3 py-1 text-xs font-medium text-fc-navy shadow-sm"
+            >
+              <Sparkles className="h-3 w-3 text-fc-blue" aria-hidden />
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Mitgliedschaft</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <p className="sm:col-span-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-800">
-            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> (fest, Zahlung nach Antragstellung
-            in der App)
+            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> — Zahlung nach Antragstellung
+            per Zahlungsanbieter oder Überweisung.
           </p>
+          <div className="sm:col-span-2 rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
+            <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>
+            <dl className="mt-2 grid gap-1 text-slate-700 sm:grid-cols-[7.5rem_1fr]">
+              <dt className="text-slate-500">Empfänger</dt>
+              <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
+              <dt className="text-slate-500">IBAN</dt>
+              <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
+              <dt className="text-slate-500">BIC</dt>
+              <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
+              <dt className="text-slate-500">VWZ</dt>
+              <dd>{CLUB_BANK.reference_hint}</dd>
+            </dl>
+          </div>
           <AppDateInput
             label="Gewünschter Beginn"
             required
@@ -706,14 +725,28 @@ export function MembershipApplicationForm() {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => void submit()}
-        className="h-12 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm disabled:opacity-60"
-      >
-        {busy ? "Wird gesendet…" : "Antrag verbindlich absenden"}
-      </button>
+      <div className="rounded-2xl border border-fc-navy/10 bg-gradient-to-b from-fc-ice/60 to-white p-6 text-center shadow-sm">
+        <h2 className="text-xl font-bold text-fc-navy">Fast geschafft!</h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-700">
+          Nach dem Absenden prüfen wir deinen Antrag. Anschließend erhältst du alle Informationen per
+          E-Mail. Wir freuen uns darauf, dich bald im offiziellen Anni Perka Fanclub begrüßen zu
+          dürfen!
+        </p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void submit()}
+          className="mt-5 inline-flex h-12 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-fc-navy px-6 text-sm font-semibold text-white shadow-md shadow-fc-navy/20 transition hover:bg-fc-blue disabled:opacity-60 sm:w-auto sm:min-w-[18rem]"
+        >
+          {busy ? (
+            "Wird gesendet…"
+          ) : (
+            <>
+              <span aria-hidden>❤️</span> Jetzt Mitglied werden
+            </>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
