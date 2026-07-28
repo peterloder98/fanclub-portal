@@ -184,6 +184,6 @@ values
   ('voting_hero', 'Votingheld', 'community', 'Teilnahmen an Umfragen in der App.', 'vote', 'poll_votes', 5, 10, 25, 50, 20),
   ('birthday_greeter', 'Geburtstagsgratulant', 'community', 'Gratulationen unter Geburtstags-Beiträgen im Feed.', 'cake', 'birthday_comments', 3, 10, 25, 50, 30),
   ('club_veteran', 'Fanclub-Urgestein', 'membership', 'Dauer der aktiven Mitgliedschaft im Fanclub.', 'shield', 'membership_years', 1, 2, 5, 10, 40),
-  ('merch_legend', 'Merch-Legende', 'shop', 'Gekaufte Artikel im Fanshop (versendet, nicht storniert).', 'shirt', 'merch_items_purchased', 5, 15, 25, 50, 50),
+  ('merch_legend', 'Merch-Legende', 'shop', 'Gekaufte Artikel im Fanshop (versendet, nicht storniert).', 'shirt', 'merch_items_purchased', 5, 10, 25, 50, 50),
   ('referral_pro', 'Werbeprofi', 'referrals', 'Empfehlungsmails und erfolgreich geworbene Mitglieder.', 'users', 'referral_score', 5, 10, 20, 20, 60)
 on conflict (slug) do nothing;
