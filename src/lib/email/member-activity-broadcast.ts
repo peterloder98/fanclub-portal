@@ -76,7 +76,7 @@ function buildMessageForRecipient(
     signatureText: sig.text,
     deepLink,
   });
-  const html = buildHtmlFromPlain(text, sig.htmlBlock);
+  const html = buildHtmlFromPlain(text, sig.htmlBlock, sig.text);
   const attachments = sig.imageBuffer
     ? [
         {

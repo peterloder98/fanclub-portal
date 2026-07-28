@@ -1,3 +1,4 @@
+import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
 import { sendEmailWithLog } from "@/lib/email/send-log";
@@ -95,7 +96,7 @@ Deine Anni Perka Fanclub App`;
       to: adm.email!,
       subject,
       text,
-      html: text.replace(/\n/g, "<br>"),
+      html: buildEmailFromPlainText(text),
       templateKey: "merchandise_order_admin",
       context: { order_id: input.orderId },
     });

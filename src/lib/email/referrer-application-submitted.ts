@@ -62,7 +62,7 @@ export async function notifyReferrerApplicationSubmitted(input: {
     applicantPronounDative,
     signatureText: sig.text,
   });
-  const html = buildHtmlFromPlain(text, sig.htmlBlock);
+  const html = buildHtmlFromPlain(text, sig.htmlBlock, sig.text);
 
   const attachments = sig.imageBuffer
     ? [

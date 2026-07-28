@@ -1,3 +1,5 @@
+import { buildEmailFromPlainText } from "@/lib/email/email-layout";
+
 export function memberReferralSubject(senderFullName: string) {
   const sender = senderFullName.trim() || "Ein Fanclub-Mitglied";
   return `${sender} hat dich in den Anni Perka Fanclub eingeladen`;
@@ -49,17 +51,7 @@ export function composeMemberReferralBody(input: {
     .replace(/\{\{application_link\}\}/g, link);
 }
 
-/** Plain-Text mit **fett** → HTML für E-Mail-Versand. */
+/** Plain-Text mit **fett** → HTML für E-Mail-Versand (einheitliches Layout). */
 export function buildMemberReferralHtml(text: string) {
-  const escaped = text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  const withBold = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  const withLinks = withBold.replace(
-    /(https?:\/\/[^\s<]+)/g,
-    '<a href="$1" style="color:#2563eb;text-decoration:underline">$1</a>',
-  );
-  const body = withLinks.replace(/\n/g, "<br>");
-  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;padding:24px;line-height:1.55;color:#1e293b"><div style="max-width:560px">${body}</div></body></html>`;
+  return buildEmailFromPlainText(text, { markdown: true });
 }

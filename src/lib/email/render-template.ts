@@ -4,6 +4,12 @@ import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import { loadMailSignature } from "@/lib/email/signatures";
 import { escapePlainTextForHtml, linkifyEscapedHtml } from "@/lib/email/linkify-plain-text";
 import {
+  appendSignatureToEmailHtml,
+  EMAIL_BUTTON_STYLE,
+  EMAIL_PARAGRAPH_STYLE,
+  wrapEmailDocument,
+} from "@/lib/email/email-layout";
+import {
   ensureEmailSalutationVars,
   normalizeLegacySalutationPlaceholders,
 } from "@/lib/email/salutation-block";
@@ -76,22 +82,13 @@ function appendSignatureToPlainText(body: string, signatureText: string) {
   return core ? `${core}\n\n${sig}` : sig;
 }
 
-function appendSignatureToHtml(bodyHtml: string, signatureHtml: string) {
-  const core = bodyHtml.trimEnd();
-  const sig = signatureHtml.trim();
-  if (!sig) return core;
-  if (!core) return sig;
-  // Visuell eine Leerzeile (Absatz) zwischen Text und Signatur
-  return `${core}<p style="margin:0 0 1em;line-height:1.5">&nbsp;</p>${sig}`;
-}
-
 function textToHtmlParagraphs(text: string) {
   const escaped = escapePlainTextForHtml(text);
   return escaped
     .split(/\n\n+/)
     .map((p) => {
       const inner = linkifyEscapedHtml(p.replace(/\n/g, "<br>"));
-      return `<p style="margin:0 0 1em;font-size:15px;line-height:1.5;color:#1e293b">${inner}</p>`;
+      return `<p style="${EMAIL_PARAGRAPH_STYLE}">${inner}</p>`;
     })
     .join("");
 }
@@ -129,16 +126,16 @@ wir freuen uns, dass du im Anni Perka Fanclub dabei bist und senden dir heute de
 3. Nach dem Login kannst du optional fünf kurze Kennenlernen-Fragen beantworten (oder überspringen) — und danach die App mit deinen Fanclub-Freunden austesten!
 
 Viel Spaß und bis ganz bald.`,
-  body_html: `<p style="margin:0 0 1em;font-size:15px;line-height:1.55;color:#1e293b">{{salutation}},</p>
-<p style="margin:0 0 1em;font-size:15px;line-height:1.55;color:#1e293b">wir freuen uns, dass du im Anni Perka Fanclub dabei bist und senden dir heute den Link zum Einrichten deines Zugangs zur neuen Fanclub App.</p>
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">wir freuen uns, dass du im Anni Perka Fanclub dabei bist und senden dir heute den Link zum Einrichten deines Zugangs zur neuen Fanclub App.</p>
 <ol style="margin:0 0 1.25em;padding-left:1.25em;font-size:15px;line-height:1.6;color:#1e293b">
   <li style="margin-bottom:0.75em"><strong>Bitte den folgenden Button klicken:</strong><br>
-    <a href="{{setup_url}}" style="display:inline-block;margin-top:8px;padding:12px 18px;background:#0b1f3a;color:#ffffff;text-decoration:none;border-radius:10px;font-weight:600">Zugang hier einrichten</a>
+    <a href="{{setup_url}}" style="${EMAIL_BUTTON_STYLE}">Zugang hier einrichten</a>
   </li>
   <li style="margin-bottom:0.75em"><strong>Bestätige deine Identität</strong> durch Eingabe deines Geburtsdatums und vergebe dein Wunschpasswort. Dein Benutzername ist deine E-Mail-Adresse. Bitte speichere dir beides unbedingt ab!</li>
   <li><strong>Nach dem Login</strong> kannst du optional fünf kurze Kennenlernen-Fragen beantworten (oder überspringen) — und danach die App mit deinen Fanclub-Freunden austesten!</li>
 </ol>
-<p style="margin:0 0 1em;font-size:15px;line-height:1.55;color:#1e293b">Viel Spaß und bis ganz bald.</p>`,
+<p style="${EMAIL_PARAGRAPH_STYLE}">Viel Spaß und bis ganz bald.</p>`,
 };
 
 export async function renderEmailFromTemplate(
@@ -199,15 +196,17 @@ export async function renderEmailFromTemplate(
       )
     : textToHtmlParagraphs(replaceVars(bodyCore, allVars));
   const bodyHtml = sig.htmlBlock?.trim()
-    ? appendSignatureToHtml(bodyHtmlCore, sig.htmlBlock)
+    ? appendSignatureToEmailHtml(bodyHtmlCore, sig.htmlBlock)
     : bodyHtmlCore;
 
-  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f8fafc;padding:24px"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e8f0">${bodyHtml}</div></body></html>`;
+  const html = wrapEmailDocument(bodyHtml);
 
   return {
     subject,
     text,
     html,
+    signatureHtml: sig.htmlBlock,
+    signatureText: sig.text,
     signatureAttachment: sig.imageBuffer
       ? {
           filename: "signatur.png",

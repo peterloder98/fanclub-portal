@@ -1,5 +1,6 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import { sendEmailWithLog } from "@/lib/email/send-log";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   createUserNotification,
   notifyAllAdmins,
@@ -76,7 +77,7 @@ Anni Perka Fanclub`;
       to: adm.email!,
       subject,
       text,
-      html: text.replace(/\n/g, "<br>"),
+      html: buildEmailFromPlainText(text),
       templateKey: "profile_change_pending_admin",
       context: { request_id: input.requestId },
     });

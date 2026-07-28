@@ -291,7 +291,7 @@ export async function sendPaymentReminderEmail(input: {
   const subject = input.subject.trim() || rendered.subject;
   const text = input.body.trim() || rendered.text;
   const html = input.body.trim()
-    ? buildHtmlFromPlain(text, rendered.html)
+    ? buildHtmlFromPlain(text, rendered.signatureHtml, rendered.signatureText)
     : rendered.html;
 
   const result = await sendEmailViaAccount({

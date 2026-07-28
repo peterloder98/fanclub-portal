@@ -6,9 +6,9 @@ import { auditLog } from "@/lib/admin/audit-log";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { buildCommentWarningEmail } from "@/lib/moderation/warning-email";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
-import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { loadSignaturePickerData } from "@/lib/email/draft-with-signatures";
-import { CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
+import { loadMailSignature, CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
+import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import {
   logMemberActivity,
   MEMBER_ACTIVITY_TYPES,
@@ -279,6 +279,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
     signatureTexts[defaultSignatureId] ??
     signatureTexts[CLUB_SIGNATURE_ID] ??
     adminName;
+  const sigMail = await loadMailSignature(defaultSignatureId || CLUB_SIGNATURE_ID);
 
   if (memberEmail) {
     const { subject, text } = buildCommentWarningEmail({
@@ -291,7 +292,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
       contextAuthorName,
       adminSignature: adminSig,
     });
-    const html = buildHtmlFromPlain(text, `<p>${text.replace(/\n/g, "<br/>")}</p>`);
+    const html = buildHtmlFromPlain(text, sigMail.htmlBlock, adminSig);
     await sendEmailViaAccount({
       to: memberEmail,
       subject,

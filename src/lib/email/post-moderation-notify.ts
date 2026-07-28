@@ -1,3 +1,4 @@
+import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import {
@@ -65,7 +66,7 @@ Anni Perka Fanclub`;
       to: adm.email!,
       subject,
       text,
-      html: text.replace(/\n/g, "<br>"),
+      html: buildEmailFromPlainText(text),
       templateKey: "post_pending_admin",
       context: { post_id: input.postId },
     });

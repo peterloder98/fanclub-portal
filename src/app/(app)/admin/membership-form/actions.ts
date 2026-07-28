@@ -8,6 +8,7 @@ import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { getMembershipApplicationFormUrl } from "@/lib/membership/application-form-url";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const DEFAULT_FEE_EUR = "15,00 EUR";
 
@@ -56,7 +57,7 @@ export async function sendMembershipFormInviteEmail(input: {
   signatureId: string;
   greetingName?: string;
 }) {
-  await requireAdminAction();
+  const { user } = await requireAdminAction();
   const to = input.to.trim();
   if (!to || !to.includes("@")) {
     throw new Error("Bitte eine gültige E-Mail-Adresse eingeben.");
@@ -86,7 +87,7 @@ export async function sendMembershipFormInviteEmail(input: {
   const subject = input.subject.trim() || rendered.subject;
   const text = input.body.trim() || rendered.text;
   const html = input.body.trim()
-    ? buildHtmlFromPlain(text, rendered.html)
+    ? buildHtmlFromPlain(text, rendered.signatureHtml, rendered.signatureText)
     : rendered.html;
 
   const result = await sendEmailViaAccount({
@@ -104,6 +105,15 @@ export async function sendMembershipFormInviteEmail(input: {
       );
     }
     throw new Error("E-Mail konnte nicht gesendet werden (SMTP prüfen).");
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { error: logErr } = await admin.from("membership_referral_sends").insert({
+    sender_id: user.id,
+    recipient_email: to.toLowerCase(),
+  });
+  if (logErr && logErr.code !== "23505") {
+    console.error("[membership] Einladung nicht protokolliert:", logErr.message);
   }
 
   return { ok: true };

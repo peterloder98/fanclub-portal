@@ -1,3 +1,4 @@
+import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import type { Attachment } from "nodemailer/lib/mailer";
 import { getDefaultSmtpAccountWithPassword, getSmtpAccountWithPassword } from "@/lib/smtp/accounts";
 import { createTransportFromCredentials, formatFromHeader } from "@/lib/smtp/transport";
@@ -36,7 +37,7 @@ export async function sendEmailViaAccount(input: SendViaAccountInput) {
       to: input.to,
       subject: input.subject,
       text: input.text,
-      html: input.html ?? input.text.replace(/\n/g, "<br>"),
+      html: input.html ?? buildEmailFromPlainText(input.text),
       attachments: input.attachments,
     });
   } catch (e) {
