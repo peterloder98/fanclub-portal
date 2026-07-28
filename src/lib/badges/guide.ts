@@ -70,7 +70,7 @@ export const BADGE_CATALOG = [
     iconKey: "shirt",
     description: "Gekaufte Artikel im Fanshop (versendet, nicht storniert).",
     unit: { singular: "Artikel", plural: "Artikel" },
-    thresholds: { bronze: 5, silver: 15, gold: 25, platinum: 50 },
+    thresholds: { bronze: 5, silver: 10, gold: 25, platinum: 50 },
   },
   {
     slug: "referral_pro",

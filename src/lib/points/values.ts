@@ -1,7 +1,7 @@
 /** Zentrale Punktwerte — müssen mit Supabase-Triggern (supabase/041_*.sql) übereinstimmen. */
 
 export const POINT_VALUES = {
-  membershipReferralCompleted: 100,
+  membershipReferralCompleted: 70,
   membershipReferral: 20,
   pollVote: 5,
   giveawayEntry: 2,
@@ -17,7 +17,7 @@ export const POINT_VALUES = {
 export const POINTS_RANKS = [
   { from: 0, label: "Fan" },
   { from: 25, label: "Aktiv-Fan" },
-  { from: 75, label: "Bronze-Fan" },
+  { from: 75, label: "Treue-Fan" },
   { from: 150, label: "Silber-Fan" },
   { from: 250, label: "Gold-Fan" },
   { from: 400, label: "Diamond-Fan" },

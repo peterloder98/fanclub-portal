@@ -5,6 +5,8 @@ import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { normalizeGender, pronounDative } from "@/lib/person/gender";
 
+import { MEMBERSHIP_REFERRAL_COMPLETION_POINTS } from "@/lib/points/award-membership-referral-completed";
+
 export const REFERRER_APPLICATION_SUBMITTED_SUBJECT =
   "Dein Geworbener hat den Mitgliedsantrag eingereicht";
 
@@ -21,7 +23,7 @@ export function composeReferrerApplicationSubmittedBody(input: {
 herzlichen Dank, dass du ${name} in den Anni Perka Fanclub eingeladen hast!
 
 Der Antrag wurde von ${input.applicantPronounDative} soeben digital unterzeichnet und bei uns eingereicht.
-Sobald der Mitgliedsbeitrag bezahlt ist, werden wir ${name} bei uns herzlich aufnehmen und du erhältst selbstverständlich deine 100 Anni-Stars als Dankeschön fürs Werben.
+Sobald der Mitgliedsbeitrag bezahlt ist, werden wir ${name} bei uns herzlich aufnehmen und du erhältst selbstverständlich deine ${MEMBERSHIP_REFERRAL_COMPLETION_POINTS} Anni-Stars als Dankeschön fürs Werben.
 
 ${input.signatureText.trim()}`.trim();
 }

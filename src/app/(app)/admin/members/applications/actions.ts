@@ -21,7 +21,10 @@ import {
 } from "@/lib/membership/activity-log";
 import { deleteMembershipApplicationCompletely } from "@/lib/membership/delete-application";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
-import { awardMembershipReferralCompletionPoints } from "@/lib/points/award-membership-referral-completed";
+import {
+  awardMembershipReferralCompletionPoints,
+  MEMBERSHIP_REFERRAL_COMPLETION_POINTS,
+} from "@/lib/points/award-membership-referral-completed";
 import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
 import { storeApprovedMemberContractPdf } from "@/lib/membership/application-pdf-service";
 import {
@@ -146,7 +149,7 @@ async function activateApplication(
     try {
       await awardMembershipReferralCompletionPoints(referrerId, applicationId);
     } catch (e) {
-      console.error("[points] Werbeprämie +100 fehlgeschlagen:", e);
+      console.error(`[points] Werbeprämie +${MEMBERSHIP_REFERRAL_COMPLETION_POINTS} fehlgeschlagen:`, e);
     }
   }
 
