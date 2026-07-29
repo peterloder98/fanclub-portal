@@ -50,13 +50,20 @@ function MapClickDismiss({ onDismiss }: { onDismiss: () => void }) {
 function MapResizeFix() {
   const map = useMap();
   useEffect(() => {
-    const run = () => map.invalidateSize();
+    const run = () => map.invalidateSize({ animate: false });
     run();
-    const t1 = window.setTimeout(run, 100);
-    const t2 = window.setTimeout(run, 400);
+    const t1 = window.setTimeout(run, 80);
+    const t2 = window.setTimeout(run, 350);
+    const el = map.getContainer().parentElement;
+    const ro =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => run())
+        : null;
+    ro?.observe(el!);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
+      ro?.disconnect();
     };
   }, [map]);
   return null;
@@ -71,9 +78,9 @@ function FitMembersBounds({ points }: { points: Array<{ lat: number; lng: number
       map.setView([points[0].lat, points[0].lng], 9, { animate: false });
     } else {
       const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-      map.fitBounds(bounds.pad(0.18), {
-        padding: [28, 28],
-        maxZoom: 9,
+      map.fitBounds(bounds.pad(0.12), {
+        padding: [20, 20],
+        maxZoom: 8,
         animate: false,
       });
     }
@@ -145,7 +152,7 @@ export function MembersMapClient({
   if (!mounted) {
     return (
       <div
-        className="grid h-full min-h-[360px] place-items-center rounded-xl border bg-fc-ice text-sm text-slate-500"
+        className="grid h-full min-h-[280px] place-items-center rounded-xl border border-fc-ice bg-fc-ice text-sm text-slate-500"
         role="status"
       >
         Karte wird geladen …
@@ -156,7 +163,7 @@ export function MembersMapClient({
   if (!markers.length) {
     return (
       <div
-        className="grid h-full min-h-[360px] place-items-center rounded-xl border bg-fc-ice px-4 text-center text-sm text-slate-600"
+        className="grid h-full min-h-[280px] place-items-center rounded-xl border border-fc-ice bg-fc-ice px-4 text-center text-sm text-slate-600"
         role="status"
       >
         Noch keine Standorte — sobald Mitglieder PLZ und Ort hinterlegt haben, erscheinen Pins.
@@ -165,7 +172,7 @@ export function MembersMapClient({
   }
 
   return (
-    <div className="flex h-[min(55vh,380px)] min-h-[280px] w-full flex-col overflow-hidden rounded-xl border lg:h-full lg:min-h-[320px]">
+    <div className="flex h-full min-h-[280px] w-full flex-col overflow-hidden rounded-xl border border-fc-ice">
       <div className="relative min-h-0 flex-1">
         <MapContainer
           center={GERMANY_CENTER}
@@ -174,7 +181,7 @@ export function MembersMapClient({
           maxZoom={12}
           maxBounds={GERMANY_BOUNDS}
           maxBoundsViscosity={0.85}
-          className="h-full w-full"
+          className="absolute inset-0 h-full w-full"
           scrollWheelZoom
           aria-label="Mitgliederkarte Deutschland"
         >

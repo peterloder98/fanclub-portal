@@ -8,7 +8,7 @@ const MembersMapClient = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="grid h-full min-h-[360px] place-items-center rounded-xl border bg-slate-50 text-sm text-slate-500">
+      <div className="grid h-full min-h-[280px] place-items-center rounded-xl border border-fc-ice bg-slate-50 text-sm text-slate-500">
         Karte wird geladen …
       </div>
     ),

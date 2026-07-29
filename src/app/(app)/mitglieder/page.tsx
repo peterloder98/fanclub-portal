@@ -108,17 +108,19 @@ export default async function MitgliederPage() {
   }
 
   const mapSection = (
-    <div className="relative z-0 flex h-full min-h-0 flex-col rounded-2xl border border-fc-ice bg-white p-3 shadow-sm">
-      <div className="fc-accent-bar mb-2 w-16 shrink-0" />
-      <h2 className="shrink-0 px-1 text-base font-semibold text-fc-navy">
-        Hier sind unsere Mitglieder her
-      </h2>
-      {missingCoords > 0 ? (
-        <p className="mt-1 shrink-0 px-1 text-xs text-amber-800">
-          {missingCoords} Mitglied(er) ohne Kartenposition.
-        </p>
-      ) : null}
-      <div className="mt-2 h-[min(55vh,380px)] min-h-[280px] flex-none lg:min-h-0 lg:h-full lg:flex-1">
+    <div className="relative z-0 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-fc-ice bg-white shadow-sm">
+      <div className="shrink-0 px-3 pt-3">
+        <div className="fc-accent-bar mb-2 w-16" />
+        <h2 className="px-1 text-base font-semibold text-fc-navy">
+          Hier sind unsere Mitglieder her
+        </h2>
+        {missingCoords > 0 ? (
+          <p className="mt-1 px-1 text-xs text-amber-800">
+            {missingCoords} Mitglied(er) ohne Kartenposition.
+          </p>
+        ) : null}
+      </div>
+      <div className="mt-2 min-h-0 flex-1 px-3 pb-3">
         <MembersMap clusters={clusters} memberCount={mapPoints.length} totalActive={activeList.length} />
       </div>
     </div>
@@ -142,7 +144,7 @@ export default async function MitgliederPage() {
         title="Mitglieder"
         subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
       />
-      <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-hidden py-3 lg:px-8">
+      <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-hidden px-3 py-3 sm:px-4 lg:px-8">
         <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-fc-ice" />}>
           <MitgliederTabs
             mapSection={mapSection}

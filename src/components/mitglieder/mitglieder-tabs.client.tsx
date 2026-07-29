@@ -63,11 +63,11 @@ export function MitgliederTabs({
       {tab === "karte" ? (
         <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:overflow-hidden">
           {welcomeSection ? <div className="shrink-0">{welcomeSection}</div> : null}
-          <div className="flex min-h-0 flex-1 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)] lg:gap-4 lg:items-stretch">
-            <div className="min-h-[min(55vh,420px)] shrink-0 lg:min-h-0 lg:h-full lg:flex-none">
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)] lg:grid-rows-1 lg:gap-4 lg:overflow-hidden">
+            <div className="flex min-h-[min(52vh,420px)] min-w-0 flex-col overflow-hidden lg:h-full lg:min-h-0">
               {mapSection}
             </div>
-            <div className="min-h-[11rem] shrink-0 lg:max-h-none lg:h-full lg:min-h-0">
+            <div className="flex min-h-[14rem] min-w-0 flex-col overflow-hidden lg:h-full lg:min-h-0">
               {birthdaysSection}
             </div>
           </div>
