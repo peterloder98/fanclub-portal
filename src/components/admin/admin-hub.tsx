@@ -93,7 +93,7 @@ const SECTIONS: AdminHubSection[] = [
             {
               href: "/admin/merchandise",
               title: "Merchandise",
-              description: "Artikel, Bestand, Bestellungen",
+              description: "Artikel und Bestand",
               icon: ShoppingBag,
             } satisfies AdminHubItem,
           ]

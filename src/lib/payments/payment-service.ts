@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
-import { awardShopOrderStars } from "@/lib/shop/order-stars";
 import { createOpenAccountingEntry, confirmAccountingEntry, cancelAccountingEntry } from "@/lib/payments/accounting-service";
 import { prepareBankTransferCheckout } from "@/lib/payments/bank-transfer-service";
 import { prepareWalletCheckout } from "@/lib/payments/wallet-service";
@@ -87,19 +86,11 @@ export async function createPaymentWithAccounting(input: {
     admin,
     paymentId,
     userId: input.userId,
-    orderId: input.orderId,
     paymentType: input.paymentType,
     amountCents: input.amountCents,
     description: input.description,
     internalReference,
   });
-
-  if (input.orderId) {
-    await admin
-      .from("merchandise_orders")
-      .update({ payment_id: paymentId, payment_status: "unpaid" })
-      .eq("id", input.orderId);
-  }
 
   let providerExtras: Partial<PaymentCheckoutResult> = {};
   if (input.paymentMethod === "bank_transfer") {
@@ -107,7 +98,6 @@ export async function createPaymentWithAccounting(input: {
       paymentId,
       internalReference,
       amountCents: input.amountCents,
-      orderId: input.orderId ?? undefined,
     });
   } else if (
     input.paymentMethod === "paypal" ||
@@ -130,7 +120,6 @@ export async function createPaymentWithAccounting(input: {
 
   return {
     paymentId,
-    orderId: input.orderId ?? undefined,
     applicationId: input.applicationId ?? undefined,
     internalReference,
     amountCents: input.amountCents,
@@ -177,14 +166,6 @@ export async function confirmPaymentManually(input: {
     confirmedBy: input.adminUserId,
   });
 
-  if (payment.order_id) {
-    await admin
-      .from("merchandise_orders")
-      .update({ payment_status: "paid" })
-      .eq("id", payment.order_id);
-    await awardShopOrderStars(payment.order_id).catch(() => {});
-  }
-
   if (payment.payment_type === "membership_fee") {
     await syncMemberContributionDate(admin, payment.user_id);
   }
@@ -226,13 +207,6 @@ export async function cancelPaymentManually(input: {
   if (upErr) throw new Error(upErr.message);
 
   await cancelAccountingEntry({ admin, paymentId: input.paymentId });
-
-  if (payment.order_id) {
-    await admin
-      .from("merchandise_orders")
-      .update({ payment_status: "cancelled" })
-      .eq("id", payment.order_id);
-  }
 
   await logPaymentAudit(admin, {
     paymentId: input.paymentId,

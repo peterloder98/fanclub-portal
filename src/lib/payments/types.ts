@@ -5,7 +5,7 @@ export type PaymentMethod =
   | "apple_pay"
   | "amazon_pay";
 
-export type PaymentType = "shop_order" | "membership_fee" | "other";
+export type PaymentType = "membership_fee" | "other";
 
 export type PaymentStatus =
   | "open"

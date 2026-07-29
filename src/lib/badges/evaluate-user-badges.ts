@@ -128,20 +128,8 @@ async function metricValue(
       if (now < anniversary) years -= 1;
       return Math.max(0, years);
     }
-    case "merch_items_purchased": {
-      const { data: orders } = await admin
-        .from("merchandise_orders")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("status", "shipped");
-      const orderIds = (orders ?? []).map((o) => o.id);
-      if (!orderIds.length) return 0;
-      const { data: items } = await admin
-        .from("merchandise_order_items")
-        .select("quantity")
-        .in("order_id", orderIds);
-      return (items ?? []).reduce((sum, row) => sum + (row.quantity ?? 0), 0);
-    }
+    case "merch_items_purchased":
+      return 0;
     default:
       return 0;
   }

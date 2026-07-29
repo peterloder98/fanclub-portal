@@ -146,7 +146,21 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Mitglied in der Liste öffnen.",
               "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
               "„Beitrags-Erinnerung senden“: Mail mit Betrag, Kontodaten und Verwendungszweck (z. B. „Beitrag 2026, Nr. 42, Max Mustermann“).",
-              "Wenn das Geld da ist: unter Zahlungen bzw. Buchhaltung zuordnen oder bestätigen.",
+              "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag wird in der Mitgliederverwaltung als bezahlt geführt — er erscheint nicht im Buchhaltungs-Saldo.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Buchhaltung in der App:",
+          },
+          {
+            type: "ol",
+            items: [
+              "Admin → Buchhaltung öffnen.",
+              "Unter „Buchhaltungs-Start“ das Datum eintragen, ab dem ihr die Kasse in der App führt, und den Kontostand eures Vereinskontos an diesem Tag.",
+              "Alles vor diesem Datum bucht ihr nicht einzeln nach — der Anfangsbestand ersetzt die Historie.",
+              "Mitgliedsbeiträge bleiben in der App sichtbar (offen/bezahlt, Erinnerungen), fließen aber nicht in Einnahmen und Saldo der Buchhaltung ein.",
+              "Weitere Einnahmen und Ausgaben (Events, Merch-Einkauf, Allgemeines) ab Startdatum normal erfassen.",
             ],
           },
           {

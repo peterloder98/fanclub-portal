@@ -83,13 +83,6 @@ export const POINTS_RULES: PointsRule[] = [
     note: "Like zurücknehmen: Anni-Star wird wieder abgezogen. Likes auf eigene Beiträge geben keine Sterne.",
   },
   {
-    id: "shop_order",
-    label: "Fanshop-Einkauf",
-    points: 1,
-    how: "Für je 10 € Einkaufswert im Fanshop (nach Versand der Bestellung).",
-    note: "9,99 € = 0 · 10 € = 1 · 24,90 € = 2 · 50 € = 5 Anni-Stars. Storno zieht Sterne wieder ab.",
-  },
-  {
     id: "giveaway_like",
     label: "Gewinnspiel geliked",
     points: POINT_VALUES.giveawayLike,

@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PaymentType } from "@/lib/payments/types";
 
 const PREFIX: Record<PaymentType, string> = {
-  shop_order: "BESTELLUNG",
   membership_fee: "MITGLIED",
   other: "ZAHLUNG",
 };
@@ -28,7 +27,7 @@ export async function nextInternalReference(
   if (!row) {
     const { error: insErr } = await admin.from("payment_reference_counters").insert({
       year,
-      shop_seq: paymentType === "shop_order" ? 1 : 0,
+      shop_seq: paymentType === "membership_fee" ? 0 : 1,
       membership_seq: paymentType === "membership_fee" ? 1 : 0,
     });
     if (insErr) throw new Error(insErr.message);

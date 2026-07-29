@@ -18,7 +18,6 @@ export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
 };
 
 export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
-  shop_order: "Shop-Bestellung",
   membership_fee: "Mitgliedsbeitrag",
   other: "Sonstiges",
 };

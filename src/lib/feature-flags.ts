@@ -23,7 +23,6 @@ export const FEATURE_BADGE_SLUGS = {
 
 /** Punkte-Regel-IDs, die an Flags hängen. */
 export const FEATURE_POINTS_RULE_IDS = {
-  shop_order: "merchandise",
   radio_voting: "votings",
 } as const satisfies Record<string, FeatureFlag>;
 

@@ -141,9 +141,7 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.merchandiseOrderConfirmed:
       return "/merchandise";
     case NOTIFICATION_KINDS.merchandiseOrderAdmin:
-      return typeof m.order_id === "string"
-        ? `/admin/merchandise/orders/${m.order_id}`
-        : n.link_url;
+      return "/admin/merchandise";
     case NOTIFICATION_KINDS.applicationSubmitted:
       return typeof m.application_id === "string"
         ? `/admin/members/applications/${m.application_id}`

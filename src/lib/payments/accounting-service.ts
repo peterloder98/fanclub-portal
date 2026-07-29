@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BookkeepingStatus, PaymentType } from "@/lib/payments/types";
 import type { LedgerCategory } from "@/lib/club/ledger";
+import { includeInAccountingForCategory } from "@/lib/club/accounting-settings";
 
 function ledgerCategoryForPaymentType(paymentType: PaymentType): LedgerCategory {
-  if (paymentType === "shop_order") return "merchandise";
   if (paymentType === "membership_fee") return "membership";
   return "general";
 }
@@ -21,18 +21,21 @@ export async function createOpenAccountingEntry(input: {
   const { admin, paymentId, userId, orderId, paymentType, amountCents, description, internalReference } =
     input;
 
+  const category = ledgerCategoryForPaymentType(paymentType);
+
   const { data, error } = await admin
     .from("club_ledger_entries")
     .insert({
       entry_type: "income",
       amount_cents: amountCents,
       description: `${description} · ${internalReference}`,
-      category: ledgerCategoryForPaymentType(paymentType),
+      category,
       member_id: userId,
       entry_date: new Date().toISOString().slice(0, 10),
       payment_id: paymentId,
       order_id: orderId ?? null,
       bookkeeping_status: "open" satisfies BookkeepingStatus,
+      include_in_accounting: includeInAccountingForCategory(category),
     })
     .select("id")
     .single();

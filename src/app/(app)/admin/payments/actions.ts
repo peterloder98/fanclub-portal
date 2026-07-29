@@ -122,7 +122,7 @@ export async function confirmPaymentAction(input: {
   revalidatePath("/admin/payments");
   revalidatePath("/admin/accounting");
   revalidatePath("/admin/merchandise");
-  revalidatePath("/admin/merchandise/orders");
+  revalidatePath("/admin/payments");
   revalidatePath("/profile");
   return { ok: true };
 }

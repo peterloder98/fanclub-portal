@@ -26,6 +26,7 @@ export type ClubLedgerRow = {
   activity_log_id: string | null;
   payment_id: string | null;
   bookkeeping_status: BookkeepingStatus | null;
+  include_in_accounting: boolean;
 };
 
 export const LEDGER_CATEGORY_LABELS: Record<LedgerCategory, string> = {
@@ -88,7 +89,7 @@ export async function listClubLedger(opts?: {
   let q = admin
     .from("club_ledger_entries")
     .select(
-      "id,entry_number,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id,payment_id,bookkeeping_status",
+      "id,entry_number,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id,payment_id,bookkeeping_status,include_in_accounting",
     )
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false })
@@ -144,6 +145,8 @@ export async function listClubLedger(opts?: {
     bookkeeping_status:
       ((r as { bookkeeping_status?: BookkeepingStatus | null }).bookkeeping_status ??
         "paid") as BookkeepingStatus,
+    include_in_accounting:
+      (r as { include_in_accounting?: boolean }).include_in_accounting !== false,
   }));
 }
 

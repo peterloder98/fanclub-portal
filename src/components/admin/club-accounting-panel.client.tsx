@@ -35,6 +35,12 @@ import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-inp
 import { EmptyState } from "@/components/ui/empty-state";
 import { exportClubLedgerCsvAction } from "@/app/(app)/admin/members/detail-actions";
 import { summarizeLedgerByMonth } from "@/lib/club/ledger-export";
+import {
+  computeAccountingBalance,
+  filterAccountingRows,
+  type AccountingSettings,
+} from "@/lib/club/accounting-settings";
+import { saveAccountingSetupAction } from "@/app/(app)/admin/accounting/actions";
 
 const MONTHS = [
   "Januar",
@@ -100,11 +106,13 @@ export function ClubAccountingPanel({
   openContributions,
   openMeetingCharges = [],
   ledgerAvailable,
+  accountingSettings,
 }: {
   entries: ClubLedgerRow[];
   openContributions: MemberContributionInfo[];
   openMeetingCharges?: OpenMeetingCharge[];
   ledgerAvailable: boolean;
+  accountingSettings: AccountingSettings;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -130,12 +138,26 @@ export function ClubAccountingPanel({
   const [editDesc, setEditDesc] = useState("");
   const [editCategory, setEditCategory] = useState<LedgerCategory>("general");
   const [editDate, setEditDate] = useState("");
+  const [setupStartDate, setSetupStartDate] = useState(
+    accountingSettings.startDate ?? new Date().toISOString().slice(0, 10),
+  );
+  const [setupBalance, setSetupBalance] = useState(
+    accountingSettings.openingBalanceCents
+      ? (accountingSettings.openingBalanceCents / 100).toFixed(2).replace(".", ",")
+      : "",
+  );
+  const [setupOpen, setSetupOpen] = useState(!accountingSettings.startDate);
 
-  const yearOptions = useMemo(() => ledgerYearOptions(entries), [entries]);
+  const accountingEntries = useMemo(
+    () => filterAccountingRows(entries, accountingSettings),
+    [entries, accountingSettings],
+  );
+
+  const yearOptions = useMemo(() => ledgerYearOptions(accountingEntries), [accountingEntries]);
 
   const filteredEntries = useMemo(
-    () => filterLedgerByPeriod(entries, periodMode, filterYear, filterMonth),
-    [entries, periodMode, filterYear, filterMonth],
+    () => filterLedgerByPeriod(accountingEntries, periodMode, filterYear, filterMonth),
+    [accountingEntries, periodMode, filterYear, filterMonth],
   );
 
   const sortedEntries = useMemo(() => {
@@ -228,16 +250,20 @@ export function ClubAccountingPanel({
   const balance = incomeCents - expenseCents;
 
   const currentYear = now.getFullYear();
+  const accountingTotals = useMemo(
+    () => computeAccountingBalance(accountingEntries, accountingSettings),
+    [accountingEntries, accountingSettings],
+  );
   const currentYearSummary = useMemo(() => {
-    const yearEntries = filterLedgerByPeriod(entries, "year", currentYear, filterMonth);
+    const yearEntries = filterLedgerByPeriod(accountingEntries, "year", currentYear, filterMonth);
     return sumLedgerRows(yearEntries);
-  }, [entries, currentYear, filterMonth]);
+  }, [accountingEntries, currentYear, filterMonth]);
   const currentYearBalance =
     currentYearSummary.incomeCents - currentYearSummary.expenseCents;
 
   const monthlySummary = useMemo(
-    () => summarizeLedgerByMonth(entries, filterYear),
-    [entries, filterYear],
+    () => summarizeLedgerByMonth(accountingEntries, filterYear),
+    [accountingEntries, filterYear],
   );
 
   function handleExportCsv(mode: "paid" | "open" | "all" = "paid") {
@@ -322,10 +348,132 @@ export function ClubAccountingPanel({
         </div>
       ) : null}
 
+      <Card className="border-amber-200/80 bg-amber-50/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Buchhaltungs-Start</CardTitle>
+          <p className="text-sm text-slate-600">
+            Ab dem Startdatum führt ihr die Kasse in der App. Der Kontostand an diesem Tag ersetzt
+            alle Buchungen davor. Mitgliedsbeiträge bleiben in der Mitgliederverwaltung sichtbar,
+            fließen aber nicht in den Buchhaltungs-Saldo ein.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          {accountingSettings.startDate ? (
+            <p className="text-sm text-slate-700">
+              Aktiv seit <strong>{formatDE(accountingSettings.startDate)}</strong> · Anfangsbestand{" "}
+              <strong>{formatEur(accountingSettings.openingBalanceCents)}</strong>
+              <button
+                type="button"
+                onClick={() => setSetupOpen((v) => !v)}
+                className="ml-2 text-sm font-medium text-fc-blue hover:underline"
+              >
+                {setupOpen ? "Schließen" : "Bearbeiten"}
+              </button>
+            </p>
+          ) : null}
+          {setupOpen ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-slate-700">Startdatum (App-Nutzung Buchhaltung)</span>
+                <input
+                  type="date"
+                  value={setupStartDate}
+                  onChange={(e) => setSetupStartDate(e.target.value)}
+                  className="h-11 rounded-xl border bg-white px-3"
+                />
+              </label>
+              <label className="grid gap-1 text-sm">
+                <span className="font-medium text-slate-700">Kontostand an diesem Tag (€)</span>
+                <input
+                  {...decimalInputProps}
+                  value={setupBalance}
+                  onChange={(e) => setSetupBalance(sanitizeDecimalInput(e.target.value))}
+                  placeholder="z. B. 1.234,56"
+                  className="h-11 rounded-xl border bg-white px-3"
+                />
+              </label>
+              <div className="sm:col-span-2">
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => {
+                    const amount = Number(setupBalance.replace(",", "."));
+                    if (!setupStartDate || Number.isNaN(amount)) {
+                      setError("Bitte Startdatum und Kontostand eintragen.");
+                      return;
+                    }
+                    startTransition(async () => {
+                      try {
+                        await saveAccountingSetupAction({
+                          startDate: setupStartDate,
+                          openingBalanceEur: amount,
+                        });
+                        setSetupOpen(false);
+                        router.refresh();
+                      } catch (e) {
+                        setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+                      }
+                    });
+                  }}
+                  className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
+                >
+                  Einstellungen speichern
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
       <Card className="border-fc-navy/15 bg-gradient-to-br from-white to-fc-ice/40">
         <CardHeader className="pb-2">
+          <CardTitle>Kontostand (Buchhaltung)</CardTitle>
+          <p className="text-sm text-slate-500">
+            Anfangsbestand
+            {accountingSettings.startDate
+              ? ` per ${formatDE(accountingSettings.startDate)}`
+              : " (noch nicht gesetzt)"}{" "}
+            plus Buchungen ab Start — ohne Mitgliedsbeiträge
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Anfangsbestand</p>
+              <p className="mt-1 text-2xl font-bold text-fc-navy">
+                {formatEur(accountingSettings.openingBalanceCents)}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Einnahmen</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-700">
+                {formatEur(accountingTotals.incomeCents)}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Ausgaben</p>
+              <p className="mt-1 text-2xl font-bold text-rose-700">
+                {formatEur(accountingTotals.expenseCents)}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-white px-4 py-3">
+              <p className="text-xs font-semibold uppercase text-slate-500">Saldo</p>
+              <p
+                className={`mt-1 text-2xl font-bold ${accountingTotals.balanceCents >= 0 ? "text-fc-navy" : "text-rose-700"}`}
+              >
+                {formatEur(accountingTotals.balanceCents)}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-slate-200">
+        <CardHeader className="pb-2">
           <CardTitle>Saldo {currentYear}</CardTitle>
-          <p className="text-sm text-slate-500">Einnahmen und Ausgaben im laufenden Kalenderjahr</p>
+          <p className="text-sm text-slate-500">
+            Einnahmen und Ausgaben im laufenden Kalenderjahr (ohne Beiträge)
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-3">

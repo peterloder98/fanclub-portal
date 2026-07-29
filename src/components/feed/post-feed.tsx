@@ -273,6 +273,15 @@ function PostFeedInner({
   const [likersLoadingPostId, setLikersLoadingPostId] = useState<string | null>(null);
   const [pinBusyId, setPinBusyId] = useState<string | null>(null);
 
+  function invalidateLikers(postId: string) {
+    setLikersByPostId((m) => {
+      if (!(postId in m)) return m;
+      const next = { ...m };
+      delete next[postId];
+      return next;
+    });
+  }
+
   async function ensureLikers(postId: string) {
     if (postId in likersByPostId) return;
     setLikersLoadingPostId(postId);
@@ -1898,73 +1907,133 @@ function PostFeedInner({
             {post.media.length ? <PostMediaGallery media={post.media} /> : null}
 
             <div className="mt-2 flex items-center gap-1.5 border-t border-slate-100 pt-2">
-              <button
-                type="button"
-                disabled={Boolean(likeBusy[post.id])}
-                onClick={(e) => {
-                  if (!me) return;
-                  const fromRect = captureFlyRect(e.currentTarget);
-                  const nextLiked = !post.likedByMe;
-                  toggleLike(post.id);
-                  void (async () => {
-                    const supabase = createSupabaseBrowserClient();
-                    setLikeBusy((b) => ({ ...b, [post.id]: true }));
-                    try {
-                      if (nextLiked) {
-                        const { error } = await supabase
-                          .from("post_likes")
-                          .insert({ post_id: post.id, user_id: me.id });
-                        if (error) throw error;
-                        // Keine Anni-Stars für Likes auf eigene Beiträge
-                        if (post.authorId !== me.id) {
-                          flyPointsFromElement({ fromRect, delta: +1 });
-                        }
-                      } else {
-                        const { error } = await supabase
-                          .from("post_likes")
-                          .delete()
-                          .eq("post_id", post.id)
-                          .eq("user_id", me.id);
-                        if (error) throw error;
-                        if (post.authorId !== me.id) {
-                          flyPointsFromElement({ fromRect, delta: -1 });
-                        }
-                      }
-                    } catch (e) {
-                      toggleLike(post.id);
-                      setLoadError(e instanceof Error ? e.message : "Like fehlgeschlagen");
-                    } finally {
-                      setLikeBusy((b) => ({ ...b, [post.id]: false }));
-                    }
-                  })();
-                }}
-                className={cn(
-                  "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition",
-                  post.likedByMe
-                    ? "bg-rose-50 text-rose-700"
-                    : "text-slate-600 hover:bg-slate-50",
-                  likeBusy[post.id] ? "opacity-60" : "",
-                )}
-              >
-                <Heart
+              {post.likeCount > 0 ? (
+                <UserListPopover
+                  label="Wer hat geliked?"
+                  users={likersByPostId[post.id] ?? []}
+                  loading={likersLoadingPostId === post.id}
+                  onMouseEnter={() => void ensureLikers(post.id)}
                   className={cn(
-                    "h-3.5 w-3.5",
-                    post.likedByMe ? "fill-rose-600 text-rose-600" : "",
+                    "inline-flex h-7 items-center gap-0.5 rounded-md px-1 text-xs font-medium",
+                    post.likedByMe ? "text-rose-700" : "text-slate-600",
                   )}
-                />
-                {post.likeCount > 0 ? (
-                  <UserListPopover
-                    label="Wer hat geliked?"
-                    users={likersByPostId[post.id] ?? []}
-                    loading={likersLoadingPostId === post.id}
-                    onMouseEnter={() => void ensureLikers(post.id)}
+                >
+                  <button
+                    type="button"
+                    disabled={Boolean(likeBusy[post.id]) || !me}
+                    title="Gefällt mir"
+                    aria-label={post.likedByMe ? "Gefällt mir entfernen" : "Gefällt mir"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!me) return;
+                      const fromRect = captureFlyRect(e.currentTarget);
+                      const nextLiked = !post.likedByMe;
+                      toggleLike(post.id);
+                      invalidateLikers(post.id);
+                      void (async () => {
+                        const supabase = createSupabaseBrowserClient();
+                        setLikeBusy((b) => ({ ...b, [post.id]: true }));
+                        try {
+                          if (nextLiked) {
+                            const { error } = await supabase
+                              .from("post_likes")
+                              .insert({ post_id: post.id, user_id: me.id });
+                            if (error) throw error;
+                            if (post.authorId !== me.id) {
+                              flyPointsFromElement({ fromRect, delta: +1 });
+                            }
+                          } else {
+                            const { error } = await supabase
+                              .from("post_likes")
+                              .delete()
+                              .eq("post_id", post.id)
+                              .eq("user_id", me.id);
+                            if (error) throw error;
+                            if (post.authorId !== me.id) {
+                              flyPointsFromElement({ fromRect, delta: -1 });
+                            }
+                          }
+                        } catch (err) {
+                          toggleLike(post.id);
+                          invalidateLikers(post.id);
+                          setLoadError(err instanceof Error ? err.message : "Like fehlgeschlagen");
+                        } finally {
+                          setLikeBusy((b) => ({ ...b, [post.id]: false }));
+                        }
+                      })();
+                    }}
+                    className={cn(
+                      "inline-flex items-center rounded-md p-1 transition hover:bg-white/80",
+                      post.likedByMe ? "bg-rose-50" : "hover:bg-slate-50",
+                      likeBusy[post.id] ? "opacity-60" : "",
+                    )}
                   >
-                    <span>{post.likeCount}</span>
-                  </UserListPopover>
-                ) : (
+                    <Heart
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        post.likedByMe ? "fill-rose-600 text-rose-600" : "",
+                      )}
+                    />
+                  </button>
+                  <span className="tabular-nums">{post.likeCount}</span>
+                </UserListPopover>
+              ) : (
+                <button
+                  type="button"
+                  disabled={Boolean(likeBusy[post.id]) || !me}
+                  onClick={(e) => {
+                    if (!me) return;
+                    const fromRect = captureFlyRect(e.currentTarget);
+                    const nextLiked = !post.likedByMe;
+                    toggleLike(post.id);
+                    void (async () => {
+                      const supabase = createSupabaseBrowserClient();
+                      setLikeBusy((b) => ({ ...b, [post.id]: true }));
+                      try {
+                        if (nextLiked) {
+                          const { error } = await supabase
+                            .from("post_likes")
+                            .insert({ post_id: post.id, user_id: me.id });
+                          if (error) throw error;
+                          if (post.authorId !== me.id) {
+                            flyPointsFromElement({ fromRect, delta: +1 });
+                          }
+                        } else {
+                          const { error } = await supabase
+                            .from("post_likes")
+                            .delete()
+                            .eq("post_id", post.id)
+                            .eq("user_id", me.id);
+                          if (error) throw error;
+                          if (post.authorId !== me.id) {
+                            flyPointsFromElement({ fromRect, delta: -1 });
+                          }
+                        }
+                      } catch (err) {
+                        toggleLike(post.id);
+                        setLoadError(err instanceof Error ? err.message : "Like fehlgeschlagen");
+                      } finally {
+                        setLikeBusy((b) => ({ ...b, [post.id]: false }));
+                      }
+                    })();
+                  }}
+                  className={cn(
+                    "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition",
+                    post.likedByMe
+                      ? "bg-rose-50 text-rose-700"
+                      : "text-slate-600 hover:bg-slate-50",
+                    likeBusy[post.id] ? "opacity-60" : "",
+                  )}
+                >
+                  <Heart
+                    className={cn(
+                      "h-3.5 w-3.5",
+                      post.likedByMe ? "fill-rose-600 text-rose-600" : "",
+                    )}
+                  />
                   <span>Like</span>
-                )}
-              </button>
+                </button>
+              )}
 
               <button
                 type="button"

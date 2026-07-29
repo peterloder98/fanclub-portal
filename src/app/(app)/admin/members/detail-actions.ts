@@ -21,6 +21,7 @@ import {
   type LedgerCategory,
   type LedgerEntryType,
 } from "@/lib/club/ledger";
+import { includeInAccountingForCategory } from "@/lib/club/accounting-settings";
 import {
   formatContributionEmailVars,
   getMemberContributionYears,
@@ -463,6 +464,7 @@ export async function addClubLedgerEntry(input: {
       entry_date: parsed.entryDate,
       created_by: user.id,
       receipt_storage_path: input.receiptStoragePath ?? null,
+      include_in_accounting: includeInAccountingForCategory(parsed.category),
     })
     .select("id,entry_number")
     .single();
