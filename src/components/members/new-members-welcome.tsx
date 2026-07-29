@@ -65,9 +65,7 @@ export function NewMembersWelcome({ members }: { members: RecentMemberWelcome[] 
                   ) : null}
                   {m.hasRegistered ? (
                     <p className="mt-1 text-[11px] font-medium text-fc-blue">Zum Profil →</p>
-                  ) : (
-                    <p className="mt-1 text-[11px] text-slate-400">Noch nicht in der App</p>
-                  )}
+                  ) : null}
                 </div>
               </HoverEnlargeAvatar>
             </li>
