@@ -18,7 +18,11 @@ const HOVER_OPEN_MS = 220;
 const DEFAULT_REACTION: PostReactionType = "thumbs_up";
 const PANEL_WIDTH = 240;
 
-const ALTERNATIVE_REACTIONS = POST_REACTION_TYPES.filter((t) => t !== DEFAULT_REACTION);
+/** Picker-Reihenfolge: Daumen zuerst, dann die übrigen. */
+const PICKER_REACTIONS: PostReactionType[] = [
+  "thumbs_up",
+  ...POST_REACTION_TYPES.filter((t) => t !== "thumbs_up"),
+];
 
 type PostReactionPickerProps = {
   postId: string;
@@ -267,7 +271,7 @@ export function PostReactionPicker({
             role="menu"
             aria-label="Reaktion wählen"
           >
-            {ALTERNATIVE_REACTIONS.map((type) => (
+            {PICKER_REACTIONS.map((type) => (
               <button
                 key={type}
                 type="button"
