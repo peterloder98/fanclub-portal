@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -10,14 +10,27 @@ import {
   SHORT_BIO_MAX_LENGTH,
   type MemberIntroKey,
 } from "@/lib/members/intro-questions";
+import {
+  introProgressFromAnswers,
+  introProgressLabel,
+  STECKBRIEF_BONUS_POINTS,
+} from "@/lib/members/intro-progress";
 import { saveMyIntroAnswers } from "@/app/(app)/mitglieder/intro-actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/cn";
 
-export function ProfileIntroSection({ userId }: { userId: string }) {
+export function ProfileIntroSection({
+  userId,
+  onSaved,
+}: {
+  userId: string;
+  onSaved?: () => void;
+}) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [bonusReceived, setBonusReceived] = useState(false);
   const [shortBio, setShortBio] = useState("");
   const [answers, setAnswers] = useState<Record<MemberIntroKey, string>>({
     intro_discovered_anni: "",
@@ -31,31 +44,49 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
     let cancelled = false;
     void (async () => {
       const supabase = createSupabaseBrowserClient();
-      const { data } = await supabase
-        .from("profiles")
-        .select(
-          "short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
-        )
-        .eq("id", userId)
-        .maybeSingle();
-      if (cancelled || !data) {
-        setLoaded(true);
-        return;
+      const [{ data }, { data: bonusRow }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+          )
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("points_transactions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("reason", "profile_intro_complete")
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      if (cancelled) return;
+      if (data) {
+        setShortBio(data.short_bio ?? "");
+        setAnswers({
+          intro_discovered_anni: data.intro_discovered_anni ?? "",
+          intro_favorite_song: data.intro_favorite_song ?? "",
+          intro_other_artists: data.intro_other_artists ?? "",
+          intro_hobbies: data.intro_hobbies ?? "",
+          intro_perfect_concert: data.intro_perfect_concert ?? "",
+        });
       }
-      setShortBio(data.short_bio ?? "");
-      setAnswers({
-        intro_discovered_anni: data.intro_discovered_anni ?? "",
-        intro_favorite_song: data.intro_favorite_song ?? "",
-        intro_other_artists: data.intro_other_artists ?? "",
-        intro_hobbies: data.intro_hobbies ?? "",
-        intro_perfect_concert: data.intro_perfect_concert ?? "",
-      });
+      setBonusReceived(Boolean(bonusRow));
       setLoaded(true);
     })();
     return () => {
       cancelled = true;
     };
   }, [userId]);
+
+  const progress = useMemo(
+    () =>
+      introProgressFromAnswers({
+        short_bio: shortBio,
+        ...answers,
+      }),
+    [shortBio, answers],
+  );
 
   function onSave() {
     setMessage(null);
@@ -69,7 +100,21 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
         setError(result.error);
         return;
       }
-      setMessage("Kennenlernen-Antworten gespeichert.");
+      if (result.bonusAwarded) {
+        setBonusReceived(true);
+        setMessage(
+          `Steckbrief vollständig — du hast ${STECKBRIEF_BONUS_POINTS} Anni-Stars erhalten!`,
+        );
+        onSaved?.();
+        return;
+      }
+      if (result.introComplete) {
+        setMessage("Steckbrief vollständig — danke!");
+        onSaved?.();
+        return;
+      }
+      setMessage("Kennenlernen gespeichert.");
+      onSaved?.();
     });
   }
 
@@ -80,10 +125,15 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-fc-ice text-fc-navy">
             <Sparkles className="h-4 w-4" aria-hidden />
           </div>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-fc-navy">Kennenlernen</h2>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold text-fc-navy">Kennenlernen</h2>
+              <span className="text-xs font-semibold tabular-nums text-slate-500">
+                {introProgressLabel(progress)} ausgefüllt
+              </span>
+            </div>
             <p className="mt-0.5 text-sm text-slate-600">
-              Freiwillige Angaben für dein öffentliches Mitglieder-Portal.{" "}
+              Für dein öffentliches Mitglieder-Portal.{" "}
               <Link href={`/mitglieder/${userId}`} className="font-medium text-fc-blue hover:underline">
                 Portal ansehen
               </Link>
@@ -92,6 +142,33 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
         </div>
       </CardHeader>
       <CardContent className="grid gap-3 pt-2">
+        {!progress.isComplete ? (
+          <div className="rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50 to-rose-50/80 px-4 py-3">
+            <p className="text-sm font-semibold text-amber-950">
+              Steckbrief noch nicht vollständig
+            </p>
+            <p className="mt-1 text-sm text-amber-900/90">
+              Fülle alle {progress.total} Felder aus — dann erhältst du einmalig{" "}
+              {STECKBRIEF_BONUS_POINTS} Anni-Stars.
+            </p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-fc-navy to-fc-blue transition-all duration-300"
+                style={{ width: `${Math.round((progress.filled / progress.total) * 100)}%` }}
+              />
+            </div>
+          </div>
+        ) : bonusReceived ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            Steckbrief vollständig — Bonus von {STECKBRIEF_BONUS_POINTS} Anni-Stars erhalten.
+          </div>
+        ) : (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+            Steckbrief vollständig — speichere, um deine {STECKBRIEF_BONUS_POINTS} Anni-Stars zu
+            erhalten.
+          </div>
+        )}
+
         {!loaded ? (
           <p className="text-sm text-slate-500">Lade…</p>
         ) : (
@@ -122,7 +199,10 @@ export function ProfileIntroSection({ userId }: { userId: string }) {
                   }
                   rows={2}
                   maxLength={800}
-                  className="w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  className={cn(
+                    "w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]",
+                    !answers[q.key].trim() && progress.filled < progress.total && "border-amber-200",
+                  )}
                 />
               </label>
             ))}

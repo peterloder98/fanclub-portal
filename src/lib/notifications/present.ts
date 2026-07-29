@@ -138,6 +138,9 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
     case NOTIFICATION_KINDS.badgeUnlocked:
     case NOTIFICATION_KINDS.rankUp:
       return "/punkte";
+    case NOTIFICATION_KINDS.introIncompleteReminder:
+    case NOTIFICATION_KINDS.introSteckbriefComplete:
+      return "/profile#kennenlernen";
     case NOTIFICATION_KINDS.merchandiseOrderConfirmed:
       return "/merchandise";
     case NOTIFICATION_KINDS.merchandiseOrderAdmin:
@@ -198,6 +201,9 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
     case NOTIFICATION_KINDS.badgeUnlocked:
     case NOTIFICATION_KINDS.rankUp:
       return { icon: Sparkles, iconClass: "bg-yellow-50 text-amber-700" };
+    case NOTIFICATION_KINDS.introIncompleteReminder:
+    case NOTIFICATION_KINDS.introSteckbriefComplete:
+      return { icon: Sparkles, iconClass: "bg-fc-ice text-fc-navy" };
     case NOTIFICATION_KINDS.merchandiseOrderConfirmed:
     case NOTIFICATION_KINDS.merchandiseOrderAdmin:
       return { icon: ShoppingBag, iconClass: "bg-slate-100 text-fc-navy" };

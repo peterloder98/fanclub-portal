@@ -32,6 +32,8 @@ export const NOTIFICATION_KINDS = {
   profileChangePending: "profile_change_pending",
   profileChangeApproved: "profile_change_approved",
   profileChangeRejected: "profile_change_rejected",
+  introIncompleteReminder: "intro_incomplete_reminder",
+  introSteckbriefComplete: "intro_steckbrief_complete",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

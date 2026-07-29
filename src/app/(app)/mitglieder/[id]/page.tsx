@@ -34,6 +34,7 @@ import { isEventUpcoming } from "@/lib/events/event-schedule";
 import { rankFromPoints } from "@/lib/points/rank";
 import { loadUserAchievementsForDisplay } from "@/lib/badges/evaluate-user-badges";
 import { MemberPortalBadges } from "@/components/members/member-portal-badges.client";
+import { MemberStarsRankBadge } from "@/components/members/member-stars-rank-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -250,10 +251,14 @@ export default async function MemberPortalPage({
                       Mitglied seit {memberSince}
                     </span>
                   ) : null}
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-xs text-white/90">
-                    <Star className="h-3 w-3" aria-hidden />
-                    {yearPoints} Anni-Stars · {yearRank}
-                  </span>
+                </div>
+                <div className="mt-3 flex justify-center sm:justify-start">
+                  <MemberStarsRankBadge
+                    yearPoints={yearPoints}
+                    yearRank={yearRank}
+                    variant="light"
+                    showLink={isSelf}
+                  />
                 </div>
               </div>
             </div>

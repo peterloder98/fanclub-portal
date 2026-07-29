@@ -20,6 +20,13 @@ export { POINTS_RANKS, POINTS_YEAR_END_NOTE, POINTS_YEAR_HINT, POINT_VALUES };
 
 export const POINTS_RULES: PointsRule[] = [
   {
+    id: "profile_intro_complete",
+    label: "Steckbrief vollständig ausgefüllt",
+    points: POINT_VALUES.profileIntroComplete,
+    how: "Unter „Mein Profil“ alle Kennenlernen-Felder ausfüllen (Kurztext + fünf Fragen).",
+    note: "Einmalig pro Mitglied. Fortschritt siehst du im Profil (z. B. 4/6).",
+  },
+  {
     id: "membership_referral_completed",
     label: "Empfehlung: Antrag eingereicht & Mitglied freigegeben",
     points: POINT_VALUES.membershipReferralCompleted,

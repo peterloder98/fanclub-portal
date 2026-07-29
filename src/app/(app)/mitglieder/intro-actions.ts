@@ -8,6 +8,8 @@ import {
   type MemberIntroAnswers,
   type MemberIntroKey,
 } from "@/lib/members/intro-questions";
+import { introProgressFromAnswers } from "@/lib/members/intro-progress";
+import { tryAwardSteckbriefBonus } from "@/lib/members/award-intro-bonus";
 
 function trimAnswer(v: unknown): string | null {
   if (typeof v !== "string") return null;
@@ -17,7 +19,10 @@ function trimAnswer(v: unknown): string | null {
 
 export async function saveMyIntroAnswers(
   input: MemberIntroAnswers & { dismissOnboarding?: boolean },
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<
+  | { ok: true; bonusAwarded?: boolean; introComplete?: boolean }
+  | { ok: false; error: string }
+> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -39,7 +44,20 @@ export async function saveMyIntroAnswers(
 
   const { error } = await supabase.from("profiles").update(patch).eq("id", user.id);
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+
+  const progressInput: MemberIntroAnswers = {
+    short_bio: normalizeShortBio(input.short_bio),
+  };
+  for (const q of MEMBER_INTRO_QUESTIONS) {
+    progressInput[q.key] = trimAnswer(input[q.key]);
+  }
+  const progress = introProgressFromAnswers(progressInput);
+  let bonusAwarded = false;
+  if (progress.isComplete) {
+    bonusAwarded = await tryAwardSteckbriefBonus(user.id);
+  }
+
+  return { ok: true, bonusAwarded, introComplete: progress.isComplete };
 }
 
 export async function dismissIntroOnboarding(): Promise<{ ok: true } | { ok: false; error: string }> {

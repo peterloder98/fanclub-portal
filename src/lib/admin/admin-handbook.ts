@@ -614,7 +614,9 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ul",
             items: [
-              "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, …) und zählen für das laufende Kalenderjahr — am 1. Januar geht es wieder bei null los.",
+              "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, vollständiger Steckbrief, …) und zählen für das laufende Kalenderjahr — am 1. Januar geht es wieder bei null los.",
+              "Einmalig 10 Anni-Stars, wenn ein Mitglied den Steckbrief vollständig ausfüllt (Kurztext + fünf Kennenlernen-Fragen unter „Mein Profil“).",
+              "Unvollständige Steckbriefe: Die App erinnert Mitglieder automatisch nach 7 und 14 Tagen Mitgliedschaft (danach keine weiteren Erinnerungen — der Hinweis im Profil bleibt).",
               "Ränge zeigen den Stand im Jahr: Fan → Aktiv-Fan (100) → Treue-Fan (250) → Silber-Fan (500) → Gold-Fan (1 000) → Diamond-Fan (2 500).",
               "Badges (z. B. Konzertprofi) können auch wieder sinken — z. B. wenn jemand Likes entfernt, Event-Teilnahmen zurücknimmt oder Kommentare löscht. Die Stufe passt sich automatisch an den aktuellen Stand an.",
               "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne.",

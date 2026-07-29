@@ -27,6 +27,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { PreferredCalendarSettings } from "@/components/profile/preferred-calendar-settings";
 import { ProfileIntroSection } from "@/components/profile/profile-intro-section.client";
+import { MemberStarsRankBadge } from "@/components/members/member-stars-rank-badge";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
 import { MembershipPaymentPanel } from "@/components/payments/membership-payment-panel";
 import {
@@ -560,7 +561,7 @@ export function ProfilePageClient() {
     );
   }
 
-  const { profile, membership, contribution, warnings, activity, pendingProfileChange } = bundle;
+  const { profile, membership, contribution, warnings, activity, pendingProfileChange, yearPoints, yearRank } = bundle;
   const initials = displayName
     .split(" ")
     .filter(Boolean)
@@ -597,9 +598,12 @@ export function ProfilePageClient() {
                 </div>
               </div>
             </div>
+            <div className="mt-4">
+              <MemberStarsRankBadge yearPoints={yearPoints} yearRank={yearRank} showLink />
+            </div>
           </div>
 
-          <ProfileIntroSection userId={profile.id} />
+          <ProfileIntroSection userId={profile.id} onSaved={reload} />
 
           <div className="space-y-4">
             <ProfileSection
