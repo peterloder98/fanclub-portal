@@ -142,8 +142,10 @@ export function ReferralsAdminPanel({
           <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
             <h2 className="text-base font-semibold text-fc-navy">Offene Prüfungen</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Stille Admin-Fälle: Versand-Sterne wurden vorläufig gehalten. Das Mitglied sieht keinen
-              Hinweis. Bitte freigeben oder zurücknehmen.
+              Stille Admin-Fälle: Versand-Sterne wurden vorläufig gehalten und weitere Einladungen
+              sind für das Mitglied pausiert, bis ihr entscheidet. Das Mitglied sieht keinen
+              Verdachtshinweis — nur ggf. „Einladungen vorübergehend pausiert“. Bitte freigeben oder
+              zurücknehmen.
             </p>
             {openReviews.length ? (
               <ul className="mt-4 space-y-4">

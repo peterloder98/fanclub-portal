@@ -18,7 +18,7 @@ export type ReferralLimitOk = { ok: true };
 export type ReferralLimitBlocked = { ok: false; message: string };
 export type ReferralLimitResult = ReferralLimitOk | ReferralLimitBlocked;
 
-/** Prüft Tages-/Wochenlimit und 14-Tage-Cooldown derselben Empfänger-Adresse. */
+/** Prüft offene Admin-Prüfung, Tages-/Wochenlimit und 14-Tage-Cooldown. */
 export async function assertReferralSendAllowed(
   admin: SupabaseClient,
   senderId: string,
@@ -27,6 +27,26 @@ export async function assertReferralSendAllowed(
   const email = recipientEmail.trim().toLowerCase();
   if (!email || !email.includes("@")) {
     return { ok: false, message: "Bitte eine gültige E-Mail-Adresse eingeben." };
+  }
+
+  // Offener Verdachtsfall: Einladen pausiert, bis Admins entschieden haben
+  const { data: openReview, error: reviewErr } = await admin
+    .from("membership_referral_reviews")
+    .select("id")
+    .eq("referrer_user_id", senderId)
+    .eq("status", "open")
+    .limit(1)
+    .maybeSingle();
+
+  if (reviewErr && !/does not exist|membership_referral_reviews/i.test(reviewErr.message)) {
+    throw new Error(reviewErr.message);
+  }
+  if (openReview?.id) {
+    return {
+      ok: false,
+      message:
+        "Das Versenden von Einladungen ist für dich vorübergehend pausiert. Bitte melde dich beim Vorstand, falls du Fragen hast.",
+    };
   }
 
   const dayStart = startOfLocalDayIso();

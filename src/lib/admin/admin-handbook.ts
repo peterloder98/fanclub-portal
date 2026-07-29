@@ -216,7 +216,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Beim Versand der Einladung: 5 Anni-Stars (einmal pro Empfänger-Adresse)",
               "Max. 3 Einladungen pro Tag und 10 pro Woche; dieselbe E-Mail erst nach 14 Tagen erneut",
               "Wenn die Person freigeschaltet wird: zusätzlich 70 Anni-Stars",
-              "Auffällige Einladungs-Muster (viele Sends ohne Anmeldung) landen still zur Prüfung unter Empfehlungen — Sterne können vorläufig gehalten, freigegeben oder zurückgenommen werden",
+              "Auffällige Einladungs-Muster landen still zur Prüfung unter Empfehlungen: Sterne werden gehalten, weitere Einladungen des Mitglieds sind bis zur Entscheidung pausiert — freigeben oder zurücknehmen",
               "Übersicht: Admin → „Empfehlungen“",
             ],
           },
