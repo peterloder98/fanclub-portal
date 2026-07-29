@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-07-28";
+export const ADMIN_HANDBOOK_UPDATED = "2026-07-29";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -280,12 +280,12 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Öffnet im Menü „Gewinnspiele“. Oben gibt es die Bereiche „Aktiv“, „Beendet / Ausgelost“ und „Neu anlegen“.",
+            text: "Öffnet im Menü „Gewinnspiele“. Als Vorstand seht ihr oben einen Filter („Laufend“ / „Beendet / Ausgelost“) und den Button „Neues Gewinnspiel erstellen“ — ähnlich wie bei Umfragen.",
           },
           {
             type: "ol",
             items: [
-              "Tab „Neu anlegen“ öffnen.",
+              "„Neues Gewinnspiel erstellen“ antippen.",
               "Titel, Beschreibung und Ende (Datum & Uhrzeit) eintragen.",
               "Teilnahme-Modus wählen (siehe unten) und mindestens einen Preis hinzufügen.",
               "„Gewinnspiel veröffentlichen“ tippen.",

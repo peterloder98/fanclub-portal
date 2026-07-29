@@ -7,7 +7,7 @@ import { Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
-import { giveawayPhase, giveawayPhaseLabel } from "@/lib/giveaways/status-label";
+import { giveawayPhase } from "@/lib/giveaways/status-label";
 import { RunningCountdownBadge } from "@/components/ui/running-countdown-badge";
 import { GiveawayAdminCreate } from "@/components/giveaways/giveaway-admin-create";
 import { GiveawayAdminToolbar } from "@/components/giveaways/giveaway-admin-toolbar";
@@ -33,7 +33,7 @@ export type GiveawayListItem = {
   pointsYear?: number | null;
 };
 
-type AdminTab = "active" | "ended" | "create";
+type AdminTab = "active" | "ended";
 type GiveawaySort = "newest" | "ends_at";
 
 export function GiveawayBoard({
@@ -46,9 +46,12 @@ export function GiveawayBoard({
   yearEndBanner?: ReactNode;
 }) {
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") as AdminTab) || "active";
+  const initialTab = searchParams.get("tab");
   const [tab, setTab] = useState<AdminTab>(
-    isAdmin && ["active", "ended", "create"].includes(initialTab) ? initialTab : "active",
+    isAdmin && initialTab === "ended" ? "ended" : "active",
+  );
+  const [createOpen, setCreateOpen] = useState(
+    isAdmin && (initialTab === "create" || searchParams.get("new") === "1"),
   );
   const [sort, setSort] = useState<GiveawaySort>("newest");
 
@@ -74,34 +77,53 @@ export function GiveawayBoard({
     <div className="grid gap-4">
       {yearEndBanner}
       {isAdmin ? (
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ["active", "Aktiv"],
-              ["ended", "Beendet / Ausgelost"],
-              ["create", "Neu anlegen"],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className={cn(
-                "rounded-xl border px-3 py-2 text-sm font-medium transition",
-                tab === key
-                  ? "border-slate-900 bg-fc-navy text-white"
-                  : "bg-white text-slate-700 hover:bg-slate-50",
-              )}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            className="inline-flex w-full rounded-xl border border-slate-200 bg-slate-100/80 p-1 sm:w-auto"
+            role="tablist"
+            aria-label="Gewinnspiele filtern"
+          >
+            {(
+              [
+                ["active", "Laufend"],
+                ["ended", "Beendet / Ausgelost"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={tab === key}
+                onClick={() => {
+                  setTab(key);
+                  setCreateOpen(false);
+                }}
+                className={cn(
+                  "min-h-10 flex-1 rounded-lg px-3 py-2 text-sm font-medium transition sm:flex-none sm:px-4",
+                  tab === key
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => setCreateOpen((open) => !open)}
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue"
+          >
+            {createOpen ? "Abbrechen" : "Neues Gewinnspiel erstellen"}
+          </button>
         </div>
       ) : null}
 
-      {tab === "create" && isAdmin ? <GiveawayAdminCreate /> : null}
+      {createOpen && isAdmin ? (
+        <GiveawayAdminCreate onPublished={() => setCreateOpen(false)} />
+      ) : null}
 
-      {tab !== "create" ? (
+      {!createOpen ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-slate-600">Sortierung:</span>
           <button
@@ -131,7 +153,7 @@ export function GiveawayBoard({
         </div>
       ) : null}
 
-      {tab !== "create" ? (
+      {!createOpen ? (
         filtered.length ? (
           <div className="grid gap-3">
             {filtered.map((g) => {

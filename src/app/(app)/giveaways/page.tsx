@@ -64,7 +64,7 @@ export default async function GiveawaysPage() {
         title="Gewinnspiele"
         subtitle={
           isAdmin
-            ? "Aktive & beendete Gewinnspiele verwalten, neue anlegen."
+            ? "Laufende Gewinnspiele verwalten, Gewinner auslosen, neue erstellen."
             : "Teilnehmen und Gewinner entdecken."
         }
       />

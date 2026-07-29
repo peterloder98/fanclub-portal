@@ -23,11 +23,14 @@ export function formatSmtpError(e: unknown): string {
   if (/Invalid login|authentication|535|534/i.test(msg)) {
     return (
       "SMTP-Anmeldung abgelehnt (535). Authentifizierung (AUTH LOGIN) ist in der App immer aktiv.\n" +
-      "Bei web.de bitte prüfen:\n" +
-      "• In web.de unter Einstellungen → E-Mail-Programme: POP3/IMAP/SMTP-Zugriff einschalten (sonst schlägt Login fehl).\n" +
+      "Wenn der Login im Webmail klappt, der SMTP-Test aber nicht, liegt es fast immer an web.de:\n" +
+      "• Bei Zwei-Faktor-Authentifizierung (2FA): Im Webmail normales Passwort — für SMTP/App ein anwendungsspezifisches Passwort nötig.\n" +
+      "  web.de → Account verwalten → Login & Sicherheit → Anwendungsspezifische Passwörter → neu erstellen.\n" +
+      "  In der App dieses Passwort eintragen (nicht das Webmail-Passwort).\n" +
+      "• POP3/IMAP/SMTP-Zugriff muss unter Einstellungen → E-Mail-Programme aktiv sein.\n" +
       "• Host smtp.web.de, Port 587, Verschlüsselung STARTTLS (oder Port 465 + SSL).\n" +
-      "• Login = vollständige Adresse (…@web.de), Passwort = dein web.de-Passwort.\n" +
-      "• Konto bearbeiten, Passwort erneut speichern, danach „Test“."
+      "• Login = vollständige Adresse (…@web.de).\n" +
+      "• Kurz in Thunderbird/Outlook testen: klappt es dort nur mit App-Passwort, ist die Lösung bestätigt."
     );
   }
 

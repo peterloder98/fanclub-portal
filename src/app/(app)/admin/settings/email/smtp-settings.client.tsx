@@ -269,14 +269,15 @@ export function SmtpSettingsClient() {
                 }
               }}
             >
-            <p className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600 sm:col-span-2">
+            <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-950 sm:col-span-2">
               <strong>web.de:</strong> Host <code className="font-mono">smtp.web.de</code>, Port{" "}
-              <code className="font-mono">587</code>, Verschlüsselung <strong>STARTTLS</strong> (oder
-              Port 465 + SSL). Login = vollständige Adresse. Authentifizierung (AUTH LOGIN) ist in der
-              App immer aktiv — kein Extra-Haken nötig.
+              <code className="font-mono">587</code>, Verschlüsselung <strong>STARTTLS</strong>.
+              Login = vollständige Adresse. Authentifizierung ist in der App immer aktiv.
               <br />
-              Wichtig: In den web.de-Einstellungen unter „E-Mail-Programme“ zuerst{" "}
-              <strong>POP3/IMAP/SMTP-Zugriff einschalten</strong>, sonst kommt 535.
+              <strong>Wichtig:</strong> Webmail-Login und SMTP sind bei web.de nicht dasselbe.
+              Ist 2FA aktiv, brauchst du unter Account verwalten → Login &amp; Sicherheit ein{" "}
+              <strong>anwendungsspezifisches Passwort</strong> — das normale Postfach-Passwort
+              reicht für die App oft nicht (Fehler 535).
             </p>
               <label className="grid gap-1 sm:col-span-2">
                 <span className="text-sm font-medium">Host</span>
@@ -335,8 +336,7 @@ export function SmtpSettingsClient() {
                   className="h-11 rounded-xl border px-3 text-sm"
                 />
                 <span className="text-xs text-slate-500">
-                  web.de-Passwort des Postfachs. Bei 535: Zugriff in web.de freischalten, dann Passwort
-                  hier erneut speichern und „Test“.
+                  Bei web.de mit 2FA: anwendungsspezifisches Passwort eintragen, nicht das Webmail-Passwort.
                 </span>
               </label>
               <label className="grid gap-1">

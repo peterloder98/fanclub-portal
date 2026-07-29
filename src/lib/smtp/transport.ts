@@ -26,7 +26,6 @@ export function createTransportFromCredentials(input: {
     auth: {
       user: input.email.trim(),
       pass: input.password,
-      method: "LOGIN",
     },
     connectionTimeout: 20_000,
     greetingTimeout: 15_000,

@@ -14,7 +14,11 @@ type QuizQ = {
 
 type EntryMode = "simple" | "quiz" | "question";
 
-export function GiveawayAdminCreate() {
+export function GiveawayAdminCreate({
+  onPublished,
+}: {
+  onPublished?: () => void;
+} = {}) {
   const router = useRouter();
   const [entryMode, setEntryMode] = useState<EntryMode>("simple");
   const [prizes, setPrizes] = useState(["", ""]);
@@ -66,7 +70,8 @@ export function GiveawayAdminCreate() {
     }
     try {
       await createGiveaway(fd);
-      router.push("/giveaways?tab=active");
+      onPublished?.();
+      router.push("/giveaways");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Speichern fehlgeschlagen");
@@ -82,7 +87,7 @@ export function GiveawayAdminCreate() {
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle className="text-base">Neues Gewinnspiel anlegen</CardTitle>
+        <CardTitle className="text-base">Neues Gewinnspiel</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4">
