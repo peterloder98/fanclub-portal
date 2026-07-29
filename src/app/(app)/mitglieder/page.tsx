@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
 import { MembersMap } from "@/components/members/members-map";
+import { NewMembersWelcome } from "@/components/members/new-members-welcome";
 import { UpcomingBirthdays } from "@/components/members/upcoming-birthdays";
 import { MitgliederTabs } from "@/components/mitglieder/mitglieder-tabs.client";
 import { loadPublishedMeetings } from "@/lib/meetings/load";
@@ -9,6 +10,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { memberCountryLabel } from "@/lib/members/country";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
 import { clusterMemberPoints, type MemberMapCluster } from "@/lib/members/cluster-map";
+import { loadRecentWelcomeMembers } from "@/lib/members/recent-members";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { buildUpcomingBirthdays } from "@/lib/members/upcoming-birthdays";
 import { redirect } from "next/navigation";
@@ -80,6 +82,8 @@ export default async function MitgliederPage() {
     10,
   );
 
+  const recentWelcome = await loadRecentWelcomeMembers(supabase, 3);
+
   let meetings: Awaited<ReturnType<typeof loadPublishedMeetings>> = [];
   try {
     meetings = await loadPublishedMeetings(supabase, user.id, { includePastDays: 365 * 3 });
@@ -143,6 +147,7 @@ export default async function MitgliederPage() {
           <MitgliederTabs
             mapSection={mapSection}
             birthdaysSection={birthdaysSection}
+            welcomeSection={<NewMembersWelcome members={recentWelcome} />}
             meetings={meetings}
             mediaByMeetingId={mediaByMeetingId}
           />
