@@ -107,12 +107,12 @@ export async function POST(request: Request) {
       }
       if (buffer.length > POST_MEDIA_MAX_BYTES) {
         return NextResponse.json(
-          { error: `Bild ${i + 1} ist auch nach Komprimierung zu groß (max. 100 KB).` },
+          { error: `Bild ${i + 1} ist auch nach Komprimierung zu groß (max. 70 KB).` },
           { status: 400 },
         );
       }
-      contentType = "image/webp";
-      ext = "webp";
+      contentType = "image/avif";
+      ext = "avif";
       mediaType = "image";
     }
 

@@ -21,3 +21,4 @@ export async function getAppSettingBool(key: string, defaultValue = false): Prom
 
 export const NOTIFY_MEMBERS_NEW_GIVEAWAY_KEY = "notify_members_new_giveaway";
 export const NOTIFY_MEMBERS_NEW_POLL_KEY = "notify_members_new_poll";
+export const NOTIFY_MEMBERS_NEW_EVENT_KEY = "notify_members_new_event";

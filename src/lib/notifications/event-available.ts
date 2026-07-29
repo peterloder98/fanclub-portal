@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatEventCity, formatTvBroadcaster } from "@/lib/events/format";
+import { sendMemberActivityBroadcast } from "@/lib/email/member-activity-broadcast";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
@@ -89,6 +90,17 @@ export async function sendEventAvailableNotices(
         : `/events?focus=${notice.eventId}`,
       linkLabel: "Zur Eventliste",
       metadata: { event_id: notice.eventId },
+    }).catch(console.error);
+
+    await sendMemberActivityBroadcast({
+      kind: "event",
+      entityId: notice.eventId,
+      eventMeta: {
+        title: notice.title,
+        dateLabel,
+        location,
+        tv: notice.kind === "tv",
+      },
     }).catch(console.error);
   }
 }

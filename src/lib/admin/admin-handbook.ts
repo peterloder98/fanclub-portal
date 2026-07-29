@@ -564,6 +564,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt.",
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
+              "„Mitglieder-Benachrichtigungen“ (System): optional E-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar, Standard aus.",
             ],
           },
           {
@@ -584,6 +585,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/settings/email-log",
             label: "E-Mail-Historie",
+          },
+          {
+            type: "link",
+            href: "/admin/settings/notifications",
+            label: "Mitglieder-Benachrichtigungen",
           },
           {
             type: "link",

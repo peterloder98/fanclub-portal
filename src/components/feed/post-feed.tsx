@@ -48,6 +48,13 @@ import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
 import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
+import { PostReactionPicker } from "@/components/feed/post-reaction-picker";
+import {
+  buildReactionCounts,
+  emptyReactionCounts,
+  type PostReactionCounts,
+  type PostReactionType,
+} from "@/lib/posts/reactions";
 
 type FeedPost = {
   id: string;
@@ -65,8 +72,8 @@ type FeedPost = {
   isBirthday?: boolean;
   birthdayDate?: string | null;
   media: Array<{ id: string; url: string }>;
-  likedByMe?: boolean;
-  likeCount: number;
+  myReaction: PostReactionType | null;
+  reactionCounts: PostReactionCounts;
   comments: Array<{
     id: string;
     authorId: string;
@@ -269,12 +276,14 @@ function PostFeedInner({
     Record<string, PollVoter[]>
   >({});
   const [pollBusyKey, setPollBusyKey] = useState<string | null>(null);
-  const [likersByPostId, setLikersByPostId] = useState<Record<string, UserListEntry[]>>({});
-  const [likersLoadingPostId, setLikersLoadingPostId] = useState<string | null>(null);
+  const [reactorsByPostId, setReactorsByPostId] = useState<
+    Record<string, Partial<Record<PostReactionType, UserListEntry[]>>>
+  >({});
+  const [reactorsLoadingPostId, setReactorsLoadingPostId] = useState<string | null>(null);
   const [pinBusyId, setPinBusyId] = useState<string | null>(null);
 
-  function invalidateLikers(postId: string) {
-    setLikersByPostId((m) => {
+  function invalidateReactors(postId: string) {
+    setReactorsByPostId((m) => {
       if (!(postId in m)) return m;
       const next = { ...m };
       delete next[postId];
@@ -282,37 +291,51 @@ function PostFeedInner({
     });
   }
 
-  async function ensureLikers(postId: string) {
-    if (postId in likersByPostId) return;
-    setLikersLoadingPostId(postId);
+  async function ensureReactors(postId: string) {
+    if (postId in reactorsByPostId) return;
+    setReactorsLoadingPostId(postId);
     try {
       const supabase = createSupabaseBrowserClient();
-      const { data: likes } = await supabase
-        .from("post_likes")
-        .select("user_id")
+      const { data: reactions } = await supabase
+        .from("post_reactions")
+        .select("user_id,reaction_type")
         .eq("post_id", postId);
-      const ids = Array.from(new Set((likes ?? []).map((l) => l.user_id)));
+      const ids = Array.from(new Set((reactions ?? []).map((r) => r.user_id)));
       if (!ids.length) {
-        setLikersByPostId((m) => ({ ...m, [postId]: [] }));
+        setReactorsByPostId((m) => ({ ...m, [postId]: {} }));
         return;
       }
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id,first_name,last_name,email,avatar_path,updated_at")
         .in("id", ids);
-      const users: UserListEntry[] = (profiles ?? [])
-        .map((p) => ({
-          id: p.id,
-          name:
-            p.first_name && p.last_name
-              ? `${p.first_name} ${p.last_name}`
-              : (p.email ?? "Mitglied"),
-          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name, "de"));
-      setLikersByPostId((m) => ({ ...m, [postId]: users }));
+      const userById = new Map(
+        (profiles ?? []).map((p) => [
+          p.id,
+          {
+            id: p.id,
+            name:
+              p.first_name && p.last_name
+                ? `${p.first_name} ${p.last_name}`
+                : (p.email ?? "Mitglied"),
+            avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+          } satisfies UserListEntry,
+        ]),
+      );
+      const grouped: Partial<Record<PostReactionType, UserListEntry[]>> = {};
+      for (const row of reactions ?? []) {
+        const type = row.reaction_type as PostReactionType;
+        const user = userById.get(row.user_id);
+        if (!user) continue;
+        if (!grouped[type]) grouped[type] = [];
+        grouped[type]!.push(user);
+      }
+      for (const type of Object.keys(grouped) as PostReactionType[]) {
+        grouped[type]?.sort((a, b) => a.name.localeCompare(b.name, "de"));
+      }
+      setReactorsByPostId((m) => ({ ...m, [postId]: grouped }));
     } finally {
-      setLikersLoadingPostId(null);
+      setReactorsLoadingPostId(null);
     }
   }
 
@@ -472,11 +495,11 @@ function PostFeedInner({
           if (url) mediaByPost.get(m.post_id)!.push({ id: m.id, url });
         });
 
-        const { data: likesData, error: likesErr } = await supabase
-          .from("post_likes")
-          .select("post_id,user_id,created_at")
+        const { data: reactionsData, error: reactionsErr } = await supabase
+          .from("post_reactions")
+          .select("post_id,user_id,reaction_type,created_at")
           .in("post_id", postIds.length ? postIds : ["00000000-0000-0000-0000-000000000000"]);
-        if (likesErr) throw likesErr;
+        if (reactionsErr) throw reactionsErr;
 
         const { data: commentsData, error: commentsErr } = await supabase
           .from("post_comments")
@@ -560,15 +583,19 @@ function PostFeedInner({
           ]),
         );
 
-        const likesByPost = new Map<string, Set<string>>();
-        const latestLikeByPost = new Map<string, string>();
-        (likesData ?? []).forEach((l) => {
-          if (!likesByPost.has(l.post_id)) likesByPost.set(l.post_id, new Set());
-          likesByPost.get(l.post_id)!.add(l.user_id);
-          if (l.created_at) {
-            const prev = latestLikeByPost.get(l.post_id);
-            if (!prev || new Date(l.created_at).getTime() > new Date(prev).getTime()) {
-              latestLikeByPost.set(l.post_id, l.created_at);
+        const reactionsByPost = new Map<string, Array<{ user_id: string; reaction_type: string; created_at: string }>>();
+        const myReactionByPost = new Map<string, PostReactionType>();
+        const latestReactionByPost = new Map<string, string>();
+        (reactionsData ?? []).forEach((r) => {
+          if (!reactionsByPost.has(r.post_id)) reactionsByPost.set(r.post_id, []);
+          reactionsByPost.get(r.post_id)!.push(r);
+          if (r.user_id === user.id) {
+            myReactionByPost.set(r.post_id, r.reaction_type as PostReactionType);
+          }
+          if (r.created_at) {
+            const prev = latestReactionByPost.get(r.post_id);
+            if (!prev || new Date(r.created_at).getTime() > new Date(prev).getTime()) {
+              latestReactionByPost.set(r.post_id, r.created_at);
             }
           }
         });
@@ -608,11 +635,12 @@ function PostFeedInner({
         });
 
         const mappedPosts = (postsData ?? []).map((p) => {
-            const likedSet = likesByPost.get(p.id) ?? new Set<string>();
+            const reactionRows = reactionsByPost.get(p.id) ?? [];
+            const reactionCounts = buildReactionCounts(reactionRows);
             const lastActivity = (p as any).last_activity_at ?? null;
             const computed = [
               p.created_at,
-              latestLikeByPost.get(p.id),
+              latestReactionByPost.get(p.id),
               latestCommentByPost.get(p.id),
               lastActivity,
             ]
@@ -650,8 +678,8 @@ function PostFeedInner({
               isBirthday,
               birthdayDate: (p as any).birthday_date ?? null,
               media: mediaByPost.get(p.id) ?? [],
-              likedByMe: likedSet.has(user.id),
-              likeCount: likedSet.size,
+              myReaction: myReactionByPost.get(p.id) ?? null,
+              reactionCounts,
               comments: commentsByPost.get(p.id) ?? [],
             };
           }).filter((p) => {
@@ -783,20 +811,76 @@ function PostFeedInner({
     void loadMeAndFeed();
   }, [embedPollsInFeed]);
 
-  function toggleLike(postId: string) {
+  function applyReactionOptimistic(postId: string, nextReaction: PostReactionType | null) {
     setPosts((prev) =>
       prev.map((p) => {
         if (p.id !== postId) return p;
-        const nextLiked = !p.likedByMe;
+        const counts = { ...emptyReactionCounts(), ...p.reactionCounts };
+        const prevReaction = p.myReaction;
+        if (prevReaction) {
+          counts[prevReaction] = Math.max(0, (counts[prevReaction] ?? 0) - 1);
+        }
+        if (nextReaction) {
+          counts[nextReaction] = (counts[nextReaction] ?? 0) + 1;
+        }
         const nowIso = new Date().toISOString();
         return {
           ...p,
-          likedByMe: nextLiked,
-          likeCount: Math.max(0, p.likeCount + (nextLiked ? 1 : -1)),
-          lastActivityAt: nextLiked ? nowIso : p.lastActivityAt,
+          myReaction: nextReaction,
+          reactionCounts: counts,
+          lastActivityAt: nextReaction ? nowIso : p.lastActivityAt,
         };
       }),
     );
+  }
+
+  async function submitPostReaction(
+    post: FeedPost,
+    nextReaction: PostReactionType | null,
+    fromRect: DOMRect | null,
+  ) {
+    if (!me || likeBusy[post.id]) return;
+    const prevReaction = post.myReaction;
+    applyReactionOptimistic(post.id, nextReaction);
+    invalidateReactors(post.id);
+    setLikeBusy((b) => ({ ...b, [post.id]: true }));
+    try {
+      const supabase = createSupabaseBrowserClient();
+      if (nextReaction === null) {
+        const { error } = await supabase
+          .from("post_reactions")
+          .delete()
+          .eq("post_id", post.id)
+          .eq("user_id", me.id);
+        if (error) throw error;
+        if (prevReaction && post.authorId !== me.id) {
+          flyPointsFromElement({ fromRect, delta: -1 });
+        }
+      } else if (prevReaction) {
+        const { error } = await supabase
+          .from("post_reactions")
+          .update({ reaction_type: nextReaction })
+          .eq("post_id", post.id)
+          .eq("user_id", me.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("post_reactions").insert({
+          post_id: post.id,
+          user_id: me.id,
+          reaction_type: nextReaction,
+        });
+        if (error) throw error;
+        if (post.authorId !== me.id) {
+          flyPointsFromElement({ fromRect, delta: +1 });
+        }
+      }
+    } catch (err) {
+      applyReactionOptimistic(post.id, prevReaction);
+      invalidateReactors(post.id);
+      setLoadError(err instanceof Error ? err.message : "Reaktion fehlgeschlagen");
+    } finally {
+      setLikeBusy((b) => ({ ...b, [post.id]: false }));
+    }
   }
 
   function setCommentLikeState(
@@ -1321,8 +1405,8 @@ function PostFeedInner({
           isBirthday: false,
           birthdayDate: null,
           media: uploadedMedia,
-          likeCount: 0,
-          likedByMe: false,
+          myReaction: null,
+          reactionCounts: emptyReactionCounts(),
           comments: [],
         },
         ...prev,
@@ -1907,133 +1991,20 @@ function PostFeedInner({
             {post.media.length ? <PostMediaGallery media={post.media} /> : null}
 
             <div className="mt-2 flex items-center gap-1.5 border-t border-slate-100 pt-2">
-              {post.likeCount > 0 ? (
-                <UserListPopover
-                  label="Wer hat geliked?"
-                  users={likersByPostId[post.id] ?? []}
-                  loading={likersLoadingPostId === post.id}
-                  onMouseEnter={() => void ensureLikers(post.id)}
-                  className={cn(
-                    "inline-flex h-7 items-center gap-0.5 rounded-md px-1 text-xs font-medium",
-                    post.likedByMe ? "text-rose-700" : "text-slate-600",
-                  )}
-                >
-                  <button
-                    type="button"
-                    disabled={Boolean(likeBusy[post.id]) || !me}
-                    title="Gefällt mir"
-                    aria-label={post.likedByMe ? "Gefällt mir entfernen" : "Gefällt mir"}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!me) return;
-                      const fromRect = captureFlyRect(e.currentTarget);
-                      const nextLiked = !post.likedByMe;
-                      toggleLike(post.id);
-                      invalidateLikers(post.id);
-                      void (async () => {
-                        const supabase = createSupabaseBrowserClient();
-                        setLikeBusy((b) => ({ ...b, [post.id]: true }));
-                        try {
-                          if (nextLiked) {
-                            const { error } = await supabase
-                              .from("post_likes")
-                              .insert({ post_id: post.id, user_id: me.id });
-                            if (error) throw error;
-                            if (post.authorId !== me.id) {
-                              flyPointsFromElement({ fromRect, delta: +1 });
-                            }
-                          } else {
-                            const { error } = await supabase
-                              .from("post_likes")
-                              .delete()
-                              .eq("post_id", post.id)
-                              .eq("user_id", me.id);
-                            if (error) throw error;
-                            if (post.authorId !== me.id) {
-                              flyPointsFromElement({ fromRect, delta: -1 });
-                            }
-                          }
-                        } catch (err) {
-                          toggleLike(post.id);
-                          invalidateLikers(post.id);
-                          setLoadError(err instanceof Error ? err.message : "Like fehlgeschlagen");
-                        } finally {
-                          setLikeBusy((b) => ({ ...b, [post.id]: false }));
-                        }
-                      })();
-                    }}
-                    className={cn(
-                      "inline-flex items-center rounded-md p-1 transition hover:bg-white/80",
-                      post.likedByMe ? "bg-rose-50" : "hover:bg-slate-50",
-                      likeBusy[post.id] ? "opacity-60" : "",
-                    )}
-                  >
-                    <Heart
-                      className={cn(
-                        "h-3.5 w-3.5",
-                        post.likedByMe ? "fill-rose-600 text-rose-600" : "",
-                      )}
-                    />
-                  </button>
-                  <span className="tabular-nums">{post.likeCount}</span>
-                </UserListPopover>
-              ) : (
-                <button
-                  type="button"
-                  disabled={Boolean(likeBusy[post.id]) || !me}
-                  onClick={(e) => {
-                    if (!me) return;
-                    const fromRect = captureFlyRect(e.currentTarget);
-                    const nextLiked = !post.likedByMe;
-                    toggleLike(post.id);
-                    void (async () => {
-                      const supabase = createSupabaseBrowserClient();
-                      setLikeBusy((b) => ({ ...b, [post.id]: true }));
-                      try {
-                        if (nextLiked) {
-                          const { error } = await supabase
-                            .from("post_likes")
-                            .insert({ post_id: post.id, user_id: me.id });
-                          if (error) throw error;
-                          if (post.authorId !== me.id) {
-                            flyPointsFromElement({ fromRect, delta: +1 });
-                          }
-                        } else {
-                          const { error } = await supabase
-                            .from("post_likes")
-                            .delete()
-                            .eq("post_id", post.id)
-                            .eq("user_id", me.id);
-                          if (error) throw error;
-                          if (post.authorId !== me.id) {
-                            flyPointsFromElement({ fromRect, delta: -1 });
-                          }
-                        }
-                      } catch (err) {
-                        toggleLike(post.id);
-                        setLoadError(err instanceof Error ? err.message : "Like fehlgeschlagen");
-                      } finally {
-                        setLikeBusy((b) => ({ ...b, [post.id]: false }));
-                      }
-                    })();
-                  }}
-                  className={cn(
-                    "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition",
-                    post.likedByMe
-                      ? "bg-rose-50 text-rose-700"
-                      : "text-slate-600 hover:bg-slate-50",
-                    likeBusy[post.id] ? "opacity-60" : "",
-                  )}
-                >
-                  <Heart
-                    className={cn(
-                      "h-3.5 w-3.5",
-                      post.likedByMe ? "fill-rose-600 text-rose-600" : "",
-                    )}
-                  />
-                  <span>Like</span>
-                </button>
-              )}
+              <PostReactionPicker
+                postId={post.id}
+                myReaction={post.myReaction}
+                reactionCounts={post.reactionCounts}
+                disabled={Boolean(likeBusy[post.id]) || !me}
+                reactorsByType={reactorsByPostId[post.id] ?? {}}
+                reactorsLoading={reactorsLoadingPostId === post.id}
+                onEnsureReactors={() => void ensureReactors(post.id)}
+                onInvalidateReactors={() => invalidateReactors(post.id)}
+                onReact={(type) => {
+                  void submitPostReaction(post, type, null);
+                }}
+              />
+
 
               <button
                 type="button"

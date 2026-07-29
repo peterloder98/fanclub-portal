@@ -80,7 +80,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Beitrag geliked",
     points: POINT_VALUES.postLike,
     how: "Den Daumen bei einem Beitrag setzen.",
-    note: "Like zurücknehmen: Anni-Star wird wieder abgezogen. Likes auf eigene Beiträge geben keine Sterne.",
+    note: "Like zurücknehmen oder Reaktion ändern: Anni-Star wird wieder abgezogen bzw. bleibt gleich. Likes auf eigene Beiträge geben keine Sterne.",
   },
   {
     id: "giveaway_like",

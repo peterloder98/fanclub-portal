@@ -9,12 +9,15 @@ import {
 export function MemberNotifySettingsClient({
   initialGiveaway,
   initialPoll,
+  initialEvent,
 }: {
   initialGiveaway: boolean;
   initialPoll: boolean;
+  initialEvent: boolean;
 }) {
   const [notifyGiveaway, setNotifyGiveaway] = useState(initialGiveaway);
   const [notifyPoll, setNotifyPoll] = useState(initialPoll);
+  const [notifyEvent, setNotifyEvent] = useState(initialEvent);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -25,6 +28,7 @@ export function MemberNotifySettingsClient({
         await updateMemberNotifySettingsAction({
           notifyNewGiveaway: notifyGiveaway,
           notifyNewPoll: notifyPoll,
+          notifyNewEvent: notifyEvent,
         });
         setMessage("Einstellungen gespeichert.");
       } catch (e) {
@@ -39,8 +43,8 @@ export function MemberNotifySettingsClient({
         <CardHeader>
           <CardTitle>Mitglieder-Benachrichtigungen</CardTitle>
           <p className="text-sm text-slate-600">
-            Optional E-Mail an alle <strong>aktiven Mitglieder</strong> (nicht Antragsteller), wenn du
-            ein neues Gewinnspiel oder eine neue Umfrage anlegst. Standard: aus.
+            Optional E-Mail an alle <strong>aktiven Mitglieder</strong> (nicht Antragsteller), wenn
+            ein neues Gewinnspiel, ein neuer Auftritt oder eine neue Umfrage erscheint. Standard: aus.
           </p>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -55,6 +59,21 @@ export function MemberNotifySettingsClient({
               <span className="font-medium text-fc-navy">Neues Gewinnspiel</span>
               <span className="mt-0.5 block text-sm text-slate-600">
                 Betreff: „Neues Gewinnspiel in der Anni Perka Fanclub App“ — Fanclub-Signatur fest.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={notifyEvent}
+              onChange={(e) => setNotifyEvent(e.target.checked)}
+            />
+            <span>
+              <span className="font-medium text-fc-navy">Neuer Auftritt / Event</span>
+              <span className="mt-0.5 block text-sm text-slate-600">
+                Betreff z. B. „Neuer Auftritt: … — Datum" — mit Ort/Sender und Link zur Eventliste.
               </span>
             </span>
           </label>

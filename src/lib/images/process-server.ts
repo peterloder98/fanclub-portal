@@ -14,26 +14,31 @@ async function toBuffer(input: Blob | Buffer): Promise<Buffer> {
   return Buffer.from(await input.arrayBuffer());
 }
 
-async function encodeWebpUnderBudget(
+async function encodeImageUnderBudget(
   pipeline: sharp.Sharp,
   maxBytes: number,
-  opts: { startQuality: number; minQuality: number; shrinkSides?: number[] },
+  opts: {
+    format: "webp" | "avif";
+    startQuality: number;
+    minQuality: number;
+    shrinkSides?: number[];
+  },
 ): Promise<Buffer> {
   let quality = opts.startQuality;
   const sides = opts.shrinkSides ?? [POST_MEDIA_MAX_SIDE_PX];
 
   for (const side of sides) {
     for (let attempt = 0; attempt < 7; attempt++) {
-      const buf = await pipeline
-        .clone()
-        .resize({
-          width: side,
-          height: side,
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .webp({ quality, effort: 4, smartSubsample: true })
-        .toBuffer();
+      const resized = pipeline.clone().resize({
+        width: side,
+        height: side,
+        fit: "inside",
+        withoutEnlargement: true,
+      });
+      const buf =
+        opts.format === "avif"
+          ? await resized.avif({ quality, effort: 4 }).toBuffer()
+          : await resized.webp({ quality, effort: 4, smartSubsample: true }).toBuffer();
 
       if (buf.length <= maxBytes) return buf;
       if (quality > opts.minQuality) {
@@ -45,11 +50,20 @@ async function encodeWebpUnderBudget(
     }
   }
 
-  return pipeline
+  const fallback = pipeline
     .clone()
-    .resize(480, 480, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: opts.minQuality, effort: 4 })
-    .toBuffer();
+    .resize(480, 480, { fit: "inside", withoutEnlargement: true });
+  return opts.format === "avif"
+    ? fallback.avif({ quality: opts.minQuality, effort: 4 }).toBuffer()
+    : fallback.webp({ quality: opts.minQuality, effort: 4 }).toBuffer();
+}
+
+async function encodeWebpUnderBudget(
+  pipeline: sharp.Sharp,
+  maxBytes: number,
+  opts: { startQuality: number; minQuality: number; shrinkSides?: number[] },
+): Promise<Buffer> {
+  return encodeImageUnderBudget(pipeline, maxBytes, { ...opts, format: "webp" });
 }
 
 /** Quadratisches Profilbild — klein & scharf genug für die UI. */
@@ -70,14 +84,15 @@ export async function processAvatarForStorage(input: Blob | Buffer): Promise<Buf
   return base.webp({ quality: 50, effort: 4 }).toBuffer();
 }
 
-/** Feed-/Post-Bild — nie größer als Anzeige, typisch unter 100 KB. */
+/** Feed-/Post-Bild — AVIF, typisch unter 70 KB. */
 export async function processPostMediaForStorage(input: Blob | Buffer): Promise<Buffer> {
   const buf = await toBuffer(input);
   const base = sharp(buf, { failOn: "none" }).rotate();
 
-  return encodeWebpUnderBudget(base, POST_MEDIA_MAX_BYTES, {
-    startQuality: 68,
-    minQuality: 48,
+  return encodeImageUnderBudget(base, POST_MEDIA_MAX_BYTES, {
+    format: "avif",
+    startQuality: 58,
+    minQuality: 45,
     shrinkSides: [POST_MEDIA_MAX_SIDE_PX, 560, 420],
   });
 }

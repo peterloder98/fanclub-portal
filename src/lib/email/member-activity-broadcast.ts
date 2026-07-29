@@ -4,6 +4,7 @@ import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
 import { loadMailSignature, CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 import {
   getAppSettingBool,
+  NOTIFY_MEMBERS_NEW_EVENT_KEY,
   NOTIFY_MEMBERS_NEW_GIVEAWAY_KEY,
   NOTIFY_MEMBERS_NEW_POLL_KEY,
 } from "@/lib/settings/app-settings";
@@ -14,7 +15,14 @@ import {
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
-export type MemberBroadcastKind = "giveaway" | "poll";
+export type MemberBroadcastKind = "giveaway" | "poll" | "event";
+
+export type EventBroadcastMeta = {
+  title: string;
+  dateLabel: string;
+  location?: string | null;
+  tv: boolean;
+};
 
 const BATCH_SIZE = 5;
 const DELAY_BETWEEN_BATCHES_MS = 1500;
@@ -28,10 +36,19 @@ function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
 }
 
-export function memberBroadcastSubject(kind: MemberBroadcastKind) {
+export function memberBroadcastSubject(
+  kind: MemberBroadcastKind,
+  eventMeta?: EventBroadcastMeta,
+) {
+  if (kind === "event" && eventMeta) {
+    const prefix = eventMeta.tv ? "Neuer TV-Auftritt" : "Neuer Auftritt";
+    return `${prefix}: ${eventMeta.title} — ${eventMeta.dateLabel}`;
+  }
   return kind === "giveaway"
     ? "Neues Gewinnspiel in der Anni Perka Fanclub App"
-    : "Neue Umfrage in der Anni Perka Fanclub App";
+    : kind === "poll"
+      ? "Neue Umfrage in der Anni Perka Fanclub App"
+      : "Neues Event in der Anni Perka Fanclub App";
 }
 
 export function composeMemberBroadcastBody(input: {
@@ -39,12 +56,21 @@ export function composeMemberBroadcastBody(input: {
   firstName: string;
   signatureText: string;
   deepLink?: string | null;
+  eventMeta?: EventBroadcastMeta;
 }) {
   const name = input.firstName.trim() || "du";
-  const middle =
-    input.kind === "giveaway"
-      ? "Wir haben ein neues Gewinnspiel für dich!"
-      : "Wir haben eine neue Umfrage an der du teilnehmen kannst!";
+  let middle: string;
+  if (input.kind === "giveaway") {
+    middle = "Wir haben ein neues Gewinnspiel für dich!";
+  } else if (input.kind === "poll") {
+    middle = "Wir haben eine neue Umfrage an der du teilnehmen kannst!";
+  } else {
+    const where = input.eventMeta?.location?.trim();
+    const label = input.eventMeta?.tv ? "TV-Auftritt" : "Auftritt";
+    middle = input.eventMeta
+      ? `Es gibt einen neuen ${label}: „${input.eventMeta.title}" am ${input.eventMeta.dateLabel}${where ? ` (${where})` : ""}.`
+      : "Es gibt einen neuen Auftritt in der Eventliste.";
+  }
 
   const lines = [
     `Hey ${name},`,
@@ -67,6 +93,7 @@ function buildMessageForRecipient(
   kind: MemberBroadcastKind,
   entityPath: string,
   sig: Awaited<ReturnType<typeof loadMailSignature>>,
+  eventMeta?: EventBroadcastMeta,
 ) {
   const base = appBaseUrl();
   const deepLink = base ? `${base}${entityPath}` : null;
@@ -75,6 +102,7 @@ function buildMessageForRecipient(
     firstName: recipient.firstName,
     signatureText: sig.text,
     deepLink,
+    eventMeta,
   });
   const html = buildHtmlFromPlain(text, sig.htmlBlock, sig.text);
   const attachments = sig.imageBuffer
@@ -89,7 +117,7 @@ function buildMessageForRecipient(
     : undefined;
 
   return {
-    subject: memberBroadcastSubject(kind),
+    subject: memberBroadcastSubject(kind, eventMeta),
     text,
     html,
     attachments,
@@ -111,9 +139,14 @@ export type MemberBroadcastResult = {
 export async function sendMemberActivityBroadcast(input: {
   kind: MemberBroadcastKind;
   entityId: string;
+  eventMeta?: EventBroadcastMeta;
 }): Promise<MemberBroadcastResult> {
   const settingKey =
-    input.kind === "giveaway" ? NOTIFY_MEMBERS_NEW_GIVEAWAY_KEY : NOTIFY_MEMBERS_NEW_POLL_KEY;
+    input.kind === "giveaway"
+      ? NOTIFY_MEMBERS_NEW_GIVEAWAY_KEY
+      : input.kind === "poll"
+        ? NOTIFY_MEMBERS_NEW_POLL_KEY
+        : NOTIFY_MEMBERS_NEW_EVENT_KEY;
   const enabled = await getAppSettingBool(settingKey, false);
   if (!enabled) {
     return { enabled: false, recipientCount: 0, sent: 0, failed: 0 };
@@ -143,10 +176,14 @@ export async function sendMemberActivityBroadcast(input: {
   }
 
   const entityPath =
-    input.kind === "giveaway" ? `/giveaways/${input.entityId}` : `/polls/${input.entityId}`;
+    input.kind === "giveaway"
+      ? `/giveaways/${input.entityId}`
+      : input.kind === "poll"
+        ? `/polls/${input.entityId}`
+        : `/events?focus=${input.entityId}`;
 
   const sig = await loadMailSignature(CLUB_SIGNATURE_ID);
-  const subject = memberBroadcastSubject(input.kind);
+  const subject = memberBroadcastSubject(input.kind, input.eventMeta);
 
   const transport = createTransportFromCredentials({
     server: creds.public.server,
@@ -168,7 +205,13 @@ export async function sendMemberActivityBroadcast(input: {
       await Promise.all(
         batch.map(async (recipient) => {
           try {
-            const msg = buildMessageForRecipient(recipient, input.kind, entityPath, sig);
+            const msg = buildMessageForRecipient(
+              recipient,
+              input.kind,
+              entityPath,
+              sig,
+              input.eventMeta,
+            );
             await transport.sendMail({
               from,
               replyTo,

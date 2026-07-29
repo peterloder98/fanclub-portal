@@ -6,7 +6,7 @@ export const AVATAR_MAX_BYTES = 28_000;
 
 /** Feed-Vorschau max-h-28 (~112px), Lightbox bis ~960px — Storage 720px Seite. */
 export const POST_MEDIA_MAX_SIDE_PX = 720;
-export const POST_MEDIA_MAX_BYTES = 102_400;
+export const POST_MEDIA_MAX_BYTES = 71_680;
 export const POST_MEDIA_MAX_COUNT = 6;
 
 /** Feed-Videos — stark komprimiert, max. ~4 MB. */
