@@ -565,6 +565,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
               "„Mitglieder-Benachrichtigungen“ (System): optional E-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar, Standard aus.",
+              "Automatische Erinnerungen: Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen (Anmeldung). Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail.",
             ],
           },
           {

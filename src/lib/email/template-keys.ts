@@ -11,6 +11,8 @@ export const EMAIL_TEMPLATE_KEYS = {
   membershipApprovedWelcome: "membership_approved_welcome",
   clubMeetingReminder: "club_meeting_reminder",
   appAccessSetup: "app_access_setup",
+  appSignupReminder: "app_signup_reminder",
+  appInactiveReminder: "app_inactive_reminder",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -101,5 +103,15 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "setup_url", label: "Link Zugang einrichten" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.appSignupReminder]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "setup_url", label: "Link Zugang einrichten" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.appInactiveReminder]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "app_url", label: "Link zur Fanclub App" },
   ],
 };

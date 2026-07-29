@@ -138,6 +138,67 @@ Viel Spaß und bis ganz bald.`,
 <p style="${EMAIL_PARAGRAPH_STYLE}">Viel Spaß und bis ganz bald.</p>`,
 };
 
+const APP_SIGNUP_REMINDER_FALLBACK = {
+  subject: "Erinnerung: Deine Fanclub App wartet auf dich",
+  body_text: `{{salutation}},
+
+kurze Erinnerung: Dein Zugang zur Anni Perka Fanclub App ist bereit — wir freuen uns, wenn du dich anmeldest und mitmachst.
+
+In der App findest du unter anderem:
+• Neuigkeiten und Beiträge aus dem Fanclub
+• Events und Treffen zum Mitmachen
+• Umfragen, Gewinnspiele und Anni-Stars
+
+So richtest du deinen Zugang ein:
+
+1. Bitte den folgenden Link klicken:
+{{setup_url}}
+
+2. Bestätige deine Identität mit deinem Geburtsdatum und vergebe dein Wunschpasswort. Dein Benutzername ist deine E-Mail-Adresse.
+
+Wir freuen uns auf dich!
+Bis bald in der App!`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">kurze Erinnerung: Dein Zugang zur Anni Perka Fanclub App ist bereit — wir freuen uns, wenn du dich anmeldest und mitmachst.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">In der App findest du unter anderem:</p>
+<ul style="margin:0 0 1.25em;padding-left:1.25em;font-size:15px;line-height:1.6;color:#1e293b">
+  <li>Neuigkeiten und Beiträge aus dem Fanclub</li>
+  <li>Events und Treffen zum Mitmachen</li>
+  <li>Umfragen, Gewinnspiele und Anni-Stars</li>
+</ul>
+<p style="${EMAIL_PARAGRAPH_STYLE}"><strong>So richtest du deinen Zugang ein:</strong></p>
+<ol style="margin:0 0 1.25em;padding-left:1.25em;font-size:15px;line-height:1.6;color:#1e293b">
+  <li style="margin-bottom:0.75em"><strong>Bitte den folgenden Button klicken:</strong><br>
+    <a href="{{setup_url}}" style="${EMAIL_BUTTON_STYLE}">Zugang hier einrichten</a>
+  </li>
+  <li><strong>Bestätige deine Identität</strong> mit deinem Geburtsdatum und vergebe dein Wunschpasswort. Dein Benutzername ist deine E-Mail-Adresse.</li>
+</ol>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Wir freuen uns auf dich!<br>Bis bald in der App!</p>`,
+};
+
+const APP_INACTIVE_REMINDER_FALLBACK = {
+  subject: "Wir vermissen dich in der Fanclub App",
+  body_text: `{{salutation}},
+
+wir haben dich eine Weile nicht mehr in der Anni Perka Fanclub App gesehen und würden uns freuen, wenn du wieder vorbeischaust.
+
+In der Zwischenzeit ist sicher einiges passiert — neue Beiträge, Events, Umfragen und Gewinnspiele warten auf dich.
+
+Einfach wieder einloggen und mitmachen:
+{{app_url}}
+
+Wir freuen uns auf dich!
+Bis bald in der App!`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">wir haben dich eine Weile nicht mehr in der Anni Perka Fanclub App gesehen und würden uns freuen, wenn du wieder vorbeischaust.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">In der Zwischenzeit ist sicher einiges passiert — neue Beiträge, Events, Umfragen und Gewinnspiele warten auf dich.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Einfach wieder einloggen und mitmachen:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">
+  <a href="{{app_url}}" style="${EMAIL_BUTTON_STYLE}">Zur Fanclub App</a>
+</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Wir freuen uns auf dich!<br>Bis bald in der App!</p>`,
+};
+
 export async function renderEmailFromTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string>,
@@ -161,6 +222,26 @@ export async function renderEmailFromTemplate(
       subject: APP_ACCESS_SETUP_FALLBACK.subject,
       body_text: APP_ACCESS_SETUP_FALLBACK.body_text,
       body_html: APP_ACCESS_SETUP_FALLBACK.body_html,
+      description: null,
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.appSignupReminder) {
+    row = {
+      key,
+      name: "Erinnerung: App-Anmeldung",
+      subject: APP_SIGNUP_REMINDER_FALLBACK.subject,
+      body_text: APP_SIGNUP_REMINDER_FALLBACK.body_text,
+      body_html: APP_SIGNUP_REMINDER_FALLBACK.body_html,
+      description: null,
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.appInactiveReminder) {
+    row = {
+      key,
+      name: "Erinnerung: Lange nicht aktiv",
+      subject: APP_INACTIVE_REMINDER_FALLBACK.subject,
+      body_text: APP_INACTIVE_REMINDER_FALLBACK.body_text,
+      body_html: APP_INACTIVE_REMINDER_FALLBACK.body_html,
       description: null,
     };
   }

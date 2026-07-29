@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { UserListPopover } from "@/components/ui/user-list-popover";
+import { ParticipantAvatarStack } from "@/components/ui/participant-avatar-stack";
 import { personenNehmenTeil } from "@/lib/text/plural-de";
 import { cn } from "@/lib/cn";
 import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
@@ -29,8 +29,23 @@ export function EventParticipationRow({
   const [joined, setJoined] = useState(initialJoined);
   const [count, setCount] = useState(initialCount);
   const [attendees, setAttendees] = useState(initialAttendees);
+  const [meId, setMeId] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!cancelled && user) setMeId(user.id);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function ensureAttendees() {
     if (attendees.length >= count && count > 0) return;
@@ -75,6 +90,7 @@ export function EventParticipationRow({
       setBusy(false);
       return;
     }
+    setMeId(user.id);
     try {
       if (joined) {
         await supabase
@@ -93,6 +109,23 @@ export function EventParticipationRow({
         });
         setJoined(true);
         setCount((c) => c + 1);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id,first_name,last_name,email,avatar_path,updated_at")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (profile) {
+          const { getAvatarPublicUrl } = await import("@/lib/avatars/url");
+          const entry: UserListEntry = {
+            id: profile.id,
+            name:
+              profile.first_name && profile.last_name
+                ? `${profile.first_name} ${profile.last_name}`
+                : (profile.email ?? "Du"),
+            avatarUrl: getAvatarPublicUrl(profile.avatar_path, profile.updated_at),
+          };
+          setAttendees((a) => (a.some((x) => x.id === entry.id) ? a : [entry, ...a]));
+        }
         flyPointsFromElement({ fromRect, delta: +POINT_VALUES.eventParticipation });
       }
     } finally {
@@ -100,10 +133,16 @@ export function EventParticipationRow({
     }
   }
 
+  const countLabel = tvMode
+    ? count === 1
+      ? "1 Person schaut zu"
+      : `${count} Personen schauen zu`
+    : personenNehmenTeil(count);
+
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-2",
+        "flex min-w-0 flex-wrap items-center gap-2",
         !inline && "mt-2 border-t border-slate-100 pt-2",
       )}
     >
@@ -112,7 +151,7 @@ export function EventParticipationRow({
         disabled={busy}
         onClick={(e) => void toggleJoin(e.currentTarget)}
         className={cn(
-          "rounded-lg px-2.5 py-1 text-xs font-semibold transition",
+          "shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition",
           joined
             ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
             : "bg-fc-navy text-white hover:bg-fc-blue",
@@ -127,19 +166,18 @@ export function EventParticipationRow({
             : "Am Event teilnehmen"}
       </button>
       {count > 0 ? (
-        <UserListPopover
-          label="Wer nimmt teil?"
-          users={attendees}
+        <ParticipantAvatarStack
+          attendees={attendees}
+          count={count}
+          label={countLabel}
           loading={loadingList}
-          align="end"
-          onMouseEnter={() => void ensureAttendees()}
-        >
-          <span className="text-xs font-medium text-slate-600">
-            {personenNehmenTeil(count)}
-          </span>
-        </UserListPopover>
+          onEnsure={() => void ensureAttendees()}
+          currentUserId={meId}
+        />
       ) : (
-        <span className="text-xs text-slate-500">Noch keine Teilnehmer</span>
+        <span className="text-xs text-slate-500">
+          {tvMode ? "Noch niemand schaut zu — sei die/der Erste!" : "Noch niemand dabei — sei die/der Erste!"}
+        </span>
       )}
     </div>
   );
