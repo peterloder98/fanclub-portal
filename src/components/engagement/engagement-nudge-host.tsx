@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Calendar, Gift, Vote, X } from "lucide-react";
@@ -9,9 +9,24 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { giveawayPhase } from "@/lib/giveaways/status-label";
 
 const STORAGE_KEY = "fc_nudge_dismissed_v1";
+const SESSION_KEY = "fc_nudge_session_v1";
 const SHOW_MS = 10_000;
-const FIRST_DELAY_MS = 8_000;
-const BETWEEN_MS = 45_000;
+const MAX_PER_SESSION = 2;
+
+/** Zufällige Wartezeit zwischen min und max (ms). */
+function randomMs(min: number, max: number) {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/** Fisher-Yates shuffle */
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 type NudgeKind = "poll" | "giveaway" | "event";
 
@@ -23,6 +38,8 @@ type NudgeItem = {
   href: string;
   cta: string;
 };
+
+type SessionState = { shown: number };
 
 function loadDismissed(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -44,6 +61,26 @@ function persistDismissed(ids: Set<string>) {
   }
 }
 
+function loadSession(): SessionState {
+  if (typeof window === "undefined") return { shown: 0 };
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return { shown: 0 };
+    const parsed = JSON.parse(raw) as SessionState;
+    return { shown: typeof parsed.shown === "number" ? parsed.shown : 0 };
+  } catch {
+    return { shown: 0 };
+  }
+}
+
+function persistSession(state: SessionState) {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(state));
+  } catch {
+    /* ignore */
+  }
+}
+
 function iconFor(kind: NudgeKind) {
   if (kind === "poll") return Vote;
   if (kind === "giveaway") return Gift;
@@ -56,6 +93,8 @@ export function EngagementNudgeHost() {
   const [current, setCurrent] = useState<NudgeItem | null>(null);
   const [visible, setVisible] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const sessionShownRef = useRef(loadSession().shown);
+  const scheduleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismiss = useCallback((id: string, remember: boolean) => {
     setVisible(false);
@@ -69,6 +108,37 @@ export function EngagementNudgeHost() {
       setQueue((q) => q.filter((x) => x.id !== id));
     }, 320);
   }, []);
+
+  const scheduleNext = useCallback(
+    (items: NudgeItem[], isFirst: boolean) => {
+      if (scheduleRef.current) {
+        clearTimeout(scheduleRef.current);
+        scheduleRef.current = null;
+      }
+      if (!items.length) return;
+      if (sessionShownRef.current >= MAX_PER_SESSION) return;
+      if (pathname?.startsWith("/login") || pathname?.startsWith("/setup")) return;
+
+      // Gelegentlich gar keinen weiteren Hinweis in dieser Session
+      if (!isFirst && Math.random() < 0.35) return;
+
+      const delay = isFirst
+        ? randomMs(15_000, 90_000) // 15s – 1,5 min bis zum ersten Hinweis
+        : randomMs(150_000, 480_000); // 2,5 – 8 min bis zum nächsten
+
+      scheduleRef.current = setTimeout(() => {
+        scheduleRef.current = null;
+        if (sessionShownRef.current >= MAX_PER_SESSION) return;
+        const next = items[0];
+        if (!next) return;
+        setCurrent(next);
+        sessionShownRef.current += 1;
+        persistSession({ shown: sessionShownRef.current });
+        requestAnimationFrame(() => setVisible(true));
+      }, delay);
+    },
+    [pathname],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -186,28 +256,18 @@ export function EngagementNudgeHost() {
       }
 
       if (!cancelled) {
-        setQueue(items.slice(0, 6));
+        const shuffled = shuffle(items).slice(0, 6);
+        setQueue(shuffled);
         setLoaded(true);
+        if (shuffled.length && sessionShownRef.current < MAX_PER_SESSION) {
+          scheduleNext(shuffled, true);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  useEffect(() => {
-    if (!loaded || current || !queue.length) return;
-    if (pathname?.startsWith("/login") || pathname?.startsWith("/setup")) return;
-
-    const delay = FIRST_DELAY_MS;
-    const t = window.setTimeout(() => {
-      const next = queue[0];
-      if (!next) return;
-      setCurrent(next);
-      requestAnimationFrame(() => setVisible(true));
-    }, delay);
-    return () => clearTimeout(t);
-  }, [loaded, current, queue, pathname]);
+  }, [scheduleNext]);
 
   useEffect(() => {
     if (!current || !visible) return;
@@ -216,13 +276,24 @@ export function EngagementNudgeHost() {
   }, [current, visible, dismiss]);
 
   useEffect(() => {
-    if (current || !queue.length || !loaded) return;
-    const t = window.setTimeout(() => {
-      /* retrigger via queue dependency when current cleared */
-      setQueue((q) => [...q]);
-    }, BETWEEN_MS);
-    return () => clearTimeout(t);
-  }, [current, queue.length, loaded]);
+    if (current) return;
+    if (!loaded || !queue.length) return;
+    if (sessionShownRef.current >= MAX_PER_SESSION) return;
+    scheduleNext(queue, false);
+    return () => {
+      if (scheduleRef.current) {
+        clearTimeout(scheduleRef.current);
+        scheduleRef.current = null;
+      }
+    };
+  }, [current, queue, loaded, scheduleNext]);
+
+  useEffect(
+    () => () => {
+      if (scheduleRef.current) clearTimeout(scheduleRef.current);
+    },
+    [],
+  );
 
   if (!current) return null;
 
@@ -231,7 +302,7 @@ export function EngagementNudgeHost() {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed bottom-20 right-3 z-[90] w-[min(100vw-1.5rem,20rem)] transition-all duration-500 ease-out sm:bottom-6 sm:right-6",
+        "pointer-events-none fixed bottom-20 right-3 z-[90] w-[min(100vw-1.5rem,20rem)] transition-all duration-700 ease-out sm:bottom-6 sm:right-6",
         visible ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
       )}
       role="dialog"
