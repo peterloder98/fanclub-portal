@@ -35,6 +35,10 @@ export function BadgesGuideCard() {
           Badges belohnen langfristige Aktivität im Fanclub — unabhängig vom jährlichen
           Anni-Stars-Stand. Jede Kategorie hat vier Stufen in Bronze, Silber, Gold und Platin.
         </p>
+        <p className="text-xs leading-relaxed text-amber-700">
+          Achtung: Badges können auch wieder sinken — z.&nbsp;B. wenn du Likes entfernst,
+          Event-Teilnahmen zurücknimmst oder Kommentare löschst.
+        </p>
 
         <div>
           <h3 className="text-sm font-semibold text-fc-navy">Stufen</h3>

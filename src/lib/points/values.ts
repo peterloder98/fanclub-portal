@@ -16,15 +16,15 @@ export const POINT_VALUES = {
 
 export const POINTS_RANKS = [
   { from: 0, label: "Fan" },
-  { from: 25, label: "Aktiv-Fan" },
-  { from: 75, label: "Treue-Fan" },
-  { from: 150, label: "Silber-Fan" },
-  { from: 250, label: "Gold-Fan" },
-  { from: 400, label: "Diamond-Fan" },
+  { from: 100, label: "Aktiv-Fan" },
+  { from: 250, label: "Treue-Fan" },
+  { from: 500, label: "Silber-Fan" },
+  { from: 1000, label: "Gold-Fan" },
+  { from: 2500, label: "Diamond-Fan" },
 ] as const;
 
 export const POINTS_YEAR_HINT =
   "Anni-Stars gelten für das laufende Kalenderjahr. Am 1. Januar startet die Zählung neu — dein Rang in der Leiste zeigt deinen Einsatz im Club.";
 
 export const POINTS_YEAR_END_NOTE =
-  "Am Jahreswechsel nehmen die Top 10 der Anni-Stars des abgelaufenen Jahres automatisch an der Sonderverlosung teil (unter Gewinnspiele). Bei gleicher Sternzahl entscheidet keine Auslosung, sondern feste Kriterien: mehr Anni-Stars-Aktivitäten im Jahr, früheres Eintrittsdatum, im Notfall Nachname alphabetisch. Der Vorstand trägt die Preise ein und bestätigt — dann wird ausgelost und die Gewinner per E-Mail benachrichtigt. Ab dem 1. Januar zählen Anni-Stars wieder bei null.";
+  "Die zehn Mitglieder mit den meisten Anni-Stars am Jahresende qualifizieren sich automatisch für die Sonderverlosung. Bei Gleichstand zählen: mehr Aktivitäten im Jahr, dann früherer Beitritt, dann Nachname alphabetisch. Der Vorstand legt die Preise fest und startet die Auslosung — die Gewinner werden per E-Mail benachrichtigt. Am 1. Januar starten alle Anni-Stars wieder bei null.";

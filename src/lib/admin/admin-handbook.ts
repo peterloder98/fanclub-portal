@@ -358,7 +358,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Am Jahreswechsel können die Top 10 der Anni-Stars des abgelaufenen Jahres an einer Sonderverlosung teilnehmen. Die Teilnehmerliste wird automatisch eingetragen — niemand meldet sich selbst an.",
+            text: "Die zehn Mitglieder mit den meisten Anni-Stars am Jahresende qualifizieren sich automatisch für die Sonderverlosung — niemand meldet sich selbst an.",
           },
           {
             type: "ol",
@@ -373,7 +373,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ul",
             items: [
-              "Bei gleicher Anzahl Anni-Stars entscheidet nicht der Zufall zuerst, sondern: mehr Anni-Stars-Aktivitäten im Jahr, dann früheres Eintrittsdatum, dann Nachname alphabetisch.",
+              "Bei Gleichstand entscheiden feste Kriterien: mehr Aktivitäten im Jahr, dann früherer Beitritt, dann Nachname alphabetisch.",
               "Pausieren und vorzeitiges Beenden sind bei der Jahresendverlosung nicht vorgesehen.",
             ],
           },
@@ -609,8 +609,8 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, …) und zählen für das laufende Kalenderjahr — am 1. Januar geht es wieder bei null los.",
-              "Ränge zeigen den Stand im Jahr (z. B. Aktiv-Fan, Gold-Fan).",
-              "Badges (z. B. Konzertprofi) bleiben dauerhaft.",
+              "Ränge zeigen den Stand im Jahr: Fan → Aktiv-Fan (100) → Treue-Fan (250) → Silber-Fan (500) → Gold-Fan (1 000) → Diamond-Fan (2 500).",
+              "Badges (z. B. Konzertprofi) können auch wieder sinken — z. B. wenn jemand Likes entfernt, Event-Teilnahmen zurücknimmt oder Kommentare löscht. Die Stufe passt sich automatisch an den aktuellen Stand an.",
               "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne.",
               "Zum Jahresende: Top 10 der Jahres-Sterne → Sonderverlosung (siehe 3.3).",
             ],
@@ -673,6 +673,99 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/audit",
             label: "Protokoll",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "system",
+    number: "7",
+    title: "System & Einstellungen",
+    sections: [
+      {
+        id: "gruppenchat",
+        number: "7.1",
+        title: "Gruppenchat moderieren",
+        summary: "Nachrichten löschen und verwarnen",
+        blocks: [
+          {
+            type: "p",
+            text: "Im Gruppenchat können Vorstände einzelne Nachrichten löschen und bei Verstößen Verwarnungen aussprechen — das funktioniert genauso wie bei Kommentaren (siehe 3.4).",
+          },
+          {
+            type: "ul",
+            items: [
+              "Nachricht antippen \u2192 \u201EVerwarnung aussprechen\u201C oder \u201EL\u00F6schen\u201C.",
+              "Verwarnungen werden gezählt und das Mitglied per E-Mail informiert.",
+            ],
+          },
+        ],
+      },
+      {
+        id: "club-info",
+        number: "7.2",
+        title: "Club-Info und Bankdaten pflegen",
+        summary: "Vereinsinfos für Mitglieder und Zahlungen",
+        blocks: [
+          {
+            type: "p",
+            text: "Unter Admin \u2192 System \u2192 \u201EClub-Info\u201C pflegt ihr die Vereinsdaten: Name, Anschrift, Bankverbindung (IBAN, BIC, Kontoinhaber). Diese Daten erscheinen auf dem Beitragsformular und in Zahlungserinnerungen.",
+          },
+          {
+            type: "link",
+            href: "/admin",
+            label: "Admin-Übersicht → System",
+          },
+        ],
+      },
+      {
+        id: "club-regeln",
+        number: "7.3",
+        title: "Fanclub-Regeln verwalten",
+        summary: "Regeln bearbeiten, die Mitglieder akzeptieren",
+        blocks: [
+          {
+            type: "p",
+            text: "Unter Admin \u2192 System \u2192 \u201EFanclub-Regeln\u201C k\u00F6nnt ihr die Community-Regeln bearbeiten. Neue Mitglieder m\u00FCssen die Regeln beim ersten Login akzeptieren. Bei \u00C4nderungen werden bestehende Mitglieder aufgefordert, erneut zuzustimmen.",
+          },
+        ],
+      },
+      {
+        id: "geburtstags-posts",
+        number: "7.4",
+        title: "Geburtstags-Beiträge",
+        summary: "Automatische Beiträge an Geburtstagen",
+        blocks: [
+          {
+            type: "p",
+            text: "Die App erstellt automatisch einen Geburtstags-Beitrag im Feed, wenn ein Mitglied Geburtstag hat. Unter Admin \u2192 \u201EGeburtstags-Beitr\u00E4ge\u201C k\u00F6nnt ihr die Vorlage (Text und Bild) anpassen.",
+          },
+          {
+            type: "link",
+            href: "/admin/birthday-posts",
+            label: "Geburtstags-Beiträge",
+          },
+        ],
+      },
+      {
+        id: "merchandise",
+        number: "7.5",
+        title: "Merchandise (Fanshop)",
+        summary: "Produkte verwalten — noch nicht aktiv",
+        blocks: [
+          {
+            type: "p",
+            text: "Im Fanshop können Produkte angelegt und verwaltet werden. Bestellungen und Bezahlung laufen derzeit nicht über die App — Mitglieder sehen nur den Katalog.",
+          },
+          {
+            type: "note",
+            text: "Der Fanshop ist vorbereitet, aber noch nicht vollständig aktiv in der App. Sobald er freigeschaltet wird, ergänzen wir diese Anleitung.",
+          },
+          {
+            type: "link",
+            href: "/admin/merchandise",
+            label: "Merchandise verwalten",
           },
         ],
       },
