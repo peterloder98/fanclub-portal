@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Music2, UserPlus } from "lucide-react";
+import { ChevronLeft, UserPlus } from "lucide-react";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { appNav, NavList } from "@/components/app-shell/nav";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
@@ -95,14 +95,6 @@ export function Sidebar({ user }: { user: SidebarUser }) {
                 className="grid h-10 w-10 place-items-center rounded-xl border border-fc-gold/30 bg-gradient-to-br from-fc-gold-soft to-fc-ice text-fc-gold shadow-sm transition hover:border-fc-gold/50 hover:shadow-md"
               >
                 <UserPlus className="h-4 w-4" aria-hidden />
-              </Link>
-            </SidebarNavTooltip>
-            <SidebarNavTooltip label="Spotify">
-              <Link
-                href="/admin/settings/spotify"
-                className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-fc-navy shadow-sm transition hover:bg-fc-ice"
-              >
-                <Music2 className="h-4 w-4" aria-hidden />
               </Link>
             </SidebarNavTooltip>
           </div>
