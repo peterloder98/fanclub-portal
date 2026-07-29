@@ -48,6 +48,52 @@ export default async function DashboardPage() {
   const visibleEvents = filterVisibleEvents(allEvents);
   const nextEvent = pickNextEvent(allEvents);
 
+  const eventIds = visibleEvents.map((e) => e.id);
+  const participationByEventId: Record<
+    string,
+    { count: number; attendees: { id: string; name: string; avatarUrl: string | null }[] }
+  > = {};
+
+  if (eventIds.length) {
+    const { data: parts } = await supabase
+      .from("event_participations")
+      .select("event_id,user_id")
+      .in("event_id", eventIds);
+    const byEvent = new Map<string, string[]>();
+    (parts ?? []).forEach((p) => {
+      if (!byEvent.has(p.event_id)) byEvent.set(p.event_id, []);
+      byEvent.get(p.event_id)!.push(p.user_id);
+    });
+    const allUserIds = Array.from(new Set((parts ?? []).map((p) => p.user_id)));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,avatar_path,updated_at")
+      .in("id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"]);
+    const { getAvatarPublicUrl } = await import("@/lib/avatars/url");
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [
+        p.id,
+        {
+          id: p.id,
+          name:
+            p.first_name && p.last_name
+              ? `${p.first_name} ${p.last_name}`
+              : (p.email ?? "Mitglied"),
+          avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+        },
+      ]),
+    );
+    for (const eid of eventIds) {
+      const uids = byEvent.get(eid) ?? [];
+      participationByEventId[eid] = {
+        count: uids.length,
+        attendees: uids
+          .map((uid) => profileMap.get(uid))
+          .filter((x): x is NonNullable<typeof x> => Boolean(x)),
+      };
+    }
+  }
+
   const mapEvents: MapEvent[] = visibleEvents.map((e) => ({
     id: e.id,
     title: e.title,
@@ -63,6 +109,8 @@ export default async function DashboardPage() {
     kind: (e as { kind?: string }).kind ?? "event",
     lat: e.lat ?? null,
     lng: e.lng ?? null,
+    participationCount: participationByEventId[e.id]?.count ?? 0,
+    participationAttendees: participationByEventId[e.id]?.attendees ?? [],
   }));
 
   let giveawayItems: Awaited<ReturnType<typeof loadGiveawayListItems>> = [];

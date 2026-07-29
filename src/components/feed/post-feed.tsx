@@ -46,6 +46,7 @@ import { EmojiPickerButton } from "@/components/ui/emoji-picker";
 import { MentionText } from "@/components/feed/mention-text";
 import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
+import { ScrollHintBox } from "@/components/ui/scroll-hint-box";
 import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import { PostReactionPicker } from "@/components/feed/post-reaction-picker";
@@ -2185,12 +2186,11 @@ function PostFeedInner({
             </div>
 
             {post.comments.length ? (
-              <div
-                className={cn(
-                  "mt-2 space-y-2 border-t border-slate-100 pt-2",
-                  post.comments.length > 4 ? "max-h-40 overflow-y-auto pr-3" : "",
-                )}
+              <ScrollHintBox
+                className="mt-2 border-t border-slate-100 pt-2"
+                maxHeightClass={post.comments.length > 4 ? "max-h-40" : undefined}
               >
+                <div className="space-y-2">
                 {(() => {
                   const { roots, repliesByRoot } = organizePostComments(post.comments);
 
@@ -2356,7 +2356,8 @@ function PostFeedInner({
                     </div>
                   ));
                 })()}
-              </div>
+                </div>
+              </ScrollHintBox>
             ) : null}
           </div>
         </Card>

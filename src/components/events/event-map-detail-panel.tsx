@@ -3,6 +3,8 @@
 import { CalendarDays, MapPin, X } from "lucide-react";
 import { formatEventDateRange, formatLocation, formatVenueName } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
+import { personenNehmenTeil } from "@/lib/text/plural-de";
+import { ParticipantAvatarStack } from "@/components/ui/participant-avatar-stack";
 import type { MapEvent } from "./events-map.types";
 
 export function EventMapDetailPanel({
@@ -16,6 +18,9 @@ export function EventMapDetailPanel({
   const location = formatLocation(event);
   const venueName = event.kind === "tv" ? null : formatVenueName(event.venue);
   const ticket = ticketDisplay(event.ticket_url);
+  const count = event.participationCount ?? 0;
+  const attendees = event.participationAttendees ?? [];
+  const isTv = event.kind === "tv";
 
   return (
     <div
@@ -59,6 +64,27 @@ export function EventMapDetailPanel({
           ) : ticket.text ? (
             <p className="text-xs font-medium text-slate-700">{ticket.text}</p>
           ) : null}
+
+          {count > 0 ? (
+            <div className="border-t border-slate-100 pt-2">
+              <ParticipantAvatarStack
+                attendees={attendees}
+                count={count}
+                label={
+                  isTv
+                    ? count === 1
+                      ? "1 Person schaut zu"
+                      : `${count} Personen schauen zu`
+                    : personenNehmenTeil(count)
+                }
+                visibleMax={5}
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-slate-500">
+              {isTv ? "Noch niemand schaut zu — sei die/der Erste!" : "Noch niemand dabei — sei die/der Erste!"}
+            </p>
+          )}
         </div>
         <button
           type="button"

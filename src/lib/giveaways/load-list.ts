@@ -41,6 +41,7 @@ export async function loadGiveawayListItems(
 
   const countByG = new Map<string, number>();
   const eligibleCountByG = new Map<string, number>();
+  const entrantIdsByG = new Map<string, string[]>();
   (entries ?? []).forEach((e) => {
     countByG.set(e.giveaway_id, (countByG.get(e.giveaway_id) ?? 0) + 1);
     if (e.is_eligible) {
@@ -49,7 +50,31 @@ export async function loadGiveawayListItems(
         (eligibleCountByG.get(e.giveaway_id) ?? 0) + 1,
       );
     }
+    const arr = entrantIdsByG.get(e.giveaway_id) ?? [];
+    arr.push(e.user_id);
+    entrantIdsByG.set(e.giveaway_id, arr);
   });
+
+  const allEntrantIds = Array.from(new Set((entries ?? []).map((e) => e.user_id)));
+  const { data: entrantProfiles } = await supabase
+    .from("profiles")
+    .select("id,first_name,last_name,email,avatar_path,updated_at")
+    .in("id", allEntrantIds.length ? allEntrantIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  const { getAvatarPublicUrl } = await import("@/lib/avatars/url");
+  const entrantMap = new Map(
+    (entrantProfiles ?? []).map((p) => [
+      p.id,
+      {
+        id: p.id,
+        name:
+          p.first_name && p.last_name
+            ? `${p.first_name} ${p.last_name}`
+            : (p.email ?? "Mitglied"),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+      },
+    ]),
+  );
 
   const myEntryByGiveaway = new Map<string, boolean>();
   for (const e of entries ?? []) {
@@ -58,21 +83,28 @@ export async function loadGiveawayListItems(
     }
   }
 
-  return (rows ?? []).map((g) => ({
-    id: g.id,
-    title: g.title,
-    description: g.description,
-    entry_mode: g.entry_mode as "simple" | "quiz" | "question",
-    ends_at: g.ends_at,
-    created_at: g.created_at as string,
-    status: g.status,
-    isPaused: Boolean((g as { is_paused?: boolean }).is_paused),
-    isYearEndLottery: Boolean((g as { is_year_end_lottery?: boolean }).is_year_end_lottery),
-    pointsYear: (g as { points_year?: number | null }).points_year ?? null,
-    prizeNames: prizeNamesByG.get(g.id) ?? [],
-    entryCount: countByG.get(g.id) ?? 0,
-    eligibleCount: eligibleCountByG.get(g.id) ?? 0,
-    myEntered: myEntryByGiveaway.has(g.id),
-    myEligible: myEntryByGiveaway.get(g.id) ?? null,
-  }));
+  return (rows ?? []).map((g) => {
+    const idsForG = entrantIdsByG.get(g.id) ?? [];
+    return {
+      id: g.id,
+      title: g.title,
+      description: g.description,
+      entry_mode: g.entry_mode as "simple" | "quiz" | "question",
+      ends_at: g.ends_at,
+      created_at: g.created_at as string,
+      status: g.status,
+      isPaused: Boolean((g as { is_paused?: boolean }).is_paused),
+      isYearEndLottery: Boolean((g as { is_year_end_lottery?: boolean }).is_year_end_lottery),
+      pointsYear: (g as { points_year?: number | null }).points_year ?? null,
+      prizeNames: prizeNamesByG.get(g.id) ?? [],
+      entryCount: countByG.get(g.id) ?? 0,
+      eligibleCount: eligibleCountByG.get(g.id) ?? 0,
+      myEntered: myEntryByGiveaway.has(g.id),
+      myEligible: myEntryByGiveaway.get(g.id) ?? null,
+      entrants: idsForG
+        .map((uid) => entrantMap.get(uid))
+        .filter((x): x is NonNullable<typeof x> => Boolean(x))
+        .slice(0, 12),
+    };
+  });
 }

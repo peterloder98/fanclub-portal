@@ -34,6 +34,8 @@ import {
 } from "@/app/(app)/giveaways/actions";
 import type { QuestionAnswerReview } from "@/lib/giveaways/load-question-answer";
 import { CLUB_SIGNATURE_ID, type MailSignatureOption } from "@/lib/email/signatures";
+import { ParticipantAvatarStack } from "@/components/ui/participant-avatar-stack";
+import type { UserListEntry } from "@/components/ui/user-list-popover";
 
 type Question = {
   id: string;
@@ -67,6 +69,7 @@ export function GiveawayDetailClient({
   yearEndAdmin,
   hasEntries = false,
   entryCount = 0,
+  entrants = [],
   eligibleEntryCount = null,
   initialAdminEdit = false,
   celebrateDraw = false,
@@ -107,6 +110,7 @@ export function GiveawayDetailClient({
   /** Mindestens eine Teilnahme — Quiz-Lösungen im Admin gesperrt. */
   hasEntries?: boolean;
   entryCount?: number;
+  entrants?: UserListEntry[];
   eligibleEntryCount?: number | null;
   initialAdminEdit?: boolean;
   /** Kurz nach Auslosung: Konfetti + URL-Parameter `?ausgelost=1` */
@@ -473,26 +477,43 @@ export function GiveawayDetailClient({
                 </span>
               ) : null}
             </div>
-          ) : !showWinnerReveal && localEntered ? (
-            <div
-              className={cn(
-                "rounded-xl border px-3 py-2 text-sm font-medium",
-                !localEntered.is_eligible
-                  ? "border-rose-200 bg-rose-50 text-rose-800"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-900",
-              )}
-            >
-              {!localEntered.is_eligible
-                ? "Leider hat es diesmal nicht geklappt"
-                : giveaway.entry_mode === "simple"
-                  ? "Glückwunsch, du nimmst nun am Gewinnspiel teil, wir drücken dir die Daumen!"
-                  : giveaway.entry_mode === "question"
-                    ? "Danke — du nimmst am Gewinnspiel teil, wir drücken dir die Daumen!"
-                    : "Glückwunsch, alles richtig, nun drücken wir dir die Daumen!"}
+          ) : !showWinnerReveal ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {entryCount > 0 ? (
+                  <ParticipantAvatarStack
+                    attendees={entrants}
+                    count={entryCount}
+                    label={`${entryCount} Teilnehmer`}
+                    currentUserId={userId}
+                    visibleMax={6}
+                  />
+                ) : (
+                  <span className="text-sm text-slate-500">Noch keine Teilnehmer</span>
+                )}
+              </div>
+              {localEntered ? (
+                <div
+                  className={cn(
+                    "mt-2.5 rounded-lg border px-3 py-2 text-sm font-medium",
+                    !localEntered.is_eligible
+                      ? "border-rose-200 bg-rose-50 text-rose-800"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-900",
+                  )}
+                >
+                  {!localEntered.is_eligible
+                    ? "Leider hat es diesmal nicht geklappt"
+                    : giveaway.entry_mode === "simple"
+                      ? "Danke — du nimmst am Gewinnspiel teil, wir drücken dir die Daumen!"
+                      : giveaway.entry_mode === "question"
+                        ? "Danke — du nimmst am Gewinnspiel teil, wir drücken dir die Daumen!"
+                        : "Glückwunsch, alles richtig — wir drücken dir die Daumen!"}
+                </div>
+              ) : phase === "active" ? (
+                <p className="mt-2 text-sm text-slate-600">Noch nicht teilgenommen — sei dabei!</p>
+              ) : null}
             </div>
-          ) : phase !== "active" || showWinnerReveal ? null : (
-            <p className="text-sm text-slate-600">Noch nicht teilgenommen.</p>
-          )}
+          ) : null}
 
           {error ? <p className="text-sm text-rose-700">{error}</p> : null}
 

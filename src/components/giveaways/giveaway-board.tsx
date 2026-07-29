@@ -13,6 +13,8 @@ import { GiveawayAdminCreate } from "@/components/giveaways/giveaway-admin-creat
 import { GiveawayAdminToolbar } from "@/components/giveaways/giveaway-admin-toolbar";
 import { GiveawayDrawStatus } from "@/components/giveaways/giveaway-draw-status";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ParticipantAvatarStack } from "@/components/ui/participant-avatar-stack";
+import type { UserListEntry } from "@/components/ui/user-list-popover";
 
 export type GiveawayListItem = {
   id: string;
@@ -31,6 +33,7 @@ export type GiveawayListItem = {
   myEligible: boolean | null;
   isYearEndLottery?: boolean;
   pointsYear?: number | null;
+  entrants?: UserListEntry[];
 };
 
 type AdminTab = "active" | "ended";
@@ -201,24 +204,42 @@ export function GiveawayBoard({
                       {g.description ? (
                         <p className="mt-1 line-clamp-2 text-xs text-slate-600">{g.description}</p>
                       ) : null}
-                      <p className="mt-2 text-xs text-slate-500">
-                        {g.prizeNames.join(" · ")} ·{" "}
-                        {isAdmin
-                          ? `${g.entryCount} Teilnahme${g.entryCount === 1 ? "" : "n"}, ${g.eligibleCount} berechtigt`
-                          : `${g.entryCount} Teilnehmer`}
-                        {g.entry_mode === "quiz"
-                          ? " · Quiz"
-                          : g.entry_mode === "question"
-                            ? " · Frage"
-                            : " · Einfach"}
-                      </p>
+                      {g.prizeNames.length ? (
+                        <p className="mt-2 text-xs text-slate-500">{g.prizeNames.join(" · ")}</p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {g.entryCount > 0 ? (
+                          <ParticipantAvatarStack
+                            attendees={g.entrants ?? []}
+                            count={g.entryCount}
+                            label={
+                              isAdmin
+                                ? `${g.entryCount} Teilnahme${g.entryCount === 1 ? "" : "n"}`
+                                : `${g.entryCount} Teilnehmer`
+                            }
+                            visibleMax={4}
+                            className="!px-0 !py-0"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-500">Noch keine Teilnehmer</span>
+                        )}
+                        <span className="text-[10px] text-slate-400">
+                          {g.entry_mode === "quiz"
+                            ? "Quiz"
+                            : g.entry_mode === "question"
+                              ? "Frage"
+                              : "Einfach"}
+                        </span>
+                      </div>
                       {g.myEntered ? (
                         g.myEligible === false && !g.isYearEndLottery ? (
-                          <p className="mt-1 text-xs font-medium text-rose-700">
+                          <p className="mt-1.5 text-xs font-medium text-rose-700">
                             Leider hat es diesmal nicht geklappt
                           </p>
                         ) : (
-                          <p className="mt-1 text-xs font-medium text-emerald-700">Du bist dabei</p>
+                          <p className="mt-1.5 inline-flex rounded-lg bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                            Du bist dabei — danke!
+                          </p>
                         )
                       ) : null}
                     </CardContent>

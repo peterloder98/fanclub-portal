@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Map } from "lucide-react";
 import { EventsMapClient } from "@/components/events/events-map.client";
@@ -126,10 +126,23 @@ export function EventsInteractivePanel({
     </Card>
   );
 
+  const mapEvents = useMemo(
+    () =>
+      events.map((e) => {
+        const part = participationByEventId[e.id];
+        return {
+          ...e,
+          participationCount: part?.count ?? 0,
+          participationAttendees: part?.attendees ?? [],
+        };
+      }),
+    [events, participationByEventId],
+  );
+
   const mapInner = (
     <div className="h-[220px] w-full min-h-0 lg:h-full lg:min-h-0 lg:flex-1">
       <EventsMapClient
-        events={events}
+        events={mapEvents}
         highlightedEventId={highlightedId}
         minHeight={180}
         mapVariant="events"

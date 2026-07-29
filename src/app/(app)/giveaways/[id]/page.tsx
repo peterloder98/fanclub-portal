@@ -84,6 +84,29 @@ export default async function GiveawayDetailPage({
     .select("id", { count: "exact", head: true })
     .eq("giveaway_id", id);
 
+  const { data: entryRows } = await supabase
+    .from("giveaway_entries")
+    .select("user_id")
+    .eq("giveaway_id", id)
+    .limit(24);
+
+  const entrantIds = Array.from(new Set((entryRows ?? []).map((e) => e.user_id)));
+  const { data: entrantProfiles } = entrantIds.length
+    ? await supabase
+        .from("profiles")
+        .select("id,first_name,last_name,email,avatar_path,updated_at")
+        .in("id", entrantIds)
+    : { data: [] };
+
+  const entrants = (entrantProfiles ?? []).map((p) => ({
+    id: p.id,
+    name:
+      p.first_name && p.last_name
+        ? `${p.first_name} ${p.last_name}`
+        : (p.email ?? "Mitglied"),
+    avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at),
+  }));
+
   let eligibleEntryCount: number | null = null;
   if (isAdmin) {
     const { count } = await supabase
@@ -252,6 +275,7 @@ export default async function GiveawayDetailPage({
           myAvatarUrl={myAvatarUrl}
           hasEntries={(entryCount ?? 0) > 0}
           entryCount={entryCount ?? 0}
+          entrants={entrants}
           eligibleEntryCount={eligibleEntryCount}
           signatures={signatures}
           yearEndAdmin={

@@ -15,6 +15,9 @@ export type MapEvent = {
   broadcaster?: string | null;
   lat: number | null;
   lng: number | null;
+  /** Optional: Teilnehmer für Karten-Hover/Detail */
+  participationCount?: number;
+  participationAttendees?: UserListEntry[];
 };
 
 export type EventListRow = MapEvent;
