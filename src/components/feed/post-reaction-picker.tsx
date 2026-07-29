@@ -12,7 +12,10 @@ import {
 import { UserListPopover, type UserListEntry } from "@/components/ui/user-list-popover";
 
 const LONG_PRESS_MS = 450;
-const HOVER_OPEN_MS = 280;
+const HOVER_OPEN_MS = 220;
+const DEFAULT_REACTION: PostReactionType = "thumbs_up";
+
+const ALTERNATIVE_REACTIONS = POST_REACTION_TYPES.filter((t) => t !== DEFAULT_REACTION);
 
 type PostReactionPickerProps = {
   postId: string;
@@ -44,6 +47,11 @@ export function PostReactionPicker({
 
   const total = totalReactionCount(reactionCounts);
   const activeTypes = POST_REACTION_TYPES.filter((t) => (reactionCounts[t] ?? 0) > 0);
+  const triggerReaction = myReaction ?? DEFAULT_REACTION;
+  const triggerEmoji = POST_REACTION_META[triggerReaction].emoji;
+  const triggerLabel = myReaction
+    ? `${POST_REACTION_META[myReaction].label} entfernen`
+    : POST_REACTION_META[DEFAULT_REACTION].ariaLabel;
 
   const clearTimers = useCallback(() => {
     if (longPressTimer.current) {
@@ -102,7 +110,7 @@ export function PostReactionPicker({
       return;
     }
     onInvalidateReactors();
-    onReact("heart");
+    onReact(DEFAULT_REACTION);
   }
 
   function handlePointerDown(e: React.PointerEvent) {
@@ -140,11 +148,6 @@ export function PostReactionPicker({
     }, 120);
   }
 
-  const triggerEmoji = myReaction ? POST_REACTION_META[myReaction].emoji : "👍";
-  const triggerLabel = myReaction
-    ? `${POST_REACTION_META[myReaction].label} entfernen`
-    : "Reagieren";
-
   return (
     <div
       ref={rootRef}
@@ -158,7 +161,7 @@ export function PostReactionPicker({
           role="menu"
           aria-label="Reaktion wählen"
         >
-          {POST_REACTION_TYPES.map((type) => (
+          {ALTERNATIVE_REACTIONS.map((type) => (
             <button
               key={type}
               type="button"
@@ -191,19 +194,18 @@ export function PostReactionPicker({
         onPointerCancel={handlePointerUp}
         onContextMenu={(e) => e.preventDefault()}
         className={cn(
-          "inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium transition",
-          myReaction ? "bg-rose-50 text-rose-700" : "text-slate-600 hover:bg-slate-50",
+          "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg transition",
+          myReaction ? "bg-rose-50 text-rose-700 ring-1 ring-rose-200/80" : "text-slate-600 hover:bg-slate-100",
           disabled ? "opacity-60" : "",
         )}
       >
-        <span className="text-base leading-none" aria-hidden>
+        <span className="leading-none" aria-hidden>
           {triggerEmoji}
         </span>
-        {myReaction ? null : <span>Reagieren</span>}
       </button>
 
       {total > 0 ? (
-        <div className="inline-flex flex-wrap items-center gap-1">
+        <div className="inline-flex flex-wrap items-center gap-0.5">
           {activeTypes.map((type) => {
             const users = reactorsByType[type] ?? [];
             return (

@@ -17,6 +17,10 @@ import { getMemberContributionInfo } from "@/lib/club/membership-contribution";
 import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
 import { rankFromPoints } from "@/lib/points/rank";
 import {
+  loadUserAchievementsForDisplay,
+  type UserAchievementRow,
+} from "@/lib/badges/evaluate-user-badges";
+import {
   diffProfileChanges,
   type ProfileChangeField,
   type ProfileChangeValues,
@@ -71,6 +75,7 @@ export type MyProfileBundle = {
   pendingProfileChange: PendingProfileChange | null;
   yearPoints: number;
   yearRank: string;
+  achievements: UserAchievementRow[];
 };
 
 const updateSchema = z.object({
@@ -200,6 +205,7 @@ export async function loadMyProfileBundle(): Promise<MyProfileBundle> {
     .gte("created_at", yearStart);
   const yearPoints = (pointsRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
   const yearRank = rankFromPoints(yearPoints);
+  const achievements = await loadUserAchievementsForDisplay(user.id).catch(() => []);
 
   return {
     profile: {
@@ -213,6 +219,7 @@ export async function loadMyProfileBundle(): Promise<MyProfileBundle> {
     pendingProfileChange,
     yearPoints,
     yearRank,
+    achievements,
   };
 }
 

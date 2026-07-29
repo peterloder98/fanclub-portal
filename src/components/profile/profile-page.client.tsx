@@ -561,7 +561,7 @@ export function ProfilePageClient() {
     );
   }
 
-  const { profile, membership, contribution, warnings, activity, pendingProfileChange, yearPoints, yearRank } = bundle;
+  const { profile, membership, contribution, warnings, activity, pendingProfileChange, yearPoints, yearRank, achievements } = bundle;
   const initials = displayName
     .split(" ")
     .filter(Boolean)
@@ -599,7 +599,12 @@ export function ProfilePageClient() {
               </div>
             </div>
             <div className="mt-4">
-              <MemberStarsRankBadge yearPoints={yearPoints} yearRank={yearRank} showLink />
+              <MemberStarsRankBadge
+                yearPoints={yearPoints}
+                yearRank={yearRank}
+                achievements={achievements}
+                showLink
+              />
             </div>
           </div>
 

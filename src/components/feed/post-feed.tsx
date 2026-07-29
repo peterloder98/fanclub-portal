@@ -50,6 +50,15 @@ import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import { PostReactionPicker } from "@/components/feed/post-reaction-picker";
 import {
+  DashboardFeedFilterChips,
+  type DashboardFeedFilterId,
+} from "@/components/feed/dashboard-feed-filter-chips";
+import {
+  GiveawayFeedCard,
+  type GiveawayFeedData,
+} from "@/components/giveaways/giveaway-feed-card";
+import { giveawayPhase } from "@/lib/giveaways/status-label";
+import {
   buildReactionCounts,
   emptyReactionCounts,
   type PostReactionCounts,
@@ -192,7 +201,8 @@ function CommentBody({
 
 type FeedItem =
   | { kind: "post"; id: string; activityAt: string; post: FeedPost }
-  | { kind: "poll"; id: string; activityAt: string; poll: PollFeedData };
+  | { kind: "poll"; id: string; activityAt: string; poll: PollFeedData }
+  | { kind: "giveaway"; id: string; activityAt: string; giveaway: GiveawayFeedData };
 
 const initial: FeedPost[] = [];
 
@@ -266,6 +276,8 @@ function PostFeedInner({
   const [editCommentText, setEditCommentText] = useState("");
 
   const [feedPolls, setFeedPolls] = useState<PollFeedData[]>([]);
+  const [feedGiveaways, setFeedGiveaways] = useState<GiveawayFeedData[]>([]);
+  const [feedFilter, setFeedFilter] = useState<DashboardFeedFilterId>("all");
   const [pollOptions, setPollOptions] = useState<PollOptionRow[]>([]);
   const [pollVotes, setPollVotes] = useState<PollVoteRow[]>([]);
   const [myPollOptionsByPoll, setMyPollOptionsByPoll] = useState<Map<string, Set<string>>>(
@@ -281,6 +293,12 @@ function PostFeedInner({
   >({});
   const [reactorsLoadingPostId, setReactorsLoadingPostId] = useState<string | null>(null);
   const [pinBusyId, setPinBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (embedPollsInFeed && pathname === "/dashboard") {
+      setFeedFilter("all");
+    }
+  }, [embedPollsInFeed, pathname]);
 
   function invalidateReactors(postId: string) {
     setReactorsByPostId((m) => {
@@ -355,6 +373,14 @@ function PostFeedInner({
             poll,
           }))
         : []),
+      ...(embedPollsInFeed
+        ? feedGiveaways.map((giveaway) => ({
+            kind: "giveaway" as const,
+            id: giveaway.id,
+            activityAt: giveaway.lastActivityAt,
+            giveaway,
+          }))
+        : []),
     ];
 
     const now = new Date();
@@ -386,7 +412,33 @@ function PostFeedInner({
       if (ap !== bp) return ap ? -1 : 1;
       return score(b.activityAt) - score(a.activityAt);
     });
-  }, [posts, feedPolls, embedPollsInFeed]);
+  }, [posts, feedPolls, feedGiveaways, embedPollsInFeed]);
+
+  const filteredFeed = useMemo(() => {
+    if (!embedPollsInFeed || feedFilter === "all") return mergedFeed;
+    return mergedFeed.filter((item) => {
+      if (feedFilter === "polls") return item.kind === "poll";
+      if (feedFilter === "giveaways") return item.kind === "giveaway";
+      if (feedFilter === "birthdays") return item.kind === "post" && Boolean(item.post.isBirthday);
+      if (feedFilter === "posts") return item.kind === "post" && !item.post.isBirthday;
+      return true;
+    });
+  }, [mergedFeed, feedFilter, embedPollsInFeed]);
+
+  const emptyFilterLabel = useMemo(() => {
+    switch (feedFilter) {
+      case "posts":
+        return "Keine Beiträge in diesem Filter.";
+      case "polls":
+        return "Keine Umfragen in diesem Filter.";
+      case "giveaways":
+        return "Keine Gewinnspiele in diesem Filter.";
+      case "birthdays":
+        return "Keine Geburtstags-Beiträge in diesem Filter.";
+      default:
+        return "Noch keine Beiträge. Schreib oben den ersten Post oder lege eine Umfrage an.";
+    }
+  }, [feedFilter]);
 
   useEffect(() => {
     const pollId = pendingScrollPollIdRef.current;
@@ -797,6 +849,65 @@ function PostFeedInner({
           setPollVotes(voteRows);
           setMyPollOptionsByPoll(mineByPoll);
           setPollVotersByOption(byOpt);
+
+          const { data: giveawayRows } = await supabase
+            .from("giveaways")
+            .select("id,title,description,ends_at,created_at,status,is_paused")
+            .eq("is_active", true)
+            .order("ends_at", { ascending: true })
+            .limit(20);
+          const giveaways = giveawayRows ?? [];
+          const giveawayIds = giveaways.map((g) => g.id);
+
+          const prizeNamesByG = new Map<string, string[]>();
+          const myEntryByG = new Map<string, boolean>();
+          if (giveawayIds.length) {
+            const [{ data: prizeRows }, { data: entryRows }] = await Promise.all([
+              supabase
+                .from("giveaway_prizes")
+                .select("giveaway_id,name,sort_order")
+                .in("giveaway_id", giveawayIds)
+                .order("sort_order", { ascending: true }),
+              supabase
+                .from("giveaway_entries")
+                .select("giveaway_id,user_id")
+                .in("giveaway_id", giveawayIds),
+            ]);
+            (prizeRows ?? []).forEach((p) => {
+              const arr = prizeNamesByG.get(p.giveaway_id) ?? [];
+              arr.push(p.name);
+              prizeNamesByG.set(p.giveaway_id, arr);
+            });
+            (entryRows ?? []).forEach((e) => {
+              if (e.user_id === user.id) myEntryByG.set(e.giveaway_id, true);
+            });
+          }
+
+          setFeedGiveaways(
+            giveaways
+              .filter((g) => {
+                const paused = Boolean((g as { is_paused?: boolean }).is_paused);
+                const phase = giveawayPhase(g.ends_at, g.status, paused);
+                return phase === "active" || paused;
+              })
+              .map((g) => {
+                const paused = Boolean((g as { is_paused?: boolean }).is_paused);
+                return {
+                  id: g.id,
+                  title: g.title,
+                  description: g.description ?? null,
+                  ends_at: g.ends_at,
+                  created_at: g.created_at as string,
+                  lastActivityAt: g.created_at as string,
+                  status: g.status,
+                  isPaused: paused,
+                  prizeNames: prizeNamesByG.get(g.id) ?? [],
+                  myEntered: myEntryByG.has(g.id),
+                };
+              }),
+          );
+        } else {
+          setFeedGiveaways([]);
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -1831,17 +1942,23 @@ function PostFeedInner({
         </CardContent>
       </Card>
 
+      {embedPollsInFeed ? (
+        <DashboardFeedFilterChips value={feedFilter} onChange={setFeedFilter} />
+      ) : null}
+
       {loadError ? (
         <div className="rounded-2xl border bg-amber-50 px-4 py-3 text-sm text-amber-900">
           {loadError}
         </div>
-      ) : mergedFeed.length === 0 ? (
+      ) : filteredFeed.length === 0 ? (
         <div className="rounded-2xl border bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          Noch keine Beiträge. Schreib oben den ersten Post oder lege eine Umfrage an.
+          {emptyFilterLabel}
         </div>
       ) : null}
-      {mergedFeed.map((item) =>
-        item.kind === "poll" ? (
+      {filteredFeed.map((item) =>
+        item.kind === "giveaway" ? (
+          <GiveawayFeedCard key={`giveaway-${item.id}`} giveaway={item.giveaway} />
+        ) : item.kind === "poll" ? (
           <div
             key={`poll-${item.id}`}
             ref={(el) => {

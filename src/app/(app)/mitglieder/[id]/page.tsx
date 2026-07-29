@@ -33,7 +33,6 @@ import {
 import { isEventUpcoming } from "@/lib/events/event-schedule";
 import { rankFromPoints } from "@/lib/points/rank";
 import { loadUserAchievementsForDisplay } from "@/lib/badges/evaluate-user-badges";
-import { MemberPortalBadges } from "@/components/members/member-portal-badges.client";
 import { MemberStarsRankBadge } from "@/components/members/member-stars-rank-badge";
 
 export const dynamic = "force-dynamic";
@@ -252,12 +251,14 @@ export default async function MemberPortalPage({
                     </span>
                   ) : null}
                 </div>
-                <div className="mt-3 flex justify-center sm:justify-start">
+                <div className="mt-3 w-full max-w-full">
                   <MemberStarsRankBadge
                     yearPoints={yearPoints}
                     yearRank={yearRank}
+                    achievements={achievements}
                     variant="light"
                     showLink={isSelf}
+                    className="w-full max-w-full"
                   />
                 </div>
               </div>
@@ -286,8 +287,6 @@ export default async function MemberPortalPage({
                 </div>
               </section>
             ) : null}
-
-            {achievements.length ? <MemberPortalBadges achievements={achievements} /> : null}
 
             <div className="grid min-w-0 gap-8 lg:grid-cols-2 lg:items-start lg:gap-10">
               <section className="min-w-0 space-y-3">
