@@ -2188,7 +2188,7 @@ function PostFeedInner({
             {post.comments.length ? (
               <ScrollHintBox
                 className="mt-2 border-t border-slate-100 pt-2"
-                maxHeightClass={post.comments.length > 4 ? "max-h-40" : undefined}
+                maxHeightClass={post.comments.length > 4 ? "max-h-36" : undefined}
               >
                 <div className="space-y-2">
                 {(() => {

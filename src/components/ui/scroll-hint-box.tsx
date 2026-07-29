@@ -4,7 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-/** Scrollbarer Kommentar-Bereich mit sichtbarem Hinweis, wenn unten noch Inhalt ist. */
+/**
+ * Scrollbarer Kommentar-Bereich.
+ * „Mehr Kommentare“ liegt als Overlay über dem Inhalt und vergrößert die Box nicht.
+ */
 export function ScrollHintBox({
   children,
   className,
@@ -50,12 +53,13 @@ export function ScrollHintBox({
       >
         {children}
       </div>
+      {/* Overlay: nimmt keinen Layout-Platz (absolute, Höhe 0 für den Fluss) */}
       {canScrollMore ? (
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-white via-white/95 to-transparent pb-0.5 pt-6"
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex h-0 items-end justify-center"
           aria-hidden
         >
-          <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-800/80 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+          <span className="mb-1 inline-flex translate-y-0 items-center gap-0.5 rounded-full bg-slate-800/75 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm backdrop-blur-[2px]">
             Mehr Kommentare
             <ChevronDown className="h-3 w-3 animate-bounce" />
           </span>
