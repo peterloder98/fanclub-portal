@@ -33,7 +33,7 @@ type PostReactionPickerProps = {
   reactorsLoading?: boolean;
   onEnsureReactors: () => void;
   onInvalidateReactors: () => void;
-  onReact: (type: PostReactionType | null) => void;
+  onReact: (type: PostReactionType | null, fromEl: HTMLElement | null) => void;
 };
 
 function ReactionBreakdownPopover({
@@ -198,7 +198,7 @@ export function PostReactionPicker({
   function pick(type: PostReactionType) {
     const next = myReaction === type ? null : type;
     onInvalidateReactors();
-    onReact(next);
+    onReact(next, triggerRef.current);
     closePicker();
   }
 
@@ -213,13 +213,14 @@ export function PostReactionPicker({
       closePicker();
       return;
     }
+    const fromEl = (e.currentTarget as HTMLElement) ?? triggerRef.current;
     if (myReaction) {
       onInvalidateReactors();
-      onReact(null);
+      onReact(null, fromEl);
       return;
     }
     onInvalidateReactors();
-    onReact(DEFAULT_REACTION);
+    onReact(DEFAULT_REACTION, fromEl);
   }
 
   function handlePointerDown(e: React.PointerEvent) {

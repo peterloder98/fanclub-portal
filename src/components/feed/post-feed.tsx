@@ -949,7 +949,7 @@ function PostFeedInner({
   async function submitPostReaction(
     post: FeedPost,
     nextReaction: PostReactionType | null,
-    fromRect: DOMRect | null,
+    fromRect: { left: number; top: number; width: number; height: number } | null,
   ) {
     if (!me || likeBusy[post.id]) return;
     const prevReaction = post.myReaction;
@@ -2118,8 +2118,8 @@ function PostFeedInner({
                 reactorsLoading={reactorsLoadingPostId === post.id}
                 onEnsureReactors={() => void ensureReactors(post.id)}
                 onInvalidateReactors={() => invalidateReactors(post.id)}
-                onReact={(type) => {
-                  void submitPostReaction(post, type, null);
+                onReact={(type, fromEl) => {
+                  void submitPostReaction(post, type, captureFlyRect(fromEl));
                 }}
               />
 

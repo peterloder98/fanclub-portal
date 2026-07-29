@@ -28,32 +28,42 @@ function resolveStartRect(
   return null;
 }
 
+/** Fallback: Bildschirmmitte / unter der Topbar, damit Animation nie still ausfällt. */
+function fallbackStartRect(): FlyRect {
+  return {
+    left: window.innerWidth / 2 - 20,
+    top: Math.min(window.innerHeight * 0.45, 320),
+    width: 40,
+    height: 40,
+  };
+}
+
 function spawnPopAt(x: number, y: number, positive: boolean) {
   const colors = positive
     ? ["#34d399", "#10b981", "#059669", "#c9a227"]
     : ["#fb7185", "#f43f5e", "#fda4af", "#fecdd3"];
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     const dot = document.createElement("div");
-    const angle = (Math.PI * 2 * i) / 8 + Math.random() * 0.4;
-    const dist = 12 + Math.random() * 18;
+    const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.35;
+    const dist = 14 + Math.random() * 22;
     dot.style.position = "fixed";
     dot.style.left = `${x}px`;
     dot.style.top = `${y}px`;
-    dot.style.width = "6px";
-    dot.style.height = "6px";
+    dot.style.width = "7px";
+    dot.style.height = "7px";
     dot.style.borderRadius = "999px";
     dot.style.pointerEvents = "none";
-    dot.style.zIndex = "10000";
+    dot.style.zIndex = "10050";
     dot.style.background = colors[i % colors.length]!;
     dot.style.transform = "translate(-50%, -50%) scale(1)";
-    dot.style.transition = "transform 280ms ease-out, opacity 280ms ease-out";
+    dot.style.transition = "transform 320ms ease-out, opacity 320ms ease-out";
     document.body.appendChild(dot);
     requestAnimationFrame(() => {
       dot.style.transform = `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px)) scale(0)`;
       dot.style.opacity = "0";
     });
-    setTimeout(() => dot.remove(), 320);
+    setTimeout(() => dot.remove(), 360);
   }
 }
 
@@ -74,11 +84,7 @@ export function flyPointsFromElement(params: {
   const { fromEl, fromRect, delta } = params;
   if (!delta) return;
 
-  const from = resolveStartRect(fromEl, fromRect);
-  if (!from) {
-    emitPointsDelta(delta);
-    return;
-  }
+  const from = resolveStartRect(fromEl, fromRect) ?? fallbackStartRect();
 
   const target = getPointsTargetElement();
   const to = target?.getBoundingClientRect();
@@ -94,7 +100,7 @@ export function flyPointsFromElement(params: {
   el.style.position = "fixed";
   el.style.left = "0px";
   el.style.top = "0px";
-  el.style.zIndex = "9999";
+  el.style.zIndex = "10040";
   el.style.pointerEvents = "none";
   el.style.willChange = "transform, opacity";
   el.style.transform = `translate(${startX}px, ${startY}px) translate(-50%, -50%)`;
