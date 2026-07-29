@@ -18,10 +18,12 @@ export function PointsSummaryHeader({ userId }: { userId: string | null }) {
       const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
       const { data: rows } = await supabase
         .from("points_transactions")
-        .select("points")
+        .select("points,held_at")
         .eq("user_id", userId)
         .gte("created_at", yearStart);
-      const sum = (rows ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
+      const sum = (rows ?? [])
+        .filter((r) => !(r as { held_at?: string | null }).held_at)
+        .reduce((s, r) => s + (r.points ?? 0), 0);
       setPoints(sum);
       setRank(rankFromPoints(sum));
     })();

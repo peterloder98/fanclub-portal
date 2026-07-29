@@ -7,9 +7,12 @@ import {
   buildMemberReferralHtml,
 } from "@/lib/email/member-referral-template";
 import { getMembershipApplicationFormUrlForReferrer } from "@/lib/membership/referral-link";
+import { assertReferralSendAllowed } from "@/lib/membership/referral-limits";
+import { evaluateAndMaybeFlagReferrer } from "@/lib/membership/referral-abuse";
 import { awardMembershipReferralPoints } from "@/lib/points/award-membership-referral";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 async function requireMemberAction() {
   const supabase = await createSupabaseServerClient();
@@ -53,6 +56,7 @@ export async function sendMemberReferralEmailAction(input: {
   body: string;
 }) {
   const { user } = await requireMemberAction();
+  const admin = createSupabaseAdminClient();
 
   const to = input.to.trim();
   const recipientFirstName = input.recipientFirstName.trim();
@@ -68,6 +72,9 @@ export async function sendMemberReferralEmailAction(input: {
     throw new Error("Bitte Geschlecht wählen (für Anrede).");
   }
   if (!senderName) throw new Error("Bitte deinen Namen als Absender/in eingeben.");
+
+  const limit = await assertReferralSendAllowed(admin, user.id, to);
+  if (!limit.ok) throw new Error(limit.message);
 
   const { awarded, points, referralToken } = await awardMembershipReferralPoints(user.id, to, {
     firstName: recipientFirstName,
@@ -94,6 +101,10 @@ export async function sendMemberReferralEmailAction(input: {
     }
     throw new Error(result.error ?? "E-Mail konnte nicht gesendet werden (SMTP prüfen).");
   }
+
+  void evaluateAndMaybeFlagReferrer(admin, user.id).catch((e) =>
+    console.error("[referral-abuse] after send:", e),
+  );
 
   return { ok: true as const, pointsAwarded: awarded ? points : 0 };
 }

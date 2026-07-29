@@ -2,7 +2,7 @@
 
 export const POINT_VALUES = {
   membershipReferralCompleted: 70,
-  membershipReferral: 20,
+  membershipReferral: 5,
   pollVote: 5,
   giveawayEntry: 2,
   postComment: 3,

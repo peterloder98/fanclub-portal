@@ -34,6 +34,7 @@ export const NOTIFICATION_KINDS = {
   profileChangeRejected: "profile_change_rejected",
   introIncompleteReminder: "intro_incomplete_reminder",
   introSteckbriefComplete: "intro_steckbrief_complete",
+  referralAbuseReview: "referral_abuse_review",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

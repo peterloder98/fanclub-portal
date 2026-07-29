@@ -24,7 +24,9 @@ export type MerchandiseProductRow = {
   sale_price_cents: number;
   purchase_total_cents: number | null;
   image_path: string | null;
+  image_paths: string[];
   image_url: string | null;
+  image_urls: string[];
   has_sizes: boolean;
   ledger_entry_id: string | null;
   variants: Array<{
@@ -51,6 +53,18 @@ export type MerchandiseProductRow = {
   }>;
 };
 
+const MAX_PRODUCT_IMAGES = 3;
+
+function normalizeProductImagePaths(row: {
+  image_path?: string | null;
+  image_paths?: string[] | null;
+}): string[] {
+  const fromArray = (row.image_paths ?? []).filter(Boolean);
+  if (fromArray.length > 0) return fromArray.slice(0, MAX_PRODUCT_IMAGES);
+  if (row.image_path) return [row.image_path];
+  return [];
+}
+
 const productSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional().default(""),
@@ -58,6 +72,7 @@ const productSchema = z.object({
   purchaseTotalEur: z.coerce.number().min(0).optional().nullable(),
   hasSizes: z.boolean(),
   imagePath: z.string().optional().nullable(),
+  imagePaths: z.array(z.string()).max(MAX_PRODUCT_IMAGES).optional().default([]),
   ledgerEntryId: z.string().uuid().optional().nullable(),
   createPurchaseExpense: z.boolean().optional().default(false),
   variants: z.array(
@@ -78,7 +93,7 @@ export async function listMerchandiseProductsAction(): Promise<{
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("merchandise_products")
-    .select("id,name,description,sale_price_cents,purchase_total_cents,image_path,has_sizes,ledger_entry_id")
+    .select("id,name,description,sale_price_cents,purchase_total_cents,image_path,image_paths,has_sizes,ledger_entry_id")
     .order("name", { ascending: true });
   if (error) {
     if (/merchandise_products|does not exist/i.test(error.message)) {
@@ -151,14 +166,18 @@ export async function listMerchandiseProductsAction(): Promise<{
           ledger_entry_id: r.ledger_entry_id,
           size_label: r.variant_id ? variantLabelById.get(r.variant_id) ?? null : null,
         }));
+      const imagePaths = normalizeProductImagePaths(p);
+      const imageUrls = await Promise.all(imagePaths.map((path) => signedClubDocumentUrl(path)));
       return {
         id: p.id,
         name: p.name,
         description: p.description,
         sale_price_cents: p.sale_price_cents,
         purchase_total_cents: p.purchase_total_cents,
-        image_path: p.image_path,
-        image_url: await signedClubDocumentUrl(p.image_path),
+        image_path: imagePaths[0] ?? null,
+        image_paths: imagePaths,
+        image_url: imageUrls[0] ?? null,
+        image_urls: imageUrls.filter(Boolean) as string[],
         has_sizes: p.has_sizes,
         ledger_entry_id: (p as { ledger_entry_id?: string | null }).ledger_entry_id ?? null,
         variants: vs,
@@ -190,6 +209,7 @@ export async function saveMerchandiseProductAction(input: {
   purchaseTotalEur?: number | null;
   hasSizes: boolean;
   imagePath?: string | null;
+  imagePaths?: string[];
   ledgerEntryId?: string | null;
   createPurchaseExpense?: boolean;
   variants: MerchandiseVariantInput[];
@@ -201,6 +221,9 @@ export async function saveMerchandiseProductAction(input: {
   const purchaseCents =
     parsed.purchaseTotalEur != null ? Math.round(parsed.purchaseTotalEur * 100) : null;
 
+  const imagePaths = (parsed.imagePaths?.filter(Boolean) ?? []).slice(0, MAX_PRODUCT_IMAGES);
+  const primaryImagePath = imagePaths[0] ?? parsed.imagePath ?? null;
+
   let productId = input.id ?? null;
   if (productId) {
     const { error } = await admin
@@ -211,7 +234,8 @@ export async function saveMerchandiseProductAction(input: {
         sale_price_cents: saleCents,
         purchase_total_cents: purchaseCents,
         has_sizes: parsed.hasSizes,
-        image_path: parsed.imagePath ?? null,
+        image_path: primaryImagePath,
+        image_paths: imagePaths,
         ledger_entry_id: parsed.ledgerEntryId ?? null,
         updated_at: new Date().toISOString(),
       })
@@ -227,7 +251,8 @@ export async function saveMerchandiseProductAction(input: {
         sale_price_cents: saleCents,
         purchase_total_cents: purchaseCents,
         has_sizes: parsed.hasSizes,
-        image_path: parsed.imagePath ?? null,
+        image_path: primaryImagePath,
+        image_paths: imagePaths,
         ledger_entry_id: parsed.ledgerEntryId ?? null,
         created_by: user.id,
       })
@@ -326,7 +351,7 @@ export async function refreshMerchandiseImagesAction() {
       upsert: true,
       contentType: "image/webp",
     });
-    await admin.from("merchandise_products").update({ image_path: path }).eq("id", p.id);
+    await admin.from("merchandise_products").update({ image_path: path, image_paths: [path] }).eq("id", p.id);
   }
 
   revalidatePath("/admin/merchandise");

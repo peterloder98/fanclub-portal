@@ -59,10 +59,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
     const { data: pointsRows } = await supabase
       .from("points_transactions")
-      .select("points,created_at")
+      .select("points,held_at")
       .eq("user_id", user.id)
       .gte("created_at", yearStart);
-    const points = (pointsRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
+    const points = (pointsRows ?? [])
+      .filter((r) => !(r as { held_at?: string | null }).held_at)
+      .reduce((sum, r) => sum + (r.points ?? 0), 0);
 
     sidebarUser = {
       name,

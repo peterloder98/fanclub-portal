@@ -30,13 +30,34 @@ export async function sumPointsByUserForYear(
   const { start, end } = yearBounds(pointsYear);
   const { data: rows, error } = await admin
     .from("points_transactions")
-    .select("user_id,points")
+    .select("user_id,points,held_at")
     .gte("created_at", start)
     .lt("created_at", end);
-  if (error) throw error;
+  if (error) {
+    if (/held_at|does not exist/i.test(error.message)) {
+      const { data: fb, error: fbErr } = await admin
+        .from("points_transactions")
+        .select("user_id,points")
+        .gte("created_at", start)
+        .lt("created_at", end);
+      if (fbErr) throw fbErr;
+      const byUserFb = new Map<string, { total: number; activityCount: number }>();
+      for (const r of fb ?? []) {
+        const cur = byUserFb.get(r.user_id) ?? { total: 0, activityCount: 0 };
+        cur.total += r.points ?? 0;
+        cur.activityCount += 1;
+        byUserFb.set(r.user_id, cur);
+      }
+      return [...byUserFb.entries()]
+        .map(([user_id, stats]) => ({ user_id, ...stats }))
+        .filter((x) => x.total > 0);
+    }
+    throw error;
+  }
 
   const byUser = new Map<string, { total: number; activityCount: number }>();
   for (const r of rows ?? []) {
+    if ((r as { held_at?: string | null }).held_at) continue;
     const cur = byUser.get(r.user_id) ?? { total: 0, activityCount: 0 };
     cur.total += r.points ?? 0;
     cur.activityCount += 1;

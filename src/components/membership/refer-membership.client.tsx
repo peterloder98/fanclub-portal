@@ -32,13 +32,16 @@ export function ReferMembershipClient() {
           <ul className="list-inside list-disc space-y-1 text-slate-700">
             <li>
               <span className="font-semibold text-emerald-700">+{MEMBERSHIP_REFERRAL_POINTS} Punkte</span>{" "}
-              pro neuer Empfänger-Adresse beim Versand der Einladung
+              pro neuer Empfänger-Adresse beim Versand (einmalig)
             </li>
             <li>
               <span className="font-semibold text-emerald-700">
                 +{MEMBERSHIP_REFERRAL_COMPLETION_POINTS} Punkte
               </span>{" "}
               wenn die Person den Antrag digital einreicht und später vom Vorstand freigeschaltet wird
+            </li>
+            <li className="text-slate-600">
+              Max. 3 Einladungen pro Tag, 10 pro Woche — dieselbe E-Mail erst nach 14 Tagen erneut
             </li>
           </ul>
           <p className="text-xs text-slate-500">

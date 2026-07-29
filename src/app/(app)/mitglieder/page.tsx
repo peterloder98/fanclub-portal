@@ -139,7 +139,7 @@ export default async function MitgliederPage() {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:-mb-[var(--fanclub-chat-dock,0px)] lg:min-h-[calc(100%+var(--fanclub-chat-dock,0px))]">
       <Topbar
         title="Mitglieder"
         subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."

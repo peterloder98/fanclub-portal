@@ -29,11 +29,21 @@ export function usePointsTopbar(userId: string | null) {
       const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
       const { data: rows, error } = await supabase
         .from("points_transactions")
-        .select("points")
+        .select("points,held_at")
         .eq("user_id", uid)
         .gte("created_at", yearStart);
-      if (error) return pointsRef.current;
-      return (rows ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
+      if (error) {
+        // Fallback bevor Migration 123 läuft
+        const { data: fb } = await supabase
+          .from("points_transactions")
+          .select("points")
+          .eq("user_id", uid)
+          .gte("created_at", yearStart);
+        return (fb ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
+      }
+      return (rows ?? [])
+        .filter((r) => !(r as { held_at?: string | null }).held_at)
+        .reduce((s, r) => s + (r.points ?? 0), 0);
     },
     [],
   );

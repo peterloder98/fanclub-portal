@@ -31,14 +31,14 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Empfehlung: Antrag eingereicht & Mitglied freigegeben",
     points: POINT_VALUES.membershipReferralCompleted,
     how: "Du lädst jemanden per „Neues Mitglied werben“ ein, die Person reicht den Antrag digital ein und wird vom Vorstand freigeschaltet.",
-    note: "Einmal pro erfolgreicher Empfehlung. Zusätzlich +20 Anni-Stars beim Versand der Einladung.",
+    note: "Einmal pro erfolgreicher Empfehlung. Zusätzlich +5 Anni-Stars beim Versand der Einladung.",
   },
   {
     id: "membership_referral",
     label: "Mitgliedsantrag per E-Mail empfehlen",
     points: POINT_VALUES.membershipReferral,
     how: "Unter „Neues Mitglied werben“ eine Einladung mit Antragslink erfolgreich versenden.",
-    note: "Einmal pro Empfänger-E-Mail-Adresse.",
+    note: "Einmal pro Empfänger-E-Mail-Adresse. Max. 3 Einladungen pro Tag und 10 pro Woche.",
   },
   {
     id: "radio_voting",

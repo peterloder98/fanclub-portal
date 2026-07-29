@@ -38,10 +38,21 @@ export function MerchandiseProductForm({
       : "",
   );
   const [hasSizes, setHasSizes] = useState(product?.has_sizes ?? false);
-  const [imagePath, setImagePath] = useState<string | null>(product?.image_path ?? null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(
-    product?.image_url ?? null,
+  const [imagePaths, setImagePaths] = useState<string[]>(
+    product?.image_paths?.length
+      ? product.image_paths
+      : product?.image_path
+        ? [product.image_path]
+        : [],
   );
+  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>(
+    product?.image_urls?.length
+      ? product.image_urls
+      : product?.image_url
+        ? [product.image_url]
+        : [],
+  );
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [variants, setVariants] = useState<MerchandiseVariantInput[]>(
     product?.variants.length
       ? product.variants.map((v) => ({
@@ -73,7 +84,7 @@ export function MerchandiseProductForm({
           salePriceEur: Number(salePrice.replace(",", ".")),
           purchaseTotalEur: purchaseTotal ? Number(purchaseTotal.replace(",", ".")) : null,
           hasSizes,
-          imagePath,
+          imagePaths,
           ledgerEntryId,
           createPurchaseExpense: createPurchaseExpense && !ledgerEntryId,
           variants,
@@ -84,6 +95,25 @@ export function MerchandiseProductForm({
         setError(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
       }
     });
+  }
+
+  async function addProductImage(file: File) {
+    if (imagePaths.length >= 3) {
+      throw new Error("Maximal 3 Bilder pro Artikel.");
+    }
+    const path = await uploadClubDocument(file, "merchandise", product?.id);
+    const res = await fetch(`/api/club-documents/signed?path=${encodeURIComponent(path)}`);
+    const json = (await res.json()) as { url?: string; error?: string };
+    if (!res.ok) {
+      throw new Error(json.error ?? "Vorschau konnte nicht geladen werden.");
+    }
+    setImagePaths((prev) => [...prev, path].slice(0, 3));
+    setImagePreviewUrls((prev) => [...prev, json.url ?? path].slice(0, 3));
+  }
+
+  function removeProductImage(index: number) {
+    setImagePaths((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
   return (
@@ -188,21 +218,49 @@ export function MerchandiseProductForm({
               Neue Ausgabe in der Buchhaltung anlegen
             </label>
           ) : null}
-          <DocumentUploadField
-            label="Produktfoto"
-            onFileSelected={async (file) => {
-              const path = await uploadClubDocument(file, "merchandise", product?.id);
-              setImagePath(path);
-              const res = await fetch(`/api/club-documents/signed?path=${encodeURIComponent(path)}`);
-              const json = (await res.json()) as { url?: string };
-              setImagePreviewUrl(json.url ?? null);
-            }}
-            onClear={() => {
-              setImagePath(null);
-              setImagePreviewUrl(null);
-            }}
-            previewUrl={imagePreviewUrl}
-          />
+          <div className="grid gap-2">
+            <span className="text-sm font-medium">Produktfotos (bis zu 3)</span>
+            {imageUploadError ? (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+                {imageUploadError}
+              </div>
+            ) : null}
+            {imagePreviewUrls.length > 0 ? (
+              <div className="grid grid-cols-3 gap-2">
+                {imagePreviewUrls.map((url, i) => (
+                  <div key={`${url}-${i}`} className="relative overflow-hidden rounded-xl border bg-slate-50">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" className="aspect-square w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeProductImage(i)}
+                      className="absolute right-1 top-1 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-slate-700 shadow"
+                    >
+                      Entfernen
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {imagePaths.length < 3 ? (
+              <DocumentUploadField
+                key={imagePaths.length}
+                label={imagePaths.length === 0 ? "Erstes Bild" : `Weiteres Bild (${imagePaths.length}/3)`}
+                onFileSelected={async (file) => {
+                  setImageUploadError(null);
+                  try {
+                    await addProductImage(file);
+                  } catch (e) {
+                    setImageUploadError(e instanceof Error ? e.message : "Bild-Upload fehlgeschlagen");
+                    throw e;
+                  }
+                }}
+                onClear={() => {}}
+              />
+            ) : (
+              <p className="text-xs text-slate-500">Maximal 3 Bilder erreicht.</p>
+            )}
+          </div>
 
           <div className="rounded-xl border bg-white">
             <p className="border-b bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800">

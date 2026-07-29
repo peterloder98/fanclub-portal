@@ -11,11 +11,24 @@ export async function sumUserPointsThisYear(userId: string): Promise<number> {
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("points_transactions")
-    .select("points")
+    .select("points,held_at")
     .eq("user_id", userId)
     .gte("created_at", yearStartIso());
-  if (error) throw new Error(error.message);
-  return (data ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
+  if (error) {
+    if (/held_at|does not exist/i.test(error.message)) {
+      const { data: fallback, error: fbErr } = await admin
+        .from("points_transactions")
+        .select("points")
+        .eq("user_id", userId)
+        .gte("created_at", yearStartIso());
+      if (fbErr) throw new Error(fbErr.message);
+      return (fallback ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
+    }
+    throw new Error(error.message);
+  }
+  return (data ?? [])
+    .filter((r) => !r.held_at)
+    .reduce((s, r) => s + (r.points ?? 0), 0);
 }
 
 /** Nach Punktevergabe prüfen, ob sich der Jahresrang geändert hat. */

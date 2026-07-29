@@ -23,6 +23,7 @@ export function DocumentUploadField({
   const [dragActive, setDragActive] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -33,10 +34,17 @@ export function DocumentUploadField({
   async function handleFile(file: File | undefined) {
     if (!file || disabled || busy) return;
     setBusy(true);
+    setUploadError(null);
+    let blobUrl: string | null = null;
     try {
       if (localPreview?.startsWith("blob:")) URL.revokeObjectURL(localPreview);
-      setLocalPreview(URL.createObjectURL(file));
+      blobUrl = URL.createObjectURL(file);
+      setLocalPreview(blobUrl);
       await onFileSelected(file);
+    } catch (e) {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      setLocalPreview(null);
+      setUploadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
     } finally {
       setBusy(false);
     }
@@ -47,6 +55,11 @@ export function DocumentUploadField({
   return (
     <div className="grid gap-2">
       <span className="text-sm font-medium text-slate-700">{label}</span>
+      {uploadError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          {uploadError}
+        </div>
+      ) : null}
       {shownPreview ? (
         <div className="relative overflow-hidden rounded-xl border bg-slate-50">
           {/* eslint-disable-next-line @next/next/no-img-element */}

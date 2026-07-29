@@ -13,6 +13,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   appAccessSetup: "app_access_setup",
   appSignupReminder: "app_signup_reminder",
   appInactiveReminder: "app_inactive_reminder",
+  referralAbuseAdminNotify: "referral_abuse_admin_notify",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -113,5 +114,13 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "app_url", label: "Link zur Fanclub App" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.referralAbuseAdminNotify]: [
+    { key: "admin_first_name", label: "Vorname Admin (Empfänger)" },
+    { key: "referrer_name", label: "Name Werber/in" },
+    { key: "referrer_email", label: "E-Mail Werber/in" },
+    { key: "reasons_text", label: "Verdachtsgründe" },
+    { key: "sends_list", label: "Einladungs-Liste (Text)" },
+    { key: "review_url", label: "Link Admin-Prüfung" },
   ],
 };

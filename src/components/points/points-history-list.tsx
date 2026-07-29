@@ -45,12 +45,16 @@ export function PointsHistoryList({ userId }: { userId: string | null }) {
       const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
       const { data } = await supabase
         .from("points_transactions")
-        .select("id,points,reason,created_at")
+        .select("id,points,reason,created_at,held_at")
         .eq("user_id", userId)
         .gte("created_at", yearStart)
         .order("created_at", { ascending: false })
         .limit(80);
-      setRows((data ?? []) as TxRow[]);
+      setRows(
+        ((data ?? []) as Array<TxRow & { held_at?: string | null }>)
+          .filter((r) => !r.held_at)
+          .map(({ id, points, reason, created_at }) => ({ id, points, reason, created_at })),
+      );
       setLoading(false);
     })();
   }, [supabase, userId]);
