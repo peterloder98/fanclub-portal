@@ -14,6 +14,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   appSignupReminder: "app_signup_reminder",
   appInactiveReminder: "app_inactive_reminder",
   referralAbuseAdminNotify: "referral_abuse_admin_notify",
+  membershipReferralReminder: "membership_referral_reminder",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -122,5 +123,10 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "reasons_text", label: "Verdachtsgründe" },
     { key: "sends_list", label: "Einladungs-Liste (Text)" },
     { key: "review_url", label: "Link Admin-Prüfung" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.membershipReferralReminder]: [
+    { key: "recipient_first_name", label: "Vorname Empfänger/in" },
+    { key: "sender_name", label: "Name Werber/in" },
+    { key: "application_link", label: "Link zum Antragsformular" },
   ],
 };

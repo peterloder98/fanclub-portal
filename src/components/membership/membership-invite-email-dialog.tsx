@@ -207,7 +207,7 @@ export function MembershipInviteEmailDialog({
 
   return (
     <EmailDialogShell
-      title={isAdmin ? "Antragslink per E-Mail" : "Neues Mitglied werben"}
+      title={isAdmin ? "Antragslink per E-Mail" : "Neues Mitglied einladen"}
       description={
         isAdmin
           ? "Versand über die Fanclub-Standard-E-Mail mit Admin-Vorlage und Signatur."

@@ -40,7 +40,7 @@ export function ReferMembershipNavCta() {
               active ? "text-white" : "text-fc-navy",
             )}
           >
-            Neues Mitglied werben
+            Neues Mitglied einladen
           </p>
           <p
             className={cn(
@@ -48,7 +48,7 @@ export function ReferMembershipNavCta() {
               active ? "text-blue-100" : "text-blue-800",
             )}
           >
-            <span>Antrag senden</span>
+            <span>Einladung senden</span>
             <span className={active ? "text-white/40" : "text-amber-400"} aria-hidden>
               ·
             </span>

@@ -79,7 +79,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Mitglieder suchen, auf der Karte finden und Profile anschauen",
               "Anni-Stars sammeln und Badges freischalten",
               "sich digital als Mitglied anmelden und den Beitrag überweisen",
-              "andere zum Fanclub einladen und den Status der Einladung verfolgen",
+              "andere zum Fanclub einladen, erinnern und den Status der Einladung verfolgen",
             ],
           },
         ],
@@ -209,7 +209,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Mitglieder können unter „Neues Mitglied werben“ eine Einladung per E-Mail schicken.",
+            text: "Mitglieder können unter „Neues Mitglied einladen“ eine Einladung per E-Mail schicken.",
           },
           {
             type: "ul",
@@ -217,7 +217,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Beim Versand der Einladung: 5 Anni-Stars (einmal pro Empfänger-Adresse)",
               "Max. 3 Einladungen pro Tag und 10 pro Woche; dieselbe E-Mail erst nach 14 Tagen erneut",
               "Wenn die Person freigeschaltet wird: zusätzlich 70 Anni-Stars",
-              "Mitglieder sehen unter „Neues Mitglied werben“ ihre eigenen Einladungen mit Status (gesendet / Link geöffnet / Mitglied geworden)",
+              "Mitglieder sehen ihre Einladungen (E-Mail, Name, Zeitpunkt) und können nach 7 Tagen erinnern — danach alle 14 Tage erneut",
               "Auffällige Einladungs-Muster landen still zur Prüfung unter Empfehlungen: Sterne werden gehalten, weitere Einladungen des Mitglieds sind bis zur Entscheidung pausiert — freigeben oder zurücknehmen",
               "Übersicht für Vorstände: Admin → „Empfehlungen“",
             ],
