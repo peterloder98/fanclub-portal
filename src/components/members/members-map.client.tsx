@@ -75,14 +75,17 @@ function FitMembersBounds({ points }: { points: Array<{ lat: number; lng: number
   useEffect(() => {
     if (!points.length) return;
     if (points.length === 1) {
-      map.setView([points[0].lat, points[0].lng], 9, { animate: false });
+      map.setView([points[0].lat, points[0].lng], 10, { animate: false });
     } else {
       const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-      map.fitBounds(bounds.pad(0.12), {
-        padding: [20, 20],
-        maxZoom: 9,
+      map.fitBounds(bounds.pad(0.06), {
+        padding: [12, 12],
+        maxZoom: 11,
         animate: false,
       });
+      // Ein Zoom-Schritt näher als der reine Fit — sonst bleibt die Ansicht oft zu weit draußen.
+      const closer = Math.min(map.getZoom() + 1, 11);
+      map.setZoom(closer, { animate: false });
     }
     requestAnimationFrame(() => map.invalidateSize());
     // points captured via key
@@ -176,7 +179,7 @@ export function MembersMapClient({
       <div className="relative min-h-0 flex-1">
         <MapContainer
           center={GERMANY_CENTER}
-          zoom={6}
+          zoom={7}
           minZoom={4}
           maxZoom={12}
           maxBounds={GERMANY_BOUNDS}
