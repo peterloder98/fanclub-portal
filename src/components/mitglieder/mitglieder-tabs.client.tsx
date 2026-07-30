@@ -12,17 +12,22 @@ export function MitgliederTabs({
   mapSection,
   birthdaysSection,
   welcomeSection,
+  searchSection,
   meetings,
   mediaByMeetingId,
+  adminMeetingForm,
 }: {
   mapSection: React.ReactNode;
   birthdaysSection: React.ReactNode;
   welcomeSection?: React.ReactNode;
+  searchSection?: React.ReactNode;
   meetings: ClubMeetingListItem[];
   mediaByMeetingId: Record<
     string,
     Array<{ id: string; kind: string; caption: string | null; report_body: string | null }>
   >;
+  /** Vorstand: Treffen anlegen direkt im Tab „Fanclub Treffen“ */
+  adminMeetingForm?: React.ReactNode;
 }) {
   const searchParams = useSearchParams();
   const initial = (searchParams.get("tab") as Tab) || "karte";
@@ -62,6 +67,7 @@ export function MitgliederTabs({
 
       {tab === "karte" ? (
         <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:overflow-hidden">
+          {searchSection ? <div className="shrink-0">{searchSection}</div> : null}
           {welcomeSection ? <div className="shrink-0">{welcomeSection}</div> : null}
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)] lg:grid-rows-1 lg:gap-4 lg:overflow-hidden">
             <div className="flex min-h-[min(52vh,420px)] min-w-0 flex-col overflow-hidden lg:h-full lg:min-h-0">
@@ -75,7 +81,8 @@ export function MitgliederTabs({
       ) : null}
 
       {tab === "treffen" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[var(--fanclub-chat-dock,0px)]">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-[var(--fanclub-chat-dock,0px)]">
+          {adminMeetingForm ? <div className="shrink-0">{adminMeetingForm}</div> : null}
           <MeetingsUpcomingSection meetings={meetings} />
         </div>
       ) : null}

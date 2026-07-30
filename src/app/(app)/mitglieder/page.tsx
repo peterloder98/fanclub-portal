@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
 import { MembersMap } from "@/components/members/members-map";
+import { MemberDirectorySearch } from "@/components/members/member-directory-search";
 import { NewMembersWelcome } from "@/components/members/new-members-welcome";
 import { UpcomingBirthdays } from "@/components/members/upcoming-birthdays";
+import { MeetingAdminForm } from "@/components/meetings/meeting-admin-form.client";
 import { MitgliederTabs } from "@/components/mitglieder/mitglieder-tabs.client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadPublishedMeetings } from "@/lib/meetings/load";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -11,6 +14,7 @@ import { memberCountryLabel } from "@/lib/members/country";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
 import { clusterMemberPoints, type MemberMapCluster } from "@/lib/members/cluster-map";
 import { loadRecentWelcomeMembers } from "@/lib/members/recent-members";
+import { formatMemberOrigin } from "@/lib/members/intro-questions";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { buildUpcomingBirthdays } from "@/lib/members/upcoming-birthdays";
 import { redirect } from "next/navigation";
@@ -24,6 +28,9 @@ export default async function MitgliederPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const isAdmin = me?.role === "admin";
 
   const { data: activeMemberships } = await supabase
     .from("memberships")
@@ -43,6 +50,28 @@ export default async function MitgliederPage() {
 
   const mapPoints: MemberMapPoint[] = [];
   let missingCoords = 0;
+
+  const searchableMembers = (profiles ?? [])
+    .map((p) => {
+      const name = profileDisplayName(p);
+      if (!name || name === "Mitglied") return null;
+      return {
+        userId: p.id,
+        name,
+        origin: formatMemberOrigin({
+          city: p.city,
+          countryLabel: memberCountryLabel(p.country),
+        }),
+        avatarUrl: getAvatarPublicUrl(p.avatar_path, p.updated_at ?? null),
+      };
+    })
+    .filter(Boolean) as Array<{
+    userId: string;
+    name: string;
+    origin: string | null;
+    avatarUrl: string | null;
+  }>;
+  searchableMembers.sort((a, b) => a.name.localeCompare(b.name, "de"));
 
   for (const p of profiles ?? []) {
     const city = (p.city ?? "").trim();
@@ -138,20 +167,37 @@ export default async function MitgliederPage() {
     </aside>
   );
 
+  const adminMeetingForm = isAdmin ? (
+    <Card>
+      <CardHeader>
+        <CardTitle>Neues Treffen anlegen</CardTitle>
+        <p className="text-sm text-slate-600">
+          Als Vorstand legst du Fanclub-Treffen hier an. Mitglieder sehen sie danach in diesem Tab
+          und können teilnehmen.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <MeetingAdminForm />
+      </CardContent>
+    </Card>
+  ) : null;
+
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:-mb-[var(--fanclub-chat-dock,0px)] lg:min-h-[calc(100%+var(--fanclub-chat-dock,0px))]">
       <Topbar
         title="Mitglieder"
-        subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
+        subtitle="Suche, Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
       />
       <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-hidden px-3 py-3 sm:px-4 lg:px-8">
         <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-fc-ice" />}>
           <MitgliederTabs
+            searchSection={<MemberDirectorySearch members={searchableMembers} />}
             mapSection={mapSection}
             birthdaysSection={birthdaysSection}
             welcomeSection={<NewMembersWelcome members={recentWelcome} />}
             meetings={meetings}
             mediaByMeetingId={mediaByMeetingId}
+            adminMeetingForm={adminMeetingForm}
           />
         </Suspense>
       </main>

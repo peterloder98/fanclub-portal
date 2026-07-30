@@ -104,6 +104,7 @@ export async function createClubMeeting(formData: FormData) {
   revalidatePath("/treffen");
   revalidatePath("/dashboard");
   revalidatePath("/admin/treffen");
+  revalidatePath("/mitglieder");
 }
 
 export async function removeMeetingParticipant(meetingId: string, userId: string) {

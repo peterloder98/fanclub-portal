@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-07-29";
+export const ADMIN_HANDBOOK_UPDATED = "2026-07-30";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -55,7 +55,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Wichtig: Umfragen und Gewinnspiele liegen nicht im Admin-Hub, sondern in den normalen Menüpunkten „Umfragen“ und „Gewinnspiele“. Dort erscheinen für euch zusätzliche Buttons.",
+            text: "Wichtig: Umfragen und Gewinnspiele liegen nicht im Admin-Hub, sondern in den normalen Menüpunkten „Umfragen“ und „Gewinnspiele“. Fanclub-Treffen legt ihr unter „Mitglieder“ → Tab „Fanclub Treffen“ an — ebenfalls nicht im Admin-Hub.",
           },
           {
             type: "link",
@@ -76,9 +76,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Beiträge lesen und schreiben, kommentieren, im Gruppenchat schreiben",
               "an Umfragen und Gewinnspielen teilnehmen",
               "Konzerte und Fanclub-Treffen sehen und „Ich bin dabei“ markieren",
-              "andere Mitglieder finden und Profile anschauen",
+              "Mitglieder suchen, auf der Karte finden und Profile anschauen",
               "Anni-Stars sammeln und Badges freischalten",
               "sich digital als Mitglied anmelden und den Beitrag überweisen",
+              "andere zum Fanclub einladen und den Status der Einladung verfolgen",
             ],
           },
         ],
@@ -216,8 +217,9 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Beim Versand der Einladung: 5 Anni-Stars (einmal pro Empfänger-Adresse)",
               "Max. 3 Einladungen pro Tag und 10 pro Woche; dieselbe E-Mail erst nach 14 Tagen erneut",
               "Wenn die Person freigeschaltet wird: zusätzlich 70 Anni-Stars",
+              "Mitglieder sehen unter „Neues Mitglied werben“ ihre eigenen Einladungen mit Status (gesendet / Link geöffnet / Mitglied geworden)",
               "Auffällige Einladungs-Muster landen still zur Prüfung unter Empfehlungen: Sterne werden gehalten, weitere Einladungen des Mitglieds sind bis zur Entscheidung pausiert — freigeben oder zurücknehmen",
-              "Übersicht: Admin → „Empfehlungen“",
+              "Übersicht für Vorstände: Admin → „Empfehlungen“",
             ],
           },
           {
@@ -459,15 +461,19 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "treffen",
         number: "4.1",
         title: "Fanclub-Treffen anlegen",
-        summary: "Treffen, Ort, Kosten und Anreise",
+        summary: "Unter Mitglieder → Fanclub Treffen",
         blocks: [
+          {
+            type: "p",
+            text: "Treffen verwaltet ihr nicht im Admin-Hub, sondern im normalen Mitglieder-Bereich:",
+          },
           {
             type: "ol",
             items: [
-              "Im App-Menü „Treffen“ öffnen.",
-              "Als Vorstand: neues Treffen anlegen — Titel, Zeit, Ort, ggf. Kosten.",
-              "Im gleichen Formular den Block „Anreise & Unterkunft“ ausfüllen (siehe unten).",
-              "Speichern. Mitglieder melden sich in der App an — im Profil erscheint das unter „Hier bin ich dabei“.",
+              "Im Menü „Mitglieder“ öffnen.",
+              "Oben den Tab „Fanclub Treffen“ wählen.",
+              "Als Vorstand erscheint dort das Formular „Neues Treffen anlegen“ — Titel, Zeit, Ort, ggf. Kosten und Anreise ausfüllen.",
+              "Speichern. Mitglieder sehen den Termin in demselben Tab und können teilnehmen — im Profil erscheint das unter „Hier bin ich dabei“.",
             ],
           },
           {
@@ -484,11 +490,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "p",
-            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“.",
+            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“. Vergangene Treffen findet ihr im Tab „Treffen-Archiv“.",
           },
           {
             type: "link",
-            href: "/treffen",
+            href: "/mitglieder?tab=treffen",
             label: "Zu den Fanclub-Treffen",
           },
         ],
@@ -563,16 +569,17 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ol",
             items: [
-              "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt.",
+              "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt. Dort findet ihr auch den Reiter „Geburtstags-Beiträge“ (siehe 7.4).",
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
-              "„Mitglieder-Benachrichtigungen“ (System): optional E-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar, Standard aus.",
-              "Automatische Erinnerungen: Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen (Anmeldung). Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail.",
+              "„Mitglieder-Benachrichtigungen“ (System): optionale Massen-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar.",
+              "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
+              "Automatische Erinnerungen (immer an): Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen. Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail.",
             ],
           },
           {
             type: "note",
-            text: "Zurzeit gehen Test-Mails nur an die Vorstände und die offizielle App-Adresse. So landet versehentlich nichts bei der ganzen Mitgliedschaft. Wenn ihr an alle schreiben wollt, sagt Bescheid — dann wird der Versand freigeschaltet.",
+            text: "Die optionalen Massen-Mails (Gewinnspiel / Event / Umfrage) sind standardmäßig aus und müssen unter „Mitglieder-Benachrichtigungen“ einzeln freigeschaltet werden. In-App-Benachrichtigungen (Glocke oben) laufen unabhängig davon weiter.",
           },
           {
             type: "link",
@@ -716,29 +723,37 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
       {
         id: "club-info",
         number: "7.2",
-        title: "Club-Info und Bankdaten pflegen",
-        summary: "Vereinsinfos für Mitglieder und Zahlungen",
+        title: "Club-Info und Bankdaten",
+        summary: "Vereinskonto für Überweisungen",
         blocks: [
           {
             type: "p",
-            text: "Unter Admin \u2192 System \u2192 \u201EClub-Info\u201C pflegt ihr die Vereinsdaten: Name, Anschrift, Bankverbindung (IBAN, BIC, Kontoinhaber). Diese Daten erscheinen auf dem Beitragsformular und in Zahlungserinnerungen.",
+            text: "Die Bankdaten für Mitgliedsbeiträge (Kontoinhaber, IBAN, BIC, Bankname) sind fest in der App hinterlegt und erscheinen auf dem Antragsformular sowie in Zahlungserinnerungen. Eine eigene „Club-Info“-Seite im Admin gibt es derzeit nicht — Änderungen am Konto bitte an die technische Betreuung melden.",
           },
           {
-            type: "link",
-            href: "/admin",
-            label: "Admin-Übersicht → System",
+            type: "ul",
+            items: [
+              "Kontoinhaber: Anni-Perka Fanclub",
+              "Bank: Ostseesparkasse Rostock",
+              "Verwendungszweck-Hinweis: Mitgliedsbeitrag / Vorname Nachname",
+            ],
           },
         ],
       },
       {
         id: "club-regeln",
         number: "7.3",
-        title: "Fanclub-Regeln verwalten",
-        summary: "Regeln bearbeiten, die Mitglieder akzeptieren",
+        title: "Fanclub-Regeln",
+        summary: "Was Mitglieder akzeptieren",
         blocks: [
           {
             type: "p",
-            text: "Unter Admin \u2192 System \u2192 \u201EFanclub-Regeln\u201C k\u00F6nnt ihr die Community-Regeln bearbeiten. Neue Mitglieder m\u00FCssen die Regeln beim ersten Login akzeptieren. Bei \u00C4nderungen werden bestehende Mitglieder aufgefordert, erneut zuzustimmen.",
+            text: "Die Fanclub-Regeln (WhatsApp und App) sind fest in der App hinterlegt. Neue Mitglieder müssen sie beim ersten Login akzeptieren. Eine Bearbeitung direkt im Admin-Bereich gibt es derzeit nicht — Textänderungen bitte an die technische Betreuung.",
+          },
+          {
+            type: "link",
+            href: "/regeln",
+            label: "Regeln ansehen (Mitgliederansicht)",
           },
         ],
       },
@@ -746,37 +761,30 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "geburtstags-posts",
         number: "7.4",
         title: "Geburtstags-Beiträge",
-        summary: "Automatische Beiträge an Geburtstagen",
+        summary: "Vorlagen und automatischer Feed-Post",
         blocks: [
           {
             type: "p",
-            text: "Die App erstellt automatisch einen Geburtstags-Beitrag im Feed, wenn ein Mitglied Geburtstag hat. Unter Admin \u2192 \u201EGeburtstags-Beitr\u00E4ge\u201C k\u00F6nnt ihr die Vorlage (Text und Bild) anpassen.",
+            text: "Jeden Morgen prüft die App automatisch, wer Geburtstag hat (aktive Mitglieder mit hinterlegtem Geburtsdatum). Für jede Person erscheint ein Glückwunsch-Beitrag im Feed (Dashboard) — freigeschaltet, mit Fanclub-Absender. Das Geburtstagskind erhält zusätzlich eine In-App-Benachrichtigung.",
           },
           {
-            type: "link",
-            href: "/admin/birthday-posts",
-            label: "Geburtstags-Beiträge",
-          },
-        ],
-      },
-      {
-        id: "merchandise",
-        number: "7.5",
-        title: "Merchandise (Fanshop)",
-        summary: "Produkte verwalten — noch nicht aktiv",
-        blocks: [
-          {
-            type: "p",
-            text: "Im Fanshop können Produkte angelegt und verwaltet werden. Bestellungen und Bezahlung laufen derzeit nicht über die App — Mitglieder sehen nur den Katalog.",
+            type: "ol",
+            items: [
+              "Admin → E-Mail & Kommunikation → „E-Mail-Vorlagen“ öffnen.",
+              "Oben den Reiter „Geburtstags-Beiträge“ wählen (nicht die normalen System-Mails).",
+              "Bestehende Vorlagen bearbeiten oder eine neue anlegen (Titel und Text).",
+              "Platzhalter nutzen, z. B. {{first_name}}, {{salutation}}, {{mention}} — die Vorschau zeigt ein Beispiel.",
+              "Nur aktive Vorlagen kommen zum Zug; bei mehreren aktiven wählt die App abwechselnd.",
+            ],
           },
           {
             type: "note",
-            text: "Der Fanshop ist vorbereitet, aber noch nicht vollständig aktiv in der App. Sobald er freigeschaltet wird, ergänzen wir diese Anleitung.",
+            text: "Ihr ändert nur die Textvorlagen. Den täglichen Versand startet die App selbst — keine manuelle Freigabe nötig.",
           },
           {
             type: "link",
-            href: "/admin/merchandise",
-            label: "Merchandise verwalten",
+            href: "/admin/settings/email-templates?tab=birthday",
+            label: "Geburtstags-Vorlagen",
           },
         ],
       },

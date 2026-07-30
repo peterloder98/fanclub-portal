@@ -1,15 +1,50 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MembershipInviteEmailDialog } from "@/components/membership/membership-invite-email-dialog";
 import { MEMBERSHIP_REFERRAL_POINTS } from "@/lib/points/award-membership-referral";
 import { MEMBERSHIP_REFERRAL_COMPLETION_POINTS } from "@/lib/points/award-membership-referral-completed";
-import Link from "next/link";
 
-export function ReferMembershipClient() {
+export type MemberReferralSendRow = {
+  id: string;
+  recipient_email: string;
+  recipient_first_name: string | null;
+  recipient_last_name: string | null;
+  created_at: string;
+  link_opened_at: string | null;
+  approved_at: string | null;
+  converted_application_id: string | null;
+};
+
+function formatWhen(iso: string) {
+  return new Date(iso).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function recipientLabel(s: MemberReferralSendRow) {
+  const name = [s.recipient_first_name, s.recipient_last_name].filter(Boolean).join(" ").trim();
+  return name || s.recipient_email;
+}
+
+function statusOf(s: MemberReferralSendRow): { label: string; className: string } {
+  if (s.approved_at || s.converted_application_id) {
+    return { label: "Mitglied geworden", className: "bg-emerald-50 text-emerald-800" };
+  }
+  if (s.link_opened_at) {
+    return { label: "Link geöffnet", className: "bg-sky-50 text-sky-800" };
+  }
+  return { label: "Einladung gesendet", className: "bg-slate-100 text-slate-700" };
+}
+
+export function ReferMembershipClient({
+  initialSends = [],
+}: {
+  initialSends?: MemberReferralSendRow[];
+}) {
   const [dialogOpen, setDialogOpen] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+  const sends = initialSends;
 
   return (
     <>
@@ -62,6 +97,50 @@ export function ReferMembershipClient() {
         </CardContent>
       </Card>
 
+      {sends.length > 0 ? (
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Deine Einladungen</CardTitle>
+            <p className="text-sm text-slate-600">
+              Status deiner verschickten Einladungen — wann gesendet, ob der Link geöffnet wurde und
+              ob daraus eine Mitgliedschaft wurde.
+            </p>
+          </CardHeader>
+          <CardContent className="grid gap-2">
+            {sends.map((s) => {
+              const st = statusOf(s);
+              return (
+                <div
+                  key={s.id}
+                  className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-fc-ice bg-fc-ice/30 px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-fc-navy">{recipientLabel(s)}</p>
+                    <p className="truncate text-xs text-slate-500">{s.recipient_email}</p>
+                    <p className="mt-1 text-xs text-slate-500">Gesendet: {formatWhen(s.created_at)}</p>
+                    {s.link_opened_at ? (
+                      <p className="text-xs text-slate-500">
+                        Link geöffnet: {formatWhen(s.link_opened_at)}
+                      </p>
+                    ) : null}
+                    {s.approved_at ? (
+                      <p className="text-xs text-emerald-700">
+                        Freigabe: {formatWhen(s.approved_at)}
+                      </p>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${st.className}`}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <MembershipInviteEmailDialog
         open={dialogOpen}
         variant="member"
@@ -69,6 +148,8 @@ export function ReferMembershipClient() {
         onSent={(msg) => {
           setMessage(msg);
           setDialogOpen(false);
+          // Liste nach Reload aktualisieren
+          window.setTimeout(() => window.location.reload(), 600);
         }}
       />
     </>

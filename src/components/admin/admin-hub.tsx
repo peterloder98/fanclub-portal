@@ -74,7 +74,7 @@ const SECTIONS: AdminHubSection[] = [
   {
     id: "finance",
     title: "Finanzen & Shop",
-    subtitle: "Beiträge, Buchungen und Merchandise",
+    subtitle: "Beiträge, Buchungen und Zahlungen",
     items: [
       {
         href: "/admin/payments",

@@ -8,6 +8,7 @@ import { TopbarChrome } from "@/components/app-shell/topbar-chrome";
 import { ChatUnreadProvider } from "@/components/chat/chat-unread-context";
 import { GroupChatWidget } from "@/components/chat/group-chat-widget.client";
 import { AppActivityAndOnboarding } from "@/components/app-shell/app-activity-and-onboarding.client";
+import { AddToHomeScreenPrompt } from "@/components/app-shell/add-to-home-screen-prompt";
 import { EngagementNudgeHost } from "@/components/engagement/engagement-nudge-host";
 
 export function AppShellClient({
@@ -28,6 +29,7 @@ export function AppShellClient({
           <TopbarChrome />
           <MainScrollRegion>{children}</MainScrollRegion>
           <AppActivityAndOnboarding needsWelcomeOnboarding={needsIntroOnboarding} />
+          <AddToHomeScreenPrompt />
           <Suspense fallback={null}>
             <EngagementNudgeHost />
           </Suspense>
