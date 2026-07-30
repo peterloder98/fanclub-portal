@@ -2,8 +2,7 @@
 
 import { redirect } from "next/navigation";
 import {
-  memberReferralSubject,
-  composeMemberReferralBody,
+  composeMemberReferralEmail,
   buildMemberReferralHtml,
 } from "@/lib/email/member-referral-template";
 import {
@@ -39,16 +38,18 @@ export async function getMemberReferralPrefillAction() {
 
   const senderName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim();
   const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id);
+  const composed = await composeMemberReferralEmail({
+    recipientFirstName: "",
+    senderName: senderName || "…",
+    applicationLink,
+  });
 
   return {
-    subject: memberReferralSubject(senderName),
+    subject: composed.subject,
     applicationLink,
     senderName,
-    body: composeMemberReferralBody({
-      recipientFirstName: "",
-      senderName: senderName || "…",
-      applicationLink,
-    }),
+    body: composed.text,
+    bodyTemplate: composed.bodyTemplate,
   };
 }
 
@@ -89,12 +90,13 @@ export async function sendMemberReferralEmailAction(input: {
   });
 
   const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id, referralToken);
-  const subject = memberReferralSubject(senderName);
-  const text = composeMemberReferralBody({
+  const composed = await composeMemberReferralEmail({
     recipientFirstName,
     senderName,
     applicationLink,
   });
+  const subject = composed.subject;
+  const text = composed.text;
   const html = buildMemberReferralHtml(text);
 
   const result = await sendEmailViaAccount({ to, subject, text, html });

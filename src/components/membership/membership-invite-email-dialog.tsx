@@ -40,6 +40,7 @@ export function MembershipInviteEmailDialog({
   const [heyNameInBody, setHeyNameInBody] = useState("du");
   const [mailSubject, setMailSubject] = useState("");
   const [mailBody, setMailBody] = useState("");
+  const [bodyTemplate, setBodyTemplate] = useState<string | null>(null);
   const [applicationLink, setApplicationLink] = useState("");
   const [signatures, setSignatures] = useState<MailSignatureOption[]>([]);
   const [signatureId, setSignatureId] = useState("");
@@ -74,6 +75,7 @@ export function MembershipInviteEmailDialog({
     setApplicationLink(prefill.applicationLink);
     setSenderName(prefill.senderName);
     setMailBody(prefill.body);
+    setBodyTemplate(prefill.bodyTemplate ?? null);
     setRecipientFirstName("");
     setRecipientLastName("");
     setRecipientGender("");
@@ -112,6 +114,7 @@ export function MembershipInviteEmailDialog({
         recipientFirstName: first,
         senderName: sender,
         applicationLink,
+        bodyTemplate: bodyTemplate ?? undefined,
       }),
     );
   }
@@ -336,7 +339,8 @@ export function MembershipInviteEmailDialog({
             {mailBody}
           </pre>
           <p className="mt-2 text-xs text-slate-500">
-            Der Text wird automatisch aus deinen Angaben erzeugt und kann nicht bearbeitet werden.
+            Der Text kommt aus der Admin-Vorlage „Einladung: Neues Mitglied werben“ und wird mit
+            deinen Angaben gefüllt.
           </p>
         </div>
       )}

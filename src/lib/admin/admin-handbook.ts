@@ -569,12 +569,13 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ol",
             items: [
-              "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt. Dort findet ihr auch den Reiter „Geburtstags-Beiträge“ (siehe 7.4).",
+              "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt. Dort findet ihr auch den Reiter „Geburtstags-Beiträge“ (siehe 7.4) sowie die Vorlagen für Mitglieder-Einladungen und Erinnerungen.",
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
               "„Mitglieder-Benachrichtigungen“ (System): optionale Massen-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar.",
               "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
               "Automatische Erinnerungen (immer an): Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen. Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail.",
+              "Willkommen-Flow für neue Mitglieder: Admin → System → „Willkommen-Vorschau“ — Regeln und Kennenlernen durchspielen, ohne etwas zu speichern.",
             ],
           },
           {

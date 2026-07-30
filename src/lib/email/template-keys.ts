@@ -6,6 +6,8 @@ export const EMAIL_TEMPLATE_KEYS = {
   membershipPaymentReminder: "membership_payment_reminder",
   membershipContributionNewYear: "membership_contribution_new_year",
   membershipFormInvite: "membership_form_invite",
+  membershipReferralInvite: "membership_referral_invite",
+  membershipReferralReminder: "membership_referral_reminder",
   giveawayEndedAdminNotify: "giveaway_ended_admin_notify",
   giveawayWinnerCongrats: "giveaway_winner_congrats",
   membershipApprovedWelcome: "membership_approved_welcome",
@@ -14,7 +16,6 @@ export const EMAIL_TEMPLATE_KEYS = {
   appSignupReminder: "app_signup_reminder",
   appInactiveReminder: "app_inactive_reminder",
   referralAbuseAdminNotify: "referral_abuse_admin_notify",
-  membershipReferralReminder: "membership_referral_reminder",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -76,6 +77,16 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "application_link", label: "Link zum Antragsformular" },
     { key: "fee_eur", label: "Beitrag (z. B. 15,00 EUR)" },
   ],
+  [EMAIL_TEMPLATE_KEYS.membershipReferralInvite]: [
+    { key: "recipient_first_name", label: "Vorname Empfänger/in" },
+    { key: "sender_name", label: "Name Werber/in" },
+    { key: "application_link", label: "Link zum Antragsformular" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.membershipReferralReminder]: [
+    { key: "recipient_first_name", label: "Vorname Empfänger/in" },
+    { key: "sender_name", label: "Name Werber/in" },
+    { key: "application_link", label: "Link zum Antragsformular" },
+  ],
   [EMAIL_TEMPLATE_KEYS.giveawayEndedAdminNotify]: [
     { key: "giveaway_title", label: "Titel Gewinnspiel" },
     { key: "giveaway_admin_url", label: "Link zur Auslosung (Admin)" },
@@ -123,10 +134,5 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "reasons_text", label: "Verdachtsgründe" },
     { key: "sends_list", label: "Einladungs-Liste (Text)" },
     { key: "review_url", label: "Link Admin-Prüfung" },
-  ],
-  [EMAIL_TEMPLATE_KEYS.membershipReferralReminder]: [
-    { key: "recipient_first_name", label: "Vorname Empfänger/in" },
-    { key: "sender_name", label: "Name Werber/in" },
-    { key: "application_link", label: "Link zum Antragsformular" },
   ],
 };

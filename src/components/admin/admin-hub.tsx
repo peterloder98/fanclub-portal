@@ -21,6 +21,7 @@ import {
   Server,
   Activity,
   BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
@@ -194,6 +195,12 @@ const SECTIONS: AdminHubSection[] = [
         title: "Protokoll",
         description: "Wer hat wann was geändert",
         icon: ScrollText,
+      },
+      {
+        href: "/willkommen?vorschau=1",
+        title: "Willkommen-Vorschau",
+        description: "Onboarding für neue Mitglieder durchspielen",
+        icon: Sparkles,
       },
     ],
   },

@@ -1,11 +1,10 @@
 import { buildEmailFromPlainText } from "@/lib/email/email-layout";
+import { getEmailTemplate } from "@/lib/email/render-template";
+import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 
-export function memberReferralSubject(senderFullName: string) {
-  const sender = senderFullName.trim() || "Ein Fanclub-Mitglied";
-  return `${sender} hat dich in den Anni Perka Fanclub eingeladen`;
-}
+const FALLBACK_SUBJECT = "{{sender_name}} hat dich in den Anni Perka Fanclub eingeladen";
 
-const MEMBER_REFERRAL_BODY_TEMPLATE = `Hallo {{recipient_first_name}},
+const FALLBACK_BODY = `Hallo {{recipient_first_name}},
 
 ich würde mich riesig freuen, wenn du ebenfalls Teil unseres offiziellen **Anni Perka Fanclubs** wirst!
 
@@ -38,17 +37,78 @@ Liebe Grüße
 
 {{sender_name}}`;
 
+function applyVars(
+  template: string,
+  vars: {
+    recipient_first_name: string;
+    sender_name: string;
+    application_link: string;
+  },
+) {
+  return template
+    .replace(/\{\{recipient_first_name\}\}/g, vars.recipient_first_name)
+    .replace(/\{\{sender_name\}\}/g, vars.sender_name)
+    .replace(/\{\{application_link\}\}/g, vars.application_link);
+}
+
+export async function loadMemberReferralInviteParts() {
+  try {
+    const row = await getEmailTemplate(EMAIL_TEMPLATE_KEYS.membershipReferralInvite);
+    if (row?.subject?.trim() && row?.body_text?.trim()) {
+      return { subjectTemplate: row.subject, bodyTemplate: row.body_text };
+    }
+  } catch {
+    // Vorlage fehlt / DB — Fallback
+  }
+  return { subjectTemplate: FALLBACK_SUBJECT, bodyTemplate: FALLBACK_BODY };
+}
+
+export function memberReferralSubject(senderFullName: string) {
+  const sender = senderFullName.trim() || "Ein Fanclub-Mitglied";
+  return applyVars(FALLBACK_SUBJECT, {
+    recipient_first_name: "",
+    sender_name: sender,
+    application_link: "",
+  });
+}
+
 export function composeMemberReferralBody(input: {
   recipientFirstName: string;
   senderName: string;
   applicationLink: string;
+  bodyTemplate?: string;
 }) {
   const first = input.recipientFirstName.trim() || "…";
   const sender = input.senderName.trim() || "…";
   const link = input.applicationLink.trim();
-  return MEMBER_REFERRAL_BODY_TEMPLATE.replace(/\{\{recipient_first_name\}\}/g, first)
-    .replace(/\{\{sender_name\}\}/g, sender)
-    .replace(/\{\{application_link\}\}/g, link);
+  const template = input.bodyTemplate?.trim() || FALLBACK_BODY;
+  return applyVars(template, {
+    recipient_first_name: first,
+    sender_name: sender,
+    application_link: link,
+  });
+}
+
+export async function composeMemberReferralEmail(input: {
+  recipientFirstName: string;
+  senderName: string;
+  applicationLink: string;
+}) {
+  const parts = await loadMemberReferralInviteParts();
+  const first = input.recipientFirstName.trim() || "…";
+  const sender = input.senderName.trim() || "Ein Fanclub-Mitglied";
+  const link = input.applicationLink.trim();
+  const vars = {
+    recipient_first_name: first,
+    sender_name: sender,
+    application_link: link,
+  };
+  return {
+    subject: applyVars(parts.subjectTemplate, vars),
+    text: applyVars(parts.bodyTemplate, vars),
+    bodyTemplate: parts.bodyTemplate,
+    subjectTemplate: parts.subjectTemplate,
+  };
 }
 
 /** Plain-Text mit **fett** → HTML für E-Mail-Versand (einheitliches Layout). */

@@ -25,9 +25,12 @@ type Step = "rules" | "intro";
 export function WelcomeOnboardingClient({
   needsRulesAcceptance,
   needsIntroOnboarding,
+  preview = false,
 }: {
   needsRulesAcceptance: boolean;
   needsIntroOnboarding: boolean;
+  /** Admin-Vorschau: Schritte durchspielen ohne Speichern */
+  preview?: boolean;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<Step>(needsRulesAcceptance ? "rules" : "intro");
@@ -55,6 +58,14 @@ export function WelcomeOnboardingClient({
   function onAcceptRules() {
     if (!rulesChecked) return;
     setError(null);
+    if (preview) {
+      if (needsIntroOnboarding) {
+        setStep("intro");
+        return;
+      }
+      finish("/admin");
+      return;
+    }
     startTransition(async () => {
       const result = await acceptCommunityRules();
       if (!result.ok) {
@@ -71,6 +82,10 @@ export function WelcomeOnboardingClient({
 
   function onSaveIntro() {
     setError(null);
+    if (preview) {
+      finish("/admin");
+      return;
+    }
     startTransition(async () => {
       const result = await saveMyIntroAnswers({
         ...answers,
@@ -87,6 +102,10 @@ export function WelcomeOnboardingClient({
 
   function onSkipIntro() {
     setError(null);
+    if (preview) {
+      finish("/admin");
+      return;
+    }
     startTransition(async () => {
       const result = await dismissIntroOnboarding();
       if (!result.ok) {
@@ -97,9 +116,20 @@ export function WelcomeOnboardingClient({
     });
   }
 
+  const previewBanner = preview ? (
+    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-950">
+      <strong>Vorschau:</strong> So sieht der Willkommen-Flow für neue Mitglieder aus. Nichts wird
+      gespeichert.{" "}
+      <Link href="/admin" className="font-semibold underline">
+        Zurück zum Admin
+      </Link>
+    </div>
+  ) : null;
+
   if (step === "rules") {
     return (
       <div className="min-h-screen">
+        {previewBanner}
         <Topbar
           title="Willkommen"
           subtitle="Bitte lies und bestätige die Fanclub-Regeln — das ist für alle Mitglieder verbindlich."
@@ -155,9 +185,13 @@ export function WelcomeOnboardingClient({
                 >
                   {pending
                     ? "Speichere…"
-                    : needsIntroOnboarding
-                      ? "Zustimmen & weiter"
-                      : "Zustimmen & App starten"}
+                    : preview
+                      ? needsIntroOnboarding
+                        ? "Weiter (Vorschau)"
+                        : "Vorschau beenden"
+                      : needsIntroOnboarding
+                        ? "Zustimmen & weiter"
+                        : "Zustimmen & App starten"}
                 </button>
               </div>
             </CardContent>
@@ -169,6 +203,7 @@ export function WelcomeOnboardingClient({
 
   return (
     <div className="min-h-screen">
+      {previewBanner}
       <Topbar title="Willkommen" subtitle="Erzähl uns ein bisschen von dir — völlig freiwillig." />
       <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
         <Card className="overflow-hidden border-fc-navy/15 shadow-lg shadow-fc-navy/10">
@@ -231,7 +266,7 @@ export function WelcomeOnboardingClient({
                 onClick={onSkipIntro}
                 className="h-11 rounded-xl border bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
               >
-                Später im Profil
+                Später im Profil{preview ? " (Vorschau)" : ""}
               </button>
               <button
                 type="button"
@@ -239,7 +274,7 @@ export function WelcomeOnboardingClient({
                 onClick={onSaveIntro}
                 className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
               >
-                {pending ? "Speichere…" : "Speichern & weiter"}
+                {pending ? "Speichere…" : preview ? "Vorschau beenden" : "Speichern & weiter"}
               </button>
             </div>
           </CardContent>
