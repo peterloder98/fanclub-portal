@@ -10,6 +10,7 @@ import {
   ShieldAlert,
   ShoppingBag,
   Sparkles,
+  ThumbsUp,
   Trophy,
   UserPlus,
   Users,
@@ -90,6 +91,7 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
   switch (n.kind) {
     case NOTIFICATION_KINDS.postComment:
     case NOTIFICATION_KINDS.commentReply:
+    case NOTIFICATION_KINDS.postReaction:
     case NOTIFICATION_KINDS.birthdayPost:
     case NOTIFICATION_KINDS.mention:
     case NOTIFICATION_KINDS.postApproved: {
@@ -166,6 +168,8 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
   switch (kind) {
     case NOTIFICATION_KINDS.postComment:
       return { icon: MessageCircle, iconClass: "bg-fc-ice text-fc-blue" };
+    case NOTIFICATION_KINDS.postReaction:
+      return { icon: ThumbsUp, iconClass: "bg-fc-ice text-fc-blue" };
     case NOTIFICATION_KINDS.postPendingReview:
     case NOTIFICATION_KINDS.profileChangePending:
       return { icon: FileCheck, iconClass: "bg-amber-50 text-amber-800" };
@@ -284,7 +288,8 @@ export function presentNotification(n: UserNotificationRow): PresentedNotificati
   let contextLabel: string | null = null;
   if (
     (n.kind === NOTIFICATION_KINDS.postComment ||
-      n.kind === NOTIFICATION_KINDS.commentReply) &&
+      n.kind === NOTIFICATION_KINDS.commentReply ||
+      n.kind === NOTIFICATION_KINDS.postReaction) &&
     typeof m.post_title === "string"
   ) {
     contextLabel = `Beitrag: „${m.post_title}"`;

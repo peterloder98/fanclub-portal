@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { notifyPostComment } from "@/lib/comments/notify-post-comment";
 import { notifyCommentReply } from "@/lib/comments/notify-reply";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z.object({
@@ -27,13 +29,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Kommentar nicht gefunden" }, { status: 404 });
   }
 
+  const admin = createSupabaseAdminClient();
   const [{ data: me }, { data: post }] = await Promise.all([
     supabase
       .from("profiles")
       .select("first_name,last_name,email")
       .eq("id", user.id)
       .maybeSingle(),
-    supabase.from("posts").select("title").eq("id", body.postId).maybeSingle(),
+    admin
+      .from("posts")
+      .select("title,author_id,status")
+      .eq("id", body.postId)
+      .maybeSingle(),
   ]);
 
   const replierName =
@@ -41,15 +48,36 @@ export async function POST(req: Request) {
       ? `${me.first_name} ${me.last_name}`
       : (me?.email ?? "Mitglied");
 
+  const postTitle = post?.title ?? "Beitrag";
+  const repliedAt = new Date().toISOString();
+  const postApproved = post?.status === "approved";
+
   await notifyCommentReply({
     recipientUserId: parent.author_id,
     replierUserId: user.id,
     replierName,
     postId: body.postId,
-    postTitle: post?.title ?? "Beitrag",
+    postTitle,
     replyPreview: body.replyPreview,
-    repliedAt: new Date().toISOString(),
+    repliedAt,
   });
+
+  if (
+    postApproved &&
+    post?.author_id &&
+    post.author_id !== user.id &&
+    post.author_id !== parent.author_id
+  ) {
+    await notifyPostComment({
+      recipientUserId: post.author_id,
+      commenterUserId: user.id,
+      commenterName: replierName,
+      postId: body.postId,
+      postTitle,
+      commentPreview: body.replyPreview,
+      commentedAt: repliedAt,
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

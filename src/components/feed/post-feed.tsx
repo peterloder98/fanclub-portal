@@ -984,6 +984,14 @@ function PostFeedInner({
         if (error) throw error;
         if (post.authorId !== me.id) {
           flyPointsFromElement({ fromRect, delta: +1 });
+          void fetch("/api/posts/notify-reaction", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              postId: post.id,
+              reactionType: nextReaction,
+            }),
+          }).catch(() => {});
         }
       }
     } catch (err) {

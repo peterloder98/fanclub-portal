@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { notifyPostComment } from "@/lib/comments/notify-post-comment";
+import { notifyPostReaction } from "@/lib/posts/notify-post-reaction";
+import { POST_REACTION_TYPES } from "@/lib/posts/reactions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const schema = z.object({
   postId: z.string().uuid(),
-  commentPreview: z.string().min(1).max(2000),
+  reactionType: z.enum(POST_REACTION_TYPES),
 });
 
 export async function POST(req: Request) {
@@ -17,8 +18,8 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = schema.parse(await req.json());
-
   const admin = createSupabaseAdminClient();
+
   const [{ data: post }, { data: me }] = await Promise.all([
     admin
       .from("posts")
@@ -39,19 +40,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: true });
   }
 
-  const commenterName =
+  const reactorName =
     me?.first_name && me?.last_name
       ? `${me.first_name} ${me.last_name}`
       : (me?.email ?? "Mitglied");
 
-  await notifyPostComment({
+  await notifyPostReaction({
     recipientUserId: post.author_id,
-    commenterUserId: user.id,
-    commenterName,
+    reactorUserId: user.id,
+    reactorName,
     postId: body.postId,
     postTitle: post.title ?? "Beitrag",
-    commentPreview: body.commentPreview,
-    commentedAt: new Date().toISOString(),
+    reactionType: body.reactionType,
+    reactedAt: new Date().toISOString(),
   });
 
   return NextResponse.json({ ok: true });

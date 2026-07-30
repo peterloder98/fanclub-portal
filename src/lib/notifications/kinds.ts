@@ -20,6 +20,7 @@ export const NOTIFICATION_KINDS = {
   clubMeetingPublished: "club_meeting_published",
   commentReply: "comment_reply",
   postComment: "post_comment",
+  postReaction: "post_reaction",
   referralCompleted: "referral_completed",
   badgeUnlocked: "badge_unlocked",
   radioVotingLastChance: "radio_voting_last_chance",
