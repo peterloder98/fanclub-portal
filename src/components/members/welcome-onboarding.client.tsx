@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ScrollText, Sparkles } from "lucide-react";
+import { CheckCircle2, ScrollText, Sparkles } from "lucide-react";
 import { acceptCommunityRules } from "@/app/(app)/community-rules/actions";
 import {
   dismissIntroOnboarding,
@@ -19,7 +18,15 @@ import {
 } from "@/lib/members/intro-questions";
 import { COMMUNITY_RULES_ACCEPTANCE_LABEL } from "@/lib/community/rules";
 
-type Step = "rules" | "intro";
+type Step = "rules" | "intro" | "done";
+
+function allowLeaveWelcomeOnce() {
+  try {
+    sessionStorage.setItem("fc-welcome-preview-exit", String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
 
 export function WelcomeOnboardingClient({
   needsRulesAcceptance,
@@ -31,7 +38,6 @@ export function WelcomeOnboardingClient({
   /** Admin-Vorschau: Schritte durchspielen ohne Speichern */
   preview?: boolean;
 }) {
-  const router = useRouter();
   const [step, setStep] = useState<Step>(needsRulesAcceptance ? "rules" : "intro");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -49,9 +55,9 @@ export function WelcomeOnboardingClient({
     setAnswers((prev) => ({ ...prev, [key]: value }));
   }
 
+  /** Harte Navigation, damit das Layout den Onboarding-Status neu lädt. */
   function finish(path = "/dashboard") {
-    router.replace(path);
-    router.refresh();
+    window.location.assign(path);
   }
 
   function onAcceptRules() {
@@ -62,7 +68,7 @@ export function WelcomeOnboardingClient({
         setStep("intro");
         return;
       }
-      finish("/admin");
+      setStep("done");
       return;
     }
     startTransition(async () => {
@@ -82,7 +88,7 @@ export function WelcomeOnboardingClient({
   function onSaveIntro() {
     setError(null);
     if (preview) {
-      finish("/admin");
+      setStep("done");
       return;
     }
     startTransition(async () => {
@@ -102,7 +108,7 @@ export function WelcomeOnboardingClient({
   function onSkipIntro() {
     setError(null);
     if (preview) {
-      finish("/admin");
+      setStep("done");
       return;
     }
     startTransition(async () => {
@@ -119,11 +125,47 @@ export function WelcomeOnboardingClient({
     <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-950">
       <strong>Vorschau:</strong> So sieht der Willkommen-Flow für neue Mitglieder aus. Nichts wird
       gespeichert.{" "}
-      <Link href="/admin" className="font-semibold underline">
+      <Link href="/admin" className="font-semibold underline" onClick={allowLeaveWelcomeOnce}>
         Zurück zum Admin
       </Link>
     </div>
   ) : null;
+
+  if (step === "done") {
+    return (
+      <div className="min-h-screen bg-slate-50/80">
+        {previewBanner}
+        <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
+          <Card className="overflow-hidden border-fc-navy/15 shadow-lg shadow-fc-navy/10">
+            <div className="bg-gradient-to-r from-fc-navy to-fc-blue px-5 py-4 text-white">
+              <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-white/80">
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                Fertig
+              </p>
+              <h1 className="mt-1 text-lg font-semibold tracking-tight">Vorschau beendet</h1>
+              <p className="mt-1 text-sm text-white/85">
+                So endet der Flow für neue Mitglieder — danach öffnet sich die App (Dashboard).
+              </p>
+            </div>
+            <CardContent className="space-y-4 pt-5">
+              <p className="text-sm text-slate-600">
+                Es wurde nichts gespeichert. Du kannst die Vorschau jederzeit erneut öffnen.
+              </p>
+              <div className="flex justify-end">
+                <Link
+                  href="/admin"
+                  onClick={allowLeaveWelcomeOnce}
+                  className="inline-flex h-11 items-center rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white hover:bg-fc-blue"
+                >
+                  Zurück zum Admin
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   if (step === "rules") {
     return (
@@ -143,17 +185,11 @@ export function WelcomeOnboardingClient({
               </p>
             </div>
             <CardContent className="space-y-5 pt-5">
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-                <input
-                  type="checkbox"
-                  checked={rulesChecked}
-                  onChange={(e) => setRulesChecked(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-fc-navy focus:ring-fc-blue"
-                />
-                <span className="text-sm leading-relaxed text-slate-700">
-                  {COMMUNITY_RULES_ACCEPTANCE_LABEL}
-                </span>
-              </label>
+              <CommunityRulesContent compact />
+
+              <p className="text-xs text-slate-500">
+                Die Regeln findest du später jederzeit unter Fanclub-Regeln in der App.
+              </p>
 
               {error ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
@@ -161,31 +197,34 @@ export function WelcomeOnboardingClient({
                 </div>
               ) : null}
 
-              <div className="flex justify-end">
+              <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:gap-4">
+                <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={rulesChecked}
+                    onChange={(e) => setRulesChecked(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-fc-navy focus:ring-fc-blue"
+                  />
+                  <span className="text-sm leading-relaxed text-slate-700">
+                    {COMMUNITY_RULES_ACCEPTANCE_LABEL}
+                  </span>
+                </label>
                 <button
                   type="button"
                   disabled={pending || !rulesChecked}
                   onClick={onAcceptRules}
-                  className="h-11 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-50"
+                  className="h-11 shrink-0 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-50 sm:self-stretch sm:px-6"
                 >
                   {pending
                     ? "Speichere…"
-                    : preview
-                      ? needsIntroOnboarding
+                    : needsIntroOnboarding
+                      ? preview
                         ? "Weiter"
-                        : "Vorschau beenden"
-                      : needsIntroOnboarding
-                        ? "Zustimmen & weiter"
+                        : "Zustimmen & weiter"
+                      : preview
+                        ? "Weiter"
                         : "Zustimmen & App starten"}
                 </button>
-              </div>
-
-              <p className="text-xs text-slate-500">
-                Die Regeln findest du später jederzeit unter Fanclub-Regeln in der App.
-              </p>
-
-              <div className="border-t border-slate-100 pt-4">
-                <CommunityRulesContent compact />
               </div>
             </CardContent>
           </Card>
@@ -258,7 +297,7 @@ export function WelcomeOnboardingClient({
                 onClick={onSkipIntro}
                 className="h-11 rounded-xl border bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
               >
-                Später im Profil{preview ? " (Vorschau)" : ""}
+                Später im Profil
               </button>
               <button
                 type="button"
@@ -266,7 +305,7 @@ export function WelcomeOnboardingClient({
                 onClick={onSaveIntro}
                 className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
               >
-                {pending ? "Speichere…" : preview ? "Vorschau beenden" : "Speichern & weiter"}
+                {pending ? "Speichere…" : preview ? "Weiter" : "Speichern & weiter"}
               </button>
             </div>
           </CardContent>
