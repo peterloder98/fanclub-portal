@@ -8,6 +8,7 @@ import { appNav, NavList } from "@/components/app-shell/nav";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
 import { SidebarNavTooltip } from "@/components/app-shell/sidebar-nav-tooltip";
 import { SidebarSpotifyPlayer } from "@/components/app-shell/sidebar-spotify-player";
+import { useIsWelcomeLockRoute } from "@/components/app-shell/use-welcome-lock";
 import { cn } from "@/lib/cn";
 
 export type SidebarUser = {
@@ -20,8 +21,11 @@ export type SidebarUser = {
 };
 
 export function Sidebar({ user }: { user: SidebarUser }) {
+  const welcomeLock = useIsWelcomeLockRoute();
   const isAdmin = user.role === "admin";
   const [collapsed, setCollapsed] = useState(false);
+
+  if (welcomeLock) return null;
 
   useEffect(() => {
     try {

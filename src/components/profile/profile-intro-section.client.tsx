@@ -15,7 +15,10 @@ import {
   introProgressLabel,
   STECKBRIEF_BONUS_POINTS,
 } from "@/lib/members/intro-progress";
-import { saveMyIntroAnswers } from "@/app/(app)/mitglieder/intro-actions";
+import {
+  ensureSteckbriefBonusAction,
+  saveMyIntroAnswers,
+} from "@/app/(app)/mitglieder/intro-actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/cn";
 
@@ -71,8 +74,33 @@ export function ProfileIntroSection({
           intro_perfect_concert: data.intro_perfect_concert ?? "",
         });
       }
-      setBonusReceived(Boolean(bonusRow));
+      const hadBonus = Boolean(bonusRow);
+      setBonusReceived(hadBonus);
       setLoaded(true);
+
+      if (!hadBonus && data) {
+        const complete = introProgressFromAnswers({
+          short_bio: data.short_bio ?? "",
+          intro_discovered_anni: data.intro_discovered_anni ?? "",
+          intro_favorite_song: data.intro_favorite_song ?? "",
+          intro_other_artists: data.intro_other_artists ?? "",
+          intro_hobbies: data.intro_hobbies ?? "",
+          intro_perfect_concert: data.intro_perfect_concert ?? "",
+        }).isComplete;
+        if (complete) {
+          const claim = await ensureSteckbriefBonusAction();
+          if (cancelled) return;
+          if (claim.ok && claim.bonusAwarded) {
+            setBonusReceived(true);
+            setMessage(
+              `Steckbrief vollständig — du hast ${STECKBRIEF_BONUS_POINTS} Anni-Stars erhalten!`,
+            );
+            onSaved?.();
+          } else if (claim.ok) {
+            setBonusReceived(true);
+          }
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -162,12 +190,7 @@ export function ProfileIntroSection({
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
             Steckbrief vollständig — Bonus von {STECKBRIEF_BONUS_POINTS} Anni-Stars erhalten.
           </div>
-        ) : (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            Steckbrief vollständig — speichere, um deine {STECKBRIEF_BONUS_POINTS} Anni-Stars zu
-            erhalten.
-          </div>
-        )}
+        ) : null}
 
         {!loaded ? (
           <p className="text-sm text-slate-500">Lade…</p>

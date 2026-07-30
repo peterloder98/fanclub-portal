@@ -28,8 +28,8 @@ export function AppActivityAndOnboarding({
   useEffect(() => {
     if (!needsWelcomeOnboarding) return;
     if (pathname === "/willkommen" || pathname?.startsWith("/willkommen/")) return;
-    if (pathname === "/regeln" || pathname?.startsWith("/regeln/")) return;
-    if (pathname === "/profile" || pathname?.startsWith("/setup-account")) return;
+    // Konto-Einrichtung darf vor dem Willkommen abgeschlossen werden
+    if (pathname?.startsWith("/setup-account")) return;
     router.replace("/willkommen");
   }, [needsWelcomeOnboarding, pathname, router]);
 

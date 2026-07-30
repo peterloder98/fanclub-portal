@@ -10,7 +10,6 @@ import {
   saveMyIntroAnswers,
 } from "@/app/(app)/mitglieder/intro-actions";
 import { CommunityRulesContent } from "@/components/community/community-rules-content";
-import { Topbar } from "@/components/app-shell/topbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   MEMBER_INTRO_QUESTIONS,
@@ -128,12 +127,8 @@ export function WelcomeOnboardingClient({
 
   if (step === "rules") {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-slate-50/80">
         {previewBanner}
-        <Topbar
-          title="Willkommen"
-          subtitle="Bitte lies und bestätige die Fanclub-Regeln — das ist für alle Mitglieder verbindlich."
-        />
         <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
           <Card className="overflow-hidden border-fc-navy/15 shadow-lg shadow-fc-navy/10">
             <div className="bg-gradient-to-r from-fc-navy to-fc-blue px-5 py-4 text-white">
@@ -148,8 +143,6 @@ export function WelcomeOnboardingClient({
               </p>
             </div>
             <CardContent className="space-y-5 pt-5">
-              <CommunityRulesContent compact />
-
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
                 <input
                   type="checkbox"
@@ -161,14 +154,6 @@ export function WelcomeOnboardingClient({
                   {COMMUNITY_RULES_ACCEPTANCE_LABEL}
                 </span>
               </label>
-
-              <p className="text-xs text-slate-500">
-                Die Regeln findest du jederzeit unter{" "}
-                <Link href="/regeln" className="font-medium text-fc-blue hover:underline">
-                  Fanclub-Regeln
-                </Link>
-                .
-              </p>
 
               {error ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
@@ -187,12 +172,20 @@ export function WelcomeOnboardingClient({
                     ? "Speichere…"
                     : preview
                       ? needsIntroOnboarding
-                        ? "Weiter (Vorschau)"
+                        ? "Weiter"
                         : "Vorschau beenden"
                       : needsIntroOnboarding
                         ? "Zustimmen & weiter"
                         : "Zustimmen & App starten"}
                 </button>
+              </div>
+
+              <p className="text-xs text-slate-500">
+                Die Regeln findest du später jederzeit unter Fanclub-Regeln in der App.
+              </p>
+
+              <div className="border-t border-slate-100 pt-4">
+                <CommunityRulesContent compact />
               </div>
             </CardContent>
           </Card>
@@ -202,9 +195,8 @@ export function WelcomeOnboardingClient({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50/80">
       {previewBanner}
-      <Topbar title="Willkommen" subtitle="Erzähl uns ein bisschen von dir — völlig freiwillig." />
       <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
         <Card className="overflow-hidden border-fc-navy/15 shadow-lg shadow-fc-navy/10">
           <div className="bg-gradient-to-r from-fc-navy to-fc-blue px-5 py-4 text-white">

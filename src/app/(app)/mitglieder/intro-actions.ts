@@ -60,6 +60,19 @@ export async function saveMyIntroAnswers(
   return { ok: true, bonusAwarded, introComplete: progress.isComplete };
 }
 
+export async function ensureSteckbriefBonusAction(): Promise<
+  | { ok: true; bonusAwarded: boolean }
+  | { ok: false; error: string }
+> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Nicht angemeldet." };
+  const bonusAwarded = await tryAwardSteckbriefBonus(user.id);
+  return { ok: true, bonusAwarded };
+}
+
 export async function dismissIntroOnboarding(): Promise<{ ok: true } | { ok: false; error: string }> {
   return saveMyIntroAnswers({ dismissOnboarding: true });
 }

@@ -575,7 +575,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "„Mitglieder-Benachrichtigungen“ (System): optionale Massen-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar.",
               "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
               "Automatische Erinnerungen (immer an): Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen. Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail.",
-              "Willkommen-Flow für neue Mitglieder: Admin → System → „Willkommen-Vorschau“ — Regeln und Kennenlernen durchspielen, ohne etwas zu speichern.",
+              "Willkommen-Flow für neue Mitglieder: Admin → System → „Willkommen-Vorschau“. Während des Flows (auch in der Vorschau) sind Menü, Chat und Kopfzeile ausgeblendet — erst nach Abschluss geht es in die App. Regeln und Kennenlernen lassen sich durchspielen, ohne etwas zu speichern.",
             ],
           },
           {
@@ -626,7 +626,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, vollständiger Steckbrief, …) und zählen für das laufende Kalenderjahr — am 1. Januar geht es wieder bei null los.",
-              "Einmalig 10 Anni-Stars, wenn ein Mitglied den Steckbrief vollständig ausfüllt (Kurztext + fünf Kennenlernen-Fragen unter „Mein Profil“).",
+              "Einmalig 10 Anni-Stars, wenn der Steckbrief vollständig ist (Kurztext + fünf Kennenlernen-Fragen unter „Mein Profil“) — die Sterne werden automatisch gutgeschrieben, sobald alles ausgefüllt und gespeichert ist.",
               "Unvollständige Steckbriefe: Die App erinnert Mitglieder automatisch nach 7 und 14 Tagen Mitgliedschaft (danach keine weiteren Erinnerungen — der Hinweis im Profil bleibt).",
               "Ränge zeigen den Stand im Jahr: Fan → Aktiv-Fan (100) → Treue-Fan (250) → Silber-Fan (500) → Gold-Fan (1 000) → Diamond-Fan (2 500).",
               "Badges (z. B. Konzertprofi) können auch wieder sinken — z. B. wenn jemand Likes entfernt, Event-Teilnahmen zurücknimmt oder Kommentare löscht. Die Stufe passt sich automatisch an den aktuellen Stand an.",

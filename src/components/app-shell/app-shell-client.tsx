@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { MainScrollRegion } from "@/components/app-shell/main-scroll-region";
 import { TopbarProvider } from "@/components/app-shell/topbar-context";
 import { TopbarChrome } from "@/components/app-shell/topbar-chrome";
+import { useIsWelcomeLockRoute } from "@/components/app-shell/use-welcome-lock";
 import { ChatUnreadProvider } from "@/components/chat/chat-unread-context";
 import { GroupChatWidget } from "@/components/chat/group-chat-widget.client";
 import { AppActivityAndOnboarding } from "@/components/app-shell/app-activity-and-onboarding.client";
@@ -18,6 +19,8 @@ export function AppShellClient({
   children: ReactNode;
   needsIntroOnboarding?: boolean;
 }) {
+  const welcomeLock = useIsWelcomeLockRoute();
+
   return (
     <TopbarProvider>
       <ChatUnreadProvider>
@@ -26,16 +29,20 @@ export function AppShellClient({
           tabIndex={-1}
           className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden outline-none"
         >
-          <TopbarChrome />
+          {welcomeLock ? null : <TopbarChrome />}
           <MainScrollRegion>{children}</MainScrollRegion>
           <AppActivityAndOnboarding needsWelcomeOnboarding={needsIntroOnboarding} />
-          <AddToHomeScreenPrompt />
-          <Suspense fallback={null}>
-            <EngagementNudgeHost />
-          </Suspense>
-          <Suspense fallback={null}>
-            <GroupChatWidget />
-          </Suspense>
+          {welcomeLock ? null : (
+            <>
+              <AddToHomeScreenPrompt />
+              <Suspense fallback={null}>
+                <EngagementNudgeHost />
+              </Suspense>
+              <Suspense fallback={null}>
+                <GroupChatWidget />
+              </Suspense>
+            </>
+          )}
         </div>
       </ChatUnreadProvider>
     </TopbarProvider>
