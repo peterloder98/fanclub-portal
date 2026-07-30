@@ -80,7 +80,7 @@ function FitMembersBounds({ points }: { points: Array<{ lat: number; lng: number
       const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
       map.fitBounds(bounds.pad(0.12), {
         padding: [20, 20],
-        maxZoom: 8,
+        maxZoom: 9,
         animate: false,
       });
     }

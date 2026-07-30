@@ -89,7 +89,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           </div>
           <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-visible px-2 py-3">
             <NavList items={appNav} isAdmin={isAdmin} collapsed />
-            <SidebarNavTooltip label="Mitglied werben">
+            <SidebarNavTooltip label="Neue Mitglieder einladen">
               <Link
                 href="/mitgliedschaft/einladen"
                 className="grid h-10 w-10 place-items-center rounded-xl border border-fc-gold/30 bg-gradient-to-br from-fc-gold-soft to-fc-ice text-fc-gold shadow-sm transition hover:border-fc-gold/50 hover:shadow-md"

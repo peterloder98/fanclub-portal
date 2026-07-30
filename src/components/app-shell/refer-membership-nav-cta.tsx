@@ -40,7 +40,7 @@ export function ReferMembershipNavCta() {
               active ? "text-white" : "text-fc-navy",
             )}
           >
-            Neues Mitglied einladen
+            Neue Mitglieder einladen
           </p>
           <p
             className={cn(
