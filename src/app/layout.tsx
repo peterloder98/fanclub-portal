@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   applicationName: "Anni Perka Fanclub",
   appleWebApp: {
     capable: true,
-    title: "Fanclub",
+    title: "Anni Perka Fanclub",
     statusBarStyle: "black-translucent",
   },
   formatDetection: {

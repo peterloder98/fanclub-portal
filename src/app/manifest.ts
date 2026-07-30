@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Anni Perka Fanclub",
-    short_name: "Fanclub",
+    short_name: "Anni Perka Fanclub",
     description: "Digitales Fanclub-Portal für Mitglieder und Vorstand.",
     start_url: "/dashboard",
     display: "standalone",
