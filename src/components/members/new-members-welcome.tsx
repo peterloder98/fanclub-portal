@@ -57,15 +57,14 @@ export function NewMembersWelcome({ members }: { members: RecentMemberWelcome[] 
                   ) : (
                     <p className="mt-0.5 text-xs text-slate-400">Ort noch offen</p>
                   )}
-                  {joined ? (
-                    <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
-                      <CalendarDays className="h-3 w-3 shrink-0" aria-hidden />
-                      <span className="truncate">Beigetreten am {joined}</span>
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-[11px] font-medium text-fc-blue">Zum Profil →</p>
-                </div>
-              </HoverEnlargeAvatar>
+                      {joined ? (
+                        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+                          <CalendarDays className="h-3 w-3 shrink-0" aria-hidden />
+                          <span className="truncate">Beigetreten am {joined}</span>
+                        </p>
+                      ) : null}
+                    </div>
+                  </HoverEnlargeAvatar>
             </li>
           );
         })}
