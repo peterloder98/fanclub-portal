@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
 import { MembersMap } from "@/components/members/members-map";
-import { MemberDirectorySearch } from "@/components/members/member-directory-search";
 import { NewMembersWelcome } from "@/components/members/new-members-welcome";
 import { UpcomingBirthdays } from "@/components/members/upcoming-birthdays";
 import { MeetingAdminForm } from "@/components/meetings/meeting-admin-form.client";
@@ -186,12 +185,12 @@ export default async function MitgliederPage() {
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:-mb-[var(--fanclub-chat-dock,0px)] lg:min-h-[calc(100%+var(--fanclub-chat-dock,0px))]">
       <Topbar
         title="Mitglieder"
-        subtitle="Suche, Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
+        subtitle="Gemeinschaft, Karte, Geburtstage und unsere Fanclub-Termine."
       />
       <main className="mx-auto flex min-h-0 w-full min-w-0 max-w-6xl flex-1 flex-col overflow-hidden px-3 py-3 sm:px-4 lg:px-8">
         <Suspense fallback={<div className="h-24 animate-pulse rounded-2xl bg-fc-ice" />}>
           <MitgliederTabs
-            searchSection={<MemberDirectorySearch members={searchableMembers} />}
+            searchMembers={searchableMembers}
             mapSection={mapSection}
             birthdaysSection={birthdaysSection}
             welcomeSection={<NewMembersWelcome members={recentWelcome} />}

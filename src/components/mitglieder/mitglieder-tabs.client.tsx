@@ -3,6 +3,10 @@
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/cn";
+import {
+  MemberDirectorySearch,
+  type SearchableMember,
+} from "@/components/members/member-directory-search";
 import { MeetingsArchiveSection, MeetingsUpcomingSection } from "@/components/meetings/meetings-section";
 import type { ClubMeetingListItem } from "@/lib/meetings/types";
 
@@ -12,7 +16,7 @@ export function MitgliederTabs({
   mapSection,
   birthdaysSection,
   welcomeSection,
-  searchSection,
+  searchMembers,
   meetings,
   mediaByMeetingId,
   adminMeetingForm,
@@ -20,7 +24,7 @@ export function MitgliederTabs({
   mapSection: React.ReactNode;
   birthdaysSection: React.ReactNode;
   welcomeSection?: React.ReactNode;
-  searchSection?: React.ReactNode;
+  searchMembers?: SearchableMember[];
   meetings: ClubMeetingListItem[];
   mediaByMeetingId: Record<
     string,
@@ -47,7 +51,7 @@ export function MitgliederTabs({
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-      <div className="flex shrink-0 flex-wrap gap-2">
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
         {tabs.map(([key, label]) => (
           <button
             key={key}
@@ -63,11 +67,13 @@ export function MitgliederTabs({
             {label}
           </button>
         ))}
+        {searchMembers?.length ? (
+          <MemberDirectorySearch members={searchMembers} className="ml-auto w-full sm:w-auto" />
+        ) : null}
       </div>
 
       {tab === "karte" ? (
         <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:overflow-hidden">
-          {searchSection ? <div className="shrink-0">{searchSection}</div> : null}
           {welcomeSection ? <div className="shrink-0">{welcomeSection}</div> : null}
           <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.45fr)_minmax(240px,320px)] lg:grid-rows-1 lg:gap-4 lg:overflow-hidden">
             <div className="flex min-h-[min(52vh,420px)] min-w-0 flex-col overflow-hidden lg:h-full lg:min-h-0">

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, MapPin } from "lucide-react";
-import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { Search, MapPin, X } from "lucide-react";
 import { memberPortalPath } from "@/lib/members/intro-questions";
+import { cn } from "@/lib/cn";
 
 export type SearchableMember = {
   userId: string;
@@ -20,8 +21,17 @@ function normalize(s: string) {
     .trim();
 }
 
-export function MemberDirectorySearch({ members }: { members: SearchableMember[] }) {
+/** Kompakte Suche für die Toolbar neben den Mitglieder-Tabs. */
+export function MemberDirectorySearch({
+  members,
+  className,
+}: {
+  members: SearchableMember[];
+  className?: string;
+}) {
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const results = useMemo(() => {
     const needle = normalize(q);
@@ -31,70 +41,105 @@ export function MemberDirectorySearch({ members }: { members: SearchableMember[]
         const hay = normalize(`${m.name} ${m.origin ?? ""}`);
         return hay.includes(needle);
       })
-      .slice(0, 12);
+      .slice(0, 8);
   }, [members, q]);
 
+  const showPanel = open && q.trim().length >= 2;
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
   return (
-    <section className="rounded-2xl border border-fc-ice bg-white p-3 shadow-sm sm:p-4">
-      <div className="fc-accent-bar mb-2 w-16" />
-      <label className="block">
-        <span className="text-base font-semibold text-fc-navy">Mitglieder suchen</span>
-        <span className="mt-0.5 block text-sm text-[color:var(--muted)]">
-          Name oder Ort eingeben — Profil öffnen.
-        </span>
-        <div className="relative mt-3">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            aria-hidden
-          />
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="z. B. Vorname oder Stadt…"
-            className="h-11 w-full rounded-xl border border-fc-navy/15 bg-fc-ice/40 pl-10 pr-3 text-sm text-fc-navy outline-none ring-fc-blue/30 placeholder:text-slate-400 focus:bg-white focus:ring-2"
-            autoComplete="off"
-          />
-        </div>
+    <div ref={rootRef} className={cn("relative min-w-0 flex-1 sm:max-w-xs lg:max-w-sm", className)}>
+      <label className="sr-only" htmlFor="member-directory-search">
+        Mitglieder suchen
       </label>
+      <div className="relative">
+        <Search
+          className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          aria-hidden
+        />
+        <input
+          id="member-directory-search"
+          type="search"
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Mitglieder suchen…"
+          className="h-9 w-full rounded-xl border border-fc-ice bg-white pl-9 pr-8 text-sm text-fc-navy outline-none ring-fc-blue/30 placeholder:text-slate-400 focus:border-fc-blue/40 focus:ring-2"
+          autoComplete="off"
+        />
+        {q ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQ("");
+              setOpen(false);
+            }}
+            className="absolute right-2 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded text-slate-400 hover:text-fc-navy"
+            aria-label="Suche leeren"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+      </div>
 
-      {q.trim().length > 0 && q.trim().length < 2 ? (
-        <p className="mt-2 text-xs text-slate-500">Mindestens 2 Zeichen eingeben.</p>
-      ) : null}
-
-      {results.length > 0 ? (
-        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-          {results.map((m) => (
-            <li
-              key={m.userId}
-              className="rounded-xl border border-fc-navy/10 bg-fc-ice/40 px-3 py-2.5"
-            >
-              <HoverEnlargeAvatar
-                name={m.name}
-                avatarUrl={m.avatarUrl}
-                size="sm"
-                className="w-full gap-3"
-                href={memberPortalPath(m.userId)}
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-fc-navy">{m.name}</p>
-                  {m.origin ? (
-                    <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-600">
-                      <MapPin className="h-3 w-3 shrink-0 text-fc-blue" aria-hidden />
-                      <span className="truncate">{m.origin}</span>
-                    </p>
+      {showPanel ? (
+        <ul
+          className="absolute left-0 right-0 z-30 mt-1 max-h-64 overflow-y-auto rounded-xl border border-fc-navy/10 bg-white py-1 shadow-lg shadow-fc-navy/10"
+          role="listbox"
+        >
+          {results.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-slate-500">Keine Treffer</li>
+          ) : (
+            results.map((m) => (
+              <li key={m.userId} role="option">
+                <Link
+                  href={memberPortalPath(m.userId)}
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2.5 px-3 py-2 hover:bg-fc-ice/70"
+                >
+                  {m.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.avatarUrl}
+                      alt=""
+                      className="h-8 w-8 shrink-0 rounded-full object-cover"
+                    />
                   ) : (
-                    <p className="mt-0.5 text-xs text-slate-400">Ort noch offen</p>
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-fc-ice text-xs font-semibold text-fc-navy">
+                      {m.name
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((p) => p[0])
+                        .join("")
+                        .toUpperCase() || "?"}
+                    </span>
                   )}
-                  <p className="mt-1 text-[11px] font-medium text-fc-blue">Zum Profil →</p>
-                </div>
-              </HoverEnlargeAvatar>
-            </li>
-          ))}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-fc-navy">{m.name}</span>
+                    {m.origin ? (
+                      <span className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        {m.origin}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </li>
+            ))
+          )}
         </ul>
-      ) : q.trim().length >= 2 ? (
-        <p className="mt-3 text-sm text-slate-500">Keine Treffer für „{q.trim()}“.</p>
       ) : null}
-    </section>
+    </div>
   );
 }
