@@ -45,7 +45,7 @@ export function NewMembersWelcome({ members }: { members: RecentMemberWelcome[] 
                 avatarUrl={m.avatarUrl}
                 size="sm"
                 className="w-full gap-3"
-                href={m.hasRegistered ? memberPortalPath(m.userId) : null}
+                href={memberPortalPath(m.userId)}
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-fc-navy">{m.name}</p>
@@ -63,9 +63,7 @@ export function NewMembersWelcome({ members }: { members: RecentMemberWelcome[] 
                       <span className="truncate">Beigetreten am {joined}</span>
                     </p>
                   ) : null}
-                  {m.hasRegistered ? (
-                    <p className="mt-1 text-[11px] font-medium text-fc-blue">Zum Profil →</p>
-                  ) : null}
+                  <p className="mt-1 text-[11px] font-medium text-fc-blue">Zum Profil →</p>
                 </div>
               </HoverEnlargeAvatar>
             </li>
