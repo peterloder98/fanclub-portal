@@ -135,9 +135,6 @@ export function LiveHostRoom({ token }: { token: string }) {
               <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
                 <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
                   <p className="text-sm font-semibold tracking-tight">Fragen der Mitglieder</p>
-                  <p className="text-[11px] text-white/80">
-                    Älteste zuerst — ca. 5 sichtbar, dann scrollen · abhaken wenn erledigt
-                  </p>
                 </header>
                 <ul className="max-h-[16.5rem] overflow-y-auto overscroll-contain divide-y divide-fc-navy/5">
                   {questions.length === 0 ? (

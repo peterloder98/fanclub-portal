@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   createLiveSessionAction,
   regenerateLiveHostTokenAction,
+  resendLiveSessionInvitesAction,
   setLiveSessionStatusAction,
 } from "@/app/(app)/admin/live/actions";
 import type { LiveSessionRow, LiveSessionStatus } from "@/lib/live/types";
@@ -58,6 +59,8 @@ export function AdminLiveSessionsPanel({
   const [freshHostUrl, setFreshHostUrl] = useState<string | null>(null);
   const [hostById, setHostById] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState<string | null>(null);
+  const [sendInvites, setSendInvites] = useState(true);
+  const [inviteInfo, setInviteInfo] = useState<string | null>(null);
 
   function onStartsChange(v: string) {
     setStartsAt(v);
@@ -69,12 +72,14 @@ export function AdminLiveSessionsPanel({
     e.preventDefault();
     setError(null);
     setFreshHostUrl(null);
+    setInviteInfo(null);
     startTransition(async () => {
       const result = await createLiveSessionAction({
         title,
         startsAt: new Date(startsAt).toISOString(),
         endsAt: new Date(endsAt).toISOString(),
         joinOpensAt: new Date(joinOpensAt).toISOString(),
+        sendInvites,
       });
       if (!result.ok) {
         setError(result.error);
@@ -82,6 +87,13 @@ export function AdminLiveSessionsPanel({
       }
       setFreshHostUrl(result.hostUrl);
       setHostById((prev) => ({ ...prev, [result.id]: result.hostUrl }));
+      if (sendInvites) {
+        setInviteInfo(
+          `Einladungen: ${result.inviteEmails ?? 0} E-Mails gesendet` +
+            (result.inviteErrors ? ` (${result.inviteErrors} Fehler)` : "") +
+            ", plus In-App-Benachrichtigung.",
+        );
+      }
     });
   }
 
@@ -102,6 +114,22 @@ export function AdminLiveSessionsPanel({
       }
       setHostById((prev) => ({ ...prev, [sessionId]: result.hostUrl }));
       setFreshHostUrl(result.hostUrl);
+    });
+  }
+
+  function resendInvites(sessionId: string) {
+    setError(null);
+    setInviteInfo(null);
+    startTransition(async () => {
+      const result = await resendLiveSessionInvitesAction(sessionId);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setInviteInfo(
+        `Erneut eingeladen: ${result.emails} E-Mails` +
+          (result.errors ? ` (${result.errors} Fehler)` : ""),
+      );
     });
   }
 
@@ -166,9 +194,26 @@ export function AdminLiveSessionsPanel({
           Tipp: Beitritt ca. 10 Minuten vor Start, damit Mitglieder und Anni früh reinkommen
           können.
         </p>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <input
+            type="checkbox"
+            checked={sendInvites}
+            onChange={(e) => setSendInvites(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-fc-navy focus:ring-fc-blue"
+          />
+          <span className="text-sm text-slate-700">
+            Sofort alle aktiven Mitglieder per E-Mail und In-App einladen (Zusage/Absage möglich).
+            Zugesagte erhalten 1 Tag vorher eine Erinnerung.
+          </span>
+        </label>
         {error ? (
           <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
             {error}
+          </div>
+        ) : null}
+        {inviteInfo ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-950">
+            {inviteInfo}
           </div>
         ) : null}
         {freshHostUrl ? (
@@ -251,6 +296,16 @@ export function AdminLiveSessionsPanel({
                   >
                     Neuen Host-Link erzeugen
                   </button>
+                  {s.status !== "ended" && s.status !== "cancelled" ? (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => resendInvites(s.id)}
+                      className="h-9 rounded-lg border bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      Einladungen erneut senden
+                    </button>
+                  ) : null}
                   {s.status !== "live" && s.status !== "ended" && s.status !== "cancelled" ? (
                     <button
                       type="button"

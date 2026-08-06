@@ -10,6 +10,7 @@ import {
   slugifyLiveTitle,
   type LiveSessionStatus,
 } from "@/lib/live/types";
+import { sendLiveSessionInviteEmails } from "@/lib/live/invites";
 
 function parseIso(label: string, raw: string): string {
   const d = new Date(raw);
@@ -22,8 +23,16 @@ export async function createLiveSessionAction(input: {
   startsAt: string;
   endsAt: string;
   joinOpensAt: string;
+  sendInvites?: boolean;
 }): Promise<
-  | { ok: true; id: string; slug: string; hostUrl: string }
+  | {
+      ok: true;
+      id: string;
+      slug: string;
+      hostUrl: string;
+      inviteEmails?: number;
+      inviteErrors?: number;
+    }
   | { ok: false; error: string }
 > {
   try {
@@ -63,10 +72,61 @@ export async function createLiveSessionAction(input: {
     });
     if (error) return { ok: false, error: error.message };
 
+    let inviteEmails = 0;
+    let inviteErrors = 0;
+    if (input.sendInvites !== false) {
+      try {
+        const inv = await sendLiveSessionInviteEmails({
+          id,
+          slug,
+          title,
+          starts_at,
+        });
+        inviteEmails = inv.emails;
+        inviteErrors = inv.errors;
+      } catch (e) {
+        console.error("[live] invite send failed", e);
+        inviteErrors = 1;
+      }
+    }
+
     revalidatePath("/admin/live");
     revalidatePath("/live");
     revalidatePath("/dashboard");
-    return { ok: true, id, slug, hostUrl: liveHostUrl(token) };
+    return {
+      ok: true,
+      id,
+      slug,
+      hostUrl: liveHostUrl(token),
+      inviteEmails,
+      inviteErrors,
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+  }
+}
+
+export async function resendLiveSessionInvitesAction(
+  sessionId: string,
+): Promise<
+  | { ok: true; emails: number; errors: number }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const { data: session, error } = await admin
+      .from("live_sessions")
+      .select("id,slug,title,starts_at,status")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (error || !session) return { ok: false, error: "Session nicht gefunden." };
+    if (session.status === "ended" || session.status === "cancelled") {
+      return { ok: false, error: "Beendete Sessions können nicht erneut eingeladen werden." };
+    }
+    const inv = await sendLiveSessionInviteEmails(session);
+    revalidatePath("/admin/live");
+    return { ok: true, emails: inv.emails, errors: inv.errors };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
   }

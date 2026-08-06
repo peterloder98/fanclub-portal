@@ -16,6 +16,8 @@ export const EMAIL_TEMPLATE_KEYS = {
   appSignupReminder: "app_signup_reminder",
   appInactiveReminder: "app_inactive_reminder",
   referralAbuseAdminNotify: "referral_abuse_admin_notify",
+  liveSessionInvite: "live_session_invite",
+  liveSessionReminder: "live_session_reminder",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -134,5 +136,20 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "reasons_text", label: "Verdachtsgründe" },
     { key: "sends_list", label: "Einladungs-Liste (Text)" },
     { key: "review_url", label: "Link Admin-Prüfung" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.liveSessionInvite]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "session_title", label: "Titel der Live-Session" },
+    { key: "session_date", label: "Datum & Uhrzeit" },
+    { key: "session_url", label: "Link zur Live-Seite" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.liveSessionReminder]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "session_title", label: "Titel der Live-Session" },
+    { key: "session_date", label: "Datum & Uhrzeit" },
+    { key: "session_time", label: "Uhrzeit (kurz)" },
+    { key: "session_url", label: "Link zur Live-Seite" },
   ],
 };

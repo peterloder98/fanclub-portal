@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { LiveKitStage } from "@/components/live/livekit-stage.client";
 import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client";
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
+import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
 import { cn } from "@/lib/cn";
 
 type Tab = "chat" | "fragen";
@@ -15,6 +16,8 @@ export function LiveMemberRoom({
   joinOpen,
   status,
   startsAt,
+  rsvpStatus = null,
+  showRsvp = true,
 }: {
   slug: string;
   title: string;
@@ -22,6 +25,8 @@ export function LiveMemberRoom({
   joinOpen: boolean;
   status: string;
   startsAt: string;
+  rsvpStatus?: "accepted" | "declined" | null;
+  showRsvp?: boolean;
 }) {
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
@@ -69,9 +74,16 @@ export function LiveMemberRoom({
         </p>
       </header>
 
+      {showRsvp ? (
+        <div className="mb-4">
+          <LiveSessionRsvpCard sessionId={sessionId} initialStatus={rsvpStatus} />
+        </div>
+      ) : null}
+
       {!joinOpen ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-950">
-          Der Raum ist noch nicht geöffnet. Bitte später erneut vorbeischauen.
+          Der Raum ist noch nicht geöffnet. Sobald der Beitritt beginnt, kannst du hier zuschauen und
+          mitmachen.
         </div>
       ) : (
         <div className="grid gap-4">

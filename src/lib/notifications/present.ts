@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Cake,
   Calendar,
+  FileCheck,
   Gift,
   MessageCircle,
   PartyPopper,
@@ -15,7 +16,7 @@ import {
   UserPlus,
   Users,
   Vote,
-  FileCheck,
+  Video,
 } from "lucide-react";
 import { formatNotificationDateTime } from "@/lib/notifications/format-datetime";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
@@ -133,6 +134,9 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
       return typeof m.meeting_id === "string"
         ? `/treffen/${m.meeting_id}`
         : "/mitglieder?tab=treffen";
+    case NOTIFICATION_KINDS.liveSessionInvite:
+    case NOTIFICATION_KINDS.liveSessionReminder1d:
+      return typeof m.slug === "string" ? `/live/${m.slug}` : "/live";
     case NOTIFICATION_KINDS.eventAvailable:
     case NOTIFICATION_KINDS.eventReminder7d:
     case NOTIFICATION_KINDS.eventReminder2d:
@@ -198,6 +202,9 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
     case NOTIFICATION_KINDS.clubMeetingPublished:
     case NOTIFICATION_KINDS.contributionOpen:
       return { icon: Users, iconClass: "bg-emerald-50 text-emerald-700" };
+    case NOTIFICATION_KINDS.liveSessionInvite:
+    case NOTIFICATION_KINDS.liveSessionReminder1d:
+      return { icon: Video, iconClass: "bg-rose-50 text-rose-700" };
     case NOTIFICATION_KINDS.eventAvailable:
     case NOTIFICATION_KINDS.eventReminder7d:
     case NOTIFICATION_KINDS.eventReminder2d:

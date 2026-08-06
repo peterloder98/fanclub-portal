@@ -455,7 +455,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "live-anni",
         number: "3.6",
         title: "Live mit Anni",
-        summary: "Video-Session, Chat und Fragen",
+        summary: "Video-Session, Einladung, Zusage und Fragen",
         blocks: [
           {
             type: "p",
@@ -465,22 +465,27 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
-              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen und Session anlegen.",
-              "Den angezeigten Host-Link einmalig kopieren und Anni rechtzeitig schicken (WhatsApp/E-Mail). Der Link ist geheim — wer ihn hat, kann senden.",
-              "Mitglieder finden die Session unter Menü „Live“ und auf dem Dashboard, sobald das Beitrittsfenster offen ist.",
-              "Wenn Anni den Link öffnet und Kamera/Mikro freigibt, wird die Session automatisch „live“.",
-              "Fragen erscheinen bei Anni älteste zuerst — Abhaken entfernt sie aus der Liste.",
-              "Nach der Session unter Admin „Beenden“ tippen (oder das Endzeitfenster abwarten).",
+              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen.",
+              "Haken „Sofort einladen“ lassen — dann erhalten alle aktiven Mitglieder eine Einladungs-E-Mail (Vorlage unter E-Mail-Vorlagen) und eine In-App-Benachrichtigung.",
+              "Den Host-Link einmalig kopieren und Anni rechtzeitig schicken.",
+              "Mitglieder öffnen den Link bzw. Menü „Live“, sagen zu oder ab. Wer zusagt, erhält einen Tag vorher automatisch eine Erinnerungs-E-Mail.",
+              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Mitglieder schauen zu, chatten und stellen Fragen.",
+              "Nach der Session unter Admin „Beenden“ tippen.",
             ],
           },
           {
             type: "note",
-            text: "Technik: LiveKit muss in der Server-Umgebung konfiguriert sein (LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET). Ohne diese Werte funktioniert das Video nicht — Chat und Fragen schon. Vorstände können im Live-Chat und bei Fragen wie gewohnt verwarnen und löschen.",
+            text: "E-Mail-Texte könnt ihr unter Admin → E-Mail-Vorlagen anpassen („Live mit Anni — Einladung“ und „… Erinnerung“). Technik: LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
           },
           {
             type: "link",
             href: "/admin/live",
             label: "Live mit Anni (Admin)",
+          },
+          {
+            type: "link",
+            href: "/admin/settings/email-templates",
+            label: "E-Mail-Vorlagen",
           },
         ],
       },

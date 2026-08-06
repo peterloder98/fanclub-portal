@@ -13,6 +13,10 @@ export default async function LiveSessionPage({
 }) {
   const { slug } = await params;
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: session } = await supabase
     .from("live_sessions")
     .select(
@@ -25,6 +29,19 @@ export default async function LiveSessionPage({
   const row = session as LiveSessionRow;
   const joinOpen = canMembersJoinSession(row);
 
+  let rsvpStatus: "accepted" | "declined" | null = null;
+  if (user) {
+    const { data: rsvp } = await supabase
+      .from("live_session_rsvps")
+      .select("status")
+      .eq("session_id", row.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (rsvp?.status === "accepted" || rsvp?.status === "declined") {
+      rsvpStatus = rsvp.status;
+    }
+  }
+
   return (
     <div className="min-h-screen">
       <Topbar title="Live" subtitle={row.title} />
@@ -35,6 +52,8 @@ export default async function LiveSessionPage({
         joinOpen={joinOpen}
         status={row.status}
         startsAt={row.starts_at}
+        rsvpStatus={rsvpStatus}
+        showRsvp={row.status !== "ended" && row.status !== "cancelled"}
       />
     </div>
   );

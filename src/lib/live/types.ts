@@ -15,6 +15,7 @@ export type LiveSessionRow = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  invites_sent_at?: string | null;
 };
 
 export const LIVE_SESSION_CHAT_MAX_LEN = 1000;

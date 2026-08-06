@@ -36,6 +36,8 @@ export const NOTIFICATION_KINDS = {
   introIncompleteReminder: "intro_incomplete_reminder",
   introSteckbriefComplete: "intro_steckbrief_complete",
   referralAbuseReview: "referral_abuse_review",
+  liveSessionInvite: "live_session_invite",
+  liveSessionReminder1d: "live_session_reminder_1d",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];
