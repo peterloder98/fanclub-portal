@@ -1,18 +1,30 @@
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { communityRulesUrl } from "@/lib/community/rules";
 
+export type WarningContextKind =
+  | "post"
+  | "poll"
+  | "giveaway"
+  | "chat"
+  | "live_chat"
+  | "live_question";
+
 export function buildCommentWarningEmail(input: {
   firstName: string;
   gender?: string | null;
   commentText: string;
   commentDateLabel: string;
   contextTitle: string;
-  contextKind: "post" | "poll" | "giveaway" | "chat";
+  contextKind: WarningContextKind;
   contextAuthorName: string;
   adminSignature: string;
   rulesUrl?: string;
 }): { subject: string; text: string } {
-  const isChat = input.contextKind === "chat";
+  const isChatLike =
+    input.contextKind === "chat" ||
+    input.contextKind === "live_chat" ||
+    input.contextKind === "live_question";
+
   const contextLabel =
     input.contextKind === "poll"
       ? "Umfrage"
@@ -20,13 +32,17 @@ export function buildCommentWarningEmail(input: {
         ? "Gewinnspiel"
         : input.contextKind === "chat"
           ? "Gruppenchat"
-          : "Beitrag";
+          : input.contextKind === "live_chat"
+            ? "Live-Chat"
+            : input.contextKind === "live_question"
+              ? "Live-Fragen"
+              : "Beitrag";
 
-  const subject = isChat
+  const subject = isChatLike
     ? "Verwarnung aufgrund einer Chat-Nachricht"
     : "Verwarnung aufgrund eines Kommentars";
 
-  const deletedLine = isChat
+  const deletedLine = isChatLike
     ? `leider mussten wir deine Nachricht "${input.commentText}" vom ${input.commentDateLabel} im ${contextLabel} löschen.`
     : `leider mussten wir deinen Kommentar "${input.commentText}" vom ${input.commentDateLabel} unter der ${contextLabel} "${input.contextTitle}" von ${input.contextAuthorName} löschen.`;
 

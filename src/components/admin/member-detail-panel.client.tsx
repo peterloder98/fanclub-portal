@@ -107,6 +107,9 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 function contextKindLabel(kind: string) {
   if (kind === "poll") return "Umfrage";
   if (kind === "giveaway") return "Gewinnspiel";
+  if (kind === "chat") return "Gruppenchat";
+  if (kind === "live_chat") return "Live-Chat";
+  if (kind === "live_question") return "Live-Frage";
   return "Beitrag";
 }
 
