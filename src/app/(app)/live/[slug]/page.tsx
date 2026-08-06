@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { LiveMemberRoom } from "@/components/live/live-member-room.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -17,7 +17,11 @@ export default async function LiveSessionPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: session } = await supabase
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(`/live/${slug}`)}`);
+  }
+
+  const { data: session, error: sessionError } = await supabase
     .from("live_sessions")
     .select(
       "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
@@ -25,21 +29,25 @@ export default async function LiveSessionPage({
     .eq("slug", slug)
     .maybeSingle();
 
+  if (sessionError) {
+    console.error("[live] session load", sessionError.message);
+  }
   if (!session) notFound();
   const row = session as LiveSessionRow;
   const joinOpen = canMembersJoinSession(row);
 
   let rsvpStatus: "accepted" | "declined" | null = null;
-  if (user) {
-    const { data: rsvp } = await supabase
-      .from("live_session_rsvps")
-      .select("status")
-      .eq("session_id", row.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    if (rsvp?.status === "accepted" || rsvp?.status === "declined") {
-      rsvpStatus = rsvp.status;
-    }
+  const { data: rsvp, error: rsvpError } = await supabase
+    .from("live_session_rsvps")
+    .select("status")
+    .eq("session_id", row.id)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (rsvpError && !/live_session_rsvps|does not exist/i.test(rsvpError.message)) {
+    console.error("[live] rsvp load", rsvpError.message);
+  }
+  if (rsvp?.status === "accepted" || rsvp?.status === "declined") {
+    rsvpStatus = rsvp.status;
   }
 
   return (

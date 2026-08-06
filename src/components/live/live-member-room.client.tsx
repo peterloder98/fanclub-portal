@@ -1,12 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LiveKitStage } from "@/components/live/livekit-stage.client";
+import dynamic from "next/dynamic";
 import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client";
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
 import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
 import { cn } from "@/lib/cn";
+
+const LiveKitStage = dynamic(
+  () =>
+    import("@/components/live/livekit-stage.client").then((m) => m.LiveKitStage),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
+        Video wird geladen…
+      </div>
+    ),
+  },
+);
 
 type Tab = "chat" | "fragen";
 

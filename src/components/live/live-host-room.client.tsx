@@ -1,11 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { Check, MessageCircle } from "lucide-react";
-import { LiveKitStage } from "@/components/live/livekit-stage.client";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
 import { formatChatTime } from "@/lib/chat/types";
 import { cn } from "@/lib/cn";
+
+const LiveKitStage = dynamic(
+  () =>
+    import("@/components/live/livekit-stage.client").then((m) => m.LiveKitStage),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
+        Video wird geladen…
+      </div>
+    ),
+  },
+);
 
 type Question = {
   id: string;

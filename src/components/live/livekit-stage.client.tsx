@@ -43,6 +43,16 @@ export function LiveKitStage({
     });
     roomRef.current = room;
 
+    room.on(RoomEvent.MediaDevicesError, (e: Error) => {
+      console.warn("[livekit] MediaDevicesError", e);
+      if (mode === "host") {
+        setError(
+          e.message ||
+            "Kamera/Mikrofon nicht verfügbar. Bitte Berechtigung erteilen und Seite neu laden.",
+        );
+      }
+    });
+
     function attachRemote(track: RemoteTrack) {
       if (track.kind === Track.Kind.Video && videoRef.current) {
         track.attach(videoRef.current);

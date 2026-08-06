@@ -6,7 +6,8 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    // LiveKit braucht Kamera/Mikro (Host). Browser fragt trotzdem um Erlaubnis.
+    value: "camera=(self), microphone=(self), geolocation=()",
   },
 ];
 
