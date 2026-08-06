@@ -22,6 +22,7 @@ import {
   Activity,
   BookOpen,
   Sparkles,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
@@ -143,6 +144,12 @@ const SECTIONS: AdminHubSection[] = [
     title: "Community",
     subtitle: "Beiträge und Engagement",
     items: [
+      {
+        href: "/admin/live",
+        title: "Live mit Anni",
+        description: "Session anlegen, Host-Link für Anni, beenden",
+        icon: Video,
+      },
       {
         href: "/admin/posts",
         title: "Beiträge freigeben",

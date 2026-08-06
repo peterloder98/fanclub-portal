@@ -13,6 +13,7 @@ import {
   Shield,
   ShoppingBag,
   Sparkles,
+  Video,
   Vote,
 } from "lucide-react";
 import { SidebarNavTooltip } from "@/components/app-shell/sidebar-nav-tooltip";
@@ -29,6 +30,7 @@ import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export const appNav: AppNavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
+  { label: "Live", href: "/live", icon: Video },
   { label: "Chat", href: "/chat", icon: MessageCircle },
   { label: "Events", href: "/events", icon: CalendarDays },
   ...(FEATURE_FLAGS.votings

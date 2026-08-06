@@ -8,12 +8,14 @@ import { pickNextEvent } from "@/lib/events/pick-next-event";
 import { filterVisibleEvents } from "@/lib/events/event-schedule";
 import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-giveaways-inline";
 import { DashboardMeetingHighlight } from "@/components/meetings/dashboard-meeting-highlight";
+import { DashboardLiveHighlight } from "@/components/dashboard/dashboard-live-highlight";
 import { loadPublishedMeetings, pickNextMeeting } from "@/lib/meetings/load";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { maybeSyncArtistflowIfStale } from "@/lib/artistflow/maybe-sync-if-stale";
+import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 
 export default async function DashboardPage() {
   after(() => maybeSyncArtistflowIfStale());
@@ -128,6 +130,31 @@ export default async function DashboardPage() {
     nextMeeting = null;
   }
 
+  let liveHighlight: { slug: string; title: string; status: string; startsAt: string } | null =
+    null;
+  try {
+    const now = new Date().toISOString();
+    const { data: liveRows } = await supabase
+      .from("live_sessions")
+      .select("id,slug,title,starts_at,ends_at,join_opens_at,status")
+      .in("status", ["scheduled", "live"])
+      .lte("join_opens_at", now)
+      .gte("ends_at", now)
+      .order("starts_at", { ascending: true })
+      .limit(3);
+    const open = ((liveRows ?? []) as LiveSessionRow[]).find((s) => canMembersJoinSession(s));
+    if (open) {
+      liveHighlight = {
+        slug: open.slug,
+        title: open.title,
+        status: open.status,
+        startsAt: open.starts_at,
+      };
+    }
+  } catch {
+    liveHighlight = null;
+  }
+
   return (
     <div className="min-h-screen min-w-0 w-full max-w-full overflow-x-clip">
       <Topbar
@@ -136,6 +163,7 @@ export default async function DashboardPage() {
       />
 
       <main className="min-w-0 w-full max-w-full py-4 pb-2 lg:py-4 lg:pb-0">
+        {liveHighlight ? <DashboardLiveHighlight session={liveHighlight} /> : null}
         {nextMeeting ? <DashboardMeetingHighlight meeting={nextMeeting} /> : null}
         {/* Mobile: Nächster Auftritt ganz oben */}
         <div className="mb-4 lg:hidden">

@@ -15,6 +15,10 @@ const PUBLIC_PATH_PREFIXES = [
   "/documents",
   "/api/membership",
   "/api/cron",
+  "/live/host",
+  "/api/live/host-token",
+  "/api/live/host-feed",
+  "/api/live/host-dismiss-question",
 ];
 
 function isPublicPath(pathname: string) {

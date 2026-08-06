@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-07-30";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-06";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -74,6 +74,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "Beiträge lesen und schreiben, kommentieren, im Gruppenchat schreiben",
+              "an Live-Sessions mit Anni teilnehmen (zuschauen, chatten, Fragen stellen)",
               "an Umfragen und Gewinnspielen teilnehmen",
               "Konzerte und Fanclub-Treffen sehen und „Ich bin dabei“ markieren",
               "Mitglieder suchen, auf der Karte finden und Profile anschauen",
@@ -447,6 +448,39 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/posts",
             label: "Beiträge freigeben",
+          },
+        ],
+      },
+      {
+        id: "live-anni",
+        number: "3.6",
+        title: "Live mit Anni",
+        summary: "Video-Session, Chat und Fragen",
+        blocks: [
+          {
+            type: "p",
+            text: "Ihr könnt Termine anlegen, bei denen Anni per Browser live zu sehen ist (Kamera und Mikrofon freigeben — keine Extra-App). Mitglieder schauen zu, schreiben im Session-Chat und können Fragen stellen.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Admin → Community → „Live mit Anni“ öffnen.",
+              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen und Session anlegen.",
+              "Den angezeigten Host-Link einmalig kopieren und Anni rechtzeitig schicken (WhatsApp/E-Mail). Der Link ist geheim — wer ihn hat, kann senden.",
+              "Mitglieder finden die Session unter Menü „Live“ und auf dem Dashboard, sobald das Beitrittsfenster offen ist.",
+              "Wenn Anni den Link öffnet und Kamera/Mikro freigibt, wird die Session automatisch „live“.",
+              "Fragen erscheinen bei Anni älteste zuerst — Abhaken entfernt sie aus der Liste.",
+              "Nach der Session unter Admin „Beenden“ tippen (oder das Endzeitfenster abwarten).",
+            ],
+          },
+          {
+            type: "note",
+            text: "Technik: LiveKit muss in der Server-Umgebung konfiguriert sein (LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET). Ohne diese Werte funktioniert das Video nicht — Chat und Fragen schon.",
+          },
+          {
+            type: "link",
+            href: "/admin/live",
+            label: "Live mit Anni (Admin)",
           },
         ],
       },
