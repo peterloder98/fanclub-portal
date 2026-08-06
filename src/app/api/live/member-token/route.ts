@@ -20,6 +20,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
     }
 
+    const [{ data: membership }, { data: profile }] = await Promise.all([
+      supabase
+        .from("memberships")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle(),
+      supabase.from("profiles").select("id,first_name,last_name,email,role").eq("id", user.id).maybeSingle(),
+    ]);
+    if (!membership && profile?.role !== "admin") {
+      return NextResponse.json(
+        { error: "Nur aktive Mitglieder können dem Live beitreten." },
+        { status: 403 },
+      );
+    }
+
     const { data: session, error } = await supabase
       .from("live_sessions")
       .select(
@@ -39,12 +56,6 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id,first_name,last_name,email")
-      .eq("id", user.id)
-      .maybeSingle();
 
     const name = profile
       ? profileDisplayName(profile)

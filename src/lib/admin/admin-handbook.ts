@@ -468,14 +468,14 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen. Maximal 60 Minuten Dauer.",
               "Haken „Sofort einladen“ lassen — dann erhalten alle aktiven Mitglieder und Anni eine Einladungs-E-Mail (mit Kalenderanhang) sowie die Mitglieder eine In-App-Benachrichtigung.",
               "Den Host-Link einmalig kopieren und Anni rechtzeitig schicken. Wenn die Verbindung abbricht, denselben Link erneut öffnen.",
-              "Mitglieder öffnen den Link bzw. Menü „Live“, sagen zu oder ab. Wer zusagt (und Anni immer) erhält einen Tag vorher automatisch eine Erinnerungs-E-Mail.",
+              "Mitglieder öffnen den Link bzw. Menü „Live“ — dafür müssen sie mit ihren Mitgliedsdaten angemeldet sein (ohne Login kein Zugang). Vor dem Beitrittsfenster können sie zusagen oder absagen; im Live-Raum geht es direkt zum Chat.",
               "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Oben läuft ein Countdown bis zum geplanten Ende.",
               "Nach der Session unter Admin „Beenden“ tippen.",
             ],
           },
           {
             type: "note",
-            text: "Dauer maximal 60 Minuten. In den E-Mails liegt eine Kalenderdatei („Anni Perka Live Chat“, Start 5 Minuten früher, Erinnerungen 1 Tag und 1 Stunde vorher). Bis zum Go-Live gehen Annis Live-Mails an die Testadresse — siehe 7.5. LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
+            text: "Dauer maximal 60 Minuten. Der Mitglieder-Link funktioniert nur nach Login als aktives Mitglied. In den E-Mails liegt eine Kalenderdatei („Anni Perka Live Chat“, Start 5 Minuten früher, Erinnerungen 1 Tag und 1 Stunde vorher). Bis zum Go-Live gehen Annis Live-Mails an die Testadresse — siehe 7.5. LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
           },
           {
             type: "link",

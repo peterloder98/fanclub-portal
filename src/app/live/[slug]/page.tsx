@@ -41,15 +41,35 @@ export default async function LiveMemberPage({
   const row = session as LiveSessionRow;
   const joinOpen = canMembersJoinSession(row);
 
+  // Nur echte Mitglieder (oder Admin) — Link allein reicht nicht
+  const [{ data: membership }, { data: profile }] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+  ]);
+  const isAdmin = profile?.role === "admin";
+  if (!membership && !isAdmin) {
+    redirect("/mitgliedschaft/ausstehend");
+  }
+
   let rsvpStatus: "accepted" | "declined" | null = null;
-  const { data: rsvp } = await supabase
-    .from("live_session_rsvps")
-    .select("status")
-    .eq("session_id", row.id)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (rsvp?.status === "accepted" || rsvp?.status === "declined") {
-    rsvpStatus = rsvp.status;
+  // RSVP nur vor dem Beitrittsfenster (Einladung); im Live-Raum nicht mehr
+  const showRsvp = row.status === "scheduled" && !joinOpen;
+  if (showRsvp) {
+    const { data: rsvp } = await supabase
+      .from("live_session_rsvps")
+      .select("status")
+      .eq("session_id", row.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (rsvp?.status === "accepted" || rsvp?.status === "declined") {
+      rsvpStatus = rsvp.status;
+    }
   }
 
   return (
@@ -77,7 +97,7 @@ export default async function LiveMemberPage({
         startsAt={row.starts_at}
         endsAt={row.ends_at}
         rsvpStatus={rsvpStatus}
-        showRsvp={row.status !== "ended" && row.status !== "cancelled"}
+        showRsvp={showRsvp}
         compactHeader
       />
     </div>
