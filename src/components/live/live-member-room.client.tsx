@@ -65,15 +65,20 @@ export function LiveMemberRoom({
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("chat");
   const [videoReady, setVideoReady] = useState(false);
+  const [sessionEnded, setSessionEnded] = useState(
+    () => !Number.isNaN(new Date(endsAt).getTime()) && Date.now() >= new Date(endsAt).getTime(),
+  );
+
+  const roomOpen = joinOpen && !sessionEnded;
 
   useEffect(() => {
-    if (!joinOpen) return;
+    if (!roomOpen) return;
     const t = window.setTimeout(() => setVideoReady(true), 200);
     return () => window.clearTimeout(t);
-  }, [joinOpen]);
+  }, [roomOpen]);
 
   useEffect(() => {
-    if (!joinOpen || !videoReady) return;
+    if (!roomOpen || !videoReady) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -97,11 +102,11 @@ export function LiveMemberRoom({
     return () => {
       cancelled = true;
     };
-  }, [slug, joinOpen, videoReady]);
+  }, [slug, roomOpen, videoReady]);
 
   // Anwesenheit ≥ 1 Min. → +2 Anni-Stars (einmal pro Session)
   useEffect(() => {
-    if (!joinOpen || !sessionId) return;
+    if (!roomOpen || !sessionId) return;
     let cancelled = false;
     async function ping() {
       try {
@@ -123,14 +128,14 @@ export function LiveMemberRoom({
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [joinOpen, sessionId]);
+  }, [roomOpen, sessionId]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 lg:px-6">
       {!compactHeader ? (
         <header className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
-            {status === "live" ? "Live" : "Live-Session"}
+            {sessionEnded ? "Beendet" : status === "live" ? "Live" : "Live-Session"}
           </p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight text-fc-navy sm:text-2xl">
             {title}
@@ -138,15 +143,31 @@ export function LiveMemberRoom({
           <p className="mt-1 text-sm text-slate-600">
             Start {new Date(startsAt).toLocaleString("de-DE")}
           </p>
-          <LiveSessionCountdown endsAt={endsAt} variant="member" />
+          <LiveSessionCountdown
+            endsAt={endsAt}
+            variant="member"
+            onEnded={() => {
+              setSessionEnded(true);
+              setToken(null);
+              setUrl(null);
+            }}
+          />
         </header>
       ) : (
         <div className="mb-4">
           <p className="text-sm text-slate-600">
             Start {new Date(startsAt).toLocaleString("de-DE")}
-            {status === "live" ? " · Live" : null}
+            {sessionEnded ? " · Beendet" : status === "live" ? " · Live" : null}
           </p>
-          <LiveSessionCountdown endsAt={endsAt} variant="member" />
+          <LiveSessionCountdown
+            endsAt={endsAt}
+            variant="member"
+            onEnded={() => {
+              setSessionEnded(true);
+              setToken(null);
+              setUrl(null);
+            }}
+          />
         </div>
       )}
 
@@ -156,7 +177,11 @@ export function LiveMemberRoom({
         </div>
       ) : null}
 
-      {!joinOpen ? (
+      {sessionEnded ? (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-700">
+          Die Live-Session ist zu Ende. Chat und Video sind geschlossen.
+        </div>
+      ) : !joinOpen ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-950">
           Der Raum ist noch nicht geöffnet. Sobald der Beitritt beginnt, kannst du hier zuschauen und
           mitmachen.

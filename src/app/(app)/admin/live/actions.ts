@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
-  assertLiveSessionDuration,
+  endsAtFromDuration,
   generateLiveHostToken,
   liveHostUrl,
   liveKitRoomNameForSession,
@@ -22,7 +22,8 @@ function parseIso(label: string, raw: string): string {
 export async function createLiveSessionAction(input: {
   title: string;
   startsAt: string;
-  endsAt: string;
+  /** Geplante Dauer in Minuten; Ende = Start + Dauer. */
+  durationMinutes: number;
   joinOpensAt: string;
   sendInvites?: boolean;
 }): Promise<
@@ -44,15 +45,15 @@ export async function createLiveSessionAction(input: {
     }
 
     const starts_at = parseIso("Start", input.startsAt);
-    const ends_at = parseIso("Ende", input.endsAt);
+    let ends_at: string;
+    try {
+      ends_at = endsAtFromDuration(starts_at, input.durationMinutes);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
+    }
     const join_opens_at = parseIso("Beitritt ab", input.joinOpensAt);
     if (new Date(join_opens_at) > new Date(starts_at)) {
       return { ok: false, error: "Beitritt muss vor oder zum Start liegen." };
-    }
-    try {
-      assertLiveSessionDuration(starts_at, ends_at);
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
     }
 
     const { token, hash } = generateLiveHostToken();
@@ -119,16 +120,16 @@ export async function resendLiveSessionInvitesAction(
   try {
     await requireAdminAction();
     const admin = createSupabaseAdminClient();
-    const { data: session, error } = await admin
+    const { data, error } = await admin
       .from("live_sessions")
       .select("id,slug,title,starts_at,ends_at,status")
       .eq("id", sessionId)
       .maybeSingle();
-    if (error || !session) return { ok: false, error: "Session nicht gefunden." };
-    if (session.status === "ended" || session.status === "cancelled") {
+    if (error || !data) return { ok: false, error: "Session nicht gefunden." };
+    if (data.status === "ended" || data.status === "cancelled") {
       return { ok: false, error: "Beendete Sessions können nicht erneut eingeladen werden." };
     }
-    const inv = await sendLiveSessionInviteEmails(session);
+    const inv = await sendLiveSessionInviteEmails(data);
     revalidatePath("/admin/live");
     return { ok: true, emails: inv.emails, errors: inv.errors };
   } catch (e) {
@@ -180,7 +181,7 @@ export async function updateLiveSessionAction(input: {
   id: string;
   title: string;
   startsAt: string;
-  endsAt: string;
+  durationMinutes: number;
   joinOpensAt: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
@@ -190,15 +191,15 @@ export async function updateLiveSessionAction(input: {
       return { ok: false, error: "Titel: 2–120 Zeichen." };
     }
     const starts_at = parseIso("Start", input.startsAt);
-    const ends_at = parseIso("Ende", input.endsAt);
+    let ends_at: string;
+    try {
+      ends_at = endsAtFromDuration(starts_at, input.durationMinutes);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
+    }
     const join_opens_at = parseIso("Beitritt ab", input.joinOpensAt);
     if (new Date(join_opens_at) > new Date(starts_at)) {
       return { ok: false, error: "Beitritt muss vor oder zum Start liegen." };
-    }
-    try {
-      assertLiveSessionDuration(starts_at, ends_at);
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
     }
 
     const admin = createSupabaseAdminClient();

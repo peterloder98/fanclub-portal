@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -19,21 +19,32 @@ export function LiveSessionCountdown({
   variant = "member",
   className,
   until = "end",
+  onEnded,
 }: {
   endsAt: string;
   variant?: "member" | "host";
   className?: string;
   /** Countdown bis Start oder bis Session-Ende. */
   until?: "start" | "end";
+  /** Einmalig, wenn der Countdown 0 erreicht. */
+  onEnded?: () => void;
 }) {
   const endMs = new Date(endsAt).getTime();
   const [now, setNow] = useState(() => Date.now());
+  const endedFired = useRef(false);
 
   useEffect(() => {
     if (Number.isNaN(endMs)) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [endMs]);
+
+  useEffect(() => {
+    if (Number.isNaN(endMs) || !onEnded || endedFired.current) return;
+    if (now < endMs) return;
+    endedFired.current = true;
+    onEnded();
+  }, [endMs, now, onEnded]);
 
   if (Number.isNaN(endMs)) return null;
 
@@ -64,7 +75,9 @@ export function LiveSessionCountdown({
       >
         <Clock className="h-4 w-4 shrink-0" aria-hidden />
         {ended ? (
-          <span>{targetWord} erreicht ({endLabel})</span>
+          <span>
+            {targetWord} erreicht ({endLabel})
+          </span>
         ) : (
           <span>
             Noch {formatRemain(remain)} · {targetWord} {endLabel}

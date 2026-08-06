@@ -10,9 +10,10 @@ import {
 } from "@/app/(app)/admin/live/actions";
 import type { LiveSessionRow, LiveSessionStatus } from "@/lib/live/types";
 import {
-  LIVE_SESSION_MAX_DURATION_LABEL,
-  LIVE_SESSION_MAX_DURATION_MS,
+  LIVE_SESSION_MAX_DURATION_MINUTES,
+  LIVE_SESSION_MIN_DURATION_MINUTES,
   liveMemberUrl,
+  liveSessionDurationMinutes,
 } from "@/lib/live/types";
 import { cn } from "@/lib/cn";
 
@@ -36,23 +37,6 @@ function defaultJoin(startsLocal: string): string {
   return toLocalInputValue(d.toISOString());
 }
 
-function defaultEnds(startsLocal: string): string {
-  const d = new Date(startsLocal);
-  d.setTime(d.getTime() + LIVE_SESSION_MAX_DURATION_MS);
-  return toLocalInputValue(d.toISOString());
-}
-
-function clampEnds(startsLocal: string, endsLocal: string): string {
-  const start = new Date(startsLocal).getTime();
-  const end = new Date(endsLocal).getTime();
-  if (Number.isNaN(start) || Number.isNaN(end)) return endsLocal;
-  const maxEnd = start + LIVE_SESSION_MAX_DURATION_MS;
-  if (end <= start || end > maxEnd) {
-    return toLocalInputValue(new Date(maxEnd).toISOString());
-  }
-  return endsLocal;
-}
-
 const STATUS_LABEL: Record<LiveSessionStatus, string> = {
   scheduled: "Geplant",
   live: "Live",
@@ -69,7 +53,7 @@ export function AdminLiveSessionsPanel({
   const [title, setTitle] = useState("Live mit Anni");
   const [startsAt, setStartsAt] = useState(defaultStarts);
   const [joinOpensAt, setJoinOpensAt] = useState(() => defaultJoin(defaultStarts()));
-  const [endsAt, setEndsAt] = useState(() => defaultEnds(defaultStarts()));
+  const [durationMinutes, setDurationMinutes] = useState(60);
   const [error, setError] = useState<string | null>(null);
   const [freshHostUrl, setFreshHostUrl] = useState<string | null>(null);
   const [hostById, setHostById] = useState<Record<string, string>>({});
@@ -80,11 +64,6 @@ export function AdminLiveSessionsPanel({
   function onStartsChange(v: string) {
     setStartsAt(v);
     setJoinOpensAt(defaultJoin(v));
-    setEndsAt(defaultEnds(v));
-  }
-
-  function onEndsChange(v: string) {
-    setEndsAt(clampEnds(startsAt, v));
   }
 
   function onCreate(e: React.FormEvent) {
@@ -96,7 +75,7 @@ export function AdminLiveSessionsPanel({
       const result = await createLiveSessionAction({
         title,
         startsAt: new Date(startsAt).toISOString(),
-        endsAt: new Date(endsAt).toISOString(),
+        durationMinutes,
         joinOpensAt: new Date(joinOpensAt).toISOString(),
         sendInvites,
       });
@@ -199,19 +178,22 @@ export function AdminLiveSessionsPanel({
             />
           </label>
           <label className="grid gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Ende</span>
+            <span className="text-sm font-medium text-slate-700">Dauer (Minuten)</span>
             <input
-              type="datetime-local"
-              value={endsAt}
-              onChange={(e) => onEndsChange(e.target.value)}
+              type="number"
+              min={LIVE_SESSION_MIN_DURATION_MINUTES}
+              max={LIVE_SESSION_MAX_DURATION_MINUTES}
+              step={5}
+              value={durationMinutes}
+              onChange={(e) => setDurationMinutes(Number(e.target.value))}
               className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
               required
             />
           </label>
         </div>
         <p className="text-xs text-slate-500">
-          Maximale Dauer: {LIVE_SESSION_MAX_DURATION_LABEL} (LiveKit-Gratis / Kontingentschonung).
-          Beitritt am besten ca. 10 Minuten vor Start.
+          Nach der eingestellten Dauer endet der Live-Chat automatisch. Beitritt am besten ca. 10
+          Minuten vor Start.
         </p>
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
           <input
@@ -221,8 +203,8 @@ export function AdminLiveSessionsPanel({
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-fc-navy focus:ring-fc-blue"
           />
           <span className="text-sm text-slate-700">
-            Sofort alle aktiven Mitglieder per E-Mail und In-App einladen (Zusage/Absage möglich).
-            Zugesagte erhalten 1 Tag vorher eine Erinnerung.
+            Alle Fanclub Mitglieder werden per Email und App-Benachrichtigung darüber informiert und
+            eingeladen. Bei Zusage gibt es am Tag zuvor eine Erinnerung.
           </span>
         </label>
         {error ? (
@@ -264,6 +246,7 @@ export function AdminLiveSessionsPanel({
         ) : (
           sessions.map((s) => {
             const hostUrl = hostById[s.id];
+            const duration = liveSessionDurationMinutes(s.starts_at, s.ends_at);
             return (
               <article
                 key={s.id}
@@ -273,8 +256,8 @@ export function AdminLiveSessionsPanel({
                   <div>
                     <h3 className="font-semibold text-fc-navy">{s.title}</h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      {new Date(s.starts_at).toLocaleString("de-DE")} –{" "}
-                      {new Date(s.ends_at).toLocaleString("de-DE")}
+                      Start {new Date(s.starts_at).toLocaleString("de-DE")}
+                      {duration > 0 ? ` · ${duration} Min.` : null}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
                       Beitritt ab {new Date(s.join_opens_at).toLocaleString("de-DE")} · Slug{" "}

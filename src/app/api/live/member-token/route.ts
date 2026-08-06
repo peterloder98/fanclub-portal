@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { mintLiveKitToken } from "@/lib/live/livekit";
 import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
+import { endLiveSessionIfPast } from "@/lib/live/cleanup";
 import { profileDisplayName } from "@/lib/profiles/display";
 
 export async function POST(request: Request) {
@@ -50,6 +52,9 @@ export async function POST(request: Request) {
     }
 
     const row = session as LiveSessionRow;
+    if (await endLiveSessionIfPast(createSupabaseAdminClient(), row)) {
+      return NextResponse.json({ error: "Die Session ist zu Ende." }, { status: 403 });
+    }
     if (!canMembersJoinSession(row)) {
       return NextResponse.json(
         { error: "Diese Session ist gerade nicht geöffnet." },

@@ -1,12 +1,14 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canMembersJoinSession,
   LIVE_SESSION_CHAT_MAX_LEN,
   LIVE_SESSION_QUESTION_MAX_LEN,
   type LiveSessionRow,
 } from "@/lib/live/types";
+import { endLiveSessionIfPast } from "@/lib/live/cleanup";
 
 async function requireActiveMember() {
   const supabase = await createSupabaseServerClient();
@@ -44,10 +46,14 @@ async function requireJoinableSession(sessionId: string) {
     .maybeSingle();
 
   if (!session) return { ok: false as const, error: "Session nicht gefunden." };
-  if (!canMembersJoinSession(session as LiveSessionRow)) {
+  const row = session as LiveSessionRow;
+  if (await endLiveSessionIfPast(createSupabaseAdminClient(), row)) {
+    return { ok: false as const, error: "Session ist beendet." };
+  }
+  if (!canMembersJoinSession(row)) {
     return { ok: false as const, error: "Session ist nicht geöffnet." };
   }
-  return { ok: true as const, user: gate.user, supabase: gate.supabase, session: session as LiveSessionRow };
+  return { ok: true as const, user: gate.user, supabase: gate.supabase, session: row };
 }
 
 /** Fragen: vorab (Lobby) und live — Session darf geplant/live sein, nicht beendet. */
@@ -65,6 +71,9 @@ async function requireQuestionableSession(sessionId: string) {
 
   if (!session) return { ok: false as const, error: "Session nicht gefunden." };
   const row = session as LiveSessionRow;
+  if (await endLiveSessionIfPast(createSupabaseAdminClient(), row)) {
+    return { ok: false as const, error: "Session ist beendet." };
+  }
   if (row.status === "ended" || row.status === "cancelled") {
     return { ok: false as const, error: "Session ist beendet." };
   }

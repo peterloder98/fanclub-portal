@@ -43,6 +43,7 @@ export function LiveHostRoom({ token }: { token: string }) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [dismissing, setDismissing] = useState<string | null>(null);
+  const [sessionEnded, setSessionEnded] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -103,11 +104,11 @@ export function LiveHostRoom({ token }: { token: string }) {
   }, [token]);
 
   useEffect(() => {
-    if (!lkToken) return;
+    if (!lkToken || sessionEnded) return;
     void refreshFeed();
     const id = window.setInterval(() => void refreshFeed(), 2500);
     return () => window.clearInterval(id);
-  }, [lkToken, refreshFeed]);
+  }, [lkToken, refreshFeed, sessionEnded]);
 
   async function dismiss(questionId: string) {
     setDismissing(questionId);
@@ -132,10 +133,26 @@ export function LiveHostRoom({ token }: { token: string }) {
           Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum. Falls die Verbindung
           abbricht: denselben Host-Link einfach erneut öffnen.
         </p>
-        {endsAt ? <LiveSessionCountdown endsAt={endsAt} variant="host" /> : null}
+        {endsAt ? (
+          <LiveSessionCountdown
+            endsAt={endsAt}
+            variant="host"
+            onEnded={() => {
+              setSessionEnded(true);
+              setLkToken(null);
+              setUrl(null);
+              setError("Die geplante Dauer ist vorbei — die Session ist beendet.");
+            }}
+          />
+        ) : null}
       </header>
 
       <main className="w-full max-w-full px-3 py-4 sm:px-4 lg:px-6">
+        {sessionEnded ? (
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-700">
+            Die Live-Session ist zu Ende. Video und Chat sind geschlossen.
+          </div>
+        ) : (
         <div className="grid gap-4">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)] xl:items-start">
             <div className="min-w-0 space-y-4">
@@ -240,6 +257,7 @@ export function LiveHostRoom({ token }: { token: string }) {
             </aside>
           </div>
         </div>
+        )}
       </main>
     </div>
   );

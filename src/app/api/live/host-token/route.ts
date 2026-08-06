@@ -6,6 +6,7 @@ import {
   hashLiveHostToken,
   type LiveSessionRow,
 } from "@/lib/live/types";
+import { endLiveSessionIfPast } from "@/lib/live/cleanup";
 
 export async function POST(request: Request) {
   try {
@@ -30,13 +31,11 @@ export async function POST(request: Request) {
     }
 
     const row = session as LiveSessionRow;
-    if (row.status === "ended" || row.status === "cancelled") {
+    if (await endLiveSessionIfPast(admin, row)) {
       return NextResponse.json({ error: "Diese Session ist beendet." }, { status: 403 });
     }
-
-    // Host darf etwas früher rein als die Mitglieder-Anzeige, aber nicht nach Ende
-    if (new Date() > new Date(row.ends_at)) {
-      return NextResponse.json({ error: "Session-Zeitfenster vorbei." }, { status: 403 });
+    if (row.status === "ended" || row.status === "cancelled") {
+      return NextResponse.json({ error: "Diese Session ist beendet." }, { status: 403 });
     }
 
     if (row.status === "scheduled") {

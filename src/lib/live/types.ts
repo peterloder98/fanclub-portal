@@ -23,26 +23,36 @@ export const LIVE_SESSION_CHAT_MAX_LEN = 1000;
 export const LIVE_SESSION_QUESTION_MAX_LEN = 500;
 export const LIVE_SESSION_CHAT_COOLDOWN_MS = 10_000;
 
-/**
- * Max. geplante Dauer einer Live-Session.
- * LiveKit Cloud (Free/Build) hat kein Zoom-artiges Minuten-Limit pro Call,
- * aber Projekte setzen oft max. 1h Sessiondauer; zudem schonen kürzere
- * Sessions das monatliche Teilnehmer-Minuten-Kontingent.
- */
-export const LIVE_SESSION_MAX_DURATION_MS = 60 * 60 * 1000;
-export const LIVE_SESSION_MAX_DURATION_LABEL = "60 Minuten";
+/** Sinnvolle Grenzen für die geplante Chat-/Session-Dauer (Minuten). */
+export const LIVE_SESSION_MIN_DURATION_MINUTES = 5;
+export const LIVE_SESSION_MAX_DURATION_MINUTES = 480;
 
-export function assertLiveSessionDuration(startsAtIso: string, endsAtIso: string): void {
+export function assertLiveSessionDurationMinutes(durationMinutes: number): number {
+  const minutes = Math.round(Number(durationMinutes));
+  if (!Number.isFinite(minutes) || minutes < LIVE_SESSION_MIN_DURATION_MINUTES) {
+    throw new Error(`Dauer: mindestens ${LIVE_SESSION_MIN_DURATION_MINUTES} Minuten.`);
+  }
+  if (minutes > LIVE_SESSION_MAX_DURATION_MINUTES) {
+    throw new Error(`Dauer: höchstens ${LIVE_SESSION_MAX_DURATION_MINUTES} Minuten.`);
+  }
+  return minutes;
+}
+
+export function endsAtFromDuration(startsAtIso: string, durationMinutes: number): string {
+  const start = new Date(startsAtIso).getTime();
+  if (Number.isNaN(start)) throw new Error("Start: ungültiges Datum.");
+  const minutes = assertLiveSessionDurationMinutes(durationMinutes);
+  return new Date(start + minutes * 60_000).toISOString();
+}
+
+export function liveSessionDurationMinutes(
+  startsAtIso: string,
+  endsAtIso: string,
+): number {
   const start = new Date(startsAtIso).getTime();
   const end = new Date(endsAtIso).getTime();
-  if (!(end > start)) {
-    throw new Error("Ende muss nach dem Start liegen.");
-  }
-  if (end - start > LIVE_SESSION_MAX_DURATION_MS) {
-    throw new Error(
-      `Maximale Dauer: ${LIVE_SESSION_MAX_DURATION_LABEL} (LiveKit-Gratislimit / Schonung des Kontingents).`,
-    );
-  }
+  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 0;
+  return Math.round((end - start) / 60_000);
 }
 
 export function hashLiveHostToken(token: string): string {
