@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LiveMemberRoom } from "@/components/live/live-member-room.client";
+import { LiveSessionLobby } from "@/components/live/live-session-lobby.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Mitglieder-Live außerhalb der App-Shell (kein Sidebar/Gruppenchat),
- * damit LiveKit + Chat auf Mobil/PWA nicht den Tab killen.
+ * Mitglieder-Live außerhalb der App-Shell.
+ * Vor dem Beitritt: Infos + RSVP + eine Vorab-Frage.
+ * Ab Beitrittsfenster: Video + Chat.
  */
 export default async function LiveMemberPage({
   params,
@@ -40,8 +42,8 @@ export default async function LiveMemberPage({
 
   const row = session as LiveSessionRow;
   const joinOpen = canMembersJoinSession(row);
+  const ended = row.status === "ended" || row.status === "cancelled";
 
-  // Nur echte Mitglieder (oder Admin) — Link allein reicht nicht
   const [{ data: membership }, { data: profile }] = await Promise.all([
     supabase
       .from("memberships")
@@ -52,15 +54,12 @@ export default async function LiveMemberPage({
       .maybeSingle(),
     supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
   ]);
-  const isAdmin = profile?.role === "admin";
-  if (!membership && !isAdmin) {
+  if (!membership && profile?.role !== "admin") {
     redirect("/mitgliedschaft/ausstehend");
   }
 
   let rsvpStatus: "accepted" | "declined" | null = null;
-  // RSVP nur vor dem Beitrittsfenster (Einladung); im Live-Raum nicht mehr
-  const showRsvp = row.status === "scheduled" && !joinOpen;
-  if (showRsvp) {
+  if (!joinOpen && !ended) {
     const { data: rsvp } = await supabase
       .from("live_session_rsvps")
       .select("status")
@@ -88,18 +87,35 @@ export default async function LiveMemberPage({
           </Link>
         </div>
       </header>
-      <LiveMemberRoom
-        slug={row.slug}
-        title={row.title}
-        sessionId={row.id}
-        joinOpen={joinOpen}
-        status={row.status}
-        startsAt={row.starts_at}
-        endsAt={row.ends_at}
-        rsvpStatus={rsvpStatus}
-        showRsvp={showRsvp}
-        compactHeader
-      />
+
+      {ended ? (
+        <div className="mx-auto max-w-2xl px-4 py-8 text-sm text-slate-600">
+          Diese Live-Session ist beendet
+          {row.status === "cancelled" ? " bzw. abgesagt" : ""}.
+        </div>
+      ) : joinOpen ? (
+        <LiveMemberRoom
+          slug={row.slug}
+          title={row.title}
+          sessionId={row.id}
+          joinOpen
+          status={row.status}
+          startsAt={row.starts_at}
+          endsAt={row.ends_at}
+          rsvpStatus={null}
+          showRsvp={false}
+          compactHeader
+        />
+      ) : (
+        <LiveSessionLobby
+          sessionId={row.id}
+          title={row.title}
+          startsAt={row.starts_at}
+          endsAt={row.ends_at}
+          joinOpensAt={row.join_opens_at}
+          rsvpStatus={rsvpStatus}
+        />
+      )}
     </div>
   );
 }

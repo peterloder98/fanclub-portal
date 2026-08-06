@@ -79,9 +79,12 @@ function QuestionWarnButton({
 export function LiveMemberQuestions({
   sessionId,
   enabled,
+  mode = "live",
 }: {
   sessionId: string;
   enabled: boolean;
+  /** advance = vor dem Live nur eine Frage; live = während der Session (weiterhin max. 1 offen). */
+  mode?: "advance" | "live";
 }) {
   const [draft, setDraft] = useState("");
   const [mine, setMine] = useState<QItem[]>([]);
@@ -219,7 +222,12 @@ export function LiveMemberQuestions({
         return;
       }
       setDraft("");
-      setOkMsg("Frage gesendet — Anni sieht sie in ihrer Liste.");
+      setOkMsg(
+        mode === "advance"
+          ? "Frage gespeichert — Anni sieht sie am Live-Tag in ihrer Liste."
+          : "Frage gesendet — Anni sieht sie in ihrer Liste.",
+      );
+      if (userId) await reload(userId, isAdmin);
     });
   }
 
@@ -232,41 +240,52 @@ export function LiveMemberQuestions({
 
   if (!enabled) return null;
 
+  const hasOpenQuestion = mine.length > 0;
+  const canSubmit = !hasOpenQuestion;
+
   return (
     <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
       <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
         <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight">
           <HelpCircle className="h-4 w-4" aria-hidden />
-          Frage an Anni
+          {mode === "advance" ? "Vorab-Frage an Anni" : "Frage an Anni"}
         </p>
         <p className="text-[11px] text-white/80">
-          Anni sieht Fragen chronologisch und kann sie abhaken.
+          {mode === "advance"
+            ? "Optional — pro Person nur eine Frage vor dem Live."
+            : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
         </p>
       </header>
 
       <div className="grid gap-4 p-4">
-        <form onSubmit={onSubmit} className="grid gap-2">
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value.slice(0, LIVE_SESSION_QUESTION_MAX_LEN))}
-            rows={2}
-            maxLength={LIVE_SESSION_QUESTION_MAX_LEN}
-            placeholder="Deine Frage…"
-            className="w-full rounded-xl border border-fc-navy/15 bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-          />
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs tabular-nums text-slate-400">
-              {draft.length}/{LIVE_SESSION_QUESTION_MAX_LEN}
-            </span>
-            <button
-              type="submit"
-              disabled={pending || !draft.trim()}
-              className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
-            >
-              {pending ? "Sende…" : "Frage senden"}
-            </button>
-          </div>
-        </form>
+        {canSubmit ? (
+          <form onSubmit={onSubmit} className="grid gap-2">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value.slice(0, LIVE_SESSION_QUESTION_MAX_LEN))}
+              rows={2}
+              maxLength={LIVE_SESSION_QUESTION_MAX_LEN}
+              placeholder="Deine Frage…"
+              className="w-full rounded-xl border border-fc-navy/15 bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs tabular-nums text-slate-400">
+                {draft.length}/{LIVE_SESSION_QUESTION_MAX_LEN}
+              </span>
+              <button
+                type="submit"
+                disabled={pending || !draft.trim()}
+                className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
+              >
+                {pending ? "Sende…" : mode === "advance" ? "Frage einreichen" : "Frage senden"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="text-sm text-slate-600">
+            Du hast bereits eine offene Frage. Mehr als eine ist nicht möglich.
+          </p>
+        )}
 
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         {okMsg ? <p className="text-sm text-emerald-700">{okMsg}</p> : null}
@@ -274,7 +293,7 @@ export function LiveMemberQuestions({
         {userId && mine.length > 0 ? (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Deine offenen Fragen
+              Deine Frage
             </p>
             <ul className="max-h-[16.5rem] space-y-0 overflow-y-auto overscroll-contain rounded-xl border border-fc-navy/10 divide-y divide-fc-navy/5">
               {mine.map((q, i) => (
@@ -295,7 +314,7 @@ export function LiveMemberQuestions({
           </div>
         ) : null}
 
-        {isAdmin ? (
+        {isAdmin && mode === "live" ? (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Offene Fragen (Admin) · älteste zuerst

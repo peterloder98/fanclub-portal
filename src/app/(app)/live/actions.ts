@@ -8,14 +8,34 @@ import {
   type LiveSessionRow,
 } from "@/lib/live/types";
 
-async function requireJoinableSession(sessionId: string) {
+async function requireActiveMember() {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, error: "Nicht angemeldet." };
 
-  const { data: session } = await supabase
+  const [{ data: membership }, { data: profile }] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+  ]);
+  if (!membership && profile?.role !== "admin") {
+    return { ok: false as const, error: "Nur aktive Mitglieder." };
+  }
+  return { ok: true as const, user, supabase, isAdmin: profile?.role === "admin" };
+}
+
+async function requireJoinableSession(sessionId: string) {
+  const gate = await requireActiveMember();
+  if (!gate.ok) return gate;
+
+  const { data: session } = await gate.supabase
     .from("live_sessions")
     .select(
       "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
@@ -27,7 +47,31 @@ async function requireJoinableSession(sessionId: string) {
   if (!canMembersJoinSession(session as LiveSessionRow)) {
     return { ok: false as const, error: "Session ist nicht geöffnet." };
   }
-  return { ok: true as const, user, supabase, session: session as LiveSessionRow };
+  return { ok: true as const, user: gate.user, supabase: gate.supabase, session: session as LiveSessionRow };
+}
+
+/** Fragen: vorab (Lobby) und live — Session darf geplant/live sein, nicht beendet. */
+async function requireQuestionableSession(sessionId: string) {
+  const gate = await requireActiveMember();
+  if (!gate.ok) return gate;
+
+  const { data: session } = await gate.supabase
+    .from("live_sessions")
+    .select(
+      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+    )
+    .eq("id", sessionId)
+    .maybeSingle();
+
+  if (!session) return { ok: false as const, error: "Session nicht gefunden." };
+  const row = session as LiveSessionRow;
+  if (row.status === "ended" || row.status === "cancelled") {
+    return { ok: false as const, error: "Session ist beendet." };
+  }
+  if (new Date() > new Date(row.ends_at)) {
+    return { ok: false as const, error: "Session-Zeitfenster vorbei." };
+  }
+  return { ok: true as const, user: gate.user, supabase: gate.supabase, session: row };
 }
 
 export async function sendLiveSessionMessage(
@@ -53,18 +97,41 @@ export async function submitLiveSessionQuestion(
   sessionId: string,
   body: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const gate = await requireJoinableSession(sessionId);
+  const gate = await requireQuestionableSession(sessionId);
   if (!gate.ok) return gate;
 
   const text = body.trim().slice(0, LIVE_SESSION_QUESTION_MAX_LEN);
   if (!text) return { ok: false, error: "Frage leer." };
+
+  const { data: existing } = await gate.supabase
+    .from("live_session_questions")
+    .select("id")
+    .eq("session_id", sessionId)
+    .eq("author_id", gate.user.id)
+    .is("dismissed_at", null)
+    .limit(1)
+    .maybeSingle();
+  if (existing) {
+    return {
+      ok: false,
+      error: "Du hast bereits eine offene Frage. Pro Person ist nur eine erlaubt.",
+    };
+  }
 
   const { error } = await gate.supabase.from("live_session_questions").insert({
     session_id: sessionId,
     author_id: gate.user.id,
     body: text,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    if (/unique|duplicate/i.test(error.message)) {
+      return {
+        ok: false,
+        error: "Du hast bereits eine offene Frage. Pro Person ist nur eine erlaubt.",
+      };
+    }
+    return { ok: false, error: error.message };
+  }
   return { ok: true };
 }
 

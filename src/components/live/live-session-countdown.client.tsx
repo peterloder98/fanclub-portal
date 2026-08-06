@@ -18,10 +18,13 @@ export function LiveSessionCountdown({
   endsAt,
   variant = "member",
   className,
+  until = "end",
 }: {
   endsAt: string;
   variant?: "member" | "host";
   className?: string;
+  /** Countdown bis Start oder bis Session-Ende. */
+  until?: "start" | "end";
 }) {
   const endMs = new Date(endsAt).getTime();
   const [now, setNow] = useState(() => Date.now());
@@ -43,6 +46,7 @@ export function LiveSessionCountdown({
     hour: "2-digit",
     minute: "2-digit",
   });
+  const targetWord = until === "start" ? "Start" : "Ende";
 
   if (variant === "host") {
     return (
@@ -60,10 +64,10 @@ export function LiveSessionCountdown({
       >
         <Clock className="h-4 w-4 shrink-0" aria-hidden />
         {ended ? (
-          <span>Ende erreicht ({endLabel})</span>
+          <span>{targetWord} erreicht ({endLabel})</span>
         ) : (
           <span>
-            Noch {formatRemain(remain)} · Ende {endLabel}
+            Noch {formatRemain(remain)} · {targetWord} {endLabel}
           </span>
         )}
       </div>
@@ -85,10 +89,12 @@ export function LiveSessionCountdown({
     >
       <Clock className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
       {ended ? (
-        <span>Die Session ist zu Ende ({endLabel})</span>
+        <span>
+          {until === "start" ? "Startzeit erreicht" : "Die Session ist zu Ende"} ({endLabel})
+        </span>
       ) : (
         <span>
-          Noch {formatRemain(remain)} bis zum Ende ({endLabel})
+          Noch {formatRemain(remain)} bis zum {targetWord} ({endLabel})
         </span>
       )}
     </div>
