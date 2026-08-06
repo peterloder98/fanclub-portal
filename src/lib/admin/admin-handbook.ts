@@ -465,7 +465,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
-              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Dauer in Minuten eintragen. Nach der Dauer endet der Chat automatisch.",
+              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Dauer in Minuten eintragen (höchstens 60). Nach der Dauer endet der Chat automatisch.",
               "Haken „Einladen“ lassen — alle Fanclub-Mitglieder und Anni werden per E-Mail und App-Benachrichtigung informiert und eingeladen. Bei Zusage gibt es am Tag zuvor eine Erinnerung.",
               "„Live-Chat erstellen“ tippen. Den Host-Link einmalig kopieren und Anni rechtzeitig schicken. Wenn die Verbindung abbricht, denselben Link erneut öffnen.",
               "Mitglieder öffnen den Link nach Login: zuerst Infoseite (Wann, Ablauf, Zusage/Absage, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist (am Live-Tag).",
