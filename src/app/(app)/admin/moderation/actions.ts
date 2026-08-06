@@ -19,7 +19,7 @@ import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 import { communityRulesUrl } from "@/lib/community/rules";
 
 export type CommentWarningInput = {
-  commentType: "post" | "poll" | "giveaway" | "chat";
+  commentType: "post" | "poll" | "giveaway" | "chat" | "live_chat" | "live_question";
   commentId: string;
   /** Wenn false: nur Verwarnung, Kommentar bleibt stehen. */
   deleteComment?: boolean;
@@ -41,7 +41,7 @@ export async function issueCommentWarning(input: CommentWarningInput) {
   let commentCreatedAt: string;
   let contextTitle: string;
   let contextAuthorName: string;
-  let contextKind: "post" | "poll" | "giveaway" | "chat";
+  let contextKind: "post" | "poll" | "giveaway" | "chat" | "live_chat" | "live_question";
   let memberEmail: string | null;
   let memberFirstName: string;
   let memberGender: string | null = null;
@@ -144,6 +144,68 @@ export async function issueCommentWarning(input: CommentWarningInput) {
       if (delErr) throw new Error(delErr.message);
       await deleteNotificationsByMetadata("chat_message_id", c.id).catch(() => null);
     }
+  } else if (input.commentType === "live_chat") {
+    const { data: c, error } = await admin
+      .from("live_session_messages")
+      .select("id,body,created_at,author_id,session_id")
+      .eq("id", input.commentId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!c) throw new Error("Live-Chat-Nachricht nicht gefunden.");
+    memberId = c.author_id;
+    commentText = c.body;
+    commentCreatedAt = c.created_at;
+    contextKind = "live_chat";
+    contextTitle = "Live-Chat";
+
+    const { data: author } = await admin
+      .from("profiles")
+      .select("first_name,last_name,email")
+      .eq("id", c.author_id)
+      .maybeSingle();
+    contextAuthorName =
+      author?.first_name && author?.last_name
+        ? `${author.first_name} ${author.last_name}`
+        : (author?.email ?? "Mitglied");
+
+    if (shouldDelete) {
+      const { error: delErr } = await admin
+        .from("live_session_messages")
+        .delete()
+        .eq("id", c.id);
+      if (delErr) throw new Error(delErr.message);
+    }
+  } else if (input.commentType === "live_question") {
+    const { data: c, error } = await admin
+      .from("live_session_questions")
+      .select("id,body,created_at,author_id,session_id")
+      .eq("id", input.commentId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!c) throw new Error("Live-Frage nicht gefunden.");
+    memberId = c.author_id;
+    commentText = c.body;
+    commentCreatedAt = c.created_at;
+    contextKind = "live_question";
+    contextTitle = "Live-Frage an Anni";
+
+    const { data: author } = await admin
+      .from("profiles")
+      .select("first_name,last_name,email")
+      .eq("id", c.author_id)
+      .maybeSingle();
+    contextAuthorName =
+      author?.first_name && author?.last_name
+        ? `${author.first_name} ${author.last_name}`
+        : (author?.email ?? "Mitglied");
+
+    if (shouldDelete) {
+      const { error: delErr } = await admin
+        .from("live_session_questions")
+        .delete()
+        .eq("id", c.id);
+      if (delErr) throw new Error(delErr.message);
+    }
   } else {
     const { data: c, error } = await admin
       .from("giveaway_comments")
@@ -226,7 +288,11 @@ export async function issueCommentWarning(input: CommentWarningInput) {
         ? "Gewinnspiel"
         : contextKind === "chat"
           ? "Gruppenchat"
-          : "Beitrag";
+          : contextKind === "live_chat"
+            ? "Live-Chat"
+            : contextKind === "live_question"
+              ? "Live-Frage"
+              : "Beitrag";
   const commentSnippet =
     commentText.length > 160 ? `${commentText.slice(0, 160)}…` : commentText;
 

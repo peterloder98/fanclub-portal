@@ -17,6 +17,7 @@
     "seed:demo-community": "node --env-file=.env.local scripts/seed-demo-community.mjs",
     "wipe:community": "node --env-file=.env.local scripts/wipe-community-content.mjs",
     "add:test-members": "node --env-file=.env.local scripts/add-test-members.mjs",
+    "test:live-session": "npx tsx --env-file=.env.local scripts/simulate-live-session.ts",
     "db:migrate": "node --env-file=.env.local scripts/apply-sql-migrations.mjs"
   },
   "dependencies": {

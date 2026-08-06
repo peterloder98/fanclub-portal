@@ -56,12 +56,14 @@ export function LiveMemberRoom({
   }, [slug, joinOpen]);
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-4 px-4 py-6 lg:px-8">
-      <header>
+    <div className="w-full max-w-full px-3 py-4 sm:px-4 lg:px-6">
+      <header className="mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
           {status === "live" ? "Live" : "Live-Session"}
         </p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-fc-navy">{title}</h1>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight text-fc-navy sm:text-2xl">
+          {title}
+        </h1>
         <p className="mt-1 text-sm text-slate-600">
           Start {new Date(startsAt).toLocaleString("de-DE")}
         </p>
@@ -72,9 +74,9 @@ export function LiveMemberRoom({
           Der Raum ist noch nicht geöffnet. Bitte später erneut vorbeischauen.
         </div>
       ) : (
-        <>
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)] lg:items-stretch">
-            <div>
+        <div className="grid gap-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)] xl:items-start">
+            <div className="min-w-0">
               {error ? (
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
                   {error}
@@ -87,12 +89,13 @@ export function LiveMemberRoom({
                 </div>
               )}
             </div>
-            <div className="hidden min-h-[320px] lg:block lg:h-full">
-              <LiveSessionChatPanel sessionId={sessionId} enabled className="h-full min-h-[420px]" />
+
+            <div className="hidden h-[min(28rem,55vh)] min-h-[22rem] xl:block">
+              <LiveSessionChatPanel sessionId={sessionId} enabled className="h-full" />
             </div>
           </div>
 
-          <div className="lg:hidden">
+          <div className="xl:hidden">
             <div className="mb-2 flex gap-2">
               {(
                 [
@@ -106,7 +109,9 @@ export function LiveMemberRoom({
                   onClick={() => setTab(id)}
                   className={cn(
                     "h-9 flex-1 rounded-xl text-sm font-semibold",
-                    tab === id ? "bg-fc-navy text-white" : "border bg-white text-slate-700",
+                    tab === id
+                      ? "bg-fc-navy text-white"
+                      : "border border-fc-navy/15 bg-white text-slate-700",
                   )}
                 >
                   {label}
@@ -114,16 +119,16 @@ export function LiveMemberRoom({
               ))}
             </div>
             {tab === "chat" ? (
-              <LiveSessionChatPanel sessionId={sessionId} enabled className="h-[360px]" />
+              <LiveSessionChatPanel sessionId={sessionId} enabled className="h-[22rem]" />
             ) : (
               <LiveMemberQuestions sessionId={sessionId} enabled />
             )}
           </div>
 
-          <div className="hidden lg:block">
+          <div className="hidden xl:block">
             <LiveMemberQuestions sessionId={sessionId} enabled />
           </div>
-        </>
+        </div>
       )}
     </div>
   );

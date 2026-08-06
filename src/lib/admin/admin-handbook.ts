@@ -475,7 +475,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Technik: LiveKit muss in der Server-Umgebung konfiguriert sein (LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET). Ohne diese Werte funktioniert das Video nicht — Chat und Fragen schon.",
+            text: "Technik: LiveKit muss in der Server-Umgebung konfiguriert sein (LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET). Ohne diese Werte funktioniert das Video nicht — Chat und Fragen schon. Vorstände können im Live-Chat und bei Fragen wie gewohnt verwarnen und löschen.",
           },
           {
             type: "link",
