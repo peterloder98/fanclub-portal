@@ -470,12 +470,12 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Den Host-Link einmalig kopieren und Anni rechtzeitig schicken. Wenn die Verbindung abbricht, denselben Link erneut öffnen.",
               "Mitglieder öffnen den Link nach Login: zuerst Infoseite (Wann, Ablauf, Zusage/Absage, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist (am Live-Tag).",
               "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt.",
-              "Nach der Session unter Admin „Beenden“ tippen.",
+              "Nach der Session unter Admin „Beenden“ tippen — beendete Lives werden am nächsten Tag automatisch gelöscht (nichts bleibt gespeichert).",
             ],
           },
           {
             type: "note",
-            text: "Pro Mitglied nur eine offene Frage an Anni. Dauer maximal 60 Minuten. Zugang nur nach Login als aktives Mitglied. Bis zum Go-Live gehen Annis Live-Mails an die Testadresse — siehe 7.5.",
+            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine offene Frage. Dauer maximal 60 Minuten. Zugang nur nach Login als aktives Mitglied. Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
           },
           {
             type: "link",

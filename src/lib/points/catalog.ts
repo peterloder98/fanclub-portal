@@ -76,6 +76,13 @@ export const POINTS_RULES: PointsRule[] = [
     note: "Geringer Bonus — der mögliche Gewinn ist der Hauptanreiz.",
   },
   {
+    id: "live_session_participation",
+    label: "Am Live mit Anni teilgenommen",
+    points: POINT_VALUES.liveSessionParticipation,
+    how: "Den Live-Raum öffnen und länger als eine Minute dabei sein (Video/Chat).",
+    note: "Einmal pro Live-Session. Beendete Lives werden am nächsten Tag gelöscht.",
+  },
+  {
     id: "event_participation",
     label: "Am Event teilnehmen",
     points: POINT_VALUES.eventParticipation,

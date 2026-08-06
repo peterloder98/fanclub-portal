@@ -13,6 +13,7 @@ export const POINT_VALUES = {
   eventParticipation: 1,
   radioVoting: 1,
   profileIntroComplete: 10,
+  liveSessionParticipation: 2,
 } as const;
 
 export const POINTS_RANKS = [

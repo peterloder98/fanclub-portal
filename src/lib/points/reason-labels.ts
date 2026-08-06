@@ -10,6 +10,7 @@ const REASON_LABELS: Record<string, string> = {
   giveaway_like: "Gewinnspiel geliked",
   giveaway_comment: "Kommentar Gewinnspiel",
   event_participation: "Event-Teilnahme",
+  live_session_participation: "Live mit Anni teilgenommen",
   shop_order: "Fanshop-Einkauf",
   shop_order_revoked: "Fanshop-Bestellung storniert",
 };

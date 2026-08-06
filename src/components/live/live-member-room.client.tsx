@@ -6,6 +6,7 @@ import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
 import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
+import { emitPointsGain } from "@/lib/points/events";
 import { cn } from "@/lib/cn";
 
 const LiveKitStage = dynamic(
@@ -97,6 +98,32 @@ export function LiveMemberRoom({
       cancelled = true;
     };
   }, [slug, joinOpen, videoReady]);
+
+  // Anwesenheit ≥ 1 Min. → +2 Anni-Stars (einmal pro Session)
+  useEffect(() => {
+    if (!joinOpen || !sessionId) return;
+    let cancelled = false;
+    async function ping() {
+      try {
+        const res = await fetch("/api/live/attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId }),
+        });
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { awarded?: boolean; points?: number };
+        if (data.awarded && data.points) emitPointsGain(data.points);
+      } catch {
+        /* ignore transient */
+      }
+    }
+    void ping();
+    const id = window.setInterval(() => void ping(), 20_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [joinOpen, sessionId]);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 lg:px-6">
