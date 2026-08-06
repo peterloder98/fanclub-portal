@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-07-30";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-06";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
