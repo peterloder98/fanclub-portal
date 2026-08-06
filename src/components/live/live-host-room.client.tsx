@@ -116,7 +116,8 @@ export function LiveHostRoom({ token }: { token: string }) {
         <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Host</p>
         <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
         <p className="text-sm text-white/85">
-          Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum.
+          Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum. Falls die Verbindung
+          abbricht: denselben Host-Link einfach erneut öffnen.
         </p>
         {endsAt ? <LiveSessionCountdown endsAt={endsAt} variant="host" /> : null}
       </header>

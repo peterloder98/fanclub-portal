@@ -1,12 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Attachment } from "nodemailer/lib/mailer";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
-import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { listActiveMemberRecipients } from "@/lib/members/list-active-member-recipients";
 import { createUserNotification, notifyAllActiveMembers } from "@/lib/notifications/create";
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { resolveLiveAnniEmail } from "@/lib/live/anni-recipient";
+import { liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
 import { appBaseUrl, liveMemberUrl, type LiveSessionRow } from "@/lib/live/types";
 
 function sleep(ms: number) {
@@ -31,8 +34,51 @@ export function formatLiveSessionTimeLabel(iso: string): string {
   });
 }
 
+type SessionMailFields = Pick<
+  LiveSessionRow,
+  "id" | "slug" | "title" | "starts_at" | "ends_at"
+>;
+
+function mailAttachments(
+  session: SessionMailFields,
+  signatureAttachment?: {
+    filename: string;
+    content: Uint8Array | Buffer;
+    contentType: string;
+    cid: string;
+  } | null,
+): Attachment[] {
+  const list: Attachment[] = [liveSessionIcsAttachment(session)];
+  if (signatureAttachment) {
+    list.push({
+      filename: signatureAttachment.filename,
+      content: Buffer.from(signatureAttachment.content),
+      contentType: signatureAttachment.contentType,
+      cid: signatureAttachment.cid,
+    });
+  }
+  return list;
+}
+
+async function sendOneLiveEmail(input: {
+  to: string;
+  templateKey: EmailTemplateKey;
+  vars: Record<string, string>;
+  session: SessionMailFields;
+}): Promise<boolean> {
+  const rendered = await renderEmailFromTemplate(input.templateKey, input.vars);
+  const result = await sendEmailViaAccount({
+    to: input.to,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    attachments: mailAttachments(input.session, rendered.signatureAttachment),
+  });
+  return result.ok;
+}
+
 export async function sendLiveSessionInviteEmails(
-  session: Pick<LiveSessionRow, "id" | "slug" | "title" | "starts_at">,
+  session: SessionMailFields,
 ): Promise<{ emails: number; notifications: number; errors: number }> {
   const recipients = await listActiveMemberRecipients();
   const admin = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
@@ -56,34 +102,49 @@ export async function sendLiveSessionInviteEmails(
         firstName: r.firstName,
         gender: genderById.get(r.userId),
       });
-      const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.liveSessionInvite, {
-        ...person,
-        session_title: session.title,
-        session_date: sessionDate,
-        session_url: sessionUrl,
-      });
-      const result = await sendEmailViaAccount({
+      const ok = await sendOneLiveEmail({
         to: r.email,
-        subject: rendered.subject,
-        text: rendered.text,
-        html: rendered.html,
-        attachments: rendered.signatureAttachment
-          ? [
-              {
-                filename: rendered.signatureAttachment.filename,
-                content: Buffer.from(rendered.signatureAttachment.content),
-                contentType: rendered.signatureAttachment.contentType,
-                cid: rendered.signatureAttachment.cid,
-              },
-            ]
-          : undefined,
+        templateKey: EMAIL_TEMPLATE_KEYS.liveSessionInvite,
+        vars: {
+          ...person,
+          session_title: session.title,
+          session_date: sessionDate,
+          session_url: sessionUrl,
+        },
+        session,
       });
-      if (result.ok) emails += 1;
+      if (ok) emails += 1;
       else errors += 1;
     } catch {
       errors += 1;
     }
     await sleep(200);
+  }
+
+  // Anni immer einladen (eigene Adresse, ohne Mitglieder-Auswahl)
+  const anniEmail = resolveLiveAnniEmail();
+  const alreadyInMembers = recipients.some(
+    (r) => r.email.trim().toLowerCase() === anniEmail.toLowerCase(),
+  );
+  if (!alreadyInMembers) {
+    try {
+      const person = emailPersonVars({ firstName: "Anni", gender: "female" });
+      const ok = await sendOneLiveEmail({
+        to: anniEmail,
+        templateKey: EMAIL_TEMPLATE_KEYS.liveSessionInvite,
+        vars: {
+          ...person,
+          session_title: session.title,
+          session_date: sessionDate,
+          session_url: sessionUrl,
+        },
+        session,
+      });
+      if (ok) emails += 1;
+      else errors += 1;
+    } catch {
+      errors += 1;
+    }
   }
 
   const { data: sessionRow } = await admin
@@ -117,6 +178,48 @@ export async function sendLiveSessionInviteEmails(
   return { emails, notifications, errors };
 }
 
+async function sendAnniReminderEmail(
+  admin: SupabaseClient,
+  session: SessionMailFields & { anni_reminder_sent_at?: string | null },
+): Promise<boolean> {
+  if (session.anni_reminder_sent_at) return false;
+
+  const anniEmail = resolveLiveAnniEmail();
+  const sessionDate = formatLiveSessionDateLabel(session.starts_at);
+  const sessionTime = formatLiveSessionTimeLabel(session.starts_at);
+  const base = appBaseUrl();
+  const sessionUrl = base ? `${base}/live/${session.slug}` : `/live/${session.slug}`;
+  const person = emailPersonVars({ firstName: "Anni", gender: "female" });
+
+  try {
+    const ok = await sendOneLiveEmail({
+      to: anniEmail,
+      templateKey: EMAIL_TEMPLATE_KEYS.liveSessionReminder,
+      vars: {
+        ...person,
+        session_title: session.title,
+        session_date: sessionDate,
+        session_time: sessionTime,
+        session_url: sessionUrl,
+      },
+      session,
+    });
+    if (ok) {
+      await admin
+        .from("live_sessions")
+        .update({
+          anni_reminder_sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session.id);
+    }
+    return ok;
+  } catch (e) {
+    console.error("[live-reminder] Anni email failed", e);
+    return false;
+  }
+}
+
 export async function runLiveSessionReminders(admin: SupabaseClient) {
   const now = new Date();
   const horizon = new Date(now);
@@ -124,17 +227,47 @@ export async function runLiveSessionReminders(admin: SupabaseClient) {
 
   const { data: sessions, error } = await admin
     .from("live_sessions")
-    .select("id,slug,title,starts_at,ends_at,status")
+    .select("id,slug,title,starts_at,ends_at,status,anni_reminder_sent_at")
     .in("status", ["scheduled", "live"])
     .gte("starts_at", now.toISOString())
     .lte("starts_at", horizon.toISOString());
 
   if (error) {
     if (/live_sessions|does not exist/i.test(error.message)) return { sent: 0, emails: 0 };
+    // Spalte fehlt noch — ohne Anni-Flag weiter
+    if (/anni_reminder_sent_at/i.test(error.message)) {
+      const fallback = await admin
+        .from("live_sessions")
+        .select("id,slug,title,starts_at,ends_at,status")
+        .in("status", ["scheduled", "live"])
+        .gte("starts_at", now.toISOString())
+        .lte("starts_at", horizon.toISOString());
+      if (fallback.error) throw new Error(fallback.error.message);
+      return runRemindersForSessions(
+        admin,
+        (fallback.data ?? []).map((s) => ({ ...s, anni_reminder_sent_at: null })),
+        now,
+      );
+    }
     throw new Error(error.message);
   }
   if (!sessions?.length) return { sent: 0, emails: 0 };
+  return runRemindersForSessions(admin, sessions, now);
+}
 
+async function runRemindersForSessions(
+  admin: SupabaseClient,
+  sessions: Array<{
+    id: string;
+    slug: string;
+    title: string;
+    starts_at: string;
+    ends_at: string;
+    status: string;
+    anni_reminder_sent_at?: string | null;
+  }>,
+  now: Date,
+) {
   let sent = 0;
   let emails = 0;
   const base = appBaseUrl();
@@ -151,22 +284,23 @@ export async function runLiveSessionReminders(admin: SupabaseClient) {
       .eq("session_id", session.id)
       .eq("status", "accepted");
     if (rErr) {
-      if (/live_session_rsvps|does not exist/i.test(rErr.message)) continue;
-      throw new Error(rErr.message);
+      if (/live_session_rsvps|does not exist/i.test(rErr.message)) {
+        /* nur Anni */
+      } else {
+        throw new Error(rErr.message);
+      }
     }
-    if (!rsvps?.length) continue;
 
-    const userIds = rsvps.map((r) => r.user_id);
-    const { data: profiles } = await admin
-      .from("profiles")
-      .select("id,first_name,email,gender")
-      .in("id", userIds);
+    const userIds = (rsvps ?? []).map((r) => r.user_id);
+    const { data: profiles } = userIds.length
+      ? await admin.from("profiles").select("id,first_name,email,gender").in("id", userIds)
+      : { data: [] as Array<{ id: string; first_name: string | null; email: string | null; gender: string | null }> };
 
     const sessionDate = formatLiveSessionDateLabel(session.starts_at);
     const sessionTime = formatLiveSessionTimeLabel(session.starts_at);
-    const sessionUrl = base
-      ? `${base}/live/${session.slug}`
-      : `/live/${session.slug}`;
+    const sessionUrl = base ? `${base}/live/${session.slug}` : `/live/${session.slug}`;
+    const anniEmail = resolveLiveAnniEmail().toLowerCase();
+    let anniReminderDone = Boolean(session.anni_reminder_sent_at);
 
     for (const profile of profiles ?? []) {
       if (!profile.email) continue;
@@ -201,37 +335,41 @@ export async function runLiveSessionReminders(admin: SupabaseClient) {
           firstName: profile.first_name?.trim() || "Fan",
           gender: profile.gender,
         });
-        const rendered = await renderEmailFromTemplate(
-          EMAIL_TEMPLATE_KEYS.liveSessionReminder,
-          {
+        const ok = await sendOneLiveEmail({
+          to: profile.email,
+          templateKey: EMAIL_TEMPLATE_KEYS.liveSessionReminder,
+          vars: {
             ...person,
             session_title: session.title,
             session_date: sessionDate,
             session_time: sessionTime,
             session_url: sessionUrl,
           },
-        );
-        const result = await sendEmailViaAccount({
-          to: profile.email,
-          subject: rendered.subject,
-          text: rendered.text,
-          html: rendered.html,
-          attachments: rendered.signatureAttachment
-            ? [
-                {
-                  filename: rendered.signatureAttachment.filename,
-                  content: Buffer.from(rendered.signatureAttachment.content),
-                  contentType: rendered.signatureAttachment.contentType,
-                  cid: rendered.signatureAttachment.cid,
-                },
-              ]
-            : undefined,
+          session,
         });
-        if (result.ok) emails += 1;
+        if (ok) emails += 1;
+        if (ok && profile.email.trim().toLowerCase() === anniEmail) {
+          anniReminderDone = true;
+          await admin
+            .from("live_sessions")
+            .update({
+              anni_reminder_sent_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", session.id);
+        }
       } catch (e) {
         console.error("[live-reminder] email failed", profile.id, e);
       }
       await sleep(200);
+    }
+
+    if (!anniReminderDone) {
+      const anniOk = await sendAnniReminderEmail(admin, {
+        ...session,
+        anni_reminder_sent_at: null,
+      });
+      if (anniOk) emails += 1;
     }
   }
 

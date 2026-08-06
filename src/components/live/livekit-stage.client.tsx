@@ -163,16 +163,23 @@ export function LiveKitStage({
       />
       <audio ref={audioRef} autoPlay />
       {!hasRemoteVideo && !error ? (
-        <div className="absolute inset-0 grid place-items-center bg-slate-900/90 px-4 text-center">
-          <p className="text-sm text-white/90">
-            {connecting
-              ? "Verbinde…"
-              : connected
-                ? mode === "host"
-                  ? "Kamera starten…"
-                  : "Warten auf Anni…"
-                : "Nicht verbunden"}
-          </p>
+        <div className="absolute inset-0 grid place-items-center bg-slate-900/90 px-6 text-center">
+          {connecting ? (
+            <p className="text-sm text-white/90">Verbinde…</p>
+          ) : connected ? (
+            mode === "host" ? (
+              <p className="text-sm text-white/90">Kamera starten…</p>
+            ) : (
+              <div className="max-w-md">
+                <p className="text-base font-medium leading-relaxed text-white">
+                  Schön, dass ihr dabei seid, Anni wird gleich bei uns sein und wir beginnen mit dem
+                  Fan-Chat
+                </p>
+              </div>
+            )
+          ) : (
+            <p className="text-sm text-white/90">Nicht verbunden</p>
+          )}
         </div>
       ) : null}
       {error ? (

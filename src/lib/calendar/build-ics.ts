@@ -21,19 +21,31 @@ function formatIcsUtc(iso: string) {
 export function buildEventIcs(params: {
   title: string;
   startAt: string;
+  /** Explizites Ende (bevorzugt gegenüber durationHours). */
+  endAt?: string;
   durationHours?: number;
   location?: string;
   description?: string;
   uid?: string;
+  /** Relative Alarme, z. B. `-P1D`, `-PT1H` (bezogen auf DTSTART). */
+  alarms?: Array<{ trigger: string; description?: string }>;
 }) {
   const start = formatIcsUtc(params.startAt);
   if (!start) throw new Error("Ungültiges Datum");
 
-  const endDate = new Date(params.startAt);
-  endDate.setHours(endDate.getHours() + (params.durationHours ?? 3));
-  const end = formatIcsUtc(endDate.toISOString())!;
+  let end: string;
+  if (params.endAt) {
+    const formatted = formatIcsUtc(params.endAt);
+    if (!formatted) throw new Error("Ungültiges Enddatum");
+    end = formatted;
+  } else {
+    const endDate = new Date(params.startAt);
+    endDate.setHours(endDate.getHours() + (params.durationHours ?? 3));
+    end = formatIcsUtc(endDate.toISOString())!;
+  }
 
-  const uid = params.uid ?? `event-${start}-${Math.random().toString(36).slice(2)}@anni-perka-fanclub`;
+  const uid =
+    params.uid ?? `event-${start}-${Math.random().toString(36).slice(2)}@anni-perka-fanclub`;
   const now = formatIcsUtc(new Date().toISOString())!;
 
   const lines = [
@@ -51,6 +63,15 @@ export function buildEventIcs(params: {
   ];
   if (params.location) lines.push(`LOCATION:${escapeIcs(params.location)}`);
   if (params.description) lines.push(`DESCRIPTION:${escapeIcs(params.description)}`);
+  for (const alarm of params.alarms ?? []) {
+    lines.push(
+      "BEGIN:VALARM",
+      `TRIGGER:${alarm.trigger}`,
+      "ACTION:DISPLAY",
+      `DESCRIPTION:${escapeIcs(alarm.description ?? params.title)}`,
+      "END:VALARM",
+    );
+  }
   lines.push("END:VEVENT", "END:VCALENDAR");
   return lines.join("\r\n");
 }

@@ -466,16 +466,16 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
               "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen. Maximal 60 Minuten Dauer.",
-              "Haken „Sofort einladen“ lassen — dann erhalten alle aktiven Mitglieder eine Einladungs-E-Mail (Vorlage unter E-Mail-Vorlagen) und eine In-App-Benachrichtigung.",
-              "Den Host-Link einmalig kopieren und Anni rechtzeitig schicken.",
-              "Mitglieder öffnen den Link bzw. Menü „Live“, sagen zu oder ab. Wer zusagt, erhält einen Tag vorher automatisch eine Erinnerungs-E-Mail.",
-              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Mitglieder schauen zu, chatten und stellen Fragen. Oben läuft ein Countdown bis zum geplanten Ende.",
+              "Haken „Sofort einladen“ lassen — dann erhalten alle aktiven Mitglieder und Anni eine Einladungs-E-Mail (mit Kalenderanhang) sowie die Mitglieder eine In-App-Benachrichtigung.",
+              "Den Host-Link einmalig kopieren und Anni rechtzeitig schicken. Wenn die Verbindung abbricht, denselben Link erneut öffnen.",
+              "Mitglieder öffnen den Link bzw. Menü „Live“, sagen zu oder ab. Wer zusagt (und Anni immer) erhält einen Tag vorher automatisch eine Erinnerungs-E-Mail.",
+              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Oben läuft ein Countdown bis zum geplanten Ende.",
               "Nach der Session unter Admin „Beenden“ tippen.",
             ],
           },
           {
             type: "note",
-            text: "Dauer maximal 60 Minuten — das passt zum üblichen LiveKit-Gratislimit und schont das monatliche Minuten-Kontingent. E-Mail-Texte unter Admin → E-Mail-Vorlagen („Live mit Anni — Einladung“ und „… Erinnerung“). LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
+            text: "Dauer maximal 60 Minuten. In den E-Mails liegt eine Kalenderdatei („Anni Perka Live Chat“, Start 5 Minuten früher, Erinnerungen 1 Tag und 1 Stunde vorher). Bis zum Go-Live gehen Annis Live-Mails an die Testadresse — siehe 7.5. LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
           },
           {
             type: "link",
@@ -825,6 +825,31 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/settings/email-templates?tab=birthday",
             label: "Geburtstags-Vorlagen",
+          },
+        ],
+      },
+      {
+        id: "go-live",
+        number: "7.5",
+        title: "Go-Live Checkliste (technisch)",
+        summary: "Was vor dem echten Start umgestellt wird",
+        blocks: [
+          {
+            type: "p",
+            text: "Solange die App noch im Testmodus läuft, gehen viele System-Mails nur an Vorstände. Beim echten Start für alle Mitglieder bitte mit der technischen Betreuung abstimmen:",
+          },
+          {
+            type: "ul",
+            items: [
+              "E-Mail-Versand auf Live stellen (EMAIL_OUTBOUND_MODE=live) — dann erreichen Einladungen und Erinnerungen alle Mitglieder.",
+              "Live mit Anni: Annis Empfängeradresse wechselt dann automatisch von der Testadresse (mail@peter-loder.de) auf booking@anniperka.de. Optional fest setzen: LIVE_ANNI_EMAIL=booking@anniperka.de.",
+              "SQL-Migrationen für Live-Sessions und Vorlagen in Supabase ausgeführt (126–129).",
+              "LiveKit-Zugangsdaten in der Server-Umgebung gesetzt und einmal mit Anni getestet (Host-Link, Kamera, Wieder-Einloggen nach Abbruch).",
+            ],
+          },
+          {
+            type: "note",
+            text: "Anni wird bei jeder neuen Live-Session automatisch per E-Mail eingeladen und erhält wie die Zusagen einen Tag vorher die Erinnerung — ohne dass ihr sie in einer Liste auswählen müsst.",
           },
         ],
       },
