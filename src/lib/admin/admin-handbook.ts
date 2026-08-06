@@ -465,17 +465,17 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
-              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen.",
+              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Ende eintragen. Maximal 60 Minuten Dauer.",
               "Haken „Sofort einladen“ lassen — dann erhalten alle aktiven Mitglieder eine Einladungs-E-Mail (Vorlage unter E-Mail-Vorlagen) und eine In-App-Benachrichtigung.",
               "Den Host-Link einmalig kopieren und Anni rechtzeitig schicken.",
               "Mitglieder öffnen den Link bzw. Menü „Live“, sagen zu oder ab. Wer zusagt, erhält einen Tag vorher automatisch eine Erinnerungs-E-Mail.",
-              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Mitglieder schauen zu, chatten und stellen Fragen.",
+              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Mitglieder schauen zu, chatten und stellen Fragen. Oben läuft ein Countdown bis zum geplanten Ende.",
               "Nach der Session unter Admin „Beenden“ tippen.",
             ],
           },
           {
             type: "note",
-            text: "E-Mail-Texte könnt ihr unter Admin → E-Mail-Vorlagen anpassen („Live mit Anni — Einladung“ und „… Erinnerung“). Technik: LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
+            text: "Dauer maximal 60 Minuten — das passt zum üblichen LiveKit-Gratislimit und schont das monatliche Minuten-Kontingent. E-Mail-Texte unter Admin → E-Mail-Vorlagen („Live mit Anni — Einladung“ und „… Erinnerung“). LiveKit-Env-Werte müssen gesetzt sein. Vorstände können im Live-Chat und bei Fragen verwarnen und löschen.",
           },
           {
             type: "link",

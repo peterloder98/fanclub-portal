@@ -9,7 +9,11 @@ import {
   setLiveSessionStatusAction,
 } from "@/app/(app)/admin/live/actions";
 import type { LiveSessionRow, LiveSessionStatus } from "@/lib/live/types";
-import { liveMemberUrl } from "@/lib/live/types";
+import {
+  LIVE_SESSION_MAX_DURATION_LABEL,
+  LIVE_SESSION_MAX_DURATION_MS,
+  liveMemberUrl,
+} from "@/lib/live/types";
 import { cn } from "@/lib/cn";
 
 function toLocalInputValue(iso: string): string {
@@ -34,8 +38,19 @@ function defaultJoin(startsLocal: string): string {
 
 function defaultEnds(startsLocal: string): string {
   const d = new Date(startsLocal);
-  d.setHours(d.getHours() + 1);
+  d.setTime(d.getTime() + LIVE_SESSION_MAX_DURATION_MS);
   return toLocalInputValue(d.toISOString());
+}
+
+function clampEnds(startsLocal: string, endsLocal: string): string {
+  const start = new Date(startsLocal).getTime();
+  const end = new Date(endsLocal).getTime();
+  if (Number.isNaN(start) || Number.isNaN(end)) return endsLocal;
+  const maxEnd = start + LIVE_SESSION_MAX_DURATION_MS;
+  if (end <= start || end > maxEnd) {
+    return toLocalInputValue(new Date(maxEnd).toISOString());
+  }
+  return endsLocal;
 }
 
 const STATUS_LABEL: Record<LiveSessionStatus, string> = {
@@ -66,6 +81,10 @@ export function AdminLiveSessionsPanel({
     setStartsAt(v);
     setJoinOpensAt(defaultJoin(v));
     setEndsAt(defaultEnds(v));
+  }
+
+  function onEndsChange(v: string) {
+    setEndsAt(clampEnds(startsAt, v));
   }
 
   function onCreate(e: React.FormEvent) {
@@ -184,15 +203,15 @@ export function AdminLiveSessionsPanel({
             <input
               type="datetime-local"
               value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
+              onChange={(e) => onEndsChange(e.target.value)}
               className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
               required
             />
           </label>
         </div>
         <p className="text-xs text-slate-500">
-          Tipp: Beitritt ca. 10 Minuten vor Start, damit Mitglieder und Anni früh reinkommen
-          können.
+          Maximale Dauer: {LIVE_SESSION_MAX_DURATION_LABEL} (LiveKit-Gratis / Kontingentschonung).
+          Beitritt am besten ca. 10 Minuten vor Start.
         </p>
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
           <input

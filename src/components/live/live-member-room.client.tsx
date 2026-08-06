@@ -5,6 +5,7 @@ import { LiveKitStage } from "@/components/live/livekit-stage.client";
 import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client";
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
 import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
+import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
 import { cn } from "@/lib/cn";
 
 type Tab = "chat" | "fragen";
@@ -16,6 +17,7 @@ export function LiveMemberRoom({
   joinOpen,
   status,
   startsAt,
+  endsAt,
   rsvpStatus = null,
   showRsvp = true,
 }: {
@@ -25,6 +27,7 @@ export function LiveMemberRoom({
   joinOpen: boolean;
   status: string;
   startsAt: string;
+  endsAt: string;
   rsvpStatus?: "accepted" | "declined" | null;
   showRsvp?: boolean;
 }) {
@@ -72,6 +75,7 @@ export function LiveMemberRoom({
         <p className="mt-1 text-sm text-slate-600">
           Start {new Date(startsAt).toLocaleString("de-DE")}
         </p>
+        <LiveSessionCountdown endsAt={endsAt} variant="member" />
       </header>
 
       {showRsvp ? (

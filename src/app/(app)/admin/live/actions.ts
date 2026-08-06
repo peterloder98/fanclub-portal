@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
+  assertLiveSessionDuration,
   generateLiveHostToken,
   liveHostUrl,
   liveKitRoomNameForSession,
@@ -48,8 +49,10 @@ export async function createLiveSessionAction(input: {
     if (new Date(join_opens_at) > new Date(starts_at)) {
       return { ok: false, error: "Beitritt muss vor oder zum Start liegen." };
     }
-    if (new Date(starts_at) >= new Date(ends_at)) {
-      return { ok: false, error: "Ende muss nach dem Start liegen." };
+    try {
+      assertLiveSessionDuration(starts_at, ends_at);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
     }
 
     const { token, hash } = generateLiveHostToken();
@@ -191,8 +194,10 @@ export async function updateLiveSessionAction(input: {
     if (new Date(join_opens_at) > new Date(starts_at)) {
       return { ok: false, error: "Beitritt muss vor oder zum Start liegen." };
     }
-    if (new Date(starts_at) >= new Date(ends_at)) {
-      return { ok: false, error: "Ende muss nach dem Start liegen." };
+    try {
+      assertLiveSessionDuration(starts_at, ends_at);
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
     }
 
     const admin = createSupabaseAdminClient();

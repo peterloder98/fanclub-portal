@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, MessageCircle } from "lucide-react";
 import { LiveKitStage } from "@/components/live/livekit-stage.client";
+import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
 import { formatChatTime } from "@/lib/chat/types";
 import { cn } from "@/lib/cn";
 
@@ -24,6 +25,7 @@ export function LiveHostRoom({ token }: { token: string }) {
   const [lkToken, setLkToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [title, setTitle] = useState<string>("Live");
+  const [endsAt, setEndsAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -43,6 +45,7 @@ export function LiveHostRoom({ token }: { token: string }) {
           token?: string;
           url?: string;
           title?: string;
+          endsAt?: string;
           error?: string;
         };
         if (cancelled) return;
@@ -53,6 +56,7 @@ export function LiveHostRoom({ token }: { token: string }) {
         setLkToken(data.token);
         setUrl(data.url);
         if (data.title) setTitle(data.title);
+        if (data.endsAt) setEndsAt(data.endsAt);
       } catch {
         if (!cancelled) setError("Netzwerkfehler.");
       }
@@ -114,6 +118,7 @@ export function LiveHostRoom({ token }: { token: string }) {
         <p className="text-sm text-white/85">
           Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum.
         </p>
+        {endsAt ? <LiveSessionCountdown endsAt={endsAt} variant="host" /> : null}
       </header>
 
       <main className="w-full max-w-full px-3 py-4 sm:px-4 lg:px-6">

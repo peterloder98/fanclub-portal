@@ -52,6 +52,7 @@ export default async function LiveSessionPage({
         joinOpen={joinOpen}
         status={row.status}
         startsAt={row.starts_at}
+        endsAt={row.ends_at}
         rsvpStatus={rsvpStatus}
         showRsvp={row.status !== "ended" && row.status !== "cancelled"}
       />

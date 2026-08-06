@@ -22,6 +22,28 @@ export const LIVE_SESSION_CHAT_MAX_LEN = 1000;
 export const LIVE_SESSION_QUESTION_MAX_LEN = 500;
 export const LIVE_SESSION_CHAT_COOLDOWN_MS = 10_000;
 
+/**
+ * Max. geplante Dauer einer Live-Session.
+ * LiveKit Cloud (Free/Build) hat kein Zoom-artiges Minuten-Limit pro Call,
+ * aber Projekte setzen oft max. 1h Sessiondauer; zudem schonen kürzere
+ * Sessions das monatliche Teilnehmer-Minuten-Kontingent.
+ */
+export const LIVE_SESSION_MAX_DURATION_MS = 60 * 60 * 1000;
+export const LIVE_SESSION_MAX_DURATION_LABEL = "60 Minuten";
+
+export function assertLiveSessionDuration(startsAtIso: string, endsAtIso: string): void {
+  const start = new Date(startsAtIso).getTime();
+  const end = new Date(endsAtIso).getTime();
+  if (!(end > start)) {
+    throw new Error("Ende muss nach dem Start liegen.");
+  }
+  if (end - start > LIVE_SESSION_MAX_DURATION_MS) {
+    throw new Error(
+      `Maximale Dauer: ${LIVE_SESSION_MAX_DURATION_LABEL} (LiveKit-Gratislimit / Schonung des Kontingents).`,
+    );
+  }
+}
+
 export function hashLiveHostToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
