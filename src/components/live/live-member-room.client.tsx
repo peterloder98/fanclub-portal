@@ -23,6 +23,18 @@ const LiveKitStage = dynamic(
 
 type Tab = "chat" | "fragen";
 
+function useIsXl() {
+  const [isXl, setIsXl] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    const apply = () => setIsXl(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return isXl;
+}
+
 export function LiveMemberRoom({
   slug,
   title,
@@ -33,6 +45,7 @@ export function LiveMemberRoom({
   endsAt,
   rsvpStatus = null,
   showRsvp = true,
+  compactHeader = false,
 }: {
   slug: string;
   title: string;
@@ -43,14 +56,23 @@ export function LiveMemberRoom({
   endsAt: string;
   rsvpStatus?: "accepted" | "declined" | null;
   showRsvp?: boolean;
+  compactHeader?: boolean;
 }) {
+  const isXl = useIsXl();
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("chat");
+  const [videoReady, setVideoReady] = useState(false);
 
   useEffect(() => {
     if (!joinOpen) return;
+    const t = window.setTimeout(() => setVideoReady(true), 200);
+    return () => window.clearTimeout(t);
+  }, [joinOpen]);
+
+  useEffect(() => {
+    if (!joinOpen || !videoReady) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -74,22 +96,32 @@ export function LiveMemberRoom({
     return () => {
       cancelled = true;
     };
-  }, [slug, joinOpen]);
+  }, [slug, joinOpen, videoReady]);
 
   return (
-    <div className="w-full max-w-full px-3 py-4 sm:px-4 lg:px-6">
-      <header className="mb-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
-          {status === "live" ? "Live" : "Live-Session"}
-        </p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight text-fc-navy sm:text-2xl">
-          {title}
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Start {new Date(startsAt).toLocaleString("de-DE")}
-        </p>
-        <LiveSessionCountdown endsAt={endsAt} variant="member" />
-      </header>
+    <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 lg:px-6">
+      {!compactHeader ? (
+        <header className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
+            {status === "live" ? "Live" : "Live-Session"}
+          </p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-fc-navy sm:text-2xl">
+            {title}
+          </h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Start {new Date(startsAt).toLocaleString("de-DE")}
+          </p>
+          <LiveSessionCountdown endsAt={endsAt} variant="member" />
+        </header>
+      ) : (
+        <div className="mb-4">
+          <p className="text-sm text-slate-600">
+            Start {new Date(startsAt).toLocaleString("de-DE")}
+            {status === "live" ? " · Live" : null}
+          </p>
+          <LiveSessionCountdown endsAt={endsAt} variant="member" />
+        </div>
+      )}
 
       {showRsvp ? (
         <div className="mb-4">
@@ -104,59 +136,70 @@ export function LiveMemberRoom({
         </div>
       ) : (
         <div className="grid gap-4">
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)] xl:items-start">
-            <div className="min-w-0">
-              {error ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
-                  {error}
-                </div>
-              ) : token && url ? (
-                <LiveKitStage token={token} serverUrl={url} mode="viewer" />
+          {isXl ? (
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.9fr)] xl:items-start">
+              <div className="min-w-0 space-y-4">
+                {error ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
+                    {error}
+                  </div>
+                ) : token && url ? (
+                  <LiveKitStage token={token} serverUrl={url} mode="viewer" />
+                ) : (
+                  <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
+                    {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
+                  </div>
+                )}
+                <LiveMemberQuestions sessionId={sessionId} enabled />
+              </div>
+              <div className="h-[min(28rem,55vh)] min-h-[22rem]">
+                <LiveSessionChatPanel sessionId={sessionId} enabled className="h-full" />
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="min-w-0">
+                {error ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
+                    {error}
+                  </div>
+                ) : token && url ? (
+                  <LiveKitStage token={token} serverUrl={url} mode="viewer" />
+                ) : (
+                  <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
+                    {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
+                  </div>
+                )}
+              </div>
+              <div className="mb-2 flex gap-2">
+                {(
+                  [
+                    ["chat", "Chat"],
+                    ["fragen", "Fragen"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setTab(id)}
+                    className={cn(
+                      "h-9 flex-1 rounded-xl text-sm font-semibold",
+                      tab === id
+                        ? "bg-fc-navy text-white"
+                        : "border border-fc-navy/15 bg-white text-slate-700",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {tab === "chat" ? (
+                <LiveSessionChatPanel sessionId={sessionId} enabled className="h-[22rem]" />
               ) : (
-                <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
-                  Verbinde Video…
-                </div>
+                <LiveMemberQuestions sessionId={sessionId} enabled />
               )}
-            </div>
-
-            <div className="hidden h-[min(28rem,55vh)] min-h-[22rem] xl:block">
-              <LiveSessionChatPanel sessionId={sessionId} enabled className="h-full" />
-            </div>
-          </div>
-
-          <div className="xl:hidden">
-            <div className="mb-2 flex gap-2">
-              {(
-                [
-                  ["chat", "Chat"],
-                  ["fragen", "Fragen"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTab(id)}
-                  className={cn(
-                    "h-9 flex-1 rounded-xl text-sm font-semibold",
-                    tab === id
-                      ? "bg-fc-navy text-white"
-                      : "border border-fc-navy/15 bg-white text-slate-700",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {tab === "chat" ? (
-              <LiveSessionChatPanel sessionId={sessionId} enabled className="h-[22rem]" />
-            ) : (
-              <LiveMemberQuestions sessionId={sessionId} enabled />
-            )}
-          </div>
-
-          <div className="hidden xl:block">
-            <LiveMemberQuestions sessionId={sessionId} enabled />
-          </div>
+            </>
+          )}
         </div>
       )}
     </div>
