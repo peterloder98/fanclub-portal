@@ -15,6 +15,7 @@ import {
   liveMemberUrl,
   liveSessionDurationMinutes,
 } from "@/lib/live/types";
+import { AppDateTimeInput } from "@/components/ui/birthdate-segment-input";
 import { cn } from "@/lib/cn";
 
 function toLocalInputValue(iso: string): string {
@@ -44,6 +45,8 @@ const STATUS_LABEL: Record<LiveSessionStatus, string> = {
   cancelled: "Abgesagt",
 };
 
+const DURATION_PRESETS = [30, 45, 60, 90, 120] as const;
+
 export function AdminLiveSessionsPanel({
   sessions,
 }: {
@@ -64,6 +67,15 @@ export function AdminLiveSessionsPanel({
   function onStartsChange(v: string) {
     setStartsAt(v);
     setJoinOpensAt(defaultJoin(v));
+  }
+
+  function onDurationChange(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, 4);
+    if (!digits) {
+      setDurationMinutes(0);
+      return;
+    }
+    setDurationMinutes(Math.min(LIVE_SESSION_MAX_DURATION_MINUTES, Number(digits)));
   }
 
   function onCreate(e: React.FormEvent) {
@@ -145,7 +157,7 @@ export function AdminLiveSessionsPanel({
         onSubmit={onCreate}
         className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
       >
-        <h2 className="text-base font-semibold text-fc-navy">Neue Live-Session</h2>
+        <h2 className="text-base font-semibold text-fc-navy">Neuer Live-Chat</h2>
         <label className="grid gap-1.5">
           <span className="text-sm font-medium text-slate-700">Titel</span>
           <input
@@ -156,45 +168,52 @@ export function AdminLiveSessionsPanel({
             maxLength={120}
           />
         </label>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <label className="grid gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Beitritt ab</span>
-            <input
-              type="datetime-local"
-              value={joinOpensAt}
-              onChange={(e) => setJoinOpensAt(e.target.value)}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-              required
-            />
-          </label>
-          <label className="grid gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Start</span>
-            <input
-              type="datetime-local"
-              value={startsAt}
-              onChange={(e) => onStartsChange(e.target.value)}
-              className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-              required
-            />
-          </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <AppDateTimeInput
+            label="Beitritt ab"
+            value={joinOpensAt}
+            onChange={setJoinOpensAt}
+            required
+          />
+          <AppDateTimeInput label="Start" value={startsAt} onChange={onStartsChange} required />
+        </div>
+        <div className="grid gap-2">
           <label className="grid gap-1.5">
             <span className="text-sm font-medium text-slate-700">Dauer (Minuten)</span>
             <input
-              type="number"
-              min={LIVE_SESSION_MIN_DURATION_MINUTES}
-              max={LIVE_SESSION_MAX_DURATION_MINUTES}
-              step={5}
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(Number(e.target.value))}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={durationMinutes > 0 ? String(durationMinutes) : ""}
+              onChange={(e) => onDurationChange(e.target.value)}
+              placeholder={`z. B. 90 (min. ${LIVE_SESSION_MIN_DURATION_MINUTES})`}
               className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
               required
+              aria-describedby="live-duration-hint"
             />
           </label>
+          <div className="flex flex-wrap gap-2">
+            {DURATION_PRESETS.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setDurationMinutes(m)}
+                className={cn(
+                  "h-8 rounded-lg border px-2.5 text-xs font-semibold",
+                  durationMinutes === m
+                    ? "border-fc-navy bg-fc-navy text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                )}
+              >
+                {m} Min.
+              </button>
+            ))}
+          </div>
+          <p id="live-duration-hint" className="text-xs text-slate-500">
+            Nach der eingestellten Dauer endet der Live-Chat automatisch. Beitritt am besten ca. 10
+            Minuten vor Start.
+          </p>
         </div>
-        <p className="text-xs text-slate-500">
-          Nach der eingestellten Dauer endet der Live-Chat automatisch. Beitritt am besten ca. 10
-          Minuten vor Start.
-        </p>
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
           <input
             type="checkbox"
@@ -235,7 +254,7 @@ export function AdminLiveSessionsPanel({
           disabled={pending}
           className="h-11 w-fit rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60"
         >
-          {pending ? "Speichere…" : "Session anlegen"}
+          {pending ? "Speichere…" : "Live-Chat erstellen"}
         </button>
       </form>
 

@@ -23,9 +23,9 @@ export const LIVE_SESSION_CHAT_MAX_LEN = 1000;
 export const LIVE_SESSION_QUESTION_MAX_LEN = 500;
 export const LIVE_SESSION_CHAT_COOLDOWN_MS = 10_000;
 
-/** Sinnvolle Grenzen für die geplante Chat-/Session-Dauer (Minuten). */
+/** Mindest-Dauer in Minuten; obere Grenze nur gegen Tippfehler (24 h). */
 export const LIVE_SESSION_MIN_DURATION_MINUTES = 5;
-export const LIVE_SESSION_MAX_DURATION_MINUTES = 480;
+export const LIVE_SESSION_MAX_DURATION_MINUTES = 24 * 60;
 
 export function assertLiveSessionDurationMinutes(durationMinutes: number): number {
   const minutes = Math.round(Number(durationMinutes));
@@ -33,7 +33,7 @@ export function assertLiveSessionDurationMinutes(durationMinutes: number): numbe
     throw new Error(`Dauer: mindestens ${LIVE_SESSION_MIN_DURATION_MINUTES} Minuten.`);
   }
   if (minutes > LIVE_SESSION_MAX_DURATION_MINUTES) {
-    throw new Error(`Dauer: höchstens ${LIVE_SESSION_MAX_DURATION_MINUTES} Minuten.`);
+    throw new Error(`Dauer: höchstens ${LIVE_SESSION_MAX_DURATION_MINUTES} Minuten (24 Stunden).`);
   }
   return minutes;
 }

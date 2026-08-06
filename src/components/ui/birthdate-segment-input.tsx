@@ -217,3 +217,53 @@ export function AppDateInput({
     </label>
   );
 }
+
+function formatDeDateTime(localValue: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(localValue);
+  if (!m) return "";
+  return `${m[3]}.${m[2]}.${m[1]}, ${m[4]}:${m[5]}`;
+}
+
+/** Datum + Uhrzeit — gleiche Optik wie AppDateInput (TT.MM.JJJJ, HH:MM + Kalender). */
+export function AppDateTimeInput({
+  label,
+  value,
+  onChange,
+  required,
+  className,
+}: {
+  label: string;
+  /** `YYYY-MM-DDTHH:mm` (datetime-local). */
+  value: string;
+  onChange: (localValue: string) => void;
+  required?: boolean;
+  className?: string;
+}) {
+  const id = useId();
+  const display = formatDeDateTime(value);
+
+  return (
+    <label className={cn("grid gap-1.5", className)}>
+      <span className="text-sm font-medium text-slate-700">
+        {label}
+        {required ? " *" : ""}
+      </span>
+      <div className="relative">
+        <div className="pointer-events-none flex h-11 items-center rounded-xl border bg-white px-3 text-sm text-slate-800">
+          <span className={display ? "tabular-nums" : "text-slate-400"}>
+            {display || "TT.MM.JJJJ, HH:MM"}
+          </span>
+          <Calendar className="ml-auto h-4 w-4 text-fc-blue" aria-hidden />
+        </div>
+        <input
+          id={id}
+          type="datetime-local"
+          required={required}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        />
+      </div>
+    </label>
+  );
+}
