@@ -18,7 +18,7 @@
     },
     {
       "path": "/api/cron/live-session-cleanup",
-      "schedule": "*/5 * * * *"
+      "schedule": "20 4 * * *"
     },
     {
       "path": "/api/cron/radio-voting-reminders",
