@@ -122,6 +122,11 @@ async function main() {
   if (error) throw new Error(error.message);
   console.log("Vorlage membership_approved_welcome in DB aktualisiert.");
 
+  if (process.env.SKIP_SEND === "1") {
+    console.log("SKIP_SEND=1 — kein Testversand.");
+    return;
+  }
+
   const person = emailPersonVars({ firstName: "Peter", gender: "m" });
   const setupUrl = `${BASE}/setup-account?token_hash=TEST_PREVIEW_NICHT_GUELTIG&type=recovery`;
   const rendered = await renderEmailFromTemplate(
