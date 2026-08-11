@@ -3,7 +3,7 @@ import {
   LIVE_CALENDAR_EARLY_MINUTES,
   LIVE_CALENDAR_TITLE,
 } from "@/lib/live/anni-recipient";
-import { liveMemberUrl } from "@/lib/live/types";
+import { liveMemberUrl, appBaseUrl } from "@/lib/live/types";
 
 /** .ics für Live-Einladung/Erinnerung: Start 5 Min früher, Alarme 1 Tag + 1 Std. */
 export function buildLiveSessionIcs(session: {
@@ -54,4 +54,21 @@ export function liveSessionIcsAttachment(session: {
     content: Buffer.from(buildLiveSessionIcs(session), "utf8"),
     contentType: "text/calendar; charset=utf-8; method=PUBLISH",
   };
+}
+
+/** Download-Link für den „In den Kalender eintragen“-Button in Mails. */
+export function liveSessionCalendarUrl(session: {
+  id: string;
+  slug: string;
+  starts_at: string;
+  ends_at: string;
+}): string {
+  const base = appBaseUrl();
+  const q = new URLSearchParams({
+    id: session.id,
+    slug: session.slug,
+    starts_at: session.starts_at,
+    ends_at: session.ends_at,
+  });
+  return `${base}/api/live/calendar.ics?${q.toString()}`;
 }

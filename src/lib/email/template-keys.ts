@@ -143,6 +143,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "session_title", label: "Titel der Live-Session" },
     { key: "session_date", label: "Datum & Uhrzeit" },
     { key: "session_url", label: "Link zur Live-Seite" },
+    { key: "calendar_url", label: "Link Kalender (.ics)" },
   ],
   [EMAIL_TEMPLATE_KEYS.liveSessionReminder]: [
     ...personFacingSalutation,
@@ -151,5 +152,6 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "session_date", label: "Datum & Uhrzeit" },
     { key: "session_time", label: "Uhrzeit (kurz)" },
     { key: "session_url", label: "Link zur Live-Seite" },
+    { key: "calendar_url", label: "Link Kalender (.ics)" },
   ],
 };

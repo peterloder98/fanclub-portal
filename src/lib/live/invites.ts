@@ -9,7 +9,7 @@ import { createUserNotification, notifyAllActiveMembers } from "@/lib/notificati
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { resolveLiveAnniEmail } from "@/lib/live/anni-recipient";
-import { liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
+import { liveSessionCalendarUrl, liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
 import { appBaseUrl, liveMemberUrl, type LiveSessionRow } from "@/lib/live/types";
 
 function sleep(ms: number) {
@@ -110,6 +110,7 @@ export async function sendLiveSessionInviteEmails(
           session_title: session.title,
           session_date: sessionDate,
           session_url: sessionUrl,
+          calendar_url: liveSessionCalendarUrl(session),
         },
         session,
       });
@@ -137,6 +138,7 @@ export async function sendLiveSessionInviteEmails(
           session_title: session.title,
           session_date: sessionDate,
           session_url: sessionUrl,
+          calendar_url: liveSessionCalendarUrl(session),
         },
         session,
       });
@@ -201,6 +203,7 @@ async function sendAnniReminderEmail(
         session_date: sessionDate,
         session_time: sessionTime,
         session_url: sessionUrl,
+        calendar_url: liveSessionCalendarUrl(session),
       },
       session,
     });
@@ -344,6 +347,7 @@ async function runRemindersForSessions(
             session_date: sessionDate,
             session_time: sessionTime,
             session_url: sessionUrl,
+            calendar_url: liveSessionCalendarUrl(session),
           },
           session,
         });

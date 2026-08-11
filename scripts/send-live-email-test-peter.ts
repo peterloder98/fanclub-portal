@@ -1,6 +1,5 @@
 /**
- * Test: Live-Einladung + Erinnerung (fiktiver Termin) an mail@peter-loder.de
- * Layout wie Produktionsmails + .ics-Anhang.
+ * Test: Live-Einladung + Erinnerung (überarbeitete Texte) an mail@peter-loder.de
  *
  * npx --yes tsx --env-file=.env.local scripts/send-live-email-test-peter.ts
  */
@@ -9,7 +8,10 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
-import { liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
+import {
+  liveSessionCalendarUrl,
+  liveSessionIcsAttachment,
+} from "@/lib/live/calendar-ics";
 import {
   formatLiveSessionDateLabel,
   formatLiveSessionTimeLabel,
@@ -40,27 +42,73 @@ const inviteHtml = `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
   <a href="{{session_url}}" style="${EMAIL_BUTTON_STYLE}">Zur Live-Einladung</a>
 </p>
-<p style="margin:0.5em 0 0;font-size:12px;line-height:1.5;color:#64748b;word-break:break-all">Falls der Button nicht funktioniert:<br>{{session_url}}</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">Video und Chat öffnen sich erst am Tag des Live, sobald der Raum freigegeben ist. Wer zusagt, erhält einen Tag vorher noch eine Erinnerung.</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">Im Anhang: Kalenderdatei „Anni Perka Live Chat“ (Start 5 Minuten früher; Erinnerungen 1 Tag und 1 Stunde vorher).</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Das Live-Video und der Chat öffnen sich erst am Tag des Live-Chat mit Anni, sobald der Raum freigegeben ist.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Wer zusagt, erhält einen Tag vorher nochmals eine Erinnerung, dass es stattfindet.</p>
+<p style="margin:0 0 0.5em;font-size:15px;line-height:1.55;color:#1e293b">Termin im Kalender speichern:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{calendar_url}}" style="${EMAIL_BUTTON_STYLE}">In den Kalender eintragen</a>
+</p>
 <p style="margin:0;font-size:15px;line-height:1.55;color:#1e293b">Wir freuen uns auf dich!</p>`;
 
+const inviteText = `{{salutation}},
+
+wir laden dich herzlich zu einer Live-Session mit Anni in der Fanclub-App ein!
+
+{{session_title}}
+{{session_date}}
+
+Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf), kannst zusagen oder absagen und optional schon eine Frage an Anni einreichen (nur eine Vorab-Frage).
+
+Zur Live-Einladung:
+{{session_url}}
+
+Das Live-Video und der Chat öffnen sich erst am Tag des Live-Chat mit Anni, sobald der Raum freigegeben ist.
+Wer zusagt, erhält einen Tag vorher nochmals eine Erinnerung, dass es stattfindet.
+
+Termin im Kalender speichern:
+{{calendar_url}}
+
+Wir freuen uns auf dich!`;
+
 const reminderHtml = `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">kurze Erinnerung: morgen ist Live mit Anni!</p>
-<p style="margin:0 0 0.35em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">{{session_title}}</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">{{session_date}}</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">Du hast zugesagt — schön, dass du dabei bist.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">kurze Erinnerung: morgen haben wir unseren Live-Chat mit Anni!</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}"><strong>{{session_date}}</strong></p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Da du zugesagt hast, hoffen wir du bist morgen rechtzeitig dabei.<br>Schön, dass du dabei bist :-)</p>
 <p style="margin:0 0 0.6em;font-size:15px;line-height:1.55;color:#1e293b"><strong>So kommst du rein:</strong></p>
 <ol style="margin:0 0 1em;padding-left:1.25em;font-size:15px;line-height:1.6;color:#1e293b">
   <li style="margin-bottom:0.5em">Mit deinen Mitgliedsdaten in der Fanclub-App anmelden.</li>
-  <li style="margin-bottom:0.5em">Zur Zeit (oder etwas früher) diesen Link öffnen.</li>
-  <li>Dann siehst du Annis Video und den Chat — vorher nur Infos und deine Vorab-Frage.</li>
+  <li style="margin-bottom:0.5em">Zum festgelegten Zeit (oder am besten ein paar Minuten früher) den nachfolgenden Link öffnen (oder in der App im Menü auf Live-Chat klicken).</li>
+  <li>Dann siehst du Annis Live-Video und den Chat — bis zum Start gibt es nur Infos und deine Vorab-Frage.</li>
 </ol>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
   <a href="{{session_url}}" style="${EMAIL_BUTTON_STYLE}">Zum Live-Raum</a>
 </p>
-<p style="margin:0.5em 0 0;font-size:12px;line-height:1.5;color:#64748b;word-break:break-all">Falls der Button nicht funktioniert:<br>{{session_url}}</p>
-<p style="margin:1em 0 0;font-size:15px;line-height:1.55;color:#1e293b">Im Anhang nochmals die Kalenderdatei. Wir freuen uns auf dich!</p>`;
+<p style="margin:0 0 0.5em;font-size:15px;line-height:1.55;color:#1e293b">Termin im Kalender speichern:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{calendar_url}}" style="${EMAIL_BUTTON_STYLE}">In den Kalender eintragen</a>
+</p>
+<p style="margin:0;font-size:15px;line-height:1.55;color:#1e293b">Wir freuen uns auf dich!</p>`;
+
+const reminderText = `{{salutation}},
+
+kurze Erinnerung: morgen haben wir unseren Live-Chat mit Anni!
+{{session_date}}
+
+Da du zugesagt hast, hoffen wir du bist morgen rechtzeitig dabei.
+Schön, dass du dabei bist :-)
+
+So kommst du rein:
+1. Mit deinen Mitgliedsdaten in der Fanclub-App anmelden.
+2. Zum festgelegten Zeit (oder am besten ein paar Minuten früher) den nachfolgenden Link öffnen (oder in der App im Menü auf Live-Chat klicken).
+3. Dann siehst du Annis Live-Video und den Chat — bis zum Start gibt es nur Infos und deine Vorab-Frage.
+
+Zum Live-Raum:
+{{session_url}}
+
+Termin im Kalender speichern:
+{{calendar_url}}
+
+Wir freuen uns auf dich!`;
 
 async function upsertHtmlTemplates() {
   const { error: inviteErr } = await admin.from("email_templates").upsert(
@@ -68,23 +116,9 @@ async function upsertHtmlTemplates() {
       key: "live_session_invite",
       name: "Live mit Anni — Einladung",
       subject: "Einladung: {{session_title}} am {{session_date}}",
-      body_text: `{{salutation}},
-
-wir laden dich herzlich zu einer Live-Session mit Anni in der Fanclub-App ein!
-
-{{session_title}}
-{{session_date}}
-
-Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über diesen Link siehst du alle Infos (Wann, Dauer, Ablauf), kannst zusagen oder absagen und optional schon eine Frage an Anni einreichen (nur eine):
-{{session_url}}
-
-Video und Chat öffnen sich erst am Tag des Live, sobald der Raum freigegeben ist. Wer zusagt, erhält einen Tag vorher noch eine Erinnerung.
-
-Im Anhang: Kalenderdatei „Anni Perka Live Chat“ (Start 5 Minuten früher; Erinnerungen 1 Tag und 1 Stunde vorher).
-
-Wir freuen uns auf dich!`,
+      body_text: inviteText,
       body_html: inviteHtml,
-      description: "Einladung mit Infos, RSVP und Vorab-Frage. Login Pflicht. Anhang: .ics.",
+      description: "Einladung mit RSVP, Vorab-Frage und Kalender-Button. Login Pflicht.",
       updated_at: new Date().toISOString(),
     },
     { onConflict: "key" },
@@ -96,33 +130,16 @@ Wir freuen uns auf dich!`,
       key: "live_session_reminder",
       name: "Live mit Anni — Erinnerung",
       subject: "Erinnerung: {{session_title}} morgen um {{session_time}}",
-      body_text: `{{salutation}},
-
-kurze Erinnerung: morgen ist Live mit Anni!
-
-{{session_title}}
-{{session_date}}
-
-Du hast zugesagt — schön, dass du dabei bist.
-
-So kommst du rein:
-1. Mit deinen Mitgliedsdaten in der Fanclub-App anmelden.
-2. Zur Zeit (oder etwas früher) diesen Link öffnen:
-{{session_url}}
-3. Dann siehst du Annis Video und den Chat — vorher nur Infos und deine Vorab-Frage.
-
-Im Anhang nochmals die Kalenderdatei.
-
-Wir freuen uns auf dich!`,
+      body_text: reminderText,
       body_html: reminderHtml,
-      description: "Erinnerung 1 Tag vorher an Zusagen + Anni. Login Pflicht.",
+      description: "Erinnerung 1 Tag vorher an Zusagen + Anni. Kalender-Button. Login Pflicht.",
       updated_at: new Date().toISOString(),
     },
     { onConflict: "key" },
   );
   if (remErr) throw new Error(remErr.message);
 
-  console.log("E-Mail-Vorlagen live_session_invite / reminder aktualisiert (HTML).");
+  console.log("E-Mail-Vorlagen aktualisiert.");
 }
 
 async function sendOne(
@@ -172,7 +189,6 @@ async function main() {
   await upsertHtmlTemplates();
 
   const person = emailPersonVars({ firstName: "Peter", gender: "m" });
-  // Fiktiver Termin: nächster Samstag 19:00 Berlin, 45 Min.
   const start = new Date();
   start.setDate(start.getDate() + ((6 - start.getDay() + 7) % 7 || 7));
   start.setHours(19, 0, 0, 0);
@@ -184,11 +200,13 @@ async function main() {
     ends_at: end.toISOString(),
   };
   const sessionUrl = `${BASE}/live/${session.slug}`;
+  const calendarUrl = liveSessionCalendarUrl(session);
   const sessionDate = formatLiveSessionDateLabel(session.starts_at);
   const sessionTime = formatLiveSessionTimeLabel(session.starts_at);
   const title = "Live-Chat mit Anni (Test)";
 
   console.log(`Fiktiver Termin: ${sessionDate}`);
+  console.log(`Kalender-URL: ${calendarUrl}`);
   console.log(`Empfänger: ${TO}`);
 
   await sendOne(
@@ -199,6 +217,7 @@ async function main() {
       session_title: title,
       session_date: sessionDate,
       session_url: sessionUrl,
+      calendar_url: calendarUrl,
     },
     session,
   );
@@ -212,11 +231,12 @@ async function main() {
       session_date: sessionDate,
       session_time: sessionTime,
       session_url: sessionUrl,
+      calendar_url: calendarUrl,
     },
     session,
   );
 
-  console.log("\nFertig. Beide Mails mit Layout + Signatur + .ics.");
+  console.log("\nFertig. Beide Mails mit neuem Text + Kalender-Button.");
 }
 
 main().catch((e) => {
