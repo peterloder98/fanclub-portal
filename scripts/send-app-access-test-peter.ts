@@ -76,7 +76,6 @@ Bitte speichere dir deine E-Mail-Adresse und dein Passwort gut ab.
 3. Einloggen und App entdecken
 Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.
 Danach gelangst du in die Fanclub-App.
-Bis zum offiziellen Start am 16.08.2026 um 10:00 Uhr kannst du dich bereits umschauen — der volle Inhalt ist erst dann sichtbar und nutzbar.
 
 Wir hoffen sehr, dass dir unsere neue Fanclub-App gefällt und sie den Austausch untereinander noch einfacher und schöner macht.
 
@@ -109,7 +108,7 @@ const body_html = `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
 <p style="margin:1.25em 0 0.6em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">So richtest du deinen Zugang ein</p>
 <p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>1. Einrichtungslink öffnen</strong><br>Klicke auf den Button „Zugang jetzt einrichten“.</p>
 <p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>2. Identität bestätigen und Passwort vergeben</strong><br>Bestätige deine Identität durch die Eingabe deines Geburtsdatums und lege dein persönliches Wunschpasswort fest.<br>Dein Benutzername ist deine E-Mail-Adresse.<br>Bitte speichere dir deine E-Mail-Adresse und dein Passwort gut ab.</p>
-<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>3. Einloggen und App entdecken</strong><br>Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.<br>Danach gelangst du in die Fanclub-App.<br>Bis zum offiziellen Start am <strong>16.08.2026 um 10:00 Uhr</strong> kannst du dich bereits umschauen — der volle Inhalt ist erst dann sichtbar und nutzbar.</p>
+<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>3. Einloggen und App entdecken</strong><br>Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.<br>Danach gelangst du in die Fanclub-App.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Wir hoffen sehr, dass dir unsere neue Fanclub-App gefällt und sie den Austausch untereinander noch einfacher und schöner macht.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Du musst natürlich nicht alles auf einmal entdecken.<br>Schau dich einfach in Ruhe um.<br>In den nächsten Wochen werden wir dir nach und nach einzelne Funktionen und Möglichkeiten der App vorstellen.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Die App soll unsere WhatsApp-Gruppe nicht ersetzen, sondern sinnvoll ergänzen. Wichtige Informationen findest du künftig sowohl in der App als auch in der WhatsApp-Gruppe.</p>
@@ -133,6 +132,11 @@ async function main() {
   );
   if (error) throw new Error(error.message);
   console.log("Vorlage app_access_setup in DB aktualisiert.");
+
+  if (process.env.SKIP_SEND === "1") {
+    console.log("SKIP_SEND=1 — kein Testversand.");
+    return;
+  }
 
   const person = emailPersonVars({ firstName: "Peter", gender: "m" });
   const setupUrl = `${BASE}/setup-account?token_hash=TEST_PREVIEW_NICHT_GUELTIG&type=recovery`;
