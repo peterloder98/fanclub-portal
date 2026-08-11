@@ -17,11 +17,15 @@ export type LiveSessionRow = {
   updated_at: string;
   invites_sent_at?: string | null;
   anni_reminder_sent_at?: string | null;
+  /** Nach Ende: Chat noch bis hier offen, danach Session löschen. */
+  grace_ends_at?: string | null;
 };
 
 export const LIVE_SESSION_CHAT_MAX_LEN = 1000;
 export const LIVE_SESSION_QUESTION_MAX_LEN = 500;
 export const LIVE_SESSION_CHAT_COOLDOWN_MS = 10_000;
+/** Nach Annis Ende (geplant oder vorzeitig): Chat bleibt so lange offen. */
+export const LIVE_SESSION_GRACE_MINUTES = 10;
 
 /** Geplante Dauer: 1–60 Minuten. */
 export const LIVE_SESSION_MIN_DURATION_MINUTES = 1;
@@ -99,7 +103,21 @@ export function liveMemberUrl(slug: string): string {
   return `${base}/live/${encodeURIComponent(slug)}`;
 }
 
-/** Mitglieder dürfen beitreten: Join-Fenster offen und nicht beendet/abgesagt. */
+export function graceEndsAtIso(from = new Date()): string {
+  return new Date(from.getTime() + LIVE_SESSION_GRACE_MINUTES * 60_000).toISOString();
+}
+
+/** Nachlauf: Anni ist raus, Chat noch offen. */
+export function isInLiveGracePeriod(
+  session: Pick<LiveSessionRow, "status" | "grace_ends_at">,
+  now = new Date(),
+): boolean {
+  if (session.status !== "ended") return false;
+  if (!session.grace_ends_at) return false;
+  return new Date(session.grace_ends_at).getTime() > now.getTime();
+}
+
+/** Mitglieder dürfen Video: Join-Fenster offen und nicht beendet/abgesagt. */
 export function canMembersJoinSession(
   session: Pick<LiveSessionRow, "status" | "join_opens_at" | "ends_at">,
   now = new Date(),
@@ -111,11 +129,26 @@ export function canMembersJoinSession(
   return t >= open && t <= end;
 }
 
-/** Session für Nav/Dashboard: Join offen oder live, noch nicht vorbei. */
-export function isSessionDiscoverable(
-  session: Pick<LiveSessionRow, "status" | "join_opens_at" | "ends_at">,
+/** Chat: während des Live-Fensters oder im 10-Min-Nachlauf. */
+export function canMembersUseLiveChat(
+  session: Pick<LiveSessionRow, "status" | "join_opens_at" | "ends_at" | "grace_ends_at">,
   now = new Date(),
 ): boolean {
-  if (session.status === "cancelled" || session.status === "ended") return false;
-  return canMembersJoinSession(session, now) || session.status === "live";
+  if (session.status === "cancelled") return false;
+  if (canMembersJoinSession(session, now)) return true;
+  return isInLiveGracePeriod(session, now);
+}
+
+/** Session für Nav/Dashboard: Join offen, live oder Nachlauf. */
+export function isSessionDiscoverable(
+  session: Pick<LiveSessionRow, "status" | "join_opens_at" | "ends_at" | "grace_ends_at">,
+  now = new Date(),
+): boolean {
+  if (session.status === "cancelled") return false;
+  if (session.status === "ended") return isInLiveGracePeriod(session, now);
+  return (
+    canMembersJoinSession(session, now) ||
+    session.status === "live" ||
+    new Date(session.join_opens_at).getTime() > now.getTime()
+  );
 }

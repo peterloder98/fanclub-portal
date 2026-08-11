@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client";
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
@@ -44,6 +45,7 @@ export function LiveMemberRoom({
   status,
   startsAt,
   endsAt,
+  graceEndsAt = null,
   rsvpStatus = null,
   showRsvp = true,
   compactHeader = false,
@@ -55,30 +57,52 @@ export function LiveMemberRoom({
   status: string;
   startsAt: string;
   endsAt: string;
+  /** Nachlauf-Ende (Chat noch offen, Video aus). */
+  graceEndsAt?: string | null;
   rsvpStatus?: "accepted" | "declined" | null;
   showRsvp?: boolean;
   compactHeader?: boolean;
 }) {
+  const router = useRouter();
   const isXl = useIsXl();
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("chat");
   const [videoReady, setVideoReady] = useState(false);
-  const [sessionEnded, setSessionEnded] = useState(
-    () => !Number.isNaN(new Date(endsAt).getTime()) && Date.now() >= new Date(endsAt).getTime(),
-  );
 
-  const roomOpen = joinOpen && !sessionEnded;
+  const endsAtMs = new Date(endsAt).getTime();
+  const [streamEnded, setStreamEnded] = useState(
+    () =>
+      status === "ended" ||
+      (!Number.isNaN(endsAtMs) && Date.now() >= endsAtMs),
+  );
+  const [graceDeadline, setGraceDeadline] = useState<string | null>(() => {
+    if (graceEndsAt) return graceEndsAt;
+    return null;
+  });
+  const [roomClosed, setRoomClosed] = useState(false);
+
+  const inGrace = streamEnded && Boolean(graceDeadline) && !roomClosed;
+  const videoOpen = joinOpen && !streamEnded && !roomClosed;
+  const chatOpen = (joinOpen && !roomClosed) || inGrace;
 
   useEffect(() => {
-    if (!roomOpen) return;
+    if (graceEndsAt) setGraceDeadline(graceEndsAt);
+  }, [graceEndsAt]);
+
+  useEffect(() => {
+    if (status === "ended") setStreamEnded(true);
+  }, [status]);
+
+  useEffect(() => {
+    if (!videoOpen) return;
     const t = window.setTimeout(() => setVideoReady(true), 200);
     return () => window.clearTimeout(t);
-  }, [roomOpen]);
+  }, [videoOpen]);
 
   useEffect(() => {
-    if (!roomOpen || !videoReady) return;
+    if (!videoOpen || !videoReady) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -102,11 +126,10 @@ export function LiveMemberRoom({
     return () => {
       cancelled = true;
     };
-  }, [slug, roomOpen, videoReady]);
+  }, [slug, videoOpen, videoReady]);
 
-  // Anwesenheit ≥ 1 Min. → +2 Anni-Stars (einmal pro Session)
   useEffect(() => {
-    if (!roomOpen || !sessionId) return;
+    if (!videoOpen || !sessionId) return;
     let cancelled = false;
     async function ping() {
       try {
@@ -128,14 +151,35 @@ export function LiveMemberRoom({
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [roomOpen, sessionId]);
+  }, [videoOpen, sessionId]);
+
+  function onStreamEnded() {
+    setStreamEnded(true);
+    setToken(null);
+    setUrl(null);
+    setGraceDeadline((prev) => prev ?? new Date(Date.now() + 10 * 60_000).toISOString());
+  }
+
+  function onGraceEnded() {
+    setRoomClosed(true);
+    setToken(null);
+    setUrl(null);
+    router.replace("/live");
+    router.refresh();
+  }
 
   return (
     <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 lg:px-6">
       {!compactHeader ? (
         <header className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
-            {sessionEnded ? "Beendet" : status === "live" ? "Live" : "Live-Session"}
+            {roomClosed
+              ? "Beendet"
+              : inGrace
+                ? "Nachlauf"
+                : status === "live"
+                  ? "Live"
+                  : "Live-Session"}
           </p>
           <h1 className="mt-1 text-xl font-semibold tracking-tight text-fc-navy sm:text-2xl">
             {title}
@@ -143,31 +187,47 @@ export function LiveMemberRoom({
           <p className="mt-1 text-sm text-slate-600">
             Start {new Date(startsAt).toLocaleString("de-DE")}
           </p>
-          <LiveSessionCountdown
-            endsAt={endsAt}
-            variant="member"
-            onEnded={() => {
-              setSessionEnded(true);
-              setToken(null);
-              setUrl(null);
-            }}
-          />
+          {inGrace && graceDeadline ? (
+            <LiveSessionCountdown
+              endsAt={graceDeadline}
+              variant="member"
+              until="grace"
+              onEnded={onGraceEnded}
+            />
+          ) : (
+            <LiveSessionCountdown
+              endsAt={endsAt}
+              variant="member"
+              onEnded={onStreamEnded}
+            />
+          )}
         </header>
       ) : (
         <div className="mb-4">
           <p className="text-sm text-slate-600">
             Start {new Date(startsAt).toLocaleString("de-DE")}
-            {sessionEnded ? " · Beendet" : status === "live" ? " · Live" : null}
+            {roomClosed
+              ? " · Beendet"
+              : inGrace
+                ? " · Nachlauf (Anni ist offline)"
+                : status === "live"
+                  ? " · Live"
+                  : null}
           </p>
-          <LiveSessionCountdown
-            endsAt={endsAt}
-            variant="member"
-            onEnded={() => {
-              setSessionEnded(true);
-              setToken(null);
-              setUrl(null);
-            }}
-          />
+          {inGrace && graceDeadline ? (
+            <LiveSessionCountdown
+              endsAt={graceDeadline}
+              variant="member"
+              until="grace"
+              onEnded={onGraceEnded}
+            />
+          ) : (
+            <LiveSessionCountdown
+              endsAt={endsAt}
+              variant="member"
+              onEnded={onStreamEnded}
+            />
+          )}
         </div>
       )}
 
@@ -177,21 +237,28 @@ export function LiveMemberRoom({
         </div>
       ) : null}
 
-      {sessionEnded ? (
+      {roomClosed ? (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-700">
-          Die Live-Session ist zu Ende. Chat und Video sind geschlossen.
+          Die Live-Chat Session ist geschlossen. Du wirst zur Übersicht weitergeleitet…
         </div>
-      ) : !joinOpen ? (
+      ) : !joinOpen && !inGrace ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-6 text-sm text-amber-950">
           Der Raum ist noch nicht geöffnet. Sobald der Beitritt beginnt, kannst du hier zuschauen und
           mitmachen.
         </div>
       ) : (
         <div className="grid gap-4">
+          {inGrace ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
+              Anni hat den Live beendet. Der Chat bleibt noch kurz offen — danach schließt sich die
+              Session von allein.
+            </div>
+          ) : null}
+
           {isXl ? (
             <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.9fr)] xl:items-start">
               <div className="min-w-0 space-y-4">
-                {error ? (
+                {inGrace ? null : error ? (
                   <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
                     {error}
                   </div>
@@ -202,33 +269,35 @@ export function LiveMemberRoom({
                     {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
                   </div>
                 )}
-                <LiveMemberQuestions sessionId={sessionId} enabled />
+                {!inGrace ? <LiveMemberQuestions sessionId={sessionId} enabled /> : null}
               </div>
               <div className="h-[min(28rem,55vh)] min-h-[22rem]">
-                <LiveSessionChatPanel sessionId={sessionId} enabled className="h-full" />
+                <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full" />
               </div>
             </div>
           ) : (
             <>
-              <div className="min-w-0">
-                {error ? (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
-                    {error}
-                  </div>
-                ) : token && url ? (
-                  <LiveKitStage token={token} serverUrl={url} mode="viewer" />
-                ) : (
-                  <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
-                    {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
-                  </div>
-                )}
-              </div>
+              {!inGrace ? (
+                <div className="min-w-0">
+                  {error ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
+                      {error}
+                    </div>
+                  ) : token && url ? (
+                    <LiveKitStage token={token} serverUrl={url} mode="viewer" />
+                  ) : (
+                    <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
+                      {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
+                    </div>
+                  )}
+                </div>
+              ) : null}
               <div className="mb-2 flex gap-2">
                 {(
                   [
-                    ["chat", "Chat"],
-                    ["fragen", "Fragen"],
-                  ] as const
+                    ["chat", "Chat"] as const,
+                    ...(!inGrace ? ([["fragen", "Fragen"]] as const) : []),
+                  ] as Array<readonly [Tab, string]>
                 ).map(([id, label]) => (
                   <button
                     key={id}
@@ -245,8 +314,8 @@ export function LiveMemberRoom({
                   </button>
                 ))}
               </div>
-              {tab === "chat" ? (
-                <LiveSessionChatPanel sessionId={sessionId} enabled className="h-[22rem]" />
+              {tab === "chat" || inGrace ? (
+                <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-[22rem]" />
               ) : (
                 <LiveMemberQuestions sessionId={sessionId} enabled />
               )}

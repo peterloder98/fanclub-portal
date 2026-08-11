@@ -465,17 +465,17 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
-              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Dauer in Minuten eintragen (höchstens 60). Nach der Dauer endet der Chat automatisch.",
+              "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Dauer in Minuten eintragen (höchstens 60). Nach der Dauer endet Annis Video automatisch.",
               "Haken „Einladen“ lassen — alle Fanclub-Mitglieder und Anni werden per E-Mail und App-Benachrichtigung informiert und eingeladen. Bei Zusage gibt es am Tag zuvor eine Erinnerung.",
               "„Live-Chat erstellen“ tippen. Den Host-Link einmalig kopieren und Anni rechtzeitig schicken. Wenn die Verbindung abbricht, denselben Link erneut öffnen.",
-              "Mitglieder öffnen den Link nach Login: zuerst Infoseite (Wann, Ablauf, Zusage/Absage, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist (am Live-Tag).",
-              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt.",
-              "Nach Ablauf der Dauer endet die Session von allein. Beendete Lives werden am nächsten Tag automatisch gelöscht (nichts bleibt gespeichert).",
+              "Mitglieder öffnen den Link nach Login: zuerst Infoseite (Wann, Ablauf, Zusage/Absage mit sichtbarer Teilnehmerliste, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist (am Live-Tag).",
+              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Vorzeitig beenden: Button „Live beenden“ (Verabschiedung).",
+              "Wenn Anni fertig ist (Zeit abgelaufen oder „Live beenden“): Video aus. Der Chat bleibt noch 10 Minuten offen — Countdown „Live-Chat Session endet in …“. Danach schließt sich die Session sofort und unter Live steht wieder „kein Termin“.",
             ],
           },
           {
             type: "note",
-            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine offene Frage. Zugang nur nach Login als aktives Mitglied. Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
+            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine Vorab-Frage (danach Hinweis: weitere Fragen im Live-Chat). Während des Live weiterhin max. eine offene Frage. Zugang nur nach Login als aktives Mitglied. Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
           },
           {
             type: "link",

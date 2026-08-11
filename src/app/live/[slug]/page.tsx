@@ -3,14 +3,25 @@ import { notFound, redirect } from "next/navigation";
 import { LiveMemberRoom } from "@/components/live/live-member-room.client";
 import { LiveSessionLobby } from "@/components/live/live-session-lobby.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  canMembersJoinSession,
+  canMembersUseLiveChat,
+  isInLiveGracePeriod,
+  type LiveSessionRow,
+} from "@/lib/live/types";
+import { syncLiveSessionLifecycle } from "@/lib/live/cleanup";
 
 export const dynamic = "force-dynamic";
+
+const SESSION_COLS =
+  "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at";
 
 /**
  * Mitglieder-Live außerhalb der App-Shell.
  * Vor dem Beitritt: Infos + RSVP + eine Vorab-Frage.
  * Ab Beitrittsfenster: Video + Chat.
+ * Nach Ende: 10-Min-Chat-Nachlauf, dann Session weg.
  */
 export default async function LiveMemberPage({
   params,
@@ -27,22 +38,52 @@ export default async function LiveMemberPage({
     redirect(`/login?next=${encodeURIComponent(`/live/${slug}`)}`);
   }
 
-  const { data: session, error: sessionError } = await supabase
+  let { data: session, error: sessionError } = await supabase
     .from("live_sessions")
-    .select(
-      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
-    )
+    .select(SESSION_COLS)
     .eq("slug", slug)
     .maybeSingle();
+
+  if (sessionError && /grace_ends_at/i.test(sessionError.message)) {
+    const fallback = await supabase
+      .from("live_sessions")
+      .select(
+        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+      )
+      .eq("slug", slug)
+      .maybeSingle();
+    session = fallback.data
+      ? ({ ...fallback.data, grace_ends_at: null } as typeof session)
+      : null;
+    sessionError = fallback.error;
+  }
 
   if (sessionError) {
     console.error("[live] session load", sessionError.message);
   }
   if (!session) notFound();
 
+  const admin = createSupabaseAdminClient();
+  const phase = await syncLiveSessionLifecycle(admin, session as LiveSessionRow);
+  if (phase === "gone") {
+    redirect("/live");
+  }
+
+  if (phase === "grace" || phase === "active") {
+    const refreshed = await admin
+      .from("live_sessions")
+      .select(SESSION_COLS)
+      .eq("id", (session as LiveSessionRow).id)
+      .maybeSingle();
+    if (refreshed.data) session = refreshed.data as typeof session;
+  }
+
+  if (!session) redirect("/live");
+
   const row = session as LiveSessionRow;
   const joinOpen = canMembersJoinSession(row);
-  const ended = row.status === "ended" || row.status === "cancelled";
+  const inGrace = isInLiveGracePeriod(row);
+  const chatOpen = canMembersUseLiveChat(row);
 
   const [{ data: membership }, { data: profile }] = await Promise.all([
     supabase
@@ -59,7 +100,7 @@ export default async function LiveMemberPage({
   }
 
   let rsvpStatus: "accepted" | "declined" | null = null;
-  if (!joinOpen && !ended) {
+  if (!joinOpen && !inGrace) {
     const { data: rsvp } = await supabase
       .from("live_session_rsvps")
       .select("status")
@@ -88,20 +129,16 @@ export default async function LiveMemberPage({
         </div>
       </header>
 
-      {ended ? (
-        <div className="mx-auto max-w-2xl px-4 py-8 text-sm text-slate-600">
-          Diese Live-Session ist beendet
-          {row.status === "cancelled" ? " bzw. abgesagt" : ""}.
-        </div>
-      ) : joinOpen ? (
+      {joinOpen || inGrace || chatOpen ? (
         <LiveMemberRoom
           slug={row.slug}
           title={row.title}
           sessionId={row.id}
-          joinOpen
+          joinOpen={joinOpen || inGrace}
           status={row.status}
           startsAt={row.starts_at}
           endsAt={row.ends_at}
+          graceEndsAt={row.grace_ends_at ?? null}
           rsvpStatus={null}
           showRsvp={false}
           compactHeader

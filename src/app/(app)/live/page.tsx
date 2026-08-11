@@ -1,22 +1,53 @@
 import Link from "next/link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { canMembersJoinSession, isSessionDiscoverable, type LiveSessionRow } from "@/lib/live/types";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  canMembersJoinSession,
+  isInLiveGracePeriod,
+  isSessionDiscoverable,
+  type LiveSessionRow,
+} from "@/lib/live/types";
+import { deleteGraceExpiredLiveSessions, endExpiredLiveSessions } from "@/lib/live/cleanup";
 
 export const dynamic = "force-dynamic";
 
 export default async function LiveIndexPage() {
+  const admin = createSupabaseAdminClient();
+  await endExpiredLiveSessions(admin);
+  await deleteGraceExpiredLiveSessions(admin);
+
   const supabase = await createSupabaseServerClient();
   const now = new Date().toISOString();
-  const { data } = await supabase
+
+  let { data, error } = await supabase
     .from("live_sessions")
     .select(
-      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at",
     )
-    .in("status", ["scheduled", "live"])
-    .gte("ends_at", now)
+    .or(
+      `and(status.in.(scheduled,live),ends_at.gte.${now}),and(status.eq.ended,grace_ends_at.gt.${now})`,
+    )
     .order("starts_at", { ascending: true })
     .limit(20);
+
+  if (error && /grace_ends_at/i.test(error.message)) {
+    const fallback = await supabase
+      .from("live_sessions")
+      .select(
+        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+      )
+      .in("status", ["scheduled", "live"])
+      .gte("ends_at", now)
+      .order("starts_at", { ascending: true })
+      .limit(20);
+    data = (fallback.data ?? []).map((s) => ({ ...s, grace_ends_at: null }));
+    error = fallback.error;
+  }
+
+  if (error) {
+    console.error("[live] index", error.message);
+  }
 
   const sessions = ((data ?? []) as LiveSessionRow[]).filter((s) => isSessionDiscoverable(s));
 
@@ -36,6 +67,7 @@ export default async function LiveIndexPage() {
           <ul className="space-y-3">
             {sessions.map((s) => {
               const open = canMembersJoinSession(s);
+              const grace = isInLiveGracePeriod(s);
               return (
                 <li key={s.id}>
                   <Link
@@ -51,12 +83,20 @@ export default async function LiveIndexPage() {
                       </div>
                       <span
                         className={
-                          s.status === "live" || open
-                            ? "rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800"
-                            : "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
+                          grace
+                            ? "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900"
+                            : s.status === "live" || open
+                              ? "rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800"
+                              : "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
                         }
                       >
-                        {s.status === "live" ? "Jetzt live" : open ? "Raum offen" : "Geplant"}
+                        {grace
+                          ? "Nachlauf"
+                          : s.status === "live"
+                            ? "Jetzt live"
+                            : open
+                              ? "Raum offen"
+                              : "Geplant"}
                       </span>
                     </div>
                   </Link>

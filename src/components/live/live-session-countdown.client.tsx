@@ -24,8 +24,8 @@ export function LiveSessionCountdown({
   endsAt: string;
   variant?: "member" | "host";
   className?: string;
-  /** Countdown bis Start oder bis Session-Ende. */
-  until?: "start" | "end";
+  /** Countdown bis Start, Session-Ende oder Nachlauf-Ende. */
+  until?: "start" | "end" | "grace";
   /** Einmalig, wenn der Countdown 0 erreicht. */
   onEnded?: () => void;
 }) {
@@ -38,6 +38,10 @@ export function LiveSessionCountdown({
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [endMs]);
+
+  useEffect(() => {
+    endedFired.current = false;
+  }, [endsAt, until]);
 
   useEffect(() => {
     if (Number.isNaN(endMs) || !onEnded || endedFired.current) return;
@@ -57,7 +61,8 @@ export function LiveSessionCountdown({
     hour: "2-digit",
     minute: "2-digit",
   });
-  const targetWord = until === "start" ? "Start" : "Ende";
+  const targetWord =
+    until === "start" ? "Start" : until === "grace" ? "Schließung" : "Ende";
 
   if (variant === "host") {
     return (
@@ -76,8 +81,10 @@ export function LiveSessionCountdown({
         <Clock className="h-4 w-4 shrink-0" aria-hidden />
         {ended ? (
           <span>
-            {targetWord} erreicht ({endLabel})
+            {until === "grace" ? "Nachlauf beendet" : `${targetWord} erreicht`} ({endLabel})
           </span>
+        ) : until === "grace" ? (
+          <span>Live-Chat endet in {formatRemain(remain)}</span>
         ) : (
           <span>
             Noch {formatRemain(remain)} · {targetWord} {endLabel}
@@ -103,8 +110,15 @@ export function LiveSessionCountdown({
       <Clock className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
       {ended ? (
         <span>
-          {until === "start" ? "Startzeit erreicht" : "Die Session ist zu Ende"} ({endLabel})
+          {until === "start"
+            ? "Startzeit erreicht"
+            : until === "grace"
+              ? "Die Live-Chat Session ist geschlossen"
+              : "Die Session ist zu Ende"}{" "}
+          ({endLabel})
         </span>
+      ) : until === "grace" ? (
+        <span>Die Live-Chat Session endet in {formatRemain(remain)}</span>
       ) : (
         <span>
           Noch {formatRemain(remain)} bis zum {targetWord} ({endLabel})

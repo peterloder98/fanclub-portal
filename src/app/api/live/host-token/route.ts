@@ -4,9 +4,10 @@ import { mintLiveKitToken } from "@/lib/live/livekit";
 import {
   canMembersJoinSession,
   hashLiveHostToken,
+  isInLiveGracePeriod,
   type LiveSessionRow,
 } from "@/lib/live/types";
-import { endLiveSessionIfPast } from "@/lib/live/cleanup";
+import { syncLiveSessionLifecycle } from "@/lib/live/cleanup";
 
 export async function POST(request: Request) {
   try {
@@ -18,24 +19,55 @@ export async function POST(request: Request) {
 
     const hash = hashLiveHostToken(token);
     const admin = createSupabaseAdminClient();
-    const { data: session, error } = await admin
+    let { data: session, error } = await admin
       .from("live_sessions")
       .select(
-        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at",
       )
       .eq("host_token_hash", hash)
       .maybeSingle();
+
+    if (error && /grace_ends_at/i.test(error.message)) {
+      const fallback = await admin
+        .from("live_sessions")
+        .select(
+          "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+        )
+        .eq("host_token_hash", hash)
+        .maybeSingle();
+      session = fallback.data
+        ? ({ ...fallback.data, grace_ends_at: null } as typeof session)
+        : null;
+      error = fallback.error;
+    }
 
     if (error || !session) {
       return NextResponse.json({ error: "Ungültiger Host-Link." }, { status: 404 });
     }
 
-    const row = session as LiveSessionRow;
-    if (await endLiveSessionIfPast(admin, row)) {
+    let row = session as LiveSessionRow;
+    const phase = await syncLiveSessionLifecycle(admin, row);
+    if (phase === "gone") {
       return NextResponse.json({ error: "Diese Session ist beendet." }, { status: 403 });
     }
-    if (row.status === "ended" || row.status === "cancelled") {
-      return NextResponse.json({ error: "Diese Session ist beendet." }, { status: 403 });
+
+    const refreshed = await admin
+      .from("live_sessions")
+      .select(
+        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at",
+      )
+      .eq("id", row.id)
+      .maybeSingle();
+    if (refreshed.data) row = refreshed.data as LiveSessionRow;
+
+    if (phase === "grace" || isInLiveGracePeriod(row)) {
+      return NextResponse.json({
+        error: "Live beendet — Chat-Nachlauf läuft noch.",
+        title: row.title,
+        status: "ended",
+        graceEndsAt: row.grace_ends_at,
+        endsAt: row.ends_at,
+      }, { status: 403 });
     }
 
     if (row.status === "scheduled") {
@@ -63,6 +95,7 @@ export async function POST(request: Request) {
       canJoinMembers: canMembersJoinSession({ ...row, status: "live" }),
       startsAt: row.starts_at,
       endsAt: row.ends_at,
+      graceEndsAt: row.grace_ends_at ?? null,
     });
   } catch (e) {
     return NextResponse.json(

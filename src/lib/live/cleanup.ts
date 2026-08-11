@@ -1,4 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  graceEndsAtIso,
+  isInLiveGracePeriod,
+  type LiveSessionRow,
+} from "@/lib/live/types";
+
+const SESSION_SELECT =
+  "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at,invites_sent_at,anni_reminder_sent_at";
 
 /** Mitternacht heute (Europe/Berlin) als UTC-ISO. */
 export function startOfTodayBerlinIso(now = new Date()): string {
@@ -18,60 +26,159 @@ export function startOfTodayBerlinIso(now = new Date()): string {
   return new Date(`${day}T00:00:00+01:00`).toISOString();
 }
 
-/** Abgelaufene Sessions (ends_at vorbei) → status ended. */
+/** Geplantes oder vorzeitiges Ende → status ended + 10-Min-Nachlauf für Chat. */
+export async function beginLiveSessionGrace(
+  admin: SupabaseClient,
+  sessionId: string,
+  now = new Date(),
+): Promise<string> {
+  const nowIso = now.toISOString();
+  const grace = graceEndsAtIso(now);
+  const { error } = await admin
+    .from("live_sessions")
+    .update({
+      status: "ended",
+      grace_ends_at: grace,
+      updated_at: nowIso,
+    })
+    .eq("id", sessionId)
+    .in("status", ["scheduled", "live"]);
+  if (error && !/grace_ends_at/i.test(error.message)) {
+    throw new Error(error.message);
+  }
+  if (error && /grace_ends_at/i.test(error.message)) {
+    // Spalte fehlt noch — zumindest beenden
+    await admin
+      .from("live_sessions")
+      .update({ status: "ended", updated_at: nowIso })
+      .eq("id", sessionId)
+      .in("status", ["scheduled", "live"]);
+  }
+  return grace;
+}
+
+/** Abgelaufene Sessions (ends_at vorbei) → Grace starten. */
 export async function endExpiredLiveSessions(admin: SupabaseClient, now = new Date()) {
   const nowIso = now.toISOString();
+  const grace = graceEndsAtIso(now);
   const { data: toEnd, error: endErr } = await admin
     .from("live_sessions")
-    .update({ status: "ended", updated_at: nowIso })
+    .update({
+      status: "ended",
+      grace_ends_at: grace,
+      updated_at: nowIso,
+    })
     .in("status", ["scheduled", "live"])
     .lt("ends_at", nowIso)
     .select("id");
-  if (endErr && !/live_sessions|does not exist/i.test(endErr.message)) {
+
+  if (endErr) {
+    if (/live_sessions|does not exist/i.test(endErr.message)) return 0;
+    if (/grace_ends_at/i.test(endErr.message)) {
+      const fallback = await admin
+        .from("live_sessions")
+        .update({ status: "ended", updated_at: nowIso })
+        .in("status", ["scheduled", "live"])
+        .lt("ends_at", nowIso)
+        .select("id");
+      if (fallback.error && !/live_sessions|does not exist/i.test(fallback.error.message)) {
+        throw new Error(fallback.error.message);
+      }
+      return fallback.data?.length ?? 0;
+    }
     throw new Error(endErr.message);
   }
   return toEnd?.length ?? 0;
 }
 
-/**
- * 1) Abgelaufene Sessions → status ended
- * 2) Beendete/abgesagte Sessions von gestern und früher löschen
- */
-export async function runLiveSessionCleanup(admin: SupabaseClient) {
-  const todayStart = startOfTodayBerlinIso();
-  const ended = await endExpiredLiveSessions(admin);
+/** Nachlauf vorbei → Session sofort löschen (zurück auf „nichts geplant“). */
+export async function deleteGraceExpiredLiveSessions(
+  admin: SupabaseClient,
+  now = new Date(),
+) {
+  const nowIso = now.toISOString();
 
-  const { data: deleted, error: delErr } = await admin
+  const withGrace = await admin
     .from("live_sessions")
     .delete()
     .in("status", ["ended", "cancelled"])
-    .lt("ends_at", todayStart)
+    .not("grace_ends_at", "is", null)
+    .lt("grace_ends_at", nowIso)
     .select("id");
 
-  if (delErr) {
-    if (/live_sessions|does not exist/i.test(delErr.message)) {
-      return { ended, deleted: 0 };
+  if (withGrace.error) {
+    if (/live_sessions|does not exist|grace_ends_at/i.test(withGrace.error.message)) {
+      /* Spalte fehlt oder Tabelle — Fallback unten */
+    } else {
+      throw new Error(withGrace.error.message);
     }
-    throw new Error(delErr.message);
   }
 
-  return {
-    ended,
-    deleted: deleted?.length ?? 0,
-  };
+  // Ohne Grace-Zeitstempel (Altbestand / Abbruch): sofort löschen wenn ended/cancelled
+  const withoutGrace = await admin
+    .from("live_sessions")
+    .delete()
+    .in("status", ["ended", "cancelled"])
+    .is("grace_ends_at", null)
+    .select("id");
+
+  if (withoutGrace.error && !/live_sessions|does not exist|grace_ends_at/i.test(withoutGrace.error.message)) {
+    throw new Error(withoutGrace.error.message);
+  }
+
+  return (withGrace.data?.length ?? 0) + (withoutGrace.data?.length ?? 0);
 }
 
-/** Einzelne Session beenden, falls ends_at vorbei (für Token-/Chat-Requests). */
+/**
+ * 1) Abgelaufene Sessions → Grace (Chat noch 10 Min.)
+ * 2) Grace vorbei / Altbestand ended → sofort löschen
+ */
+export async function runLiveSessionCleanup(admin: SupabaseClient) {
+  const ended = await endExpiredLiveSessions(admin);
+  const deleted = await deleteGraceExpiredLiveSessions(admin);
+  return { ended, deleted };
+}
+
+/**
+ * Lifecycle für Token-/Chat-Requests.
+ * - ends_at vorbei → Grace starten
+ * - Grace vorbei → löschen, return "gone"
+ * - in Grace → "grace"
+ * - sonst "active"
+ */
+export async function syncLiveSessionLifecycle(
+  admin: SupabaseClient,
+  session: Pick<
+    LiveSessionRow,
+    "id" | "ends_at" | "status" | "grace_ends_at"
+  >,
+): Promise<"active" | "grace" | "gone"> {
+  if (session.status === "cancelled") {
+    await admin.from("live_sessions").delete().eq("id", session.id);
+    return "gone";
+  }
+
+  if (session.status === "ended") {
+    if (isInLiveGracePeriod(session)) return "grace";
+    await admin.from("live_sessions").delete().eq("id", session.id);
+    return "gone";
+  }
+
+  if (new Date(session.ends_at).getTime() <= Date.now()) {
+    const grace = await beginLiveSessionGrace(admin, session.id);
+    return grace ? "grace" : "gone";
+  }
+
+  return "active";
+}
+
+/** @deprecated Alias — Video/Host stoppen wenn nicht mehr aktiv. */
 export async function endLiveSessionIfPast(
   admin: SupabaseClient,
-  session: { id: string; ends_at: string; status: string },
+  session: { id: string; ends_at: string; status: string; grace_ends_at?: string | null },
 ): Promise<boolean> {
-  if (session.status === "ended" || session.status === "cancelled") return true;
-  if (new Date(session.ends_at).getTime() > Date.now()) return false;
-  await admin
-    .from("live_sessions")
-    .update({ status: "ended", updated_at: new Date().toISOString() })
-    .eq("id", session.id)
-    .in("status", ["scheduled", "live"]);
-  return true;
+  const phase = await syncLiveSessionLifecycle(admin, session as LiveSessionRow);
+  return phase !== "active";
 }
+
+export { SESSION_SELECT as LIVE_SESSION_SELECT };

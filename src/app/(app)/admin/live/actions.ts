@@ -163,11 +163,19 @@ export async function setLiveSessionStatusAction(
   try {
     await requireAdminAction();
     const admin = createSupabaseAdminClient();
-    const { error } = await admin
-      .from("live_sessions")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", sessionId);
-    if (error) return { ok: false, error: error.message };
+    if (status === "ended") {
+      const { beginLiveSessionGrace } = await import("@/lib/live/cleanup");
+      await beginLiveSessionGrace(admin, sessionId);
+    } else if (status === "cancelled") {
+      const { error } = await admin.from("live_sessions").delete().eq("id", sessionId);
+      if (error) return { ok: false, error: error.message };
+    } else {
+      const { error } = await admin
+        .from("live_sessions")
+        .update({ status, updated_at: new Date().toISOString(), grace_ends_at: null })
+        .eq("id", sessionId);
+      if (error) return { ok: false, error: error.message };
+    }
     revalidatePath("/admin/live");
     revalidatePath("/dashboard");
     revalidatePath("/live");

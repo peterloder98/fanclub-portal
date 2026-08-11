@@ -3,7 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { mintLiveKitToken } from "@/lib/live/livekit";
 import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
-import { endLiveSessionIfPast } from "@/lib/live/cleanup";
+import { syncLiveSessionLifecycle } from "@/lib/live/cleanup";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { assertMemberCanWrite, BROWSE_ONLY_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 
@@ -45,21 +45,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: BROWSE_ONLY_WRITE_BLOCKED_MESSAGE }, { status: 403 });
     }
 
-    const { data: session, error } = await supabase
+    const admin = createSupabaseAdminClient();
+    let { data: session, error } = await supabase
       .from("live_sessions")
       .select(
-        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at",
       )
       .eq("slug", slug)
       .maybeSingle();
+
+    if (error && /grace_ends_at/i.test(error.message)) {
+      const fallback = await supabase
+        .from("live_sessions")
+        .select(
+          "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
+        )
+        .eq("slug", slug)
+        .maybeSingle();
+      session = fallback.data
+        ? ({ ...fallback.data, grace_ends_at: null } as typeof session)
+        : null;
+      error = fallback.error;
+    }
 
     if (error || !session) {
       return NextResponse.json({ error: "Session nicht gefunden." }, { status: 404 });
     }
 
     const row = session as LiveSessionRow;
-    if (await endLiveSessionIfPast(createSupabaseAdminClient(), row)) {
-      return NextResponse.json({ error: "Die Session ist zu Ende." }, { status: 403 });
+    const phase = await syncLiveSessionLifecycle(admin, row);
+    if (phase !== "active") {
+      return NextResponse.json(
+        {
+          error:
+            phase === "grace"
+              ? "Anni ist offline — nur noch der Chat ist kurz offen."
+              : "Die Session ist zu Ende.",
+        },
+        { status: 403 },
+      );
     }
     if (!canMembersJoinSession(row)) {
       return NextResponse.json(
@@ -68,9 +92,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const name = profile
-      ? profileDisplayName(profile)
-      : "Mitglied";
+    const name = profile ? profileDisplayName(profile) : "Mitglied";
 
     const { token, url } = await mintLiveKitToken({
       roomName: row.livekit_room_name,

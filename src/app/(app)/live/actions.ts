@@ -4,11 +4,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canMembersJoinSession,
+  canMembersUseLiveChat,
   LIVE_SESSION_CHAT_MAX_LEN,
   LIVE_SESSION_QUESTION_MAX_LEN,
   type LiveSessionRow,
 } from "@/lib/live/types";
-import { endLiveSessionIfPast } from "@/lib/live/cleanup";
+import { syncLiveSessionLifecycle } from "@/lib/live/cleanup";
 import { assertMemberCanWrite } from "@/lib/portal-launch";
 
 async function requireActiveMember() {
@@ -39,45 +40,49 @@ async function requireActiveMember() {
   return { ok: true as const, user, supabase, isAdmin: profile?.role === "admin" };
 }
 
-async function requireJoinableSession(sessionId: string) {
+const SESSION_SELECT =
+  "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at";
+
+async function requireChatSession(sessionId: string) {
   const gate = await requireActiveMember();
   if (!gate.ok) return gate;
 
   const { data: session } = await gate.supabase
     .from("live_sessions")
-    .select(
-      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
-    )
+    .select(SESSION_SELECT)
     .eq("id", sessionId)
     .maybeSingle();
 
   if (!session) return { ok: false as const, error: "Session nicht gefunden." };
   const row = session as LiveSessionRow;
-  if (await endLiveSessionIfPast(createSupabaseAdminClient(), row)) {
+  const phase = await syncLiveSessionLifecycle(createSupabaseAdminClient(), row);
+  if (phase === "gone") {
     return { ok: false as const, error: "Session ist beendet." };
   }
-  if (!canMembersJoinSession(row)) {
+  if (phase === "grace") {
+    return { ok: true as const, user: gate.user, supabase: gate.supabase, session: { ...row, status: "ended" as const } };
+  }
+  if (!canMembersUseLiveChat(row) && !canMembersJoinSession(row)) {
     return { ok: false as const, error: "Session ist nicht geöffnet." };
   }
   return { ok: true as const, user: gate.user, supabase: gate.supabase, session: row };
 }
 
-/** Fragen: vorab (Lobby) und live — Session darf geplant/live sein, nicht beendet. */
+/** Fragen: vorab (Lobby) und live — Session darf geplant/live sein, nicht im Nachlauf/beendet. */
 async function requireQuestionableSession(sessionId: string) {
   const gate = await requireActiveMember();
   if (!gate.ok) return gate;
 
   const { data: session } = await gate.supabase
     .from("live_sessions")
-    .select(
-      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
-    )
+    .select(SESSION_SELECT)
     .eq("id", sessionId)
     .maybeSingle();
 
   if (!session) return { ok: false as const, error: "Session nicht gefunden." };
   const row = session as LiveSessionRow;
-  if (await endLiveSessionIfPast(createSupabaseAdminClient(), row)) {
+  const phase = await syncLiveSessionLifecycle(createSupabaseAdminClient(), row);
+  if (phase !== "active") {
     return { ok: false as const, error: "Session ist beendet." };
   }
   if (row.status === "ended" || row.status === "cancelled") {
@@ -93,7 +98,7 @@ export async function sendLiveSessionMessage(
   sessionId: string,
   body: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const gate = await requireJoinableSession(sessionId);
+  const gate = await requireChatSession(sessionId);
   if (!gate.ok) return gate;
 
   const text = body.trim().slice(0, LIVE_SESSION_CHAT_MAX_LEN);

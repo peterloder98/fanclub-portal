@@ -224,7 +224,7 @@ export function LiveMemberQuestions({
       setDraft("");
       setOkMsg(
         mode === "advance"
-          ? "Frage gespeichert — Anni sieht sie am Live-Tag in ihrer Liste."
+          ? "Vorab-Frage gespeichert. Weitere Fragen könnt ihr während des Live-Chats stellen."
           : "Frage gesendet — Anni sieht sie in ihrer Liste.",
       );
       if (userId) await reload(userId, isAdmin);
@@ -252,7 +252,7 @@ export function LiveMemberQuestions({
         </p>
         <p className="text-[11px] text-white/80">
           {mode === "advance"
-            ? "Optional — pro Person nur eine Frage vor dem Live."
+            ? "Optional — pro Person nur eine Vorab-Frage."
             : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
         </p>
       </header>
@@ -282,9 +282,16 @@ export function LiveMemberQuestions({
             </div>
           </form>
         ) : (
-          <p className="text-sm text-slate-600">
-            Du hast bereits eine offene Frage. Mehr als eine ist nicht möglich.
-          </p>
+          <div className="rounded-xl border border-fc-navy/10 bg-fc-ice/60 px-3 py-3 text-sm text-slate-700">
+            {mode === "advance" ? (
+              <p>
+                Deine Vorab-Frage ist eingereicht — das Feld ist geschlossen.{" "}
+                <strong>Weitere Fragen könnt ihr während des Live-Chats stellen.</strong>
+              </p>
+            ) : (
+              <p>Du hast bereits eine offene Frage. Mehr als eine ist nicht möglich.</p>
+            )}
+          </div>
         )}
 
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
