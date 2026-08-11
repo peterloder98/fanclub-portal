@@ -25,7 +25,10 @@ import {
   awardMembershipReferralCompletionPoints,
   MEMBERSHIP_REFERRAL_COMPLETION_POINTS,
 } from "@/lib/points/award-membership-referral-completed";
-import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
+import {
+  allocateNextMembershipNumber,
+  isAssignedMembershipNumber,
+} from "@/lib/membership/numbers";
 import { storeApprovedMemberContractPdf } from "@/lib/membership/application-pdf-service";
 import {
   formatContributionEmailVars,
@@ -89,15 +92,32 @@ async function activateApplication(
     .eq("id", app.user_id)
     .maybeSingle();
 
-  let assignedNumber = profileBefore?.membership_number?.trim() || null;
+  let assignedNumber = isAssignedMembershipNumber(profileBefore?.membership_number)
+    ? profileBefore!.membership_number!.trim()
+    : null;
   if (!assignedNumber) {
-    assignedNumber =
-      membershipNumber?.trim() || (await allocateNextMembershipNumber(admin));
-    const { error: pErr } = await admin
-      .from("profiles")
-      .update({ membership_number: assignedNumber })
-      .eq("id", app.user_id);
-    if (pErr) throw new Error(pErr.message);
+    const manual = membershipNumber?.trim() || null;
+    const maxAttempts = manual ? 1 : 5;
+    let lastErr: Error | null = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      assignedNumber = manual || (await allocateNextMembershipNumber(admin));
+      const { error: pErr } = await admin
+        .from("profiles")
+        .update({ membership_number: assignedNumber })
+        .eq("id", app.user_id);
+      if (!pErr) {
+        lastErr = null;
+        break;
+      }
+      if (!manual && /membership_number|duplicate|unique/i.test(pErr.message)) {
+        lastErr = new Error(pErr.message);
+        continue;
+      }
+      throw new Error(pErr.message);
+    }
+    if (lastErr || !assignedNumber) {
+      throw lastErr ?? new Error("Mitgliedsnummer konnte nicht vergeben werden.");
+    }
   }
 
   const profile = { membership_number: assignedNumber };

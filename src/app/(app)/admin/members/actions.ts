@@ -12,7 +12,10 @@ import {
 } from "@/lib/email/member-login-email-changed";
 import { logAdminAction } from "@/lib/admin/audit-log";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
-import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
+import {
+  allocateNextMembershipNumber,
+  isAssignedMembershipNumber,
+} from "@/lib/membership/numbers";
 import { normalizeMemberCountryCode } from "@/lib/members/country";
 
 const schema = z.object({
@@ -255,17 +258,14 @@ export async function updateMember(formData: FormData) {
   }
 
   let membershipNumber = input.membership_number?.trim() || null;
-  if (
-    input.status === "active" &&
-    !membershipNumber &&
-    !existingProfile?.membership_number?.trim()
-  ) {
+  const previousNumber = isAssignedMembershipNumber(existingProfile?.membership_number)
+    ? existingProfile!.membership_number!.trim()
+    : null;
+  if (input.status === "active" && !membershipNumber && !previousNumber) {
     membershipNumber = await allocateNextMembershipNumber(admin);
   } else if (!membershipNumber) {
-    membershipNumber = existingProfile?.membership_number?.trim() || null;
+    membershipNumber = previousNumber;
   }
-
-  const previousNumber = existingProfile?.membership_number?.trim() || null;
   if (membershipNumber && membershipNumber !== previousNumber) {
     const { data: clash } = await admin
       .from("profiles")
