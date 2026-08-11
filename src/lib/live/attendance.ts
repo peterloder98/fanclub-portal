@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 import { POINT_VALUES } from "@/lib/points/values";
 import { notifyRankUpIfChanged, sumUserPointsThisYear } from "@/lib/points/rank-notify";
+import { assertMemberCanWrite, BROWSE_ONLY_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 
 export const LIVE_ATTENDANCE_MIN_MS = 60_000;
 
@@ -28,6 +29,11 @@ export async function pingLiveSessionAttendance(sessionId: string): Promise<
   ]);
   if (!membership && profile?.role !== "admin") {
     return { ok: false, error: "Nur aktive Mitglieder." };
+  }
+  try {
+    assertMemberCanWrite(profile?.role ?? "member");
+  } catch {
+    return { ok: false, error: BROWSE_ONLY_WRITE_BLOCKED_MESSAGE };
   }
 
   const { data: session } = await supabase

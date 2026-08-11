@@ -10,6 +10,7 @@ import {
   GROUP_CHAT_MAX_LEN,
   type GroupChatMessageRow,
 } from "@/lib/chat/constants";
+import { checkMemberWriteAccess } from "@/lib/portal-launch-server";
 
 async function notifyChatMentions(text: string, messageId: string) {
   const supabase = await createSupabaseServerClient();
@@ -55,6 +56,9 @@ export async function sendGroupChatMessage(bodyRaw: string): Promise<{
   if (body.length > GROUP_CHAT_MAX_LEN) {
     return { ok: false, error: `Maximal ${GROUP_CHAT_MAX_LEN} Zeichen.` };
   }
+
+  const writeGate = await checkMemberWriteAccess();
+  if (!writeGate.ok) return { ok: false, error: writeGate.error };
 
   const supabase = await createSupabaseServerClient();
   const {

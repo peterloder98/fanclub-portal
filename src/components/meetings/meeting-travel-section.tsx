@@ -1,8 +1,10 @@
 import type { EventTravelInfo } from "@/lib/events/travel-info";
 import { travelInfoHasContent } from "@/lib/events/travel-info";
 import { formatWalkDistance, formatWalkDuration } from "@/lib/events/travel-info";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export function MeetingTravelSection({ travel }: { travel: EventTravelInfo }) {
+  if (!FEATURE_FLAGS.travelInfo) return null;
   if (!travelInfoHasContent(travel)) return null;
 
   return (

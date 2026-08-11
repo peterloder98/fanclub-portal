@@ -7,6 +7,8 @@ export const FEATURE_FLAGS = {
   merchandise: false,
   /** Radio-Hörervotings (+ Badge „Votingheld“, Radio-Sterne, Nav/Admin) */
   votings: false,
+  /** Reiseinformationen bei Events und Treffen (UI ausgeblendet bis Freigabe) */
+  travelInfo: false,
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

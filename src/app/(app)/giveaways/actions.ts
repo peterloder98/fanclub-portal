@@ -18,6 +18,7 @@ import {
 } from "@/lib/email/giveaway-notify";
 import { after } from "next/server";
 import { notifyMembersNewGiveaway } from "@/lib/email/member-activity-broadcast";
+import { requireMemberWriteAccess } from "@/lib/portal-launch-server";
 
 async function requireUser() {
   const supabase = await createSupabaseServerClient();
@@ -26,6 +27,11 @@ async function requireUser() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   return { supabase, userId: user.id };
+}
+
+async function requireMemberUser() {
+  const gate = await requireMemberWriteAccess();
+  return { supabase: gate.supabase, userId: gate.user.id };
 }
 
 async function requireAdmin() {
@@ -296,7 +302,7 @@ export async function sendGiveawayWinnerEmail(
 }
 
 export async function participateSimple(giveawayId: string) {
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId } = await requireMemberUser();
 
   const { data: g } = await supabase
     .from("giveaways")
@@ -344,7 +350,7 @@ export async function participateQuiz(
   giveawayId: string,
   answersJson: string,
 ): Promise<QuizParticipationResult> {
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId } = await requireMemberUser();
   const admin = createSupabaseAdminClient();
 
   const answers = quizAnswerSchema.parse(JSON.parse(answersJson));
@@ -426,7 +432,7 @@ export async function participateQuiz(
 }
 
 export async function participateQuestion(giveawayId: string, answersJson: string) {
-  const { supabase, userId } = await requireUser();
+  const { supabase, userId } = await requireMemberUser();
   const admin = createSupabaseAdminClient();
 
   const answers = quizAnswerSchema.parse(JSON.parse(answersJson));

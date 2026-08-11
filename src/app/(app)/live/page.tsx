@@ -25,10 +25,13 @@ export default async function LiveIndexPage() {
       <Topbar title="Live" subtitle="Live-Sessions mit Anni" />
       <main className="mx-auto max-w-2xl px-4 py-6 lg:px-8">
         {sessions.length === 0 ? (
-          <p className="text-sm text-slate-600">
-            Gerade ist keine Live-Session geöffnet. Sobald eine startet, erscheint sie hier und im
-            Menü.
-          </p>
+          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-700 shadow-sm">
+            <p className="font-medium text-fc-navy">Aktuell kein Termin</p>
+            <p className="mt-2 leading-relaxed">
+              Aktuell steht noch kein neuer Live-Chat-Termin mit Anni fest. Sobald es soweit ist,
+              werden die Mitglieder so schnell wie möglich informiert.
+            </p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {sessions.map((s) => {

@@ -5,6 +5,7 @@ import { mintLiveKitToken } from "@/lib/live/livekit";
 import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 import { endLiveSessionIfPast } from "@/lib/live/cleanup";
 import { profileDisplayName } from "@/lib/profiles/display";
+import { assertMemberCanWrite, BROWSE_ONLY_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 
 export async function POST(request: Request) {
   try {
@@ -37,6 +38,11 @@ export async function POST(request: Request) {
         { error: "Nur aktive Mitglieder können dem Live beitreten." },
         { status: 403 },
       );
+    }
+    try {
+      assertMemberCanWrite(profile?.role ?? "member");
+    } catch {
+      return NextResponse.json({ error: BROWSE_ONLY_WRITE_BLOCKED_MESSAGE }, { status: 403 });
     }
 
     const { data: session, error } = await supabase

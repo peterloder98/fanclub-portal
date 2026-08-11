@@ -19,6 +19,7 @@ import { CommentWarningButton } from "@/components/admin/comment-warning-button"
 import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 type Poll = {
   id: string;
   question: string;
@@ -39,6 +40,7 @@ type Comment = {
 };
 
 export function PollDetail({ pollId }: { pollId: string }) {
+  const softLaunch = useSoftLaunch();
   const [poll, setPoll] = useState<Poll | null>(null);
   const [options, setOptions] = useState<Option[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
@@ -189,6 +191,10 @@ export function PollDetail({ pollId }: { pollId: string }) {
 
   async function toggleVote(optionId: string, fromEl: HTMLElement | null) {
     if (!poll || !userId || ended) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     if (busyOptionId) return;
 
     const fromRect = captureFlyRect(fromEl);

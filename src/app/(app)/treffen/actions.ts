@@ -7,8 +7,10 @@ import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activ
 import { formatEur } from "@/lib/club/ledger";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { requireMemberWriteAccess } from "@/lib/portal-launch-server";
 
 export async function toggleMeetingParticipation(meetingId: string) {
+  await requireMemberWriteAccess();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

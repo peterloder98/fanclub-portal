@@ -19,6 +19,7 @@ import {
 } from "@/lib/events/format";
 import { ticketDisplay } from "@/lib/events/ticket";
 import { cn } from "@/lib/cn";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 function EventListDateBlock({
   startAt,
@@ -93,7 +94,8 @@ export function EventListItem({
   const isTv = e.kind === "tv";
   const locationLine = formatLocationLine(e, isTv);
   const ticket = ticketDisplay(e.ticket_url);
-  const showAdminTravel = isAdmin && !isTv;
+  const showAdminTravel = Boolean(FEATURE_FLAGS.travelInfo && isAdmin && !isTv);
+  const showMemberTravel = Boolean(FEATURE_FLAGS.travelInfo && travelNote?.travel && !isTv);
 
   return (
     <article
@@ -166,10 +168,10 @@ export function EventListItem({
         />
       ) : null}
 
-      {travelNote?.travel && !isTv && !travelOpen ? (
+      {showMemberTravel && !travelOpen ? (
         <div className="mt-2 border-t border-slate-100 pt-2 sm:mt-3">
           <EventTravelInfoBlock
-            travel={travelNote.travel}
+            travel={travelNote!.travel}
             originAddress={[e.address, e.postal_code, e.city].filter(Boolean).join(", ")}
           />
         </div>

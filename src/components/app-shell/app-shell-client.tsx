@@ -11,40 +11,49 @@ import { GroupChatWidget } from "@/components/chat/group-chat-widget.client";
 import { AppActivityAndOnboarding } from "@/components/app-shell/app-activity-and-onboarding.client";
 import { AddToHomeScreenPrompt } from "@/components/app-shell/add-to-home-screen-prompt";
 import { EngagementNudgeHost } from "@/components/engagement/engagement-nudge-host";
+import {
+  SoftLaunchBanner,
+  SoftLaunchProvider,
+} from "@/components/app-shell/soft-launch-banner.client";
 
 export function AppShellClient({
   children,
   needsIntroOnboarding = false,
+  role = "member",
 }: {
   children: ReactNode;
   needsIntroOnboarding?: boolean;
+  role?: string;
 }) {
   const welcomeLock = useIsWelcomeLockRoute();
 
   return (
-    <TopbarProvider>
-      <ChatUnreadProvider>
-        <div
-          id="main-content"
-          tabIndex={-1}
-          className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden outline-none"
-        >
-          {welcomeLock ? null : <TopbarChrome />}
-          <MainScrollRegion>{children}</MainScrollRegion>
-          <AppActivityAndOnboarding needsWelcomeOnboarding={needsIntroOnboarding} />
-          {welcomeLock ? null : (
-            <>
-              <AddToHomeScreenPrompt />
-              <Suspense fallback={null}>
-                <EngagementNudgeHost />
-              </Suspense>
-              <Suspense fallback={null}>
-                <GroupChatWidget />
-              </Suspense>
-            </>
-          )}
-        </div>
-      </ChatUnreadProvider>
-    </TopbarProvider>
+    <SoftLaunchProvider role={role}>
+      <TopbarProvider>
+        <ChatUnreadProvider>
+          <div
+            id="main-content"
+            tabIndex={-1}
+            className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden outline-none"
+          >
+            {welcomeLock ? null : <TopbarChrome />}
+            {welcomeLock ? null : <SoftLaunchBanner />}
+            <MainScrollRegion>{children}</MainScrollRegion>
+            <AppActivityAndOnboarding needsWelcomeOnboarding={needsIntroOnboarding} />
+            {welcomeLock ? null : (
+              <>
+                <AddToHomeScreenPrompt />
+                <Suspense fallback={null}>
+                  <EngagementNudgeHost />
+                </Suspense>
+                <Suspense fallback={null}>
+                  <GroupChatWidget />
+                </Suspense>
+              </>
+            )}
+          </div>
+        </ChatUnreadProvider>
+      </TopbarProvider>
+    </SoftLaunchProvider>
   );
 }

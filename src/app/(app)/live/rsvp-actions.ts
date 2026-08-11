@@ -2,11 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { checkMemberWriteAccess } from "@/lib/portal-launch-server";
 
 export async function setLiveSessionRsvpAction(
   sessionId: string,
   status: "accepted" | "declined",
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const writeGate = await checkMemberWriteAccess();
+  if (!writeGate.ok) return { ok: false, error: writeGate.error };
+
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

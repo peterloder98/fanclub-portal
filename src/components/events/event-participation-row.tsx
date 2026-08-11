@@ -8,6 +8,7 @@ import { cn } from "@/lib/cn";
 import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import { POINT_VALUES } from "@/lib/points/values";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 export function EventParticipationRow({
   eventId,
@@ -26,12 +27,14 @@ export function EventParticipationRow({
   /** TV-Auftritt: „Schaue ich mir an“. */
   tvMode?: boolean;
 }) {
+  const softLaunch = useSoftLaunch();
   const [joined, setJoined] = useState(initialJoined);
   const [count, setCount] = useState(initialCount);
   const [attendees, setAttendees] = useState(initialAttendees);
   const [meId, setMeId] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [blockMsg, setBlockMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -80,8 +83,13 @@ export function EventParticipationRow({
   }
 
   async function toggleJoin(fromEl: HTMLElement) {
+    if (!softLaunch.canWrite) {
+      setBlockMsg(softLaunch.writeBlockedMessage);
+      return;
+    }
     const fromRect = captureFlyRect(fromEl);
     setBusy(true);
+    setBlockMsg(null);
     const supabase = createSupabaseBrowserClient();
     const {
       data: { user },
@@ -148,10 +156,10 @@ export function EventParticipationRow({
     >
       <button
         type="button"
-        disabled={busy}
+        disabled={busy || !softLaunch.canWrite}
         onClick={(e) => void toggleJoin(e.currentTarget)}
         className={cn(
-          "shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition",
+          "shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition disabled:opacity-60",
           joined
             ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
             : "bg-fc-navy text-white hover:bg-fc-blue",
@@ -165,6 +173,7 @@ export function EventParticipationRow({
             ? "Schaue ich mir an"
             : "Am Event teilnehmen"}
       </button>
+      {blockMsg ? <p className="basis-full text-xs text-amber-800">{blockMsg}</p> : null}
       {count > 0 ? (
         <ParticipantAvatarStack
           attendees={attendees}

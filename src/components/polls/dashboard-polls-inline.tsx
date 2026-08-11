@@ -11,6 +11,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 type PollRow = {
   id: string;
   question: string;
@@ -24,6 +25,7 @@ type VoteRow = { poll_id: string; option_id: string; user_id: string };
 type Voter = { id: string; name: string; avatarUrl: string | null };
 
 export function DashboardPollsInline() {
+  const softLaunch = useSoftLaunch();
   const [polls, setPolls] = useState<PollRow[]>([]);
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
@@ -129,6 +131,7 @@ export function DashboardPollsInline() {
 
   async function toggleVote(poll: PollRow, optionId: string, fromEl: HTMLElement) {
     if (!userId) return;
+    if (!softLaunch.canWrite) return;
     const ended = new Date(poll.ends_at).getTime() < Date.now();
     if (ended || busyKey) return;
     const fromRect = captureFlyRect(fromEl);

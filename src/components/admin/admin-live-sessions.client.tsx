@@ -246,7 +246,10 @@ export function AdminLiveSessionsPanel({
       <section className="grid gap-3">
         <h2 className="text-base font-semibold text-fc-navy">Sessions</h2>
         {sessions.length === 0 ? (
-          <p className="text-sm text-slate-500">Noch keine Sessions.</p>
+          <p className="text-sm text-slate-600">
+            Aktuell steht noch kein neuer Live-Chat-Termin mit Anni fest. Sobald es soweit ist, werden
+            die Mitglieder so schnell wie möglich informiert.
+          </p>
         ) : (
           sessions.map((s) => {
             const hostUrl = hostById[s.id];

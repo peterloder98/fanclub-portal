@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { toggleMeetingParticipation } from "@/app/(app)/treffen/actions";
 import { cn } from "@/lib/cn";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 export function MeetingParticipateButton({
   meetingId,
@@ -15,16 +16,22 @@ export function MeetingParticipateButton({
   disabled?: boolean;
   className?: string;
 }) {
+  const softLaunch = useSoftLaunch();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const locked = disabled || !softLaunch.canWrite;
 
   return (
     <div className={className}>
       <button
         type="button"
-        disabled={disabled || pending}
+        disabled={locked || pending}
         onClick={() => {
           setError(null);
+          if (!softLaunch.canWrite) {
+            setError(softLaunch.writeBlockedMessage);
+            return;
+          }
           startTransition(async () => {
             try {
               await toggleMeetingParticipation(meetingId);
@@ -43,6 +50,9 @@ export function MeetingParticipateButton({
         {pending ? "…" : joined ? "Abmelden" : "Teilnehmen"}
       </button>
       {error ? <p className="mt-1 text-xs text-rose-700">{error}</p> : null}
+      {!softLaunch.canWrite && !error ? (
+        <p className="mt-1 text-xs text-amber-800">{softLaunch.writeBlockedMessage}</p>
+      ) : null}
     </div>
   );
 }

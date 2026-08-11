@@ -15,6 +15,7 @@ import { PollAdminControls } from "@/components/polls/poll-admin-controls";
 import { PollOptionsList } from "@/components/polls/poll-options-list";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { invalidatePollVoterCache } from "@/lib/polls/invalidate-voter-cache";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 type PollRow = {
   id: string;
@@ -39,6 +40,7 @@ export function PollBoard({
   isAdmin?: boolean;
 }) {
   const searchParams = useSearchParams();
+  const softLaunch = useSoftLaunch();
   const refreshToken = searchParams.get("refresh");
   const [polls, setPolls] = useState<PollRow[]>(initialPolls);
   const [loading, setLoading] = useState(!initialPolls.length);
@@ -209,6 +211,10 @@ export function PollBoard({
 
   async function toggleVote(poll: PollRow, optionId: string, fromEl: HTMLElement) {
     if (!userId) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     const ended = new Date(poll.ends_at).getTime() < Date.now();
     if (ended) return;
     const key = `${poll.id}:${optionId}`;

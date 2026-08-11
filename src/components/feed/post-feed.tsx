@@ -48,6 +48,8 @@ import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
 import { ScrollHintBox } from "@/components/ui/scroll-hint-box";
 import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
+import { BROWSE_ONLY_WRITE_BLOCKED_MESSAGE, canMemberWrite } from "@/lib/portal-launch";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import { PostReactionPicker } from "@/components/feed/post-reaction-picker";
 import {
@@ -214,6 +216,7 @@ function PostFeedInner({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const softLaunch = useSoftLaunch();
   const [focusPostId, setFocusPostId] = useState<string | null>(null);
   const [posts, setPosts] = useState<FeedPost[]>(initial);
   const [draftByPostId, setDraftByPostId] = useState<Record<string, string>>(
@@ -952,6 +955,10 @@ function PostFeedInner({
     fromRect: { left: number; top: number; width: number; height: number } | null,
   ) {
     if (!me || likeBusy[post.id]) return;
+    if (!canMemberWrite(me.role)) {
+      setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
+      return;
+    }
     const prevReaction = post.myReaction;
     applyReactionOptimistic(post.id, nextReaction);
     invalidateReactors(post.id);
@@ -1030,6 +1037,10 @@ function PostFeedInner({
 
   async function toggleCommentLike(postId: string, comment: FeedComment) {
     if (!me || commentLikeBusy[comment.id]) return;
+    if (!canMemberWrite(me.role)) {
+      setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
+      return;
+    }
     const nextLiked = !comment.likedByMe;
     setCommentLikeBusy((b) => ({ ...b, [comment.id]: true }));
     setCommentLikeState(postId, comment.id, nextLiked, nextLiked ? 1 : -1);
@@ -1073,6 +1084,10 @@ function PostFeedInner({
     const text = (draftByPostId[postId] ?? "").trim();
     if (!text) return;
     if (!me) return;
+    if (!canMemberWrite(me.role)) {
+      setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
+      return;
+    }
     const post = posts.find((p) => p.id === postId);
     const replyCtx =
       replyingTo?.postId === postId ? replyingTo : null;
@@ -1446,6 +1461,10 @@ function PostFeedInner({
 
   async function submitNewPost() {
     if (!me) return;
+    if (!canMemberWrite(me.role)) {
+      setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
+      return;
+    }
     const text = newText.trim();
     if (!text) return;
     if (composerMedia.length > POST_MEDIA_MAX_COUNT) {
@@ -1549,6 +1568,10 @@ function PostFeedInner({
 
   async function togglePollVote(pollId: string, optionId: string, fromEl: HTMLElement) {
     if (!me) return;
+    if (!canMemberWrite(me.role)) {
+      setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
+      return;
+    }
     const poll = feedPolls.find((p) => p.id === pollId);
     if (!poll) return;
     const ended = new Date(poll.ends_at).getTime() < Date.now();

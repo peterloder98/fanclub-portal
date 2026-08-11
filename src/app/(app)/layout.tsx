@@ -96,7 +96,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex h-dvh max-h-dvh w-full max-w-full flex-col overflow-hidden lg:flex-row">
       <SkipToContent />
       <Sidebar user={sidebarUser} />
-      <AppShellClient needsIntroOnboarding={needsWelcomeOnboarding}>{children}</AppShellClient>
+      <AppShellClient
+        needsIntroOnboarding={needsWelcomeOnboarding}
+        role={sidebarUser.role}
+      >
+        {children}
+      </AppShellClient>
     </div>
   );
 }

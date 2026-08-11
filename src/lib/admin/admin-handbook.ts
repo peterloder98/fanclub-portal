@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-06";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-11";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -545,6 +545,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         summary: "Bahnhof und Hotels für Mitglieder",
         blocks: [
           {
+            type: "note",
+            text: "Hinweis Go-Live: Reiseinformationen sind vorübergehend für alle ausgeblendet (Funktion bleibt im System). Später wieder sichtbar.",
+          },
+          {
             type: "p",
             text: "Bei Konzerten (nicht bei TV-Terminen) könnt ihr Anreise-Hinweise hinterlegen. Mitglieder sehen sie direkt am Termin.",
           },
@@ -832,24 +836,28 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "go-live",
         number: "7.5",
         title: "Go-Live Checkliste (technisch)",
-        summary: "Was vor dem echten Start umgestellt wird",
+        summary: "Start 16.08.2026 um 10:00 — was vorher erledigt wird",
         blocks: [
           {
             type: "p",
-            text: "Solange die App noch im Testmodus läuft, gehen viele System-Mails nur an Vorstände. Beim echten Start für alle Mitglieder bitte mit der technischen Betreuung abstimmen:",
+            text: "Offizieller Start: 16.08.2026 um 10:00 Uhr. Ab 13.08. können sich Mitglieder anmelden und umschauen; Schreiben und Chatten sind erst ab dem Start freigeschaltet.",
           },
           {
-            type: "ul",
+            type: "ol",
             items: [
-              "E-Mail-Versand auf Live stellen (EMAIL_OUTBOUND_MODE=live) — dann erreichen Einladungen und Erinnerungen alle Mitglieder.",
-              "Live mit Anni: Annis Empfängeradresse wechselt dann automatisch von der Testadresse (mail@peter-loder.de) auf booking@anniperka.de. Optional fest setzen: LIVE_ANNI_EMAIL=booking@anniperka.de.",
-              "SQL-Migrationen für Live-Sessions und Vorlagen in Supabase ausgeführt (126–129).",
-              "LiveKit-Zugangsdaten in der Server-Umgebung gesetzt und einmal mit Anni getestet (Host-Link, Kamera, Wieder-Einloggen nach Abbruch).",
+              "Backup der Datenbank anlegen.",
+              "Daten-Reset ausführen (SQL 134_go_live_reset.sql): Punkte, Chat, Posts, Test-Engagement leeren — Mitglieder bleiben.",
+              "Einladungs-Vorlage aktualisieren (SQL 133_email_app_access_go_live.sql).",
+              "E-Mail-Versand auf Live stellen (EMAIL_OUTBOUND_MODE=live).",
+              "Am 13.08.: Registrierungs-Mails an alle aktiven Mitglieder senden (Skript send-app-access-all-members.ts).",
+              "Reiseinformationen bleiben ausgeblendet (kommen später).",
+              "Live mit Anni: Leerhinweis „kein Termin“ ist aktiv; bei Bedarf LiveKit und Anni-Mail (booking@anniperka.de) prüfen.",
+              "Am 16.08. um 10:00: Soft-Launch-Sperre endet automatisch — kurz Chat und Posts testen.",
             ],
           },
           {
             type: "note",
-            text: "Anni wird bei jeder neuen Live-Session automatisch per E-Mail eingeladen und erhält wie die Zusagen einen Tag vorher die Erinnerung — ohne dass ihr sie in einer Liste auswählen müsst.",
+            text: "Anni wird bei jeder neuen Live-Session automatisch per E-Mail eingeladen und erhält wie die Zusagen einen Tag vorher die Erinnerung. Bis zum Live-Modus gehen Annis Live-Mails an die Testadresse.",
           },
         ],
       },

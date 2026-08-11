@@ -9,6 +9,7 @@ import {
   normalizeTravelInput,
   type TravelInfoInput,
 } from "@/lib/events/travel-info";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const placeSchema = z.object({
   name: z.string().max(200),
@@ -29,6 +30,9 @@ export async function saveEventTravelInfo(input: {
   eventId: string;
   travel: TravelInfoInput;
 }) {
+  if (!FEATURE_FLAGS.travelInfo) {
+    throw new Error("Reiseinformationen sind derzeit deaktiviert.");
+  }
   const { user } = await requireAdminAction();
   const parsed = travelSchema.parse(input);
   const admin = createSupabaseAdminClient();
@@ -83,6 +87,9 @@ export async function saveEventTravelInfo(input: {
 }
 
 export async function clearEventTravelInfo(eventId: string) {
+  if (!FEATURE_FLAGS.travelInfo) {
+    throw new Error("Reiseinformationen sind derzeit deaktiviert.");
+  }
   await requireAdminAction();
   const admin = createSupabaseAdminClient();
   const { error } = await admin.from("event_admin_notes").delete().eq("event_id", eventId);
