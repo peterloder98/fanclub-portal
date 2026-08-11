@@ -345,6 +345,7 @@ export async function updateMember(formData: FormData) {
         firstName: profile.first_name?.trim() || "Fan",
         membershipNumber: profile.membership_number?.trim() || "—",
         gender: profile.gender,
+        userId: input.user_id,
       }).catch((e) => {
         console.error("[membership] Einladungs-E-Mail fehlgeschlagen:", e);
       });

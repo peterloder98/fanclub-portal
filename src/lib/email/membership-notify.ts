@@ -6,7 +6,10 @@ import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 
 function appBaseUrl() {
-  return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
+    /\/$/,
+    "",
+  );
 }
 
 function formatSubmittedAt(iso: string) {
@@ -115,7 +118,10 @@ export async function sendApplicantConfirmationEmail(input: {
 }) {
   const pdfBytes = await loadApplicationPdfBytes(input.applicationId);
   const feeEur = `${((input.feeCents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
-  const applicantName = [input.firstName, input.lastName].filter(Boolean).join(" ").trim();
+  const applicantName = [input.firstName, input.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
   const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
 
   const rendered = await renderEmailFromTemplate(
@@ -149,28 +155,45 @@ export async function sendApplicantConfirmationEmail(input: {
   });
 }
 
+/**
+ * Nach Freigabe: Willkommen + Mitgliedsnummer + App-Zugang einrichten
+ * (stabiler Setup-Link wie Go-Live-Mail).
+ */
 export async function sendMemberInviteAfterApproval(input: {
   email: string;
   firstName: string;
   membershipNumber: string;
   gender?: string | null;
+  userId?: string;
 }) {
   const admin = createSupabaseAdminClient();
+  const base = appBaseUrl();
+  if (!base) {
+    throw new Error("APP_BASE_URL / NEXT_PUBLIC_APP_URL fehlt.");
+  }
+
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "recovery",
     email: input.email,
   });
   if (linkErr) throw new Error(linkErr.message);
 
-  const inviteUrl = linkData.properties.action_link;
-  const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
+  const hashedToken = linkData.properties.hashed_token;
+  if (!hashedToken) throw new Error("Kein Setup-Token erzeugt.");
+
+  const setupUrl = `${base}/setup-account?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
+  const person = emailPersonVars({
+    firstName: input.firstName,
+    gender: input.gender,
+  });
 
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome,
     {
       ...person,
       membership_number: input.membershipNumber,
-      invite_url: inviteUrl,
+      setup_url: setupUrl,
+      invite_url: setupUrl,
     },
   );
 
@@ -179,9 +202,16 @@ export async function sendMemberInviteAfterApproval(input: {
     subject: rendered.subject,
     text: rendered.text,
     html: rendered.html,
-    attachments: rendered.signatureAttachment ? [rendered.signatureAttachment] : undefined,
+    attachments: rendered.signatureAttachment
+      ? [rendered.signatureAttachment]
+      : undefined,
     templateKey: EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome,
-    context: { membership_number: input.membershipNumber },
+    context: {
+      membership_number: input.membershipNumber,
+      user_id: input.userId ?? null,
+      setup_path: "/setup-account",
+    },
   });
-  return { ...result, inviteUrl };
+
+  return { ...result, setupUrl };
 }

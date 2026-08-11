@@ -198,6 +198,12 @@ export function ApplicationDetailPanels({
             <form
               className="mt-4"
               action={async () => {
+                if (!paymentPaid) {
+                  setError(
+                    "Freigabe erst nach bestätigter Beitragszahlung möglich. Bitte unter Admin → Zahlungen den Eingang bestätigen.",
+                  );
+                  return;
+                }
                 setBusy(true);
                 setError(null);
                 try {
@@ -210,14 +216,14 @@ export function ApplicationDetailPanels({
             >
               <button
                 type="submit"
-                disabled={busy}
+                disabled={busy || !paymentPaid}
                 className="h-11 w-full rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-60"
               >
                 {busy ? "Wird freigeschaltet…" : "Mitgliedschaft aktiv freischalten"}
               </button>
               <p className="mt-2 text-xs text-slate-500">
-                Setzt Status auf aktiv und sendet die Einladungs-E-Mail mit App-Link. Empfohlen erst
-                nach bestätigter Zahlung.
+                Nur nach bestätigter Zahlung möglich. Vergibt die Mitgliedsnummer und sendet die
+                Willkommens-E-Mail mit App-Zugang.
               </p>
             </form>
           ) : null}

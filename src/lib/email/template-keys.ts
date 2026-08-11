@@ -104,7 +104,8 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "membership_number", label: "Mitgliedsnummer" },
-    { key: "invite_url", label: "Link Passwort setzen" },
+    { key: "setup_url", label: "Link Zugang einrichten" },
+    { key: "invite_url", label: "Link Passwort setzen (Alias)" },
   ],
   [EMAIL_TEMPLATE_KEYS.clubMeetingReminder]: [
     ...personFacingSalutation,

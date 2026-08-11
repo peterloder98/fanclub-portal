@@ -20,6 +20,7 @@ export type ApplicationActionsApp = {
   email: string;
   status: string;
   user_id: string | null;
+  payment_paid?: boolean;
 };
 
 export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp }) {
@@ -158,8 +159,15 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
             <h3 className="text-base font-semibold text-fc-navy">Antrag freigeben</h3>
             <p className="mt-1 text-sm text-slate-600">
               {app.first_name} {app.last_name} — Status wird auf „aktiv“ gesetzt. Mitgliedsnummer
-              und Vertrag-PDF werden automatisch ergänzt.
+              und Vertrag-PDF werden automatisch ergänzt. Das neue Mitglied erhält eine
+              Willkommens-Mail mit Nummer und App-Zugang.
             </p>
+            {app.payment_paid === false ? (
+              <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                Beitrag noch nicht als bezahlt markiert. Freigabe ist erst nach Bestätigung unter
+                Admin → Zahlungen möglich.
+              </p>
+            ) : null}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
@@ -170,7 +178,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
               </button>
               <button
                 type="button"
-                disabled={pending}
+                disabled={pending || app.payment_paid === false}
                 className="fc-btn-primary h-10 disabled:opacity-50"
                 onClick={() => {
                   startTransition(async () => {

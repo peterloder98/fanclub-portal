@@ -24,7 +24,6 @@ import { PaymentConfirmation } from "@/components/payments/payment-confirmation"
 import type { PaymentCheckoutResult } from "@/lib/payments/types";
 import {
   CLUB_BANK,
-  formatApplicationPaymentReference,
   formatClubIbanDisplay,
 } from "@/lib/payments/club-bank";
 import { FEATURE_BADGE_HOVER } from "@/components/membership/membership-landing";
@@ -340,21 +339,12 @@ export function MembershipApplicationForm() {
           <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
             <p className="text-sm font-semibold text-amber-950">Mitgliedsbeitrag per Überweisung</p>
             <p className="mt-2 text-sm leading-relaxed text-amber-950">
-              Der Jahresbeitrag beträgt <strong>{formatEur(feeCents)}</strong>. Bitte überweise ihn
-              mit dem Verwendungszweck unten — der Vorstand bestätigt den Eingang manuell.
+              Der Jahresbeitrag beträgt <strong>{formatEur(feeCents)}</strong>. Die
+              Zahlungsdetails mit eindeutigem Verwendungszweck konnten gerade nicht angezeigt
+              werden — bitte melde dich kurz beim Vorstand oder schaue in deine
+              Bestätigungs-E-Mail. Empfänger: {CLUB_BANK.account_holder}, IBAN{" "}
+              {formatClubIbanDisplay()}.
             </p>
-            <dl className="mt-3 grid gap-1 rounded-xl border border-amber-200/80 bg-white/70 px-3 py-3 text-sm text-slate-800 sm:grid-cols-[5.5rem_1fr]">
-              <dt className="text-slate-500">Empfänger</dt>
-              <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
-              <dt className="text-slate-500">IBAN</dt>
-              <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
-              <dt className="text-slate-500">BIC</dt>
-              <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
-              <dt className="text-slate-500">VWZ</dt>
-              <dd className="font-medium">
-                {formatApplicationPaymentReference(firstName ?? "", doneLastName ?? "")}
-              </dd>
-            </dl>
           </div>
         ) : null}
       </div>
@@ -542,7 +532,8 @@ export function MembershipApplicationForm() {
               <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
               <dt className="text-slate-500">VWZ</dt>
               <dd className="font-medium">
-                {formatApplicationPaymentReference(form.first_name, form.last_name)}
+                Nach dem Absenden erhältst du einen eindeutigen Verwendungszweck (z.&nbsp;B.
+                MITGLIED-2026-0001). Bitte nur diesen verwenden.
               </dd>
             </dl>
           </div>

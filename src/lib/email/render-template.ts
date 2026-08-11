@@ -112,6 +112,89 @@ Verwendungszweck: {{bank_reference}}
 Bei Fragen melde dich jederzeit gerne bei uns.`,
 };
 
+const MEMBERSHIP_APPROVED_WELCOME_FALLBACK = {
+  subject: "Willkommen im Fanclub — deine Mitgliedsnummer {{membership_number}}",
+  body_text: `{{salutation}},
+
+wir freuen uns sehr, dir mitteilen zu können: Dein Mitgliedsantrag wurde freigegeben — willkommen im Anni Perka Fanclub!
+
+Deine Mitgliedsnummer: {{membership_number}}
+
+Du bist damit offiziell aufgenommen. Als Nächstes richte bitte deinen persönlichen Zugang zur Fanclub-App ein (Passwort vergeben). Danach kannst du dich mit deiner E-Mail-Adresse anmelden.
+
+Wichtig: Die volle Nutzung (Schreiben, Chatten und Mitmachen, Gewinnspiele etc.) startet offiziell am 16.08.2026 um 10:00 Uhr. Bis dahin kannst du dich nach der Anmeldung gerne umschauen.
+
+Zugang jetzt einrichten:
+{{setup_url}}
+
+Das erwartet dich in der Fanclub-App
+
+Austausch mit anderen Fans
+Tausche dich mit anderen Fanclub-Mitgliedern aus und bleibe mit der Community verbunden.
+
+Gewinnspiele und exklusive Aktionen
+Nimm direkt über die App an Gewinnspielen, Quizaktionen und besonderen Verlosungen teil.
+
+Events und Termine
+Finde Annis Termine sowie Fanclub-Treffen und wichtige Infos rund um den Fanclub.
+
+Live-Chat mit Anni
+Wir organisieren immer wieder Video-Live-Chats mit Anni, bei denen ihr eure Fragen einbringen und miteinander chatten könnt.
+
+Umfragen und Mitmachaktionen
+Stimme bei Fanclub-Themen ab und bringe deine Meinung ein.
+
+Anni-Stars und Auszeichnungen
+Sammle Anni-Stars für deine Aktivität und schalte besondere Erfolge frei.
+
+So richtest du deinen Zugang ein
+
+1. Einrichtungslink öffnen
+Klicke auf den Button „Zugang jetzt einrichten“.
+
+2. Identität bestätigen und Passwort vergeben
+Bestätige deine Identität durch die Eingabe deines Geburtsdatums und lege dein persönliches Wunschpasswort fest.
+Dein Benutzername ist deine E-Mail-Adresse.
+Bitte speichere dir deine E-Mail-Adresse und dein Passwort gut ab.
+
+3. Einloggen und App entdecken
+Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.
+Danach gelangst du in die Fanclub-App.
+Bis zum offiziellen Start am 16.08.2026 um 10:00 Uhr kannst du dich bereits umschauen — der volle Inhalt ist erst dann sichtbar und nutzbar.
+
+Die App soll unsere WhatsApp-Gruppe nicht ersetzen, sondern sinnvoll ergänzen. Wichtige Informationen findest du künftig sowohl in der App als auch in der WhatsApp-Gruppe.
+
+Wir wünschen dir ganz viel Freude und freuen uns, dich in der Fanclub-App begrüßen zu dürfen!
+
+Jetzt meinen Zugang einrichten:
+{{setup_url}}`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">wir freuen uns sehr, dir mitteilen zu können: Dein Mitgliedsantrag wurde freigegeben — willkommen im Anni Perka Fanclub!</p>
+<p style="margin:0 0 0.35em;font-size:15px;line-height:1.55;color:#1e293b"><strong>Deine Mitgliedsnummer:</strong></p>
+<p style="margin:0 0 1em;font-size:22px;line-height:1.3;color:#0b1f3a;font-weight:700">{{membership_number}}</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Du bist damit offiziell aufgenommen. Als Nächstes richte bitte deinen persönlichen Zugang zur Fanclub-App ein (Passwort vergeben). Danach kannst du dich mit deiner E-Mail-Adresse anmelden.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}"><strong>Wichtig:</strong> Die volle Nutzung (Schreiben, Chatten und Mitmachen, Gewinnspiele etc.) startet offiziell am <strong>16.08.2026 um 10:00 Uhr</strong>. Bis dahin kannst du dich nach der Anmeldung gerne umschauen.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{setup_url}}" style="${EMAIL_BUTTON_STYLE}">Zugang jetzt einrichten</a>
+</p>
+<p style="margin:1.25em 0 0.6em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">Das erwartet dich in der Fanclub-App</p>
+<p style="margin:0 0 0.65em;font-size:15px;line-height:1.5;color:#1e293b"><strong>Austausch mit anderen Fans</strong><br>Tausche dich mit anderen Fanclub-Mitgliedern aus und bleibe mit der Community verbunden.</p>
+<p style="margin:0 0 0.65em;font-size:15px;line-height:1.5;color:#1e293b"><strong>Gewinnspiele und exklusive Aktionen</strong><br>Nimm direkt über die App an Gewinnspielen, Quizaktionen und besonderen Verlosungen teil.</p>
+<p style="margin:0 0 0.65em;font-size:15px;line-height:1.5;color:#1e293b"><strong>Events und Termine</strong><br>Finde Annis Termine sowie Fanclub-Treffen und wichtige Infos rund um den Fanclub.</p>
+<p style="margin:0 0 0.65em;font-size:15px;line-height:1.5;color:#1e293b"><strong>Live-Chat mit Anni</strong><br>Wir organisieren immer wieder Video-Live-Chats mit Anni, bei denen ihr eure Fragen einbringen und miteinander chatten könnt.</p>
+<p style="margin:0 0 0.65em;font-size:15px;line-height:1.5;color:#1e293b"><strong>Umfragen und Mitmachaktionen</strong><br>Stimme bei Fanclub-Themen ab und bringe deine Meinung ein.</p>
+<p style="margin:0 0 0.65em;font-size:15px;line-height:1.5;color:#1e293b"><strong>Anni-Stars und Auszeichnungen</strong><br>Sammle Anni-Stars für deine Aktivität und schalte besondere Erfolge frei.</p>
+<p style="margin:1.25em 0 0.6em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">So richtest du deinen Zugang ein</p>
+<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>1. Einrichtungslink öffnen</strong><br>Klicke auf den Button „Zugang jetzt einrichten“.</p>
+<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>2. Identität bestätigen und Passwort vergeben</strong><br>Bestätige deine Identität durch die Eingabe deines Geburtsdatums und lege dein persönliches Wunschpasswort fest.<br>Dein Benutzername ist deine E-Mail-Adresse.<br>Bitte speichere dir deine E-Mail-Adresse und dein Passwort gut ab.</p>
+<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>3. Einloggen und App entdecken</strong><br>Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.<br>Danach gelangst du in die Fanclub-App.<br>Bis zum offiziellen Start am <strong>16.08.2026 um 10:00 Uhr</strong> kannst du dich bereits umschauen — der volle Inhalt ist erst dann sichtbar und nutzbar.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Die App soll unsere WhatsApp-Gruppe nicht ersetzen, sondern sinnvoll ergänzen. Wichtige Informationen findest du künftig sowohl in der App als auch in der WhatsApp-Gruppe.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Wir wünschen dir ganz viel Freude und freuen uns, dich in der Fanclub-App begrüßen zu dürfen!</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{setup_url}}" style="${EMAIL_BUTTON_STYLE}">Jetzt meinen Zugang einrichten</a>
+</p>`,
+};
+
 const APP_ACCESS_SETUP_FALLBACK = {
   subject: "Dein Zugang zur neuen Anni Perka Fanclub-App",
   body_text: `{{salutation}},
@@ -300,6 +383,17 @@ export async function renderEmailFromTemplate(
       body_text: PAYMENT_REMINDER_FALLBACK.body_text,
       body_html: null,
       description: null,
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome) {
+    row = {
+      key,
+      name: "Mitgliedschaft freigegeben (an neues Mitglied)",
+      subject: MEMBERSHIP_APPROVED_WELCOME_FALLBACK.subject,
+      body_text: MEMBERSHIP_APPROVED_WELCOME_FALLBACK.body_text,
+      body_html: MEMBERSHIP_APPROVED_WELCOME_FALLBACK.body_html,
+      description:
+        "Nach Freigabe: Mitgliedsnummer + App-Zugang einrichten (Setup-Link).",
     };
   }
   if (!row && key === EMAIL_TEMPLATE_KEYS.appAccessSetup) {

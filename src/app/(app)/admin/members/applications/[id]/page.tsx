@@ -140,6 +140,7 @@ export default async function AdminMembershipApplicationPage({
               email: app.email,
               status: app.status,
               user_id: app.user_id,
+              payment_paid: detail.payment_status === "paid",
             }}
           />
         </div>

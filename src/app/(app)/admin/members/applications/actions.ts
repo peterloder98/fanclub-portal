@@ -34,6 +34,35 @@ import {
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 
+async function assertApplicationFeePaid(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  applicationId: string,
+  userId: string,
+) {
+  const { data: paidByApp } = await admin
+    .from("payments")
+    .select("id")
+    .eq("application_id", applicationId)
+    .eq("payment_status", "paid")
+    .limit(1)
+    .maybeSingle();
+  if (paidByApp) return;
+
+  const { data: paidByUser } = await admin
+    .from("payments")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("payment_type", "membership_fee")
+    .eq("payment_status", "paid")
+    .limit(1)
+    .maybeSingle();
+  if (paidByUser) return;
+
+  throw new Error(
+    "Freigabe erst nach bestätigter Beitragszahlung möglich. Bitte unter Admin → Zahlungen den Eingang bestätigen.",
+  );
+}
+
 async function activateApplication(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   applicationId: string,
@@ -51,6 +80,8 @@ async function activateApplication(
   if (!app.user_id) {
     throw new Error("Kein Benutzerkonto verknüpft — Antrag kann nicht freigeschaltet werden.");
   }
+
+  await assertApplicationFeePaid(admin, applicationId, app.user_id);
 
   const { data: profileBefore } = await admin
     .from("profiles")
@@ -140,6 +171,7 @@ async function activateApplication(
       firstName: app.first_name?.trim() || "Fan",
       membershipNumber: assignedNumber,
       gender: app.gender,
+      userId: app.user_id,
     }).catch((e) => {
       console.error("[membership] Freischaltungs-Mail fehlgeschlagen:", e);
     });
