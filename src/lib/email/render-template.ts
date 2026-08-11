@@ -122,8 +122,6 @@ Deine Mitgliedsnummer: {{membership_number}}
 
 Du bist damit offiziell aufgenommen. Als Nächstes richte bitte deinen persönlichen Zugang zur Fanclub-App ein (Passwort vergeben). Danach kannst du dich mit deiner E-Mail-Adresse anmelden.
 
-Wichtig: Die volle Nutzung (Schreiben, Chatten und Mitmachen, Gewinnspiele etc.) startet offiziell am 16.08.2026 um 10:00 Uhr. Bis dahin kannst du dich nach der Anmeldung gerne umschauen.
-
 Zugang jetzt einrichten:
 {{setup_url}}
 
@@ -159,8 +157,7 @@ Bitte speichere dir deine E-Mail-Adresse und dein Passwort gut ab.
 
 3. Einloggen und App entdecken
 Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.
-Danach gelangst du in die Fanclub-App.
-Bis zum offiziellen Start am 16.08.2026 um 10:00 Uhr kannst du dich bereits umschauen — der volle Inhalt ist erst dann sichtbar und nutzbar.
+Danach gelangst du in die Fanclub-App und kannst sie voll nutzen.
 
 Die App soll unsere WhatsApp-Gruppe nicht ersetzen, sondern sinnvoll ergänzen. Wichtige Informationen findest du künftig sowohl in der App als auch in der WhatsApp-Gruppe.
 
@@ -173,7 +170,6 @@ Jetzt meinen Zugang einrichten:
 <p style="margin:0 0 0.35em;font-size:15px;line-height:1.55;color:#1e293b"><strong>Deine Mitgliedsnummer:</strong></p>
 <p style="margin:0 0 1em;font-size:22px;line-height:1.3;color:#0b1f3a;font-weight:700">{{membership_number}}</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Du bist damit offiziell aufgenommen. Als Nächstes richte bitte deinen persönlichen Zugang zur Fanclub-App ein (Passwort vergeben). Danach kannst du dich mit deiner E-Mail-Adresse anmelden.</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}"><strong>Wichtig:</strong> Die volle Nutzung (Schreiben, Chatten und Mitmachen, Gewinnspiele etc.) startet offiziell am <strong>16.08.2026 um 10:00 Uhr</strong>. Bis dahin kannst du dich nach der Anmeldung gerne umschauen.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
   <a href="{{setup_url}}" style="${EMAIL_BUTTON_STYLE}">Zugang jetzt einrichten</a>
 </p>
@@ -187,7 +183,7 @@ Jetzt meinen Zugang einrichten:
 <p style="margin:1.25em 0 0.6em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">So richtest du deinen Zugang ein</p>
 <p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>1. Einrichtungslink öffnen</strong><br>Klicke auf den Button „Zugang jetzt einrichten“.</p>
 <p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>2. Identität bestätigen und Passwort vergeben</strong><br>Bestätige deine Identität durch die Eingabe deines Geburtsdatums und lege dein persönliches Wunschpasswort fest.<br>Dein Benutzername ist deine E-Mail-Adresse.<br>Bitte speichere dir deine E-Mail-Adresse und dein Passwort gut ab.</p>
-<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>3. Einloggen und App entdecken</strong><br>Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.<br>Danach gelangst du in die Fanclub-App.<br>Bis zum offiziellen Start am <strong>16.08.2026 um 10:00 Uhr</strong> kannst du dich bereits umschauen — der volle Inhalt ist erst dann sichtbar und nutzbar.</p>
+<p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#1e293b"><strong>3. Einloggen und App entdecken</strong><br>Nach dem Login freuen wir uns, wenn du fünf kurze Kennenlernfragen beantwortest, damit wir dich besser kennenlernen.<br>Danach gelangst du in die Fanclub-App und kannst sie voll nutzen.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Die App soll unsere WhatsApp-Gruppe nicht ersetzen, sondern sinnvoll ergänzen. Wichtige Informationen findest du künftig sowohl in der App als auch in der WhatsApp-Gruppe.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Wir wünschen dir ganz viel Freude und freuen uns, dich in der Fanclub-App begrüßen zu dürfen!</p>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
@@ -385,7 +381,8 @@ export async function renderEmailFromTemplate(
       description: null,
     };
   }
-  if (!row && key === EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome) {
+  // Digitale Neuanmeldung: Code-Vorlage ist maßgeblich (kein Soft-Launch vor dem 16.08.)
+  if (key === EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome) {
     row = {
       key,
       name: "Mitgliedschaft freigegeben (an neues Mitglied)",
@@ -393,7 +390,7 @@ export async function renderEmailFromTemplate(
       body_text: MEMBERSHIP_APPROVED_WELCOME_FALLBACK.body_text,
       body_html: MEMBERSHIP_APPROVED_WELCOME_FALLBACK.body_html,
       description:
-        "Nach Freigabe: Mitgliedsnummer + App-Zugang einrichten (Setup-Link).",
+        "Nach Freigabe digitaler Neuanmeldung: Mitgliedsnummer + App-Zugang (ohne Soft-Launch-Hinweis).",
     };
   }
   if (!row && key === EMAIL_TEMPLATE_KEYS.appAccessSetup) {
