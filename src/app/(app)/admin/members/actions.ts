@@ -40,6 +40,14 @@ const updateSchema = z.object({
   country: z.string().min(2, "Land ist Pflichtfeld."),
   birthdate: z.string().optional().default(""),
   gender: z.enum(["m", "w", "d"], { message: "Geschlecht ist Pflichtfeld." }),
+  email: z
+    .string()
+    .trim()
+    .optional()
+    .default("")
+    .refine((v) => !v || z.string().email().safeParse(v).success, {
+      message: "E-Mail ungültig.",
+    }),
   phone: z.string().optional().default(""),
   membership_start: z.string().optional().default(""),
   membership_end: z.string().optional().default(""),
@@ -207,9 +215,34 @@ export async function updateMember(formData: FormData) {
 
   const { data: existingProfile } = await admin
     .from("profiles")
-    .select("membership_number")
+    .select("membership_number,email")
     .eq("id", input.user_id)
     .maybeSingle();
+
+  const nextEmail = input.email.trim().toLowerCase() || null;
+  const previousEmail = existingProfile?.email?.trim().toLowerCase() || null;
+  if (nextEmail && nextEmail !== previousEmail) {
+    const { data: emailClash } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", nextEmail)
+      .neq("id", input.user_id)
+      .maybeSingle();
+    if (emailClash) {
+      fail("Diese E-Mail ist bereits einem anderen Mitglied zugeordnet.");
+    }
+    const { error: authEmailErr } = await admin.auth.admin.updateUserById(input.user_id, {
+      email: nextEmail,
+      email_confirm: true,
+    });
+    if (authEmailErr) {
+      fail(
+        /already|registered|exists/i.test(authEmailErr.message)
+          ? "Diese E-Mail ist bereits als Login vergeben."
+          : `E-Mail konnte nicht gesetzt werden: ${authEmailErr.message}`,
+      );
+    }
+  }
 
   let membershipNumber = input.membership_number?.trim() || null;
   if (
@@ -243,6 +276,7 @@ export async function updateMember(formData: FormData) {
       membership_number: membershipNumber,
       first_name: input.first_name,
       last_name: input.last_name,
+      email: nextEmail,
       role: input.role,
       birthdate: input.birthdate || null,
       gender: input.gender,

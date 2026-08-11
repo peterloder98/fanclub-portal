@@ -90,7 +90,9 @@ export default async function AdminMemberEditPage({
               <form action={updateMember} className="grid gap-3 md:grid-cols-2">
                 <input type="hidden" name="user_id" value={profile.id} />
 
-                <MembershipNumberEditField value={profile.membership_number ?? ""} />
+                <div className="md:col-span-2">
+                  <MembershipNumberEditField value={profile.membership_number ?? ""} />
+                </div>
                 {(() => {
                   const wc = (profile as { warning_count?: number }).warning_count ?? 0;
                   return wc > 0 ? (
@@ -120,12 +122,18 @@ export default async function AdminMemberEditPage({
                 </label>
 
                 <label className="grid gap-1 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">E-Mail (read-only)</span>
+                  <span className="text-sm font-medium text-slate-700">E-Mail (Login)</span>
                   <input
-                    disabled
+                    name="email"
+                    type="email"
                     defaultValue={profile.email ?? ""}
-                    className="h-11 rounded-xl border bg-slate-50 px-3 text-sm outline-none"
+                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
+                    placeholder="fuer.login@example.de"
+                    autoComplete="off"
                   />
+                  <span className="text-xs text-slate-500">
+                    Muss eindeutig sein. Wird auch als Login-Adresse verwendet.
+                  </span>
                 </label>
 
                 <label className="grid gap-1">
