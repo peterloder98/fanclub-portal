@@ -18,6 +18,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   referralAbuseAdminNotify: "referral_abuse_admin_notify",
   liveSessionInvite: "live_session_invite",
   liveSessionReminder: "live_session_reminder",
+  memberLoginEmailChanged: "member_login_email_changed",
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -153,5 +154,11 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "session_time", label: "Uhrzeit (kurz)" },
     { key: "session_url", label: "Link zur Live-Seite" },
     { key: "calendar_url", label: "Link Kalender (.ics)" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.memberLoginEmailChanged]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "new_email", label: "Neue Login-E-Mail" },
+    { key: "old_email", label: "Bisherige E-Mail" },
   ],
 };

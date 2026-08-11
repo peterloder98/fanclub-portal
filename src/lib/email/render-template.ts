@@ -265,6 +265,27 @@ Bis bald in der App!`,
 <p style="${EMAIL_PARAGRAPH_STYLE}">Wir freuen uns auf dich!<br>Bis bald in der App!</p>`,
 };
 
+const MEMBER_LOGIN_EMAIL_CHANGED_FALLBACK = {
+  subject: "Deine Login-E-Mail in der Fanclub-App wurde geändert",
+  body_text: `{{salutation}},
+
+wir möchten dich kurz informieren: Die hinterlegte E-Mail-Adresse für deinen Fanclub-App-Zugang wurde geändert.
+
+Neue Login-Adresse (Benutzername):
+{{new_email}}
+
+Dein Passwort bleibt unverändert.
+Bitte speichere dir die neue E-Mail-Adresse gut ab und verwende sie ab sofort zum Anmelden.
+
+Falls du diese Änderung nicht erwartet hast, melde dich bitte beim Vorstand.`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">wir möchten dich kurz informieren: Die hinterlegte E-Mail-Adresse für deinen Fanclub-App-Zugang wurde geändert.</p>
+<p style="margin:0 0 0.5em;font-size:15px;line-height:1.55;color:#1e293b"><strong>Neue Login-Adresse (Benutzername):</strong></p>
+<p style="margin:0 0 1em;font-size:16px;line-height:1.5;color:#0b1f3a;font-weight:700">{{new_email}}</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Dein Passwort bleibt unverändert.<br>Bitte speichere dir die neue E-Mail-Adresse gut ab und verwende sie ab sofort zum Anmelden.</p>
+<p style="margin:0;font-size:15px;line-height:1.55;color:#1e293b">Falls du diese Änderung nicht erwartet hast, melde dich bitte beim Vorstand.</p>`,
+};
+
 export async function renderEmailFromTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string>,
@@ -308,6 +329,16 @@ export async function renderEmailFromTemplate(
       subject: APP_INACTIVE_REMINDER_FALLBACK.subject,
       body_text: APP_INACTIVE_REMINDER_FALLBACK.body_text,
       body_html: APP_INACTIVE_REMINDER_FALLBACK.body_html,
+      description: null,
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.memberLoginEmailChanged) {
+    row = {
+      key,
+      name: "Login-E-Mail geändert",
+      subject: MEMBER_LOGIN_EMAIL_CHANGED_FALLBACK.subject,
+      body_text: MEMBER_LOGIN_EMAIL_CHANGED_FALLBACK.body_text,
+      body_html: MEMBER_LOGIN_EMAIL_CHANGED_FALLBACK.body_html,
       description: null,
     };
   }

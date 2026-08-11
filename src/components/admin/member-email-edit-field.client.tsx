@@ -63,7 +63,8 @@ export function MemberEmailEditField({ value }: Props) {
       </div>
       {unlocked ? (
         <p className="text-xs text-amber-800">
-          Achtung: Nach dem Speichern ändert sich der Login. Mitglied ggf. informieren.
+          Achtung: Nach dem Speichern ändert sich der Login. Das Mitglied erhält automatisch eine Info-Mail
+          (neue Adresse + Passwort bleibt).
         </p>
       ) : (
         <p className="text-xs text-slate-500">

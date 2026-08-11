@@ -6,6 +6,10 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
+import {
+  isRealMemberEmail,
+  sendMemberLoginEmailChangedNotice,
+} from "@/lib/email/member-login-email-changed";
 import { logAdminAction } from "@/lib/admin/audit-log";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
 import { allocateNextMembershipNumber } from "@/lib/membership/numbers";
@@ -215,12 +219,14 @@ export async function updateMember(formData: FormData) {
 
   const { data: existingProfile } = await admin
     .from("profiles")
-    .select("membership_number,email")
+    .select("membership_number,email,gender")
     .eq("id", input.user_id)
     .maybeSingle();
 
   const nextEmail = input.email.trim().toLowerCase() || null;
   const previousEmail = existingProfile?.email?.trim().toLowerCase() || null;
+  let notifyLoginEmailChange: { oldEmail: string; newEmail: string } | null = null;
+
   if (nextEmail && nextEmail !== previousEmail) {
     const { data: emailClash } = await admin
       .from("profiles")
@@ -241,6 +247,10 @@ export async function updateMember(formData: FormData) {
           ? "Diese E-Mail ist bereits als Login vergeben."
           : `E-Mail konnte nicht gesetzt werden: ${authEmailErr.message}`,
       );
+    }
+    // Nur wenn schon eine echte Login-Mail existierte (Zugang vorhanden)
+    if (isRealMemberEmail(previousEmail)) {
+      notifyLoginEmailChange = { oldEmail: previousEmail, newEmail: nextEmail };
     }
   }
 
@@ -341,12 +351,26 @@ export async function updateMember(formData: FormData) {
     }
   }
 
+  if (notifyLoginEmailChange) {
+    await sendMemberLoginEmailChangedNotice({
+      firstName: input.first_name,
+      gender: existingProfile?.gender,
+      oldEmail: notifyLoginEmailChange.oldEmail,
+      newEmail: notifyLoginEmailChange.newEmail,
+      userId: input.user_id,
+    }).catch((e) => {
+      console.error("[membership] Login-E-Mail-Änderungshinweis fehlgeschlagen:", e);
+    });
+  }
+
   await logAdminAction(admin, {
     actorId: user.id,
     action: "member.update",
     entityType: "profile",
     entityId: input.user_id,
-    summary: `Mitglied bearbeitet: ${input.first_name} ${input.last_name}`,
+    summary: notifyLoginEmailChange
+      ? `Mitglied bearbeitet (Login-E-Mail → ${notifyLoginEmailChange.newEmail}): ${input.first_name} ${input.last_name}`
+      : `Mitglied bearbeitet: ${input.first_name} ${input.last_name}`,
   });
 
   redirect(`/admin/members/${input.user_id}`);
