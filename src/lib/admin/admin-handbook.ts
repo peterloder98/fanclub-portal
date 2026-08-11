@@ -109,7 +109,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Offenen Antrag antippen und Daten sowie Unterschrift prüfen.",
               "Mit dem Antrag wird automatisch eine offene Zahlung per Banküberweisung angelegt. Der Beitrag (15 € für das laufende Kalenderjahr) muss auf dem Vereinskonto eingegangen sein.",
               "Erst wenn der Beitrag verbucht/bestätigt ist: Antrag freigeben. Die Person bekommt eine Mitgliedsnummer und die Einladung, den App-Zugang einzurichten.",
-              "Fehlt bei einem bestehenden Mitglied die Login-E-Mail (z. B. nach Import): Mitglied öffnen → „Bearbeiten“ → E-Mail eintragen und speichern. Die Adresse muss eindeutig sein und dient zugleich als Login.",
+              "Fehlt bei einem bestehenden Mitglied die Login-E-Mail (z. B. nach Import): Mitglied öffnen → „Bearbeiten“ → bei E-Mail „Ändern“ (mit Bestätigung) → Adresse eintragen und speichern. Die Adresse muss eindeutig sein und ist zugleich der Login — nach dem Speichern geht die Anmeldung nur noch mit der neuen Mail (Passwort bleibt). Sobald Zugänge schon existieren: Mitglied vorher informieren.",
             ],
           },
           {

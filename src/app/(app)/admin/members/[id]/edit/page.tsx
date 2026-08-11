@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MembershipNumberEditField } from "@/components/admin/membership-number-edit-field.client";
+import { MemberEmailEditField } from "@/components/admin/member-email-edit-field.client";
 import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
 import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../../actions";
@@ -121,20 +122,7 @@ export default async function AdminMemberEditPage({
                   />
                 </label>
 
-                <label className="grid gap-1 md:col-span-2">
-                  <span className="text-sm font-medium text-slate-700">E-Mail (Login)</span>
-                  <input
-                    name="email"
-                    type="email"
-                    defaultValue={profile.email ?? ""}
-                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
-                    placeholder="fuer.login@example.de"
-                    autoComplete="off"
-                  />
-                  <span className="text-xs text-slate-500">
-                    Muss eindeutig sein. Wird auch als Login-Adresse verwendet.
-                  </span>
-                </label>
+                <MemberEmailEditField value={profile.email ?? ""} />
 
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Mobil</span>
