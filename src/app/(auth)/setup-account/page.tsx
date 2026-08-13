@@ -1,17 +1,22 @@
 "use client";
 
-import { Suspense, useEffect, useState, useTransition } from "react";
+import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BirthdateSegmentInput } from "@/components/ui/birthdate-segment-input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { completeAccountSetup } from "@/app/(auth)/setup-account/actions";
+import {
+  claimAccountSetupSession,
+  completeAccountSetup,
+  getClaimedSetupSession,
+} from "@/app/(auth)/setup-account/actions";
 
 function SetupAccountInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initOnce = useRef(false);
   const [sessionReady, setSessionReady] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -22,43 +27,77 @@ function SetupAccountInner() {
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
+    if (initOnce.current) return;
+    initOnce.current = true;
+
+    async function resumeFromExisting(): Promise<boolean> {
+      const supabase = createSupabaseBrowserClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session?.user) {
+        setEmail(session.user.email ?? null);
+        // Claim erneuern / setzen, falls erste Sitzung noch ohne Cookie war
+        await claimAccountSetupSession(session.access_token).catch(() => null);
+        return true;
+      }
+      const claimed = await getClaimedSetupSession();
+      if (claimed.ok) {
+        setEmail(claimed.email);
+        return true;
+      }
+      return false;
+    }
+
     async function init() {
       try {
         const supabase = createSupabaseBrowserClient();
         const tokenHash = searchParams.get("token_hash");
         const type = searchParams.get("type");
+        const isOtpType =
+          type === "recovery" || type === "magiclink" || type === "invite";
 
-        if (tokenHash && (type === "recovery" || type === "magiclink" || type === "invite")) {
+        // 1) Schon eingeloggt / Claim vorhanden → Setup fortsetzen (zweiter Klick, Reload)
+        if (await resumeFromExisting()) {
+          if (tokenHash) {
+            router.replace("/setup-account", { scroll: false });
+          }
+          setSessionReady(true);
+          return;
+        }
+
+        // 2) Frischer E-Mail-Link: OTP einmal verifizieren
+        if (tokenHash && isOtpType) {
           const { data, error: otpErr } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
             type: type as "recovery" | "magiclink" | "invite",
           });
-          if (otpErr || !data.session?.user) {
-            setSessionError(
-              "Der Link ist ungültig oder abgelaufen. Bitte die E-Mail erneut öffnen oder den Vorstand kontaktieren.",
-            );
+
+          if (!otpErr && data.session?.user) {
+            setEmail(data.session.user.email ?? null);
+            await claimAccountSetupSession(data.session.access_token).catch(() => null);
+            router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;
           }
-          setEmail(data.session.user.email ?? null);
-          // Token aus der URL entfernen (kein Reuse / saubere Adresse)
-          router.replace("/setup-account", { scroll: false });
-          setSessionReady(true);
-          return;
-        }
 
-        // Fallback: bereits bestehende Recovery-Session (z. B. nach Auth-Callback)
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session?.user) {
+          // Token verbraucht/ungültig — Session/Claim vom ersten Klick im selben Browser?
+          if (await resumeFromExisting()) {
+            router.replace("/setup-account", { scroll: false });
+            setSessionReady(true);
+            return;
+          }
+
           setSessionError(
-            "Der Link ist ungültig oder abgelaufen. Bitte die E-Mail erneut öffnen oder den Vorstand kontaktieren.",
+            "Dieser Einrichtungs-Link wurde bereits verwendet oder ist abgelaufen. Wenn du den Link vorhin schon geöffnet hast, nutze denselben Browser/Tab erneut — oder fordere unter „Passwort vergessen“ einen neuen Link an (sobald der E-Mail-Versand wieder läuft).",
           );
           setSessionReady(true);
           return;
         }
-        setEmail(session.user.email ?? null);
+
+        setSessionError(
+          "Kein gültiger Einrichtungs-Link. Bitte den Button in der neuesten E-Mail nutzen oder unter „Passwort vergessen“ einen neuen Link anfordern.",
+        );
         setSessionReady(true);
       } catch {
         setSessionError("Sitzung konnte nicht geladen werden.");
@@ -113,9 +152,14 @@ function SetupAccountInner() {
             <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
               {sessionError}
             </div>
-            <Link href="/login" className="text-sm font-medium text-fc-blue hover:underline">
-              Zum Login
-            </Link>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm font-medium">
+              <Link href="/forgot-password" className="text-fc-blue hover:underline">
+                Passwort vergessen / neuen Link anfordern
+              </Link>
+              <Link href="/login" className="text-slate-600 hover:underline">
+                Zum Login
+              </Link>
+            </div>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="grid gap-4">

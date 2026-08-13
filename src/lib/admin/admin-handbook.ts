@@ -875,6 +875,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "note",
             text: "Anni wird bei jeder neuen Live-Session automatisch per E-Mail eingeladen und erhält wie die Zusagen einen Tag vorher die Erinnerung. Bis zum Live-Modus gehen Annis Live-Mails an die Testadresse.",
           },
+          {
+            type: "note",
+            text: "Einrichtungs-Link: Nach dem ersten erfolgreichen Öffnen speichert die App die Einrichtungssitzung (bis zu 72 Stunden) — derselbe Browser kann den Link erneut öffnen oder die Seite neu laden, ohne dass der Token noch gültig sein muss. Wenn der Link nie funktioniert hat (abgelaufen, anderer Browser, Mail-Scanner): unter Login → Passwort vergessen einen neuen Link anfordern, oder Technik sendet gezielt neu (Skript resend-app-access-one.ts) — nicht an alle, nur an Betroffene. Jede neue Setup-Mail macht ältere Links ungültig.",
+          },
         ],
       },
     ],
