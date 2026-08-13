@@ -12,6 +12,10 @@ import {
   listActiveMemberRecipients,
   type ActiveMemberRecipient,
 } from "@/lib/members/list-active-member-recipients";
+import {
+  broadcastKindToEmailPref,
+  filterRecipientsByEmailPref,
+} from "@/lib/email/member-email-prefs";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 
@@ -164,6 +168,10 @@ export async function sendMemberActivityBroadcast(input: {
   }
 
   let recipients = await listActiveMemberRecipients();
+  recipients = await filterRecipientsByEmailPref(
+    recipients,
+    broadcastKindToEmailPref(input.kind),
+  );
   if (recipients.length > MAX_RECIPIENTS) {
     recipients = recipients.slice(0, MAX_RECIPIENTS);
     console.warn(

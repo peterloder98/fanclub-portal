@@ -5,6 +5,10 @@ import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { listActiveMemberRecipients } from "@/lib/members/list-active-member-recipients";
+import {
+  filterRecipientsByEmailPref,
+  userAllowsMemberEmail,
+} from "@/lib/email/member-email-prefs";
 import { createUserNotification, notifyAllActiveMembers } from "@/lib/notifications/create";
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
@@ -80,7 +84,8 @@ async function sendOneLiveEmail(input: {
 export async function sendLiveSessionInviteEmails(
   session: SessionMailFields,
 ): Promise<{ emails: number; notifications: number; errors: number }> {
-  const recipients = await listActiveMemberRecipients();
+  const allRecipients = await listActiveMemberRecipients();
+  const recipients = await filterRecipientsByEmailPref(allRecipients, "live");
   const admin = (await import("@/lib/supabase/admin")).createSupabaseAdminClient();
   const { data: genders } = await admin
     .from("profiles")
@@ -122,12 +127,12 @@ export async function sendLiveSessionInviteEmails(
     await sleep(200);
   }
 
-  // Anni immer einladen (eigene Adresse, ohne Mitglieder-Auswahl)
+  // Anni immer einladen (eigene Adresse; Mitglieder-Prefs gelten nicht für Anni)
   const anniEmail = resolveLiveAnniEmail();
-  const alreadyInMembers = recipients.some(
+  const alreadyEmailedAnni = recipients.some(
     (r) => r.email.trim().toLowerCase() === anniEmail.toLowerCase(),
   );
-  if (!alreadyInMembers) {
+  if (!alreadyEmailedAnni) {
     try {
       const person = emailPersonVars({ firstName: "Anni", gender: "female" });
       const ok = await sendOneLiveEmail({
@@ -169,7 +174,7 @@ export async function sendLiveSessionInviteEmails(
         dedupe_key: `invite:${session.id}`,
       },
     });
-    notifications = recipients.length;
+    notifications = allRecipients.length;
   }
 
   await admin
@@ -334,6 +339,10 @@ async function runRemindersForSessions(
       sent += 1;
 
       try {
+        const isAnni = profile.email.trim().toLowerCase() === anniEmail;
+        if (!isAnni && !(await userAllowsMemberEmail(profile.id, "live"))) {
+          continue;
+        }
         const person = emailPersonVars({
           firstName: profile.first_name?.trim() || "Fan",
           gender: profile.gender,
@@ -352,7 +361,7 @@ async function runRemindersForSessions(
           session,
         });
         if (ok) emails += 1;
-        if (ok && profile.email.trim().toLowerCase() === anniEmail) {
+        if (ok && isAnni) {
           anniReminderDone = true;
           await admin
             .from("live_sessions")

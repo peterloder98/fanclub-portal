@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-11";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-13";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -619,13 +619,14 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden.",
               "„Mitglieder-Benachrichtigungen“ (System): optionale Massen-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar.",
               "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
-              "Automatische Erinnerungen (immer an): Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen. Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail.",
+              "Mitglieder können unter „Mein Profil → E-Mail-Benachrichtigungen“ einzelne optionale Mails abschalten (Events, Gewinnspiele, Umfragen, Treffen-Erinnerungen, Live mit Anni, App-Erinnerungen). Wer abgeschaltet hat, bekommt diese Mails nicht — auch wenn die Club-Einstellung an ist.",
+              "Automatische App-Erinnerungen: Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen. Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail — sofern das Mitglied App-Erinnerungen nicht abgeschaltet hat.",
               "Willkommen-Flow für neue Mitglieder: Admin → System → „Willkommen-Vorschau“. Während des Flows (auch in der Vorschau) sind Menü, Chat und Kopfzeile ausgeblendet — erst nach Abschluss geht es in die App. Regeln und Kennenlernen lassen sich durchspielen, ohne etwas zu speichern.",
             ],
           },
           {
             type: "note",
-            text: "Die optionalen Massen-Mails (Gewinnspiel / Event / Umfrage) sind standardmäßig aus und müssen unter „Mitglieder-Benachrichtigungen“ einzeln freigeschaltet werden. In-App-Benachrichtigungen (Glocke oben) laufen unabhängig davon weiter.",
+            text: "Die optionalen Massen-Mails (Gewinnspiel / Event / Umfrage) sind standardmäßig aus und müssen unter „Mitglieder-Benachrichtigungen“ einzeln freigeschaltet werden. In-App-Benachrichtigungen (Glocke oben) laufen unabhängig davon weiter. Nicht abschaltbar für Mitglieder: Verwarnungen, Beitrags-/Zahlungserinnerungen, Zugangs-/Freigabe-Mails und Sicherheitsmeldungen (z. B. geänderte Login-E-Mail).",
           },
           {
             type: "link",

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatEur } from "@/lib/club/ledger";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { createUserNotification } from "@/lib/notifications/create";
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
@@ -103,6 +104,9 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
       sent += 1;
 
       try {
+        if (!(await userAllowsMemberEmail(part.user_id, "meeting_reminders"))) {
+          continue;
+        }
         const rendered = await renderEmailFromTemplate(
           EMAIL_TEMPLATE_KEYS.clubMeetingReminder,
           {

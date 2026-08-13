@@ -4,6 +4,7 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
+import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
 
 const SIGNUP_MAX = 4;
 const SIGNUP_INTERVAL_DAYS = 7;
@@ -101,6 +102,11 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
 
   for (const profile of (profiles ?? []) as ProfileReminderRow[]) {
     if (!profile.email?.trim()) {
+      skipped += 1;
+      continue;
+    }
+
+    if (!(await userAllowsMemberEmail(profile.id, "app_activity"))) {
       skipped += 1;
       continue;
     }

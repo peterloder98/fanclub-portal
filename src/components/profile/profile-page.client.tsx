@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   AlertTriangle,
+  Bell,
   CalendarDays,
   ChevronDown,
   History,
@@ -26,6 +27,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { AvatarCropModal } from "@/components/profile/avatar-crop-modal";
 import { PreferredCalendarSettings } from "@/components/profile/preferred-calendar-settings";
+import { EmailNotificationSettings } from "@/components/profile/email-notification-settings";
 import { ProfileIntroSection } from "@/components/profile/profile-intro-section.client";
 import { MemberStarsRankBadge } from "@/components/members/member-stars-rank-badge";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
@@ -860,6 +862,14 @@ export function ProfilePageClient() {
                 description="Wie Events in deinen Kalender übernommen werden."
               >
                 <PreferredCalendarSettings />
+              </ProfileSection>
+
+              <ProfileSection
+                icon={Bell}
+                title="E-Mail-Benachrichtigungen"
+                description="Welche optionalen Infos du per E-Mail erhalten möchtest."
+              >
+                <EmailNotificationSettings />
               </ProfileSection>
             </div>
 
