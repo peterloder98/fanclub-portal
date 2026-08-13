@@ -877,7 +877,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Einrichtungs-Link: Nach dem ersten erfolgreichen Öffnen speichert die App die Einrichtungssitzung (bis zu 72 Stunden) — derselbe Browser kann den Link erneut öffnen oder die Seite neu laden, ohne dass der Token noch gültig sein muss. Wenn der Link nie funktioniert hat (abgelaufen, anderer Browser, Mail-Scanner): unter Login → Passwort vergessen einen neuen Link anfordern, oder Technik sendet gezielt neu (Skript resend-app-access-one.ts) — nicht an alle, nur an Betroffene. Jede neue Setup-Mail macht ältere Links ungültig.",
+            text: "Einrichtungs-Link: Nach dem ersten erfolgreichen Öffnen speichert die App die Einrichtungssitzung (bis zu 72 Stunden) — derselbe Browser kann den Link erneut öffnen oder die Seite neu laden, ohne dass der Token noch gültig sein muss. Wenn der Link nie funktioniert hat (abgelaufen, anderer Browser, Mail-Scanner): unter Login → Passwort vergessen einen neuen Link anfordern, oder Technik sendet gezielt neu (Skript resend-app-access-one.ts) — nicht an alle, nur an Betroffene. Jede neue Setup-Mail macht ältere Links ungültig. Hinweis: „Passwort vergessen“ läuft über Supabase Auth und kann bei vielen Versuchen „Zu viele Versuche…“ melden — dann nicht weiter klicken, sondern manuell per Skript/SMTP nachsenden.",
           },
         ],
       },

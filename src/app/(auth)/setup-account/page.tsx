@@ -12,6 +12,7 @@ import {
   completeAccountSetup,
   getClaimedSetupSession,
 } from "@/app/(auth)/setup-account/actions";
+import { mapAuthErrorMessage } from "@/lib/auth/map-auth-error";
 
 function SetupAccountInner() {
   const router = useRouter();
@@ -117,7 +118,7 @@ function SetupAccountInner() {
         passwordConfirm,
       });
       if (!result.ok) {
-        setError(result.error);
+        setError(mapAuthErrorMessage(result.error));
         return;
       }
       const supabase = createSupabaseBrowserClient();

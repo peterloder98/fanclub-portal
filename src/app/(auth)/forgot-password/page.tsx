@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { mapAuthError } from "@/lib/auth/map-auth-error";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function ForgotPasswordPage() {
@@ -26,7 +27,7 @@ export default function ForgotPasswordPage() {
       if (resetError) throw resetError;
       setDone(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler beim Versand");
+      setError(mapAuthError(err, "Fehler beim Versand"));
     } finally {
       setBusy(false);
     }
