@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 import { POINT_VALUES } from "@/lib/points/values";
 import { notifyRankUpIfChanged, sumUserPointsThisYear } from "@/lib/points/rank-notify";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export const MEMBERSHIP_REFERRAL_COMPLETION_POINTS = POINT_VALUES.membershipReferralCompleted;
 
@@ -9,6 +10,8 @@ export async function awardMembershipReferralCompletionPoints(
   referrerId: string,
   applicationId: string,
 ): Promise<{ awarded: boolean; points: number }> {
+  if (isHiddenProfileId(referrerId)) return { awarded: false, points: 0 };
+
   const admin = createSupabaseAdminClient();
   const pointsBefore = await sumUserPointsThisYear(referrerId);
 

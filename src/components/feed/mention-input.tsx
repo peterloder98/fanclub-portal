@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef, 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { formatMentionToken, splitMentionText } from "@/lib/mentions/format";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { SYSTEM_HIDDEN_PROFILE_IDS } from "@/lib/members/hidden";
 import { cn } from "@/lib/cn";
 import { UserAvatar } from "@/components/ui/user-avatar";
 
@@ -188,6 +189,7 @@ export const MentionInput = forwardRef<MentionInputHandle, Props>(function Menti
       if (cancelled) return;
       setMembers(
         (profiles ?? [])
+          .filter((p) => !SYSTEM_HIDDEN_PROFILE_IDS.has(p.id))
           .map((p) => ({
             id: p.id,
             name:

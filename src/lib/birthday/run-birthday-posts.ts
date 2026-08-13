@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { birthdayPostBodyAsync } from "@/lib/birthday/templates";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export function berlinTodayMd() {
   const parts = new Intl.DateTimeFormat("de-DE", {
@@ -41,6 +42,7 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
   let created = 0;
 
   for (const p of profiles ?? []) {
+    if (isHiddenProfileId(p.id)) continue;
     if (!activeIds.has(p.id) || !p.birthdate) continue;
     if (!birthdateMatchesToday(String(p.birthdate), todayMd)) continue;
 

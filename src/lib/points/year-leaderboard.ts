@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { excludeHiddenProfiles, isHiddenProfileId } from "@/lib/members/hidden";
 import { profileDisplayName } from "@/lib/profiles/display";
 
 export type YearLeaderboardRow = {
@@ -37,7 +38,7 @@ export async function loadYearLeaderboard(
     return { rows: [], selfRow: null, currentUserId };
   }
 
-  const rpcRows = (leaderboard ?? []) as RpcRow[];
+  const rpcRows = ((leaderboard ?? []) as RpcRow[]).filter((r) => !isHiddenProfileId(r.user_id));
   const userIds = rpcRows.map((r) => r.user_id);
   const { data: profiles } = userIds.length
     ? await supabase
@@ -45,7 +46,7 @@ export async function loadYearLeaderboard(
         .select("id,first_name,last_name,email,avatar_path,updated_at")
         .in("id", userIds)
     : { data: [] };
-  const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const profileById = new Map(excludeHiddenProfiles(profiles).map((p) => [p.id, p]));
 
   const allRows: YearLeaderboardRow[] = rpcRows.map((r, i) => {
     const p = profileById.get(r.user_id);
@@ -68,7 +69,7 @@ export async function loadYearLeaderboard(
   const inTop = currentUserId ? top.some((r) => r.userId === currentUserId) : false;
 
   let selfRow: YearLeaderboardRow | null = null;
-  if (currentUserId && !inTop) {
+  if (currentUserId && !inTop && !isHiddenProfileId(currentUserId)) {
     const mine = allRows.find((r) => r.userId === currentUserId);
     if (mine) selfRow = { ...mine, isSelf: true };
   }

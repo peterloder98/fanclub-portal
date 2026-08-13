@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { memberCountryLabel } from "@/lib/members/country";
 import { formatMemberOrigin } from "@/lib/members/intro-questions";
+import { excludeHiddenProfiles } from "@/lib/members/hidden";
 import { profileDisplayName } from "@/lib/profiles/display";
 
 export type RecentMemberWelcome = {
@@ -35,7 +36,7 @@ export async function loadRecentWelcomeMembers(
     )
     .in("id", userIds);
 
-  const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const byId = new Map(excludeHiddenProfiles(profiles).map((p) => [p.id, p]));
   const out: RecentMemberWelcome[] = [];
 
   for (const m of memberships) {

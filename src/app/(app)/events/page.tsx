@@ -6,6 +6,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { parseTravelInfo, type EventTravelNoteRow } from "@/lib/events/travel-info";
+import { excludeHiddenProfiles } from "@/lib/members/hidden";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { maybeSyncArtistflowIfStale } from "@/lib/artistflow/maybe-sync-if-stale";
@@ -138,7 +139,7 @@ export default async function EventsPage({
       .in("id", allUserIds.length ? allUserIds : ["00000000-0000-0000-0000-000000000000"]);
 
     const profileMap = new Map(
-      (profiles ?? []).map((p) => [
+      excludeHiddenProfiles(profiles).map((p) => [
         p.id,
         {
           id: p.id,
@@ -153,12 +154,13 @@ export default async function EventsPage({
 
     for (const eid of eventIds) {
       const userIds = byEvent.get(eid) ?? [];
+      const attendees = userIds
+        .map((uid) => profileMap.get(uid))
+        .filter((x): x is NonNullable<typeof x> => Boolean(x));
       participationByEventId[eid] = {
-        count: userIds.length,
+        count: attendees.length,
         joined: userIds.includes(user.id),
-        attendees: userIds
-          .map((uid) => profileMap.get(uid))
-          .filter((x): x is NonNullable<typeof x> => Boolean(x)),
+        attendees,
       };
     }
   }

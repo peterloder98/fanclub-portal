@@ -6,6 +6,7 @@ import {
   YEAR_END_TIE_BREAK_SUMMARY,
   type YearEndCandidate,
 } from "@/lib/giveaways/year-end-ranking";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export const YEAR_END_LOTTERY_TOP_N = 10;
 export { YEAR_END_TIE_BREAK_SUMMARY };
@@ -95,20 +96,24 @@ async function buildYearEndCandidates(
     if (!prev || m.start_date < prev) membershipStart.set(m.user_id, m.start_date);
   }
 
-  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const profileMap = new Map(
+    (profiles ?? []).filter((p) => !isHiddenProfileId(p.id)).map((p) => [p.id, p]),
+  );
 
-  return sums.map((s) => {
-    const p = profileMap.get(s.user_id);
-    return {
-      user_id: s.user_id,
-      total: s.total,
-      activityCount: s.activityCount,
-      membership_number: p?.membership_number ?? null,
-      membership_start: membershipStart.get(s.user_id) ?? null,
-      last_name: p?.last_name ?? "",
-      first_name: p?.first_name ?? "",
-    };
-  });
+  return sums
+    .filter((s) => profileMap.has(s.user_id))
+    .map((s) => {
+      const p = profileMap.get(s.user_id)!;
+      return {
+        user_id: s.user_id,
+        total: s.total,
+        activityCount: s.activityCount,
+        membership_number: p?.membership_number ?? null,
+        membership_start: membershipStart.get(s.user_id) ?? null,
+        last_name: p?.last_name ?? "",
+        first_name: p?.first_name ?? "",
+      };
+    });
 }
 
 export type YearEndTopMember = {

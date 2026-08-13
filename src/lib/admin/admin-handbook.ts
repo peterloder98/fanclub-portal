@@ -206,8 +206,20 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         ],
       },
       {
-        id: "empfehlungen",
+        id: "versteckte-konten",
         number: "2.4",
+        title: "Versteckte Konten",
+        summary: "Nicht im Mitglieder-Bereich sichtbar",
+        blocks: [
+          {
+            type: "p",
+            text: "Technische Vorstands-Konten können für die Mitglieder-App unsichtbar sein. Sie erscheinen nicht im Verzeichnis, in der Suche, auf der Karte, in Avatar-Listen, in der Anni-Stars-Rangliste oder als Geburtstags-Beitrag und sammeln keine Sterne/Badges. Unter Admin → Mitglieder & Anträge bleiben sie für den Vorstand sichtbar; Login und alle Admin-Funktionen funktionieren weiter.",
+          },
+        ],
+      },
+      {
+        id: "empfehlungen",
+        number: "2.5",
         title: "Mitglieder werben",
         summary: "Einladungen und Anni-Stars",
         blocks: [

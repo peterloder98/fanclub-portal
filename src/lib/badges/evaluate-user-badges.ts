@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 import {
   ACHIEVEMENT_TIER_ORDER,
   type AchievementTier,
@@ -237,6 +238,8 @@ async function syncReferralProTiers(
 
 /** Berechnet Metriken, schreibt neue Badge-Stufen und liefert Anzeige-Daten. */
 export async function evaluateUserBadges(userId: string): Promise<UserAchievementRow[]> {
+  if (isHiddenProfileId(userId)) return [];
+
   const admin = createSupabaseAdminClient();
 
   const { data: defs, error: defsErr } = await admin

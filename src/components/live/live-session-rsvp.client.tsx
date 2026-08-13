@@ -7,6 +7,7 @@ import { ParticipantAvatarStack } from "@/components/ui/participant-avatar-stack
 import type { UserListEntry } from "@/components/ui/user-list-popover";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { excludeHiddenProfiles } from "@/lib/members/hidden";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { cn } from "@/lib/cn";
 
@@ -67,7 +68,7 @@ export function LiveSessionRsvpCard({
         .select("id,first_name,last_name,email,avatar_path,updated_at")
         .in("id", ids);
       setAttendees(
-        (profiles ?? []).map((p) => ({
+        excludeHiddenProfiles(profiles).map((p) => ({
           id: p.id,
           name: profileDisplayName({
             id: p.id,

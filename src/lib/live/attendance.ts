@@ -4,6 +4,7 @@ import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 import { POINT_VALUES } from "@/lib/points/values";
 import { notifyRankUpIfChanged, sumUserPointsThisYear } from "@/lib/points/rank-notify";
 import { assertMemberCanWrite, BROWSE_ONLY_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export const LIVE_ATTENDANCE_MIN_MS = 60_000;
 
@@ -16,6 +17,9 @@ export async function pingLiveSessionAttendance(sessionId: string): Promise<
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nicht angemeldet." };
+  if (isHiddenProfileId(user.id)) {
+    return { ok: true, awarded: false, points: 0, activeMs: 0 };
+  }
 
   const [{ data: membership }, { data: profile }] = await Promise.all([
     supabase

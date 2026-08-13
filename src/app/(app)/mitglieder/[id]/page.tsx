@@ -34,6 +34,7 @@ import { isEventUpcoming } from "@/lib/events/event-schedule";
 import { rankFromPoints } from "@/lib/points/rank";
 import { loadUserAchievementsForDisplay } from "@/lib/badges/evaluate-user-badges";
 import { MemberStarsRankBadge } from "@/components/members/member-stars-rank-badge";
+import { isProfileHidden } from "@/lib/members/hidden";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,9 @@ export default async function MemberPortalPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const viewerIsAdmin = me?.role === "admin";
+
   const { data: membership } = await supabase
     .from("memberships")
     .select("status,start_date")
@@ -124,6 +128,7 @@ export default async function MemberPortalPage({
         ).data
       : null);
   if (!profileRow) notFound();
+  if (isProfileHidden(profileRow) && !viewerIsAdmin && user.id !== id) notFound();
   const profile = profileRow as typeof profileRow & { short_bio?: string | null };
 
   const name = profileDisplayName(profile);

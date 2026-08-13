@@ -4,10 +4,13 @@ import { STECKBRIEF_BONUS_POINTS } from "@/lib/members/intro-progress";
 import type { MemberIntroAnswers } from "@/lib/members/intro-questions";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 type ProfileIntroRow = MemberIntroAnswers;
 
 export async function tryAwardSteckbriefBonus(userId: string): Promise<boolean> {
+  if (isHiddenProfileId(userId)) return false;
+
   const admin = createSupabaseAdminClient();
   const { data: profile, error } = await admin
     .from("profiles")

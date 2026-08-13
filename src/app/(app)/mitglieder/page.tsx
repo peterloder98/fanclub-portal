@@ -14,6 +14,7 @@ import type { MemberMapPoint } from "@/lib/members/cluster-map";
 import { clusterMemberPoints, type MemberMapCluster } from "@/lib/members/cluster-map";
 import { loadRecentWelcomeMembers } from "@/lib/members/recent-members";
 import { formatMemberOrigin } from "@/lib/members/intro-questions";
+import { excludeHiddenProfiles } from "@/lib/members/hidden";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { buildUpcomingBirthdays } from "@/lib/members/upcoming-birthdays";
 import { redirect } from "next/navigation";
@@ -38,19 +39,20 @@ export default async function MitgliederPage() {
   const activeIds = new Set((activeMemberships ?? []).map((m) => m.user_id));
 
   const activeList = [...activeIds];
-  const { data: profiles } = activeList.length
+  const { data: profilesRaw } = activeList.length
     ? await supabase
         .from("profiles")
         .select(
           "id,first_name,last_name,postal_code,city,country,map_lat,map_lng,birthdate,avatar_path,updated_at,email",
         )
         .in("id", activeList)
-    : { data: [] };
+    : { data: null };
+  const profiles = excludeHiddenProfiles(profilesRaw ?? undefined);
 
   const mapPoints: MemberMapPoint[] = [];
   let missingCoords = 0;
 
-  const searchableMembers = (profiles ?? [])
+  const searchableMembers = profiles
     .map((p) => {
       const name = profileDisplayName(p);
       if (!name || name === "Mitglied") return null;
@@ -72,7 +74,7 @@ export default async function MitgliederPage() {
   }>;
   searchableMembers.sort((a, b) => a.name.localeCompare(b.name, "de"));
 
-  for (const p of profiles ?? []) {
+  for (const p of profiles) {
     const city = (p.city ?? "").trim();
     const hasAddress = Boolean((p.postal_code ?? "").trim() || city);
     if (!hasAddress) continue;
@@ -98,7 +100,7 @@ export default async function MitgliederPage() {
   const clusters: MemberMapCluster[] = clusterMemberPoints(mapPoints, 30);
 
   const birthdayRows = buildUpcomingBirthdays(
-    (profiles ?? []).map((p) => ({
+    profiles.map((p) => ({
       id: p.id,
       first_name: p.first_name,
       last_name: p.last_name,
@@ -149,7 +151,7 @@ export default async function MitgliederPage() {
         ) : null}
       </div>
       <div className="mt-2 min-h-0 flex-1 px-3 pb-3">
-        <MembersMap clusters={clusters} memberCount={mapPoints.length} totalActive={activeList.length} />
+        <MembersMap clusters={clusters} memberCount={mapPoints.length} totalActive={profiles.length} />
       </div>
     </div>
   );

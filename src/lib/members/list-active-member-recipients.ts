@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export type ActiveMemberRecipient = {
   userId: string;
@@ -27,6 +28,7 @@ export async function listActiveMemberRecipients(): Promise<ActiveMemberRecipien
 
   const out: ActiveMemberRecipient[] = [];
   for (const p of profiles ?? []) {
+    if (isHiddenProfileId(p.id)) continue;
     const email = p.email?.trim();
     if (!email || !email.includes("@")) continue;
     out.push({

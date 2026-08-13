@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { GiveawayDetailClient } from "@/components/giveaways/giveaway-detail-client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { excludeHiddenProfiles } from "@/lib/members/hidden";
 import { listMailSignatureOptions } from "@/lib/email/signatures";
 import { loadQuizReviewForUser } from "@/lib/giveaways/load-quiz-review";
 import { loadQuestionAnswerForUser } from "@/lib/giveaways/load-question-answer";
@@ -96,9 +97,9 @@ export default async function GiveawayDetailPage({
         .from("profiles")
         .select("id,first_name,last_name,email,avatar_path,updated_at")
         .in("id", entrantIds)
-    : { data: [] };
+    : { data: null };
 
-  const entrants = (entrantProfiles ?? []).map((p) => ({
+  const entrants = excludeHiddenProfiles(entrantProfiles ?? undefined).map((p) => ({
     id: p.id,
     name:
       p.first_name && p.last_name

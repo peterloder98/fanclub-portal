@@ -69,8 +69,9 @@ export function EventParticipationRow({
       .select("id,first_name,last_name,email,avatar_path,updated_at")
       .in("id", ids);
     const { getAvatarPublicUrl } = await import("@/lib/avatars/url");
+    const { excludeHiddenProfiles } = await import("@/lib/members/hidden");
     setAttendees(
-      (profiles ?? []).map((p) => ({
+      excludeHiddenProfiles(profiles).map((p) => ({
         id: p.id,
         name:
           p.first_name && p.last_name

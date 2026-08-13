@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 import { POINT_VALUES } from "@/lib/points/values";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export const MEMBERSHIP_REFERRAL_POINTS = POINT_VALUES.membershipReferral;
 
@@ -13,6 +14,10 @@ export async function awardMembershipReferralPoints(
     gender?: string | null;
   },
 ): Promise<{ awarded: boolean; points: number; referralToken: string | null; sendId: string | null }> {
+  if (isHiddenProfileId(senderId)) {
+    return { awarded: false, points: 0, referralToken: null, sendId: null };
+  }
+
   const admin = createSupabaseAdminClient();
   const email = recipientEmail.trim().toLowerCase();
   if (!email) return { awarded: false, points: 0, referralToken: null, sendId: null };
