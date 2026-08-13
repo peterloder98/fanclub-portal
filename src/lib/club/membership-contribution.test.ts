@@ -48,7 +48,7 @@ describe("calendar year contributions", () => {
 
   it("formats payment reference", () => {
     expect(formatMembershipPaymentReference(2027, "42", "Sabine", "Müller")).toBe(
-      "Beitrag 2027, Nr. 42, Sabine Müller",
+      "Mitgliedsbeitrag / Sabine Müller",
     );
   });
 
@@ -60,7 +60,7 @@ describe("calendar year contributions", () => {
         firstName: "Sabine",
         lastName: "Müller",
       }),
-    ).toBe("Beitrag 2027, Nr. 42, Sabine Müller");
+    ).toBe("Mitgliedsbeitrag / Sabine Müller");
     expect(
       resolveMemberPaymentReference({
         calendarYear: 2027,
@@ -69,7 +69,7 @@ describe("calendar year contributions", () => {
         lastName: "Müller",
         fromContribution: "Beitrag 2027, Nr. 42, Sabine Müller",
       }),
-    ).toBe("Beitrag 2027, Nr. 42, Sabine Müller");
+    ).toBe("Mitgliedsbeitrag / Sabine Müller");
   });
 
   it("picks oldest overdue year first", () => {
@@ -84,6 +84,6 @@ describe("calendar year contributions", () => {
     const y2026 = computeYearContribution(profile, "2026-11-01", 1500, 2026, [], new Date("2026-12-27"));
     const block = buildOpenContributionsBlock([y2026]);
     expect(block).toContain("2026");
-    expect(block).toContain("Beitrag 2026, Nr. 42, Sabine Müller");
+    expect(block).toContain("Mitgliedsbeitrag / Sabine Müller");
   });
 });

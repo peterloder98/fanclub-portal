@@ -232,9 +232,24 @@ export function PaymentsAdminPanel({
               <h2 className="font-bold text-slate-900">Zahlungsdetails</h2>
               <dl className="grid gap-2 text-sm">
                 <div>
-                  <dt className="text-xs text-slate-500">Verwendungszweck</dt>
+                  <dt className="text-xs text-slate-500">Interne Referenz (Buchhaltung)</dt>
                   <dd className="font-mono text-xs font-semibold">{selected.internal_reference}</dd>
                 </div>
+                {selected.payment_type === "membership_fee" || selected.application_id ? (
+                  <div>
+                    <dt className="text-xs text-slate-500">
+                      Verwendungszweck (für Mitglied)
+                    </dt>
+                    <dd className="text-xs font-semibold text-slate-800">
+                      {selected.member_name && selected.member_name !== "—"
+                        ? `Mitgliedsbeitrag / ${selected.member_name}`
+                        : "Mitgliedsbeitrag / Vorname Nachname"}
+                      <span className="mt-0.5 block font-normal text-slate-500">
+                        So in Bestätigungs-Mail und Antrag — nicht die interne Referenz.
+                      </span>
+                    </dd>
+                  </div>
+                ) : null}
                 <div>
                   <dt className="text-xs text-slate-500">Betrag</dt>
                   <dd className="font-semibold">{formatEur(selected.amount_cents)}</dd>

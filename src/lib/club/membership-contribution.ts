@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
+import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 
 export type ContributionStatus = "paid" | "open" | "overdue";
 
@@ -78,19 +79,21 @@ export function paymentDeadlineForContributionYear(year: number, membershipStart
   return addDays(dueDateForContributionYear(year, membershipStart), CONTRIBUTION_PAYMENT_DEADLINE_DAYS);
 }
 
+/**
+ * Verwendungszweck für Jahresbeiträge — derselbe namensbasierte Text wie beim Antrag.
+ * year / membershipNumber bleiben in der Signatur für Aufrufer-Kompatibilität, fließen
+ * nicht mehr in den VWZ ein (Bankabgleich über den Namen).
+ */
 export function formatMembershipPaymentReference(
-  year: number,
-  membershipNumber: string | null | undefined,
+  _year: number,
+  _membershipNumber: string | null | undefined,
   firstName: string,
   lastName: string,
 ): string {
-  const nr = membershipNumber?.trim() || "—";
-  const name =
-    [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") || "Mitglied";
-  return `Beitrag ${year}, Nr. ${nr}, ${name}`;
+  return formatApplicationPaymentReference(firstName, lastName);
 }
 
-/** Verwendungszweck für Zahlungserinnerungen — immer mit Namen des Empfängers. */
+/** Verwendungszweck für Zahlungserinnerungen — immer „Mitgliedsbeitrag / Vorname Nachname“. */
 export function resolveMemberPaymentReference(input: {
   calendarYear: number;
   membershipNumber?: string | null;
@@ -98,14 +101,22 @@ export function resolveMemberPaymentReference(input: {
   lastName?: string | null;
   fromContribution?: string | null;
 }): string {
+  const first = input.firstName?.trim() ?? "";
+  const last = input.lastName?.trim() ?? "";
+  if (first || last) {
+    return formatMembershipPaymentReference(
+      input.calendarYear,
+      input.membershipNumber,
+      first,
+      last,
+    );
+  }
   const fromContribution = input.fromContribution?.trim();
-  if (fromContribution) return fromContribution;
-  return formatMembershipPaymentReference(
-    input.calendarYear,
-    input.membershipNumber,
-    input.firstName ?? "",
-    input.lastName ?? "",
-  );
+  if (fromContribution) {
+    // Alte gespeicherte Formate („Beitrag YYYY, Nr. …“) nicht an Mitglieder weitergeben.
+    if (!/^Beitrag\s+\d{4}/i.test(fromContribution)) return fromContribution;
+  }
+  return formatApplicationPaymentReference("", "");
 }
 
 export function formatDueDateDe(dateStr: string): string {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { approveMembershipApplication } from "@/app/(app)/admin/members/applications/actions";
 import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
+import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 import { PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
 import { genderDisplayLabel } from "@/lib/person/gender";
@@ -126,10 +127,15 @@ export function ApplicationDetailPanels({
             <p className="mt-1">
               Status: <strong>{app.payment_status_label}</strong>
               {app.payment_method_label ? ` · ${app.payment_method_label}` : null}
+              {" "}
+              · Verwendungszweck:{" "}
+              <span className="font-medium">
+                {formatApplicationPaymentReference(app.first_name, app.last_name)}
+              </span>
               {app.payment_reference ? (
                 <>
                   {" "}
-                  · Verwendungszweck:{" "}
+                  · Interne Referenz:{" "}
                   <span className="font-mono text-xs">{app.payment_reference}</span>
                 </>
               ) : null}

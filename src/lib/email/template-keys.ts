@@ -76,7 +76,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "fee_eur", label: "Jahresbeitrag" },
     { key: "due_date", label: "Fällig ab" },
     { key: "payment_deadline", label: "Zahlungsfrist" },
-    { key: "payment_reference", label: "Verwendungszweck (individuell)" },
+    { key: "payment_reference", label: "Verwendungszweck (Mitgliedsbeitrag / Vorname Nachname)" },
     { key: "open_contributions_block", label: "Hinweis offene Vorjahre (oder leer)" },
     { key: "bank_account_holder", label: "Kontoinhaber" },
     { key: "bank_iban", label: "IBAN" },

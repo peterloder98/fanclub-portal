@@ -47,6 +47,17 @@ export async function deleteMembershipApplicationCompletely(
 
   await admin.from("member_activity_log").delete().eq("application_id", applicationId);
 
+  // Zahlungen zuerst (FK payments.user_id → profiles ON DELETE RESTRICT)
+  const { data: payments } = await admin
+    .from("payments")
+    .select("id")
+    .eq("application_id", applicationId);
+  for (const p of payments ?? []) {
+    await admin.from("payment_audit_log").delete().eq("payment_id", p.id);
+    await admin.from("club_ledger_entries").delete().eq("payment_id", p.id);
+    await admin.from("payments").delete().eq("id", p.id);
+  }
+
   const userId = app.user_id;
   const { error: delAppErr } = await admin
     .from("membership_applications")
@@ -75,6 +86,17 @@ export async function deleteMembershipApplicationCompletely(
       !profile?.membership_number;
 
     if (onlyApplicant) {
+      // Weitere offene Zahlungen ohne application_id (falls vorhanden)
+      const { data: orphanPayments } = await admin
+        .from("payments")
+        .select("id")
+        .eq("user_id", userId);
+      for (const p of orphanPayments ?? []) {
+        await admin.from("payment_audit_log").delete().eq("payment_id", p.id);
+        await admin.from("club_ledger_entries").delete().eq("payment_id", p.id);
+        await admin.from("payments").delete().eq("id", p.id);
+      }
+
       await admin.from("memberships").delete().eq("user_id", userId);
       await admin.from("member_activity_log").delete().eq("user_id", userId);
       await admin.from("profiles").delete().eq("id", userId);
