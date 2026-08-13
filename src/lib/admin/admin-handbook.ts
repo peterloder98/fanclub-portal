@@ -108,6 +108,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Admin → „Mitglieder & Anträge“ öffnen (oder den Link in der Benachrichtigung/E-Mail antippen).",
               "Offenen Antrag antippen und Daten sowie Unterschrift prüfen.",
               "Mit dem Antrag wird automatisch eine offene Zahlung per Banküberweisung angelegt (eindeutiger Verwendungszweck z. B. MITGLIED-2026-0001). Der Beitrag (15 € für das laufende Kalenderjahr) muss auf dem Vereinskonto eingegangen sein.",
+              "Die Bestätigungs-E-Mail an die antragstellende Person enthält denselben Verwendungszweck sowie Empfänger, IBAN, BIC und Betrag zum Abtippen.",
               "Erst wenn der Beitrag unter Admin → Zahlungen als bezahlt bestätigt ist, lässt sich der Antrag freigeben. Die Freigabe ist technisch gesperrt, solange die Zahlung offen ist. Danach erhält die Person automatisch eine Mitgliedsnummer und eine Willkommens-E-Mail mit App-Zugang (Passwort einrichten).",
               "Fehlt bei einem bestehenden Mitglied die Login-E-Mail (z. B. nach Import): Mitglied öffnen → „Bearbeiten“ → bei E-Mail „Ändern“ (mit Bestätigung) → Adresse eintragen und speichern. Die Adresse muss eindeutig sein und ist zugleich der Login.",
               "Wird eine bereits vorhandene Login-E-Mail später geändert, erhält das Mitglied automatisch eine Info-Mail an die neue und die bisherige Adresse: neue Login-Adresse, Passwort bleibt gleich.",

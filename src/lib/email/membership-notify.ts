@@ -4,6 +4,8 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
+import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
+import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -115,6 +117,8 @@ export async function sendApplicantConfirmationEmail(input: {
   lastName?: string;
   gender?: string | null;
   feeCents?: number;
+  /** Echter Verwendungszweck (z. B. MITGLIED-2026-0001), falls Zahlung schon angelegt. */
+  paymentReference?: string | null;
 }) {
   const pdfBytes = await loadApplicationPdfBytes(input.applicationId);
   const feeEur = `${((input.feeCents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
@@ -123,6 +127,9 @@ export async function sendApplicantConfirmationEmail(input: {
     .join(" ")
     .trim();
   const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
+  const bankReference =
+    input.paymentReference?.trim() ||
+    formatApplicationPaymentReference(input.firstName, input.lastName ?? "");
 
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,
@@ -132,6 +139,7 @@ export async function sendApplicantConfirmationEmail(input: {
       applicant_name: applicantName || input.firstName,
       email: input.email,
       fee_eur: feeEur,
+      ...clubBankEmailVars({ bankReference }),
     },
   );
 

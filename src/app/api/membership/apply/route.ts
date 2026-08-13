@@ -273,6 +273,25 @@ export async function POST(request: Request) {
       console.warn("[membership] PDF-Cache fehlgeschlagen:", e);
     }
 
+    const appBase = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+    const downloadToken = createMembershipDownloadToken(appId);
+    const pdfPath = `/api/membership/applications/${appId}/pdf?token=${encodeURIComponent(downloadToken)}`;
+    const pdfDownloadUrl = appBase ? `${appBase}${pdfPath}` : pdfPath;
+
+    // Zahlung zuerst anlegen, damit die Bestätigungs-Mail den echten MITGLIED-…-VWZ enthält.
+    let payment: PaymentCheckoutResult | null = null;
+    try {
+      payment = await createApplicationMembershipPayment({
+        applicationId: appId,
+        token: downloadToken,
+        paymentMethod: "bank_transfer",
+      });
+    } catch (e) {
+      console.error("[membership] Automatische Überweisung-Zahlung fehlgeschlagen:", e);
+    }
+
+    const feeCents = payment?.amountCents ?? 1500;
+
     try {
       applicantMailResult = await sendApplicantConfirmationEmail({
         applicationId: appId,
@@ -280,7 +299,8 @@ export async function POST(request: Request) {
         firstName: input.first_name.trim(),
         lastName: input.last_name.trim(),
         gender: input.gender,
-        feeCents: 1500,
+        feeCents,
+        paymentReference: payment?.internalReference ?? null,
       });
     } catch (e) {
       console.error("[membership] Bestätigungs-Mail fehlgeschlagen:", e);
@@ -321,7 +341,6 @@ export async function POST(request: Request) {
       admin: adminMailResult ?? undefined,
     });
 
-    const appBase = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
     await logMemberActivity({
       userId,
       applicationId: appId,
@@ -332,21 +351,6 @@ export async function POST(request: Request) {
       linkLabel: "Antrag ansehen",
     }).catch((e) => console.warn("[activity] Antrag nicht protokolliert:", e));
 
-    const downloadToken = createMembershipDownloadToken(appId);
-    const pdfPath = `/api/membership/applications/${appId}/pdf?token=${encodeURIComponent(downloadToken)}`;
-    const pdfDownloadUrl = appBase ? `${appBase}${pdfPath}` : pdfPath;
-
-    let payment: PaymentCheckoutResult | null = null;
-    try {
-      payment = await createApplicationMembershipPayment({
-        applicationId: appId,
-        token: downloadToken,
-        paymentMethod: "bank_transfer",
-      });
-    } catch (e) {
-      console.error("[membership] Automatische Überweisung-Zahlung fehlgeschlagen:", e);
-    }
-
     return NextResponse.json({
       ok: true,
       id: appId,
@@ -355,7 +359,7 @@ export async function POST(request: Request) {
       applicantName,
       emailWarning,
       paymentToken: downloadToken,
-      feeCents: 1500,
+      feeCents,
       payment,
     });
   } catch (e) {

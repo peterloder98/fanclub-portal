@@ -37,6 +37,11 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "applicant_name", label: "Vollständiger Name" },
     { key: "email", label: "E-Mail Antragsteller" },
     { key: "fee_eur", label: "Beitrag (z. B. 15,00 EUR)" },
+    { key: "bank_account_holder", label: "Kontoinhaber / Empfänger" },
+    { key: "bank_iban", label: "IBAN" },
+    { key: "bank_bic", label: "BIC" },
+    { key: "bank_name", label: "Bank" },
+    { key: "bank_reference", label: "Verwendungszweck (z. B. MITGLIED-…)" },
   ],
   [EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify]: [
     { key: "admin_first_name", label: "Vorname Admin (Empfänger)" },
@@ -60,6 +65,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "bank_account_holder", label: "Kontoinhaber" },
     { key: "bank_iban", label: "IBAN" },
     { key: "bank_bic", label: "BIC" },
+    { key: "bank_name", label: "Bank" },
     { key: "bank_reference", label: "Verwendungszweck" },
   ],
   [EMAIL_TEMPLATE_KEYS.membershipContributionNewYear]: [
