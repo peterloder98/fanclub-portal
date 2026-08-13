@@ -10,8 +10,66 @@ import { listClubLedger } from "@/lib/club/ledger";
 import { getMemberContributionYears } from "@/lib/club/membership-contribution";
 import { redirect } from "next/navigation";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import {
+  resolveAppRegistrationStatus,
+  type AppRegistrationStatus,
+} from "@/lib/membership/app-registration";
 
 export const dynamic = "force-dynamic";
+
+async function loadAppRegistration(admin: ReturnType<typeof createSupabaseAdminClient>, userId: string) {
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("app_registration_status,app_registered_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  let lastSignInAt: string | null = null;
+  try {
+    const { data: authData } = await admin.auth.admin.getUserById(userId);
+    lastSignInAt = authData.user?.last_sign_in_at ?? null;
+  } catch {
+    /* ignore */
+  }
+
+  const status = resolveAppRegistrationStatus({
+    status: (profile as { app_registration_status?: string | null } | null)?.app_registration_status,
+    registeredAt: (profile as { app_registered_at?: string | null } | null)?.app_registered_at,
+    lastSignInAt,
+  });
+
+  // Lazy-Backfill: schon eingeloggt → als registriert speichern
+  if (
+    status === "registered" &&
+    (profile as { app_registration_status?: string | null } | null)?.app_registration_status !==
+      "registered" &&
+    (profile as { app_registration_status?: string | null } | null)?.app_registration_status !==
+      "deleted"
+  ) {
+    const { error: bfErr } = await admin
+      .from("profiles")
+      .update({
+        app_registration_status: "registered",
+        app_registered_at:
+          (profile as { app_registered_at?: string | null } | null)?.app_registered_at ??
+          lastSignInAt ??
+          new Date().toISOString(),
+      })
+      .eq("id", userId);
+    if (bfErr && !/app_registration_status|does not exist/i.test(bfErr.message)) {
+      console.error("[admin/members] app_registration backfill:", bfErr.message);
+    }
+  }
+
+  return {
+    status,
+    registeredAt:
+      status === "registered"
+        ? ((profile as { app_registered_at?: string | null } | null)?.app_registered_at ??
+          lastSignInAt)
+        : null,
+  } satisfies { status: AppRegistrationStatus; registeredAt: string | null };
+}
 
 export default async function AdminMemberDetailPage({
   params,
@@ -111,6 +169,7 @@ export default async function AdminMemberDetailPage({
   }
 
   const contributions = await getMemberContributionYears(id).catch(() => []);
+  const appReg = await loadAppRegistration(admin, id);
 
   const member: MemberDetailData = {
     id: profile.id,
@@ -139,6 +198,8 @@ export default async function AdminMemberDetailPage({
         }
       : null,
     application_id: application?.id ?? null,
+    app_registration_status: appReg.status,
+    app_registered_at: appReg.registeredAt,
   };
 
   return (

@@ -151,6 +151,19 @@ export async function completeAccountSetup(input: {
   });
   if (pwErr) return { ok: false, error: pwErr.message };
 
+  const nowIso = new Date().toISOString();
+  const { error: regErr } = await admin
+    .from("profiles")
+    .update({
+      app_registration_status: "registered",
+      app_registered_at: nowIso,
+      app_registration_deleted_at: null,
+    })
+    .eq("id", userId);
+  if (regErr && !/app_registration_status|does not exist/i.test(regErr.message)) {
+    console.error("[setup-account] Registrierungsstatus:", regErr.message);
+  }
+
   await clearSetupClaim();
   return { ok: true };
 }

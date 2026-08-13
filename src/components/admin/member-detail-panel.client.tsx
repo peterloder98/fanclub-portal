@@ -19,6 +19,8 @@ import {
   sendMemberPaymentReminderEmail,
   suspendMemberAppAccess,
   reactivateMemberAppAccess,
+  markMemberAppRegistrationDeleted,
+  clearMemberAppRegistration,
 } from "@/app/(app)/admin/members/detail-actions";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
@@ -38,6 +40,12 @@ import {
   DocumentUploadField,
   uploadClubDocument,
 } from "@/components/ui/document-upload-field";
+import {
+  APP_REGISTRATION_STATUS_LABELS,
+  appRegistrationBadgeClass,
+  type AppRegistrationStatus,
+} from "@/lib/membership/app-registration";
+import { cn } from "@/lib/cn";
 
 export type MemberWarningRow = {
   id: string;
@@ -75,6 +83,8 @@ export type MemberDetailData = {
     suspension_reason?: string | null;
   } | null;
   application_id: string | null;
+  app_registration_status: AppRegistrationStatus;
+  app_registered_at: string | null;
 };
 
 function formatDE(date: string | null) {
@@ -476,6 +486,88 @@ export function MemberDetailPanel({
               {member.membership?.status === "suspended" && member.membership.suspension_reason ? (
                 <InfoRow label="Sperrgrund" value={member.membership.suspension_reason} />
               ) : null}
+              <InfoRow
+                label="In App registriert"
+                value={
+                  <span className="inline-flex flex-col items-start gap-2">
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                          appRegistrationBadgeClass(member.app_registration_status),
+                        )}
+                      >
+                        {APP_REGISTRATION_STATUS_LABELS[member.app_registration_status]}
+                      </span>
+                      {member.app_registered_at && member.app_registration_status === "registered" ? (
+                        <span className="text-xs text-slate-500">
+                          seit {formatWhen(member.app_registered_at)}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="inline-flex flex-wrap gap-2">
+                      {member.app_registration_status !== "deleted" ? (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                "App-Registrierung als „Gelöscht“ markieren? (Mitglied bleibt erhalten.)",
+                              )
+                            ) {
+                              return;
+                            }
+                            setActionError(null);
+                            startTransition(async () => {
+                              try {
+                                await markMemberAppRegistrationDeleted(member.id);
+                                router.refresh();
+                              } catch (e) {
+                                setActionError(
+                                  e instanceof Error ? e.message : "Markieren fehlgeschlagen",
+                                );
+                              }
+                            });
+                          }}
+                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          Als gelöscht markieren
+                        </button>
+                      ) : null}
+                      {member.app_registration_status !== "open" ? (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                "Registrierungsstatus auf „Offen“ zurücksetzen?",
+                              )
+                            ) {
+                              return;
+                            }
+                            setActionError(null);
+                            startTransition(async () => {
+                              try {
+                                await clearMemberAppRegistration(member.id);
+                                router.refresh();
+                              } catch (e) {
+                                setActionError(
+                                  e instanceof Error ? e.message : "Zurücksetzen fehlgeschlagen",
+                                );
+                              }
+                            });
+                          }}
+                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          Auf Offen zurücksetzen
+                        </button>
+                      ) : null}
+                    </span>
+                  </span>
+                }
+              />
               <InfoRow label="Beitrittsdatum" value={formatDE(member.membership?.start_date ?? null)} />
               <InfoRow label="Ende" value={formatDE(member.membership?.end_date ?? null)} />
               <InfoRow label="Jahresbeitrag" value={`${feeEur} €`} />

@@ -12,6 +12,10 @@ import {
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { batchMemberContributionStatus } from "@/lib/club/membership-contribution";
+import {
+  isAppRegistrationStatus,
+  type AppRegistrationStatus,
+} from "@/lib/membership/app-registration";
 
 export const dynamic = "force-dynamic";
 
@@ -55,11 +59,36 @@ export default async function AdminMembersPage({
             .order("end_date", { ascending: false }),
           admin
             .from("profiles")
-            .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
+            .select(
+              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status",
+            )
             .order("membership_number", { ascending: true, nullsFirst: false }),
         ]);
       if (mErr) return { members: [], membersError: mErr.message };
-      if (pErr) return { members: [], membersError: pErr.message };
+      // Spalte ggf. noch nicht migriert → ohne Status-Feld erneut laden
+      type ProfileListRow = {
+        id: string;
+        membership_number: string | null;
+        first_name: string;
+        last_name: string;
+        birthdate: string | null;
+        email: string | null;
+        warning_count?: number | null;
+        app_registration_status?: string | null;
+      };
+      let profileRows: ProfileListRow[] = (profiles ?? []) as ProfileListRow[];
+      if (pErr) {
+        if (/app_registration_status|does not exist/i.test(pErr.message)) {
+          const { data: fallback, error: fbErr } = await admin
+            .from("profiles")
+            .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
+            .order("membership_number", { ascending: true, nullsFirst: false });
+          if (fbErr) return { members: [], membersError: fbErr.message };
+          profileRows = (fallback ?? []) as ProfileListRow[];
+        } else {
+          return { members: [], membersError: pErr.message };
+        }
+      }
 
       const membershipByUser = new Map<string, { status: string; start_date: string | null }>();
       (memberships ?? []).forEach((m) => {
@@ -71,17 +100,24 @@ export default async function AdminMembersPage({
         }
       });
 
-      const baseMembers = (profiles ?? []).map((p) => ({
-        id: p.id,
-        membership_number: p.membership_number ?? null,
-        first_name: p.first_name,
-        last_name: p.last_name,
-        birthdate: p.birthdate ?? null,
-        joined_at: membershipByUser.get(p.id)?.start_date ?? null,
-        warning_count: (p as { warning_count?: number }).warning_count ?? 0,
-        membership_status: membershipByUser.get(p.id)?.status ?? null,
-        email: p.email ?? null,
-      }));
+      const baseMembers = profileRows.map((p) => {
+        const rawStatus = (p as { app_registration_status?: string | null }).app_registration_status;
+        const app_registration_status: AppRegistrationStatus = isAppRegistrationStatus(rawStatus)
+          ? rawStatus
+          : "open";
+        return {
+          id: p.id,
+          membership_number: p.membership_number ?? null,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          birthdate: p.birthdate ?? null,
+          joined_at: membershipByUser.get(p.id)?.start_date ?? null,
+          warning_count: (p as { warning_count?: number }).warning_count ?? 0,
+          membership_status: membershipByUser.get(p.id)?.status ?? null,
+          email: p.email ?? null,
+          app_registration_status,
+        };
+      });
 
       const contribByUser = await batchMemberContributionStatus(baseMembers.map((m) => m.id));
 

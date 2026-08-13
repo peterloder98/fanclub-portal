@@ -218,8 +218,37 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         ],
       },
       {
-        id: "empfehlungen",
+        id: "app-registrierung",
         number: "2.5",
+        title: "In App registriert",
+        summary: "Offen, Registriert oder Gelöscht",
+        blocks: [
+          {
+            type: "p",
+            text: "In der Mitgliederliste und auf der Mitglieds-Detailseite seht ihr unter „In App registriert“, ob jemand den App-Zugang schon eingerichtet hat:",
+          },
+          {
+            type: "ul",
+            items: [
+              "Offen — Passwort noch nicht eingerichtet bzw. noch nie angemeldet",
+              "Registriert — Zugang eingerichtet (nach Passwort-Setup oder erstem Login)",
+              "Gelöscht — Zugang wurde als gelöscht markiert (z. B. wenn jemand den Zugang nicht mehr nutzen soll)",
+            ],
+          },
+          {
+            type: "p",
+            text: "Auf der Detailseite könnt ihr den Status manuell auf „Gelöscht“ setzen oder wieder auf „Offen“ zurücksetzen (z. B. vor einer neuen Einladungs-Mail). Das ist unabhängig von einer vorübergehenden App-Sperre wegen Beitragsrückstand.",
+          },
+          {
+            type: "link",
+            href: "/admin/members",
+            label: "Mitglieder & Anträge",
+          },
+        ],
+      },
+      {
+        id: "empfehlungen",
+        number: "2.6",
         title: "Mitglieder werben",
         summary: "Einladungen und Anni-Stars",
         blocks: [

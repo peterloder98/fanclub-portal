@@ -405,6 +405,68 @@ export async function reactivateMemberAppAccess(userId: string) {
   return { ok: true };
 }
 
+/** App-Zugang als gelöscht markieren (Registrierungsstatus), ohne das Mitglied zu löschen. */
+export async function markMemberAppRegistrationDeleted(userId: string) {
+  const { user, profile: adminProfile } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+
+  const nowIso = new Date().toISOString();
+  const { error: updErr } = await admin
+    .from("profiles")
+    .update({
+      app_registration_status: "deleted",
+      app_registration_deleted_at: nowIso,
+    })
+    .eq("id", userId);
+  if (updErr) throw new Error(updErr.message);
+
+  const adminName =
+    `${adminProfile.first_name ?? ""} ${adminProfile.last_name ?? ""}`.trim() || "Admin";
+
+  await logMemberActivity({
+    userId,
+    eventType: MEMBER_ACTIVITY_TYPES.appRegistrationDeleted,
+    title: "App-Registrierung als gelöscht markiert",
+    details: `Markiert durch ${adminName}.`,
+    createdBy: user.id,
+  }).catch(console.error);
+
+  revalidatePath(`/admin/members/${userId}`);
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
+/** Registrierungsstatus zurücksetzen auf „Offen“ (z. B. nach Neu-Einladung). */
+export async function clearMemberAppRegistration(userId: string) {
+  const { user, profile: adminProfile } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+
+  const { error: updErr } = await admin
+    .from("profiles")
+    .update({
+      app_registration_status: "open",
+      app_registered_at: null,
+      app_registration_deleted_at: null,
+    })
+    .eq("id", userId);
+  if (updErr) throw new Error(updErr.message);
+
+  const adminName =
+    `${adminProfile.first_name ?? ""} ${adminProfile.last_name ?? ""}`.trim() || "Admin";
+
+  await logMemberActivity({
+    userId,
+    eventType: MEMBER_ACTIVITY_TYPES.appRegistrationCleared,
+    title: "App-Registrierung zurückgesetzt",
+    details: `Zurückgesetzt auf „Offen“ durch ${adminName}.`,
+    createdBy: user.id,
+  }).catch(console.error);
+
+  revalidatePath(`/admin/members/${userId}`);
+  revalidatePath("/admin/members");
+  return { ok: true };
+}
+
 const ledgerSchema = z.object({
   entryType: z.enum(["income", "expense"]),
   amountEur: z.coerce.number().positive(),

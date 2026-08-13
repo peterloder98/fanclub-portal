@@ -11,6 +11,11 @@ import { ContributionStatusBadge } from "@/components/admin/contribution-status-
 import type { ContributionStatus } from "@/lib/club/membership-contribution";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  APP_REGISTRATION_STATUS_LABELS,
+  appRegistrationBadgeClass,
+  type AppRegistrationStatus,
+} from "@/lib/membership/app-registration";
 
 const PAGE_SIZE = 50;
 
@@ -107,6 +112,7 @@ export type AdminMemberRow = {
   contribution_status: ContributionStatus | null;
   contribution_open_cents: number | null;
   email: string | null;
+  app_registration_status: AppRegistrationStatus;
 };
 
 export type AdminApplicationRow = {
@@ -128,7 +134,8 @@ type MemberSortKey =
   | "joined_at"
   | "warning_count"
   | "membership_status"
-  | "contribution_status";
+  | "contribution_status"
+  | "app_registration_status";
 type AppSortKey = "created_at" | "first_name" | "last_name" | "email" | "status";
 
 function formatDE(date: string | null) {
@@ -278,6 +285,8 @@ export function AdminMembersWorkspace({
             return r.membership_status ?? "";
           case "contribution_status":
             return r.contribution_status ?? "";
+          case "app_registration_status":
+            return r.app_registration_status;
         }
       };
       return compareStr(pick(a), pick(b)) * dir;
@@ -330,6 +339,7 @@ export function AdminMembersWorkspace({
     { key: "joined_at", label: "Beitritt" },
     { key: "warning_count", label: "Verwarnungen" },
     { key: "membership_status", label: "Status" },
+    { key: "app_registration_status", label: "In App" },
     { key: "contribution_status", label: "Beitrag" },
   ];
 
@@ -617,6 +627,14 @@ export function AdminMembersWorkspace({
                         {membershipStatusLabel(m.membership_status)}
                       </Badge>
                     ) : null}
+                    <span
+                      className={cn(
+                        "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                        appRegistrationBadgeClass(m.app_registration_status),
+                      )}
+                    >
+                      {APP_REGISTRATION_STATUS_LABELS[m.app_registration_status]}
+                    </span>
                     {m.contribution_status ? (
                       <ContributionStatusBadge status={m.contribution_status} />
                     ) : null}
@@ -699,6 +717,14 @@ export function AdminMembersWorkspace({
                     </th>
                     <th className="px-3 py-2">
                       <SortBtn
+                        label="In App"
+                        active={memberSort.key === "app_registration_status"}
+                        dir={memberSort.dir}
+                        onClick={() => toggleMemberSort("app_registration_status")}
+                      />
+                    </th>
+                    <th className="px-3 py-2">
+                      <SortBtn
                         label="Beitrag"
                         active={memberSort.key === "contribution_status"}
                         dir={memberSort.dir}
@@ -740,6 +766,16 @@ export function AdminMembersWorkspace({
                         ) : (
                           "—"
                         )}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+                            appRegistrationBadgeClass(m.app_registration_status),
+                          )}
+                        >
+                          {APP_REGISTRATION_STATUS_LABELS[m.app_registration_status]}
+                        </span>
                       </td>
                       <td className="px-3 py-2">
                         {m.contribution_status ? (
