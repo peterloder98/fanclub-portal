@@ -44,10 +44,9 @@ async function main() {
     return;
   }
 
-  const year = new Date().getFullYear();
   const person = emailPersonVars({ firstName: "Peter", gender: "m" });
   const bank = clubBankEmailVars({
-    bankReference: `MITGLIED-${year}-0001`,
+    bankReference: "Mitgliedsbeitrag / Peter Loder",
   });
 
   const rendered = await renderEmailFromTemplate(

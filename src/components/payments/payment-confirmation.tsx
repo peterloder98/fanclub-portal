@@ -3,9 +3,22 @@
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { formatEur } from "@/lib/club/ledger";
 import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
+import { CLUB_BANK } from "@/lib/payments/club-bank";
 import type { PaymentCheckoutResult } from "@/lib/payments/types";
 
-export function PaymentConfirmation({ result }: { result: PaymentCheckoutResult }) {
+export function PaymentConfirmation({
+  result,
+  transferReference,
+}: {
+  result: PaymentCheckoutResult;
+  /** Mitgliedsseitiger VWZ (Antrag: „Mitgliedsbeitrag / Vorname Nachname“). */
+  transferReference?: string | null;
+}) {
+  const vwz =
+    transferReference?.trim() ||
+    result.memberTransferReference?.trim() ||
+    CLUB_BANK.reference_hint;
+
   return (
     <div className="space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
       <div className="flex items-start gap-2">
@@ -33,7 +46,7 @@ export function PaymentConfirmation({ result }: { result: PaymentCheckoutResult 
         </div>
         <div className="flex justify-between gap-4">
           <dt className="text-slate-500">Verwendungszweck</dt>
-          <dd className="font-mono text-xs font-semibold text-slate-900">{result.internalReference}</dd>
+          <dd className="text-right text-sm font-semibold text-slate-900">{vwz}</dd>
         </div>
       </dl>
 
@@ -64,9 +77,7 @@ export function PaymentConfirmation({ result }: { result: PaymentCheckoutResult 
             </div>
             <div>
               <dt className="text-xs text-slate-500">Verwendungszweck</dt>
-              <dd className="font-mono text-sm font-semibold text-fc-navy">
-                {result.internalReference}
-              </dd>
+              <dd className="text-sm font-semibold text-fc-navy">{vwz}</dd>
             </div>
           </dl>
           <p className="mt-2 text-xs text-slate-600">

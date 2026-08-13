@@ -24,6 +24,7 @@ import { PaymentConfirmation } from "@/components/payments/payment-confirmation"
 import type { PaymentCheckoutResult } from "@/lib/payments/types";
 import {
   CLUB_BANK,
+  formatApplicationPaymentReference,
   formatClubIbanDisplay,
 } from "@/lib/payments/club-bank";
 import { FEATURE_BADGE_HOVER } from "@/components/membership/membership-landing";
@@ -334,16 +335,33 @@ export function MembershipApplicationForm() {
         </Card>
 
         {paymentResult ? (
-          <PaymentConfirmation result={paymentResult} />
+          <PaymentConfirmation
+            result={paymentResult}
+            transferReference={formatApplicationPaymentReference(
+              form.first_name,
+              form.last_name,
+            )}
+          />
         ) : applicationId ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/40 p-4">
             <p className="text-sm font-semibold text-amber-950">Mitgliedsbeitrag per Überweisung</p>
             <p className="mt-2 text-sm leading-relaxed text-amber-950">
-              Der Jahresbeitrag beträgt <strong>{formatEur(feeCents)}</strong>. Die
-              Zahlungsdetails mit eindeutigem Verwendungszweck konnten gerade nicht angezeigt
-              werden — bitte melde dich kurz beim Vorstand oder schaue in deine
-              Bestätigungs-E-Mail. Empfänger: {CLUB_BANK.account_holder}, IBAN{" "}
-              {formatClubIbanDisplay()}.
+              Der Jahresbeitrag beträgt <strong>{formatEur(feeCents)}</strong>. Bitte überweise auf:
+            </p>
+            <dl className="mt-2 grid gap-1 text-sm text-slate-800 sm:grid-cols-[7.5rem_1fr]">
+              <dt className="text-slate-500">Empfänger</dt>
+              <dd className="font-medium">{CLUB_BANK.account_holder}</dd>
+              <dt className="text-slate-500">IBAN</dt>
+              <dd className="font-mono text-[13px]">{formatClubIbanDisplay()}</dd>
+              <dt className="text-slate-500">BIC</dt>
+              <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
+              <dt className="text-slate-500">VWZ</dt>
+              <dd className="font-medium">
+                {formatApplicationPaymentReference(form.first_name, form.last_name)}
+              </dd>
+            </dl>
+            <p className="mt-2 text-xs text-amber-900">
+              Die gleichen Angaben stehen in deiner Bestätigungs-E-Mail.
             </p>
           </div>
         ) : null}
@@ -532,8 +550,7 @@ export function MembershipApplicationForm() {
               <dd className="font-mono text-[13px]">{CLUB_BANK.bic}</dd>
               <dt className="text-slate-500">VWZ</dt>
               <dd className="font-medium">
-                Nach dem Absenden erhältst du einen eindeutigen Verwendungszweck (z.&nbsp;B.
-                MITGLIED-2026-0001). Bitte nur diesen verwenden.
+                {formatApplicationPaymentReference(form.first_name, form.last_name)}
               </dd>
             </dl>
           </div>

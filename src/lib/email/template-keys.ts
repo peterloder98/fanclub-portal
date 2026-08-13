@@ -41,7 +41,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "bank_iban", label: "IBAN" },
     { key: "bank_bic", label: "BIC" },
     { key: "bank_name", label: "Bank" },
-    { key: "bank_reference", label: "Verwendungszweck (z. B. MITGLIED-…)" },
+    { key: "bank_reference", label: "Verwendungszweck (Mitgliedsbeitrag / Vorname Nachname)" },
   ],
   [EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify]: [
     { key: "admin_first_name", label: "Vorname Admin (Empfänger)" },

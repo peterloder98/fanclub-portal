@@ -117,8 +117,6 @@ export async function sendApplicantConfirmationEmail(input: {
   lastName?: string;
   gender?: string | null;
   feeCents?: number;
-  /** Echter Verwendungszweck (z. B. MITGLIED-2026-0001), falls Zahlung schon angelegt. */
-  paymentReference?: string | null;
 }) {
   const pdfBytes = await loadApplicationPdfBytes(input.applicationId);
   const feeEur = `${((input.feeCents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
@@ -127,9 +125,11 @@ export async function sendApplicantConfirmationEmail(input: {
     .join(" ")
     .trim();
   const person = emailPersonVars({ firstName: input.firstName, gender: input.gender });
-  const bankReference =
-    input.paymentReference?.trim() ||
-    formatApplicationPaymentReference(input.firstName, input.lastName ?? "");
+  // Mitgliedsseitig immer: „Mitgliedsbeitrag / Vorname Nachname“ (nie MITGLIED-…).
+  const bankReference = formatApplicationPaymentReference(
+    input.firstName,
+    input.lastName ?? "",
+  );
 
   const rendered = await renderEmailFromTemplate(
     EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,

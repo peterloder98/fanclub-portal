@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyMembershipDownloadToken } from "@/lib/membership/download-token";
 import { createPaymentWithAccounting } from "@/lib/payments/payment-service";
+import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 import type { PaymentCheckoutResult, PaymentMethod } from "@/lib/payments/types";
 
 export async function createApplicationMembershipPayment(input: {
@@ -54,7 +55,10 @@ export async function createApplicationMembershipPayment(input: {
   }
 
   const amountCents = app.fee_cents ?? membership.fee_cents ?? 1500;
-  const name = `${app.first_name ?? ""} ${app.last_name ?? ""}`.trim();
+  const firstName = app.first_name ?? "";
+  const lastName = app.last_name ?? "";
+  const name = `${firstName} ${lastName}`.trim();
+  const memberTransferReference = formatApplicationPaymentReference(firstName, lastName);
 
   const result = await createPaymentWithAccounting({
     userId: app.user_id,
@@ -66,5 +70,8 @@ export async function createApplicationMembershipPayment(input: {
     description: `Mitgliedsbeitrag Antrag${name ? ` · ${name}` : ""}`,
   });
 
-  return result;
+  return {
+    ...result,
+    memberTransferReference,
+  };
 }

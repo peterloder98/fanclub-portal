@@ -278,7 +278,7 @@ export async function POST(request: Request) {
     const pdfPath = `/api/membership/applications/${appId}/pdf?token=${encodeURIComponent(downloadToken)}`;
     const pdfDownloadUrl = appBase ? `${appBase}${pdfPath}` : pdfPath;
 
-    // Zahlung zuerst anlegen, damit die Bestätigungs-Mail den echten MITGLIED-…-VWZ enthält.
+    // Zahlung vor Mail anlegen (interne MITGLIED-Referenz für Admin); VWZ in der Mail ist namensbasiert.
     let payment: PaymentCheckoutResult | null = null;
     try {
       payment = await createApplicationMembershipPayment({
@@ -300,7 +300,6 @@ export async function POST(request: Request) {
         lastName: input.last_name.trim(),
         gender: input.gender,
         feeCents,
-        paymentReference: payment?.internalReference ?? null,
       });
     } catch (e) {
       console.error("[membership] Bestätigungs-Mail fehlgeschlagen:", e);

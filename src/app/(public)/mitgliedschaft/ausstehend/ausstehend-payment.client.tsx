@@ -7,11 +7,15 @@ export function AusstehendPaymentClient({
   paymentToken,
   feeCents,
   firstName,
+  lastName,
+  gender,
 }: {
   applicationId: string;
   paymentToken: string;
   feeCents: number;
   firstName: string | null;
+  lastName?: string | null;
+  gender?: string | null;
 }) {
   return (
     <ApplicationPaymentCheckout
@@ -19,6 +23,8 @@ export function AusstehendPaymentClient({
       paymentToken={paymentToken}
       feeCents={feeCents}
       applicantFirstName={firstName}
+      applicantLastName={lastName}
+      applicantGender={gender}
     />
   );
 }

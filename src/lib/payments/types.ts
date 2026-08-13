@@ -59,7 +59,13 @@ export type PaymentCheckoutResult = {
   paymentId: string;
   orderId?: string;
   applicationId?: string;
+  /** Interne Buchungsreferenz (z. B. MITGLIED-…) — Admin/Matching, nicht für Antragsteller-VWZ. */
   internalReference: string;
+  /**
+   * Mitgliedsseitiger Verwendungszweck zum Abtippen
+   * (Antrag: „Mitgliedsbeitrag / Vorname Nachname“).
+   */
+  memberTransferReference?: string;
   amountCents: number;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;

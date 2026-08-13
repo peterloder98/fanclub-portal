@@ -80,7 +80,13 @@ export function ApplicationPaymentCheckout({
   if (result) {
     return (
       <div className="space-y-3">
-        <PaymentConfirmation result={result} />
+        <PaymentConfirmation
+          result={result}
+          transferReference={formatApplicationPaymentReference(
+            applicantFirstName ?? "",
+            applicantLastName ?? "",
+          )}
+        />
         <p className="rounded-xl border border-blue-100 bg-fc-ice/60 px-3 py-2 text-xs text-blue-950">
           Dein Antrag ist eingegangen. Der Vorstand prüft die Zahlung manuell und schaltet deine
           Mitgliedschaft danach frei. Du erhältst eine E-Mail, sobald der Zugang aktiv ist.

@@ -7,7 +7,7 @@ import {
   type PdfSignatureCoord,
 } from "@/lib/membership/membershipPdfCoordinates";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
-import { CLUB_BANK, formatClubIbanDisplay } from "@/lib/payments/club-bank";
+import { CLUB_BANK, formatApplicationPaymentReference, formatClubIbanDisplay } from "@/lib/payments/club-bank";
 
 export type MembershipApplicationPdfData = {
   id: string;
@@ -222,7 +222,7 @@ export async function generateMembershipPdf(
   const bankLines = [
     `Empfänger: ${CLUB_BANK.account_holder}`,
     `IBAN: ${formatClubIbanDisplay(CLUB_BANK.iban)}`,
-    `VWZ: ${CLUB_BANK.reference_hint}`,
+    `VWZ: ${formatApplicationPaymentReference(applicationData.first_name, applicationData.last_name)}`,
   ];
   const bankLineCoords = coords.page2.bankDetailsLines;
   bankLines.forEach((line, i) => {
