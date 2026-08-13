@@ -16,6 +16,8 @@ export async function sendAppAccessSetupEmail(input: {
   firstName: string;
   gender?: string | null;
   userId?: string;
+  /** Extra Felder für email_send_log.context (z. B. source, client_ip). */
+  logContext?: Record<string, unknown>;
 }) {
   const admin = createSupabaseAdminClient();
   const base = appBaseUrl();
@@ -64,6 +66,7 @@ export async function sendAppAccessSetupEmail(input: {
     context: {
       user_id: input.userId ?? null,
       setup_path: "/setup-account",
+      ...input.logContext,
     },
   });
 

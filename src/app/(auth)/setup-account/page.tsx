@@ -90,7 +90,7 @@ function SetupAccountInner() {
           }
 
           setSessionError(
-            "Dieser Einrichtungs-Link wurde bereits verwendet oder ist abgelaufen. Wenn du den Link vorhin schon geöffnet hast, nutze denselben Browser/Tab erneut — oder fordere unter „Passwort vergessen“ einen neuen Link an (sobald der E-Mail-Versand wieder läuft).",
+            "Dieser Einrichtungs-Link wurde bereits verwendet oder ist abgelaufen. Wenn du den Link vorhin schon geöffnet hast, nutze denselben Browser/Tab erneut. Sonst: unter „Passwort vergessen“ einen neuen Link anfordern — und nur die neueste E-Mail einmal öffnen.",
           );
           setSessionReady(true);
           return;

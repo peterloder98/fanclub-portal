@@ -3,9 +3,8 @@ import { mapAuthError, mapAuthErrorMessage } from "./map-auth-error";
 
 describe("mapAuthErrorMessage", () => {
   it("maps email rate limit exceeded", () => {
-    expect(mapAuthErrorMessage("email rate limit exceeded")).toBe(
-      "Zu viele Versuche. Bitte warte einige Minuten oder melde dich beim Vorstand — wir schicken dir den Link manuell.",
-    );
+    expect(mapAuthErrorMessage("email rate limit exceeded")).toContain("Zu viele Versuche");
+    expect(mapAuthErrorMessage("email rate limit exceeded")).toContain("10–60 Minuten");
   });
 
   it("maps rate limit variants", () => {

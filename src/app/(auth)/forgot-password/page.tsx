@@ -1,36 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mapAuthError } from "@/lib/auth/map-auth-error";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { requestForgotPasswordEmail } from "@/app/(auth)/forgot-password/actions";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(false);
+  const [doneMessage, setDoneMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
 
-  async function onSubmit(e: React.FormEvent) {
+  function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setBusy(true);
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const redirectTo = `${window.location.origin}/auth/callback?next=/reset-password`;
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-        email,
-        { redirectTo },
-      );
-      if (resetError) throw resetError;
-      setDone(true);
-    } catch (err) {
-      setError(mapAuthError(err, "Fehler beim Versand"));
-    } finally {
-      setBusy(false);
-    }
+    startTransition(async () => {
+      const result = await requestForgotPasswordEmail(email);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setDoneMessage(result.message);
+    });
   }
 
   return (
@@ -40,13 +32,15 @@ export default function ForgotPasswordPage() {
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge variant="neutral">E-Mail</Badge>
         </div>
+        <p className="mt-2 text-sm text-slate-600">
+          Du erhältst einen neuen Einrichtungs-Link per E-Mail. Nutze nur die neueste Mail und
+          öffne den Link einmal im selben Browser.
+        </p>
       </CardHeader>
       <CardContent>
-        {done ? (
+        {doneMessage ? (
           <div className="grid gap-3 text-sm text-slate-700">
-            <div className="rounded-xl border bg-white px-3 py-3">
-              Wenn die E-Mail existiert, wurde ein Link gesendet.
-            </div>
+            <div className="rounded-xl border bg-white px-3 py-3">{doneMessage}</div>
             <Link href="/login" className="text-slate-700 hover:underline">
               Zurück zum Login
             </Link>
@@ -73,10 +67,10 @@ export default function ForgotPasswordPage() {
 
             <button
               type="submit"
-              disabled={busy}
+              disabled={pending}
               className="mt-1 h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue disabled:opacity-60"
             >
-              {busy ? "Sende…" : "Link senden"}
+              {pending ? "Sende…" : "Link senden"}
             </button>
 
             <Link href="/login" className="text-sm text-slate-700 hover:underline">
@@ -88,4 +82,3 @@ export default function ForgotPasswordPage() {
     </Card>
   );
 }
-

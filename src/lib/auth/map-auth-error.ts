@@ -1,5 +1,5 @@
 const RATE_LIMIT_DE =
-  "Zu viele Versuche. Bitte warte einige Minuten oder melde dich beim Vorstand — wir schicken dir den Link manuell.";
+  "Zu viele Versuche. Bitte warte etwa 10–60 Minuten (Supabase begrenzt Auth-Mails) oder melde dich beim Vorstand — wir schicken dir den Link manuell.";
 
 /**
  * Mappt Supabase-Auth-Fehlermeldungen (oft Englisch) auf verständliches Deutsch.
