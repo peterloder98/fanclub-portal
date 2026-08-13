@@ -154,7 +154,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
       </div>
 
       {showApproveDialog ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-fc-navy/40 p-4">
+        <div className="fixed inset-0 z-[10000] grid place-items-center bg-fc-navy/40 p-4">
           <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-fc-navy">Antrag freigeben</h3>
             <p className="mt-1 text-sm text-slate-600">
@@ -201,7 +201,7 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
       ) : null}
 
       {showRejectDialog ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-fc-navy/40 p-4">
+        <div className="fixed inset-0 z-[10000] grid place-items-center bg-fc-navy/40 p-4">
           <div className="w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl">
             <h3 className="text-base font-semibold text-fc-navy">Antrag ablehnen</h3>
             <p className="mt-1 text-sm text-slate-600">

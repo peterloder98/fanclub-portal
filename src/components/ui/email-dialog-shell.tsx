@@ -1,7 +1,8 @@
 "use client";
 
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export function EmailDialogShell({
   title,
@@ -16,9 +17,16 @@ export function EmailDialogShell({
   children: ReactNode;
   footer?: ReactNode;
 }) {
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const dialog = (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-fc-navy/40 p-4"
+      // Above app topbar (z-[200] / z-[9998]), sidebar (z-40), mobile nav (z-[6000]), profile menu (z-[9999])
+      className="fixed inset-0 z-[10000] grid place-items-center bg-fc-navy/40 p-4"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -55,4 +63,7 @@ export function EmailDialogShell({
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(dialog, document.body);
 }
