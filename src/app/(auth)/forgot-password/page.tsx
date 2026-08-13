@@ -33,8 +33,8 @@ export default function ForgotPasswordPage() {
           <Badge variant="neutral">E-Mail</Badge>
         </div>
         <p className="mt-2 text-sm text-slate-600">
-          Du erhältst einen neuen Einrichtungs-Link per E-Mail. Nutze nur die neueste Mail und
-          öffne den Link einmal im selben Browser.
+          Du erhältst einen neuen Einrichtungs-Link per E-Mail. Der Link bleibt gültig, bis du
+          dein Passwort gesetzt hast — auch auf anderen Geräten. Nutze die neueste Mail.
         </p>
       </CardHeader>
       <CardContent>

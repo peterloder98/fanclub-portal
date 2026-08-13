@@ -3,13 +3,7 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
-
-function appBaseUrl() {
-  return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
-    /\/$/,
-    "",
-  );
-}
+import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 
 export async function sendAppAccessSetupEmail(input: {
   email: string;
@@ -20,10 +14,6 @@ export async function sendAppAccessSetupEmail(input: {
   logContext?: Record<string, unknown>;
 }) {
   const admin = createSupabaseAdminClient();
-  const base = appBaseUrl();
-  if (!base) {
-    throw new Error("APP_BASE_URL / NEXT_PUBLIC_APP_URL fehlt.");
-  }
 
   let genderRaw = input.gender;
   if (genderRaw == null && input.userId) {
@@ -35,18 +25,11 @@ export async function sendAppAccessSetupEmail(input: {
     genderRaw = profile?.gender ?? null;
   }
 
-  // generateLink action_link ist mit PKCE (@supabase/ssr) unzuverlässig.
-  // Stattdessen hashed_token → App-Seite verifyOtp (stabil für E-Mail-Clients).
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "recovery",
+  // Club-eigener Setup-Token: mehrfach nutzbar bis Passwort gesetzt / Ablauf.
+  const { setupUrl, userId } = await rotateAccountSetupToken({
     email: input.email,
+    userId: input.userId,
   });
-  if (linkErr) throw new Error(linkErr.message);
-
-  const hashedToken = linkData.properties.hashed_token;
-  if (!hashedToken) throw new Error("Kein Setup-Token erzeugt.");
-
-  const setupUrl = `${base}/setup-account?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
   const person = emailPersonVars({ firstName: input.firstName, gender: genderRaw });
 
   const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.appAccessSetup, {
@@ -64,8 +47,9 @@ export async function sendAppAccessSetupEmail(input: {
       : undefined,
     templateKey: EMAIL_TEMPLATE_KEYS.appAccessSetup,
     context: {
-      user_id: input.userId ?? null,
+      user_id: userId,
       setup_path: "/setup-account",
+      setup_token: true,
       ...input.logContext,
     },
   });

@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-13";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-14";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -906,7 +906,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Einrichtungs-Link: Nach dem ersten erfolgreichen Öffnen speichert die App die Einrichtungssitzung (bis zu 72 Stunden) — derselbe Browser kann den Link erneut öffnen oder die Seite neu laden, ohne dass der Token noch gültig sein muss. Prefetch/Mail-Scanner, anderer Browser oder Zweitgerät: Claim greift nicht → „Passwort vergessen“ (sendet über Club-SMTP einen frischen Setup-Link, eigener Soft-Limit ca. 10 Min. pro Adresse) oder Technik sendet gezielt neu (Skript resend-app-access-one.ts) — nicht an alle, nur an Betroffene. Jede neue Setup-Mail macht ältere Links ungültig. Hinweis an Mitglieder: nur die neueste Mail, Link einmal öffnen, im selben Browser bleiben.",
+            text: "Einrichtungs-Link: Der Link in Zugangs-/Willkommens-/Passwort-vergessen-Mails bleibt nutzbar, bis das Passwort gesetzt ist (auch mehrmals, auf anderen Geräten). Nach erfolgreicher Passwortvergabe ist er ungültig. Jede neue Setup-Mail (Resend / Passwort vergessen) ersetzt den alten Link. Alte Mails mit dem früheren One-Shot-Link können noch scheitern — dann „Passwort vergessen“ oder gezielt neu senden (Skript resend-app-access-one.ts), nicht massenhaft an alle.",
           },
         ],
       },

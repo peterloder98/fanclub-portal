@@ -11,6 +11,10 @@ import {
   createSetupClaimToken,
   verifySetupClaimToken,
 } from "@/lib/auth/setup-claim";
+import {
+  consumeAccountSetupTokensForUser,
+  lookupValidAccountSetupToken,
+} from "@/lib/auth/account-setup-token";
 
 const schema = z.object({
   birthdate: z.string().min(1, "Geburtsdatum ist Pflicht."),
@@ -43,8 +47,48 @@ async function clearSetupClaim() {
 }
 
 /**
- * Nach erfolgreichem verifyOtp: Setup-Claim setzen, damit zweiter Klick / Reload
- * auch ohne gültigen Token weitergeht.
+ * Club-Setup-Token einlösen (wiederverwendbar bis Passwort gesetzt).
+ * Setzt Claim-Cookie — funktioniert auf jedem Gerät/Browser erneut.
+ */
+export async function redeemAccountSetupToken(plainToken: string): Promise<
+  { ok: true; email: string } | { ok: false; error: string }
+> {
+  const result = await lookupValidAccountSetupToken(plainToken);
+  if (!result.ok) {
+    if (result.reason === "consumed") {
+      return {
+        ok: false,
+        error:
+          "Dieser Einrichtungs-Link wurde bereits genutzt (Passwort ist gesetzt). Bitte melde dich an oder nutze „Passwort vergessen“.",
+      };
+    }
+    if (result.reason === "expired") {
+      return {
+        ok: false,
+        error:
+          "Dieser Einrichtungs-Link ist abgelaufen. Bitte unter „Passwort vergessen“ einen neuen Link anfordern.",
+      };
+    }
+    if (result.reason === "missing_table") {
+      return {
+        ok: false,
+        error:
+          "Einrichtung vorübergehend nicht möglich. Bitte später erneut versuchen oder den Vorstand kontaktieren.",
+      };
+    }
+    return {
+      ok: false,
+      error:
+        "Ungültiger Einrichtungs-Link. Bitte die neueste E-Mail nutzen oder unter „Passwort vergessen“ einen neuen Link anfordern.",
+    };
+  }
+
+  await writeSetupClaim(result.row.user_id, result.email);
+  return { ok: true, email: result.email };
+}
+
+/**
+ * Nach erfolgreichem verifyOtp (Legacy token_hash): Setup-Claim setzen.
  * Optional accessToken: falls Browser-Cookies noch nicht beim Server angekommen sind.
  */
 export async function claimAccountSetupSession(accessToken?: string): Promise<
@@ -164,6 +208,7 @@ export async function completeAccountSetup(input: {
     console.error("[setup-account] Registrierungsstatus:", regErr.message);
   }
 
+  await consumeAccountSetupTokensForUser(userId);
   await clearSetupClaim();
   return { ok: true };
 }

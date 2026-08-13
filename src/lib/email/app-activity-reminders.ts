@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
+import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 
 const SIGNUP_MAX = 4;
 const SIGNUP_INTERVAL_DAYS = 7;
@@ -24,19 +24,17 @@ function daysSince(iso: string | null | undefined, ref = new Date()): number | n
   return Math.floor((ref.getTime() - start.getTime()) / 86_400_000);
 }
 
-async function buildSetupUrl(email: string): Promise<string | null> {
-  const base = appBaseUrl();
-  if (!base) return null;
-  const admin = createSupabaseAdminClient();
-  const { data: linkData, error } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-  });
-  if (error || !linkData.properties.hashed_token) {
-    console.error("[app-activity-reminders] setup link:", error?.message);
+async function buildSetupUrl(email: string, userId: string): Promise<string | null> {
+  try {
+    const { setupUrl } = await rotateAccountSetupToken({ email, userId });
+    return setupUrl;
+  } catch (e) {
+    console.error(
+      "[app-activity-reminders] setup link:",
+      e instanceof Error ? e.message : e,
+    );
     return null;
   }
-  return `${base}/setup-account?token_hash=${encodeURIComponent(linkData.properties.hashed_token)}&type=recovery`;
 }
 
 type ProfileReminderRow = {
@@ -130,7 +128,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
         continue;
       }
 
-      const setupUrl = await buildSetupUrl(profile.email);
+      const setupUrl = await buildSetupUrl(profile.email, profile.id);
       if (!setupUrl) {
         skipped += 1;
         continue;

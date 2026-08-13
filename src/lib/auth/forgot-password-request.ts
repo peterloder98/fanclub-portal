@@ -10,7 +10,7 @@ export const FORGOT_PASSWORD_RATE_LIMIT_DE =
   "Zu viele Versuche. Bitte warte etwa 10 Minuten und versuche es dann erneut — oder melde dich beim Vorstand.";
 
 export const FORGOT_PASSWORD_OK_DE =
-  "Wenn die E-Mail bei uns hinterlegt ist, wurde ein neuer Einrichtungs-Link gesendet. Nutze nur die neueste Mail, öffne den Link einmal und bleibe im selben Browser.";
+  "Wenn die E-Mail bei uns hinterlegt ist, wurde ein neuer Einrichtungs-Link gesendet. Nutze die neueste Mail — der Link bleibt gültig, bis du dein Passwort gesetzt hast (auch auf anderen Geräten).";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();

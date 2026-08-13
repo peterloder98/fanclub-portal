@@ -6,6 +6,7 @@ import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
+import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -174,22 +175,10 @@ export async function sendMemberInviteAfterApproval(input: {
   gender?: string | null;
   userId?: string;
 }) {
-  const admin = createSupabaseAdminClient();
-  const base = appBaseUrl();
-  if (!base) {
-    throw new Error("APP_BASE_URL / NEXT_PUBLIC_APP_URL fehlt.");
-  }
-
-  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-    type: "recovery",
+  const { setupUrl, userId } = await rotateAccountSetupToken({
     email: input.email,
+    userId: input.userId,
   });
-  if (linkErr) throw new Error(linkErr.message);
-
-  const hashedToken = linkData.properties.hashed_token;
-  if (!hashedToken) throw new Error("Kein Setup-Token erzeugt.");
-
-  const setupUrl = `${base}/setup-account?token_hash=${encodeURIComponent(hashedToken)}&type=recovery`;
   const person = emailPersonVars({
     firstName: input.firstName,
     gender: input.gender,
@@ -216,8 +205,9 @@ export async function sendMemberInviteAfterApproval(input: {
     templateKey: EMAIL_TEMPLATE_KEYS.membershipApprovedWelcome,
     context: {
       membership_number: input.membershipNumber,
-      user_id: input.userId ?? null,
+      user_id: userId,
       setup_path: "/setup-account",
+      setup_token: true,
     },
   });
 

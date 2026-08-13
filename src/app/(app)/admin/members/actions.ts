@@ -17,6 +17,7 @@ import {
   isAssignedMembershipNumber,
 } from "@/lib/membership/numbers";
 import { normalizeMemberCountryCode } from "@/lib/members/country";
+import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -130,13 +131,6 @@ export async function createMember(formData: FormData) {
 
   const userId = created.user.id;
 
-  const { data: linkData, error: linkErr } =
-    await admin.auth.admin.generateLink({
-      type: "recovery",
-      email: input.email,
-    });
-  if (linkErr) throw new Error(linkErr.message);
-
   // Profile — Mitgliedsnummer erst bei Freigabe (Status aktiv)
   let membershipNumber = input.membership_number?.trim() || null;
   if (input.status === "active" && !membershipNumber) {
@@ -187,8 +181,11 @@ export async function createMember(formData: FormData) {
     summary: `Mitglied angelegt: ${input.first_name} ${input.last_name}`,
   });
 
-  // Store the invite link temporarily in a redirect param for now
-  redirect(`/admin/members?invite=${encodeURIComponent(linkData.properties.action_link)}`);
+  const { setupUrl } = await rotateAccountSetupToken({
+    email: input.email,
+    userId,
+  });
+  redirect(`/admin/members?invite=${encodeURIComponent(setupUrl)}`);
 }
 
 export async function updateMember(formData: FormData) {

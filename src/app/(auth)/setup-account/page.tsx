@@ -11,8 +11,12 @@ import {
   claimAccountSetupSession,
   completeAccountSetup,
   getClaimedSetupSession,
+  redeemAccountSetupToken,
 } from "@/app/(auth)/setup-account/actions";
 import { mapAuthErrorMessage } from "@/lib/auth/map-auth-error";
+
+const LEGACY_OTP_HINT =
+  "Dieser ältere Einrichtungs-Link wurde bereits verwendet oder ist abgelaufen. Bitte unter „Passwort vergessen“ einen neuen Link anfordern — der neue Link bleibt bis zur Passwortvergabe wiederverwendbar.";
 
 function SetupAccountInner() {
   const router = useRouter();
@@ -38,7 +42,6 @@ function SetupAccountInner() {
       } = await supabase.auth.getSession();
       if (session?.user) {
         setEmail(session.user.email ?? null);
-        // Claim erneuern / setzen, falls erste Sitzung noch ohne Cookie war
         await claimAccountSetupSession(session.access_token).catch(() => null);
         return true;
       }
@@ -53,12 +56,33 @@ function SetupAccountInner() {
     async function init() {
       try {
         const supabase = createSupabaseBrowserClient();
+        const setupToken = searchParams.get("setup_token");
         const tokenHash = searchParams.get("token_hash");
         const type = searchParams.get("type");
         const isOtpType =
           type === "recovery" || type === "magiclink" || type === "invite";
 
-        // 1) Schon eingeloggt / Claim vorhanden → Setup fortsetzen (zweiter Klick, Reload)
+        // 1) Club-Setup-Token (wiederverwendbar bis Passwort gesetzt)
+        if (setupToken) {
+          const redeemed = await redeemAccountSetupToken(setupToken);
+          if (redeemed.ok) {
+            setEmail(redeemed.email);
+            router.replace("/setup-account", { scroll: false });
+            setSessionReady(true);
+            return;
+          }
+          // Token ungültig — evtl. Claim/Session vom gleichen Browser?
+          if (await resumeFromExisting()) {
+            router.replace("/setup-account", { scroll: false });
+            setSessionReady(true);
+            return;
+          }
+          setSessionError(redeemed.error);
+          setSessionReady(true);
+          return;
+        }
+
+        // 2) Schon eingeloggt / Claim vorhanden → Setup fortsetzen
         if (await resumeFromExisting()) {
           if (tokenHash) {
             router.replace("/setup-account", { scroll: false });
@@ -67,7 +91,7 @@ function SetupAccountInner() {
           return;
         }
 
-        // 2) Frischer E-Mail-Link: OTP einmal verifizieren
+        // 3) Legacy: Supabase recovery token_hash (einmalig)
         if (tokenHash && isOtpType) {
           const { data, error: otpErr } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
@@ -82,16 +106,13 @@ function SetupAccountInner() {
             return;
           }
 
-          // Token verbraucht/ungültig — Session/Claim vom ersten Klick im selben Browser?
           if (await resumeFromExisting()) {
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;
           }
 
-          setSessionError(
-            "Dieser Einrichtungs-Link wurde bereits verwendet oder ist abgelaufen. Wenn du den Link vorhin schon geöffnet hast, nutze denselben Browser/Tab erneut. Sonst: unter „Passwort vergessen“ einen neuen Link anfordern — und nur die neueste E-Mail einmal öffnen.",
-          );
+          setSessionError(LEGACY_OTP_HINT);
           setSessionReady(true);
           return;
         }
