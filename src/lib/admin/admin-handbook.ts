@@ -856,7 +856,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Offizieller Start: 16.08.2026 um 10:00 Uhr. Ab 13.08. können sich Mitglieder anmelden und umschauen; Schreiben und Chatten sind erst ab dem Start freigeschaltet.",
+            text: "Offizieller Start: 16.08.2026 um 10:00 Uhr. Ab App-Zugang (ca. 13.08.) können sich Mitglieder anmelden, Profil und Foto pflegen, die Kennenlern-Fragen beantworten und im Gruppenchat schreiben. Posts, Kommentare, Umfragen und Gewinnspiele bleiben bis zum Start gesperrt.",
           },
           {
             type: "ol",
@@ -868,7 +868,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Am 13.08.: Registrierungs-Mails an alle aktiven Mitglieder senden (Skript send-app-access-all-members.ts).",
               "Reiseinformationen bleiben ausgeblendet (kommen später).",
               "Live mit Anni: Leerhinweis „kein Termin“ ist aktiv; bei Bedarf LiveKit und Anni-Mail (booking@anniperka.de) prüfen.",
-              "Am 16.08. um 10:00: Soft-Launch-Sperre endet automatisch — kurz Chat und Posts testen.",
+              "Am 16.08. um 10:00: Soft-Launch-Sperre für Feed/Umfragen/Gewinnspiele endet automatisch — kurz Posts und Kommentare testen.",
             ],
           },
           {
