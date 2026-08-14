@@ -1,5 +1,6 @@
 -- Versteckte Profile (z. B. System-Admin): nicht in Mitglieder-UI / Rangliste,
 -- keine Anni-Stars. Rolle und Login bleiben unverändert.
+-- Alle Punkte-/Ranglisten-Teile laufen nur, wenn die Tabellen existieren.
 
 alter table public.profiles
   add column if not exists is_hidden boolean not null default false;
@@ -12,7 +13,6 @@ create index if not exists profiles_is_hidden_idx
   where is_hidden = true;
 
 -- Peter Loder (Admin) verstecken — nur id + auth.users.email
--- (profiles.first_name / last_name / email sind in manchen DBs nicht vorhanden)
 update public.profiles p
 set is_hidden = true
 where p.id = '1b70d88f-e28d-48f3-b3cb-646eaf06f19a'
@@ -23,49 +23,64 @@ where p.id = '1b70d88f-e28d-48f3-b3cb-646eaf06f19a'
        and lower(u.email) = 'mail@peter-loder.de'
    );
 
--- Bestehende Sterne / Badges für versteckte Profile entfernen
-delete from public.points_transactions
-where user_id in (select id from public.profiles where is_hidden = true);
-
 do $$
 begin
+  if to_regclass('public.points_transactions') is not null then
+    delete from public.points_transactions
+    where user_id in (select id from public.profiles where is_hidden = true);
+  end if;
+
   if to_regclass('public.user_achievements') is not null then
     delete from public.user_achievements
     where user_id in (select id from public.profiles where is_hidden = true);
   end if;
 end$$;
 
--- Punkte-Inserts für versteckte Profile still verwerfen
-create or replace function public.skip_points_for_hidden_profiles()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
+do $$
 begin
-  if exists (
-    select 1
-    from public.profiles p
-    where p.id = new.user_id
-      and coalesce(p.is_hidden, false)
-  ) then
-    return null;
+  if to_regclass('public.points_transactions') is null then
+    return;
   end if;
-  return new;
-end;
-$$;
 
-drop trigger if exists points_skip_hidden_profiles on public.points_transactions;
-create trigger points_skip_hidden_profiles
-before insert on public.points_transactions
-for each row execute function public.skip_points_for_hidden_profiles();
+  execute $fn$
+    create or replace function public.skip_points_for_hidden_profiles()
+    returns trigger
+    language plpgsql
+    security definer
+    set search_path = public
+    as $body$
+    begin
+      if exists (
+        select 1
+        from public.profiles p
+        where p.id = new.user_id
+          and coalesce(p.is_hidden, false)
+      ) then
+        return null;
+      end if;
+      return new;
+    end;
+    $body$;
+  $fn$;
 
--- Jahrespunkte-Rangliste: versteckte Profile ausschließen
--- Namensspalten nur verwenden, wenn sie existieren.
+  execute 'drop trigger if exists points_skip_hidden_profiles on public.points_transactions';
+  execute $tg$
+    create trigger points_skip_hidden_profiles
+    before insert on public.points_transactions
+    for each row execute function public.skip_points_for_hidden_profiles()
+  $tg$;
+end$$;
+
 do $$
 declare
   has_names boolean;
+  has_points boolean;
 begin
+  has_points := to_regclass('public.points_transactions') is not null;
+  if not has_points then
+    return;
+  end if;
+
   select exists (
     select 1
     from information_schema.columns
@@ -149,7 +164,7 @@ begin
       $body$;
     $fn$;
   end if;
-end$$;
 
-revoke all on function public.member_year_points_leaderboard(int) from public;
-grant execute on function public.member_year_points_leaderboard(int) to authenticated;
+  execute 'revoke all on function public.member_year_points_leaderboard(int) from public';
+  execute 'grant execute on function public.member_year_points_leaderboard(int) to authenticated';
+end$$;
