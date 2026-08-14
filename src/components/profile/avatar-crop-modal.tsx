@@ -71,7 +71,7 @@ export function AvatarCropModal({
           height: Math.round(croppedAreaPixels.height),
         },
         outputSize: AVATAR_STORAGE_PX,
-        quality: 0.72,
+        quality: 0.92,
       });
       await onSave({ blob, contentType });
       onClose();

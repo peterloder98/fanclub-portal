@@ -1,8 +1,11 @@
-/** Zielgrößen für Storage — an max. Anzeige im UI (inkl. ~2× Retina). */
+/** Zielgrößen für Storage — an max. Anzeige im UI (inkl. ~2–3× Retina). */
 
-/** Topbar/Profil max. 40px → 96px Storage reicht für Hover (~56px). */
-export const AVATAR_STORAGE_PX = 96;
-export const AVATAR_MAX_BYTES = 28_000;
+/**
+ * Mitglieder-Portal bis 128px CSS → 384px Storage für scharfe Retina-Darstellung.
+ * (Früher 96px / 28 KB — zu weich auf großen Profilköpfen.)
+ */
+export const AVATAR_STORAGE_PX = 384;
+export const AVATAR_MAX_BYTES = 150_000;
 
 /** Feed-Vorschau max-h-28 (~112px), Lightbox bis ~960px — Storage 720px Seite. */
 export const POST_MEDIA_MAX_SIDE_PX = 720;

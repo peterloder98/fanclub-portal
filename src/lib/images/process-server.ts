@@ -66,22 +66,25 @@ async function encodeWebpUnderBudget(
   return encodeImageUnderBudget(pipeline, maxBytes, { ...opts, format: "webp" });
 }
 
-/** Quadratisches Profilbild — klein & scharf genug für die UI. */
+/** Quadratisches Profilbild — scharf genug für Portal-Header (Retina). */
 export async function processAvatarForStorage(input: Blob | Buffer): Promise<Buffer> {
   const buf = await toBuffer(input);
   const base = sharp(buf, { failOn: "none" }).rotate().resize(AVATAR_STORAGE_PX, AVATAR_STORAGE_PX, {
     fit: "cover",
-    position: "attention",
+    position: "centre",
   });
 
-  let quality = 78;
-  for (let i = 0; i < 6; i++) {
-    const out = await base.clone().webp({ quality, effort: 4 }).toBuffer();
+  let quality = 90;
+  for (let i = 0; i < 5; i++) {
+    const out = await base
+      .clone()
+      .webp({ quality, effort: 4, smartSubsample: false })
+      .toBuffer();
     if (out.length <= AVATAR_MAX_BYTES) return out;
-    quality = Math.max(50, quality - 8);
+    quality = Math.max(80, quality - 4);
   }
 
-  return base.webp({ quality: 50, effort: 4 }).toBuffer();
+  return base.webp({ quality: 80, effort: 4, smartSubsample: false }).toBuffer();
 }
 
 /** Feed-/Post-Bild — AVIF, typisch unter 70 KB. */
