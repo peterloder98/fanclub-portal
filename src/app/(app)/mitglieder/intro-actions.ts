@@ -89,7 +89,27 @@ export async function pingAppActivity(): Promise<void> {
   const now = new Date().toISOString();
   const admin = createSupabaseAdminClient();
 
-  await admin.from("profiles").update({ last_app_active_at: now }).eq("id", user.id);
+  // App-Aktivität = registriert (Spalte syncen, falls noch „open“)
+  const { data: regProfile } = await admin
+    .from("profiles")
+    .select("app_registration_status,app_registered_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profilePatch: Record<string, string> = { last_app_active_at: now };
+  if (
+    regProfile &&
+    regProfile.app_registration_status !== "deleted" &&
+    regProfile.app_registration_status !== "registered"
+  ) {
+    profilePatch.app_registration_status = "registered";
+    if (!regProfile.app_registered_at) {
+      profilePatch.app_registered_at = now;
+    }
+  }
+  const { error: activityErr } = await admin.from("profiles").update(profilePatch).eq("id", user.id);
+  if (activityErr && /app_registration_status|does not exist/i.test(activityErr.message)) {
+    await admin.from("profiles").update({ last_app_active_at: now }).eq("id", user.id);
+  }
 
   const { data: existing } = await admin
     .from("app_activity_days")

@@ -1,6 +1,7 @@
 /**
- * Backfill: Auth last_sign_in_at → profiles.app_registration_status = registered
- * (nur wenn Status noch open / leer; deleted bleibt unberührt)
+ * Backfill: last_app_active_at und/oder Auth last_sign_in_at
+ * → profiles.app_registration_status = registered
+ * (nur wenn Status noch open; deleted bleibt unberührt)
  *
  *   node --env-file=.env.local scripts/backfill-app-registration.mjs
  */
@@ -30,29 +31,36 @@ async function listAllAuthUsers() {
   return users;
 }
 
+async function loadAllProfiles() {
+  const rows = [];
+  let from = 0;
+  const pageSize = 1000;
+  for (;;) {
+    const { data, error } = await admin
+      .from("profiles")
+      .select("id,app_registration_status,app_registered_at,last_app_active_at")
+      .range(from, from + pageSize - 1);
+    if (error) throw new Error(error.message);
+    const batch = data ?? [];
+    rows.push(...batch);
+    if (batch.length < pageSize) break;
+    from += pageSize;
+  }
+  return rows;
+}
+
 const authUsers = await listAllAuthUsers();
-const withSignIn = authUsers.filter((u) => u.last_sign_in_at);
-console.log(`Auth users: ${authUsers.length}, with last_sign_in: ${withSignIn.length}`);
+const signInById = new Map(authUsers.map((u) => [u.id, u.last_sign_in_at ?? null]));
+console.log(`Auth users: ${authUsers.length}, with last_sign_in: ${authUsers.filter((u) => u.last_sign_in_at).length}`);
+
+const profiles = await loadAllProfiles();
+console.log(`Profiles: ${profiles.length}`);
 
 let updated = 0;
 let skipped = 0;
 let errors = 0;
 
-for (const u of withSignIn) {
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select("id,app_registration_status,app_registered_at")
-    .eq("id", u.id)
-    .maybeSingle();
-  if (pErr) {
-    console.warn(`[skip] ${u.id}: ${pErr.message}`);
-    errors += 1;
-    continue;
-  }
-  if (!profile) {
-    skipped += 1;
-    continue;
-  }
+for (const profile of profiles) {
   if (profile.app_registration_status === "deleted") {
     skipped += 1;
     continue;
@@ -62,19 +70,33 @@ for (const u of withSignIn) {
     continue;
   }
 
+  const lastSignIn = signInById.get(profile.id) ?? null;
+  const lastActive = profile.last_app_active_at ?? null;
+  if (!lastSignIn && !lastActive) {
+    skipped += 1;
+    continue;
+  }
+
+  const registeredAt = profile.app_registered_at ?? lastActive ?? lastSignIn;
   const { error: updErr } = await admin
     .from("profiles")
     .update({
       app_registration_status: "registered",
-      app_registered_at: profile.app_registered_at ?? u.last_sign_in_at,
+      app_registered_at: registeredAt,
     })
-    .eq("id", u.id);
+    .eq("id", profile.id);
   if (updErr) {
-    console.warn(`[err] ${u.id}: ${updErr.message}`);
+    console.warn(`[err] ${profile.id}: ${updErr.message}`);
     errors += 1;
     continue;
   }
   updated += 1;
 }
 
+const { count: registeredCount } = await admin
+  .from("profiles")
+  .select("id", { count: "exact", head: true })
+  .eq("app_registration_status", "registered");
+
 console.log(`✓ backfill done: updated=${updated} skipped=${skipped} errors=${errors}`);
+console.log(`✓ profiles with status=registered: ${registeredCount ?? "?"}`);

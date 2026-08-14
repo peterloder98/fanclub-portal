@@ -13,7 +13,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { batchMemberContributionStatus } from "@/lib/club/membership-contribution";
 import {
-  isAppRegistrationStatus,
+  resolveAppRegistrationStatus,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
 
@@ -60,12 +60,12 @@ export default async function AdminMembersPage({
           admin
             .from("profiles")
             .select(
-              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status",
+              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status,last_app_active_at,app_registered_at",
             )
             .order("membership_number", { ascending: true, nullsFirst: false }),
         ]);
       if (mErr) return { members: [], membersError: mErr.message };
-      // Spalte ggf. noch nicht migriert → ohne Status-Feld erneut laden
+      // Spalte ggf. noch nicht migriert → Fallback ohne Status-Felder
       type ProfileListRow = {
         id: string;
         membership_number: string | null;
@@ -75,16 +75,32 @@ export default async function AdminMembersPage({
         email: string | null;
         warning_count?: number | null;
         app_registration_status?: string | null;
+        last_app_active_at?: string | null;
+        app_registered_at?: string | null;
       };
       let profileRows: ProfileListRow[] = (profiles ?? []) as ProfileListRow[];
       if (pErr) {
-        if (/app_registration_status|does not exist/i.test(pErr.message)) {
+        if (/app_registration_status|app_registered_at|does not exist/i.test(pErr.message)) {
           const { data: fallback, error: fbErr } = await admin
             .from("profiles")
-            .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
+            .select(
+              "id,membership_number,first_name,last_name,birthdate,email,warning_count,last_app_active_at",
+            )
             .order("membership_number", { ascending: true, nullsFirst: false });
-          if (fbErr) return { members: [], membersError: fbErr.message };
-          profileRows = (fallback ?? []) as ProfileListRow[];
+          if (fbErr) {
+            if (/last_app_active_at|does not exist/i.test(fbErr.message)) {
+              const { data: minimal, error: minErr } = await admin
+                .from("profiles")
+                .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
+                .order("membership_number", { ascending: true, nullsFirst: false });
+              if (minErr) return { members: [], membersError: minErr.message };
+              profileRows = (minimal ?? []) as ProfileListRow[];
+            } else {
+              return { members: [], membersError: fbErr.message };
+            }
+          } else {
+            profileRows = (fallback ?? []) as ProfileListRow[];
+          }
         } else {
           return { members: [], membersError: pErr.message };
         }
@@ -101,10 +117,11 @@ export default async function AdminMembersPage({
       });
 
       const baseMembers = profileRows.map((p) => {
-        const rawStatus = (p as { app_registration_status?: string | null }).app_registration_status;
-        const app_registration_status: AppRegistrationStatus = isAppRegistrationStatus(rawStatus)
-          ? rawStatus
-          : "open";
+        const app_registration_status: AppRegistrationStatus = resolveAppRegistrationStatus({
+          status: p.app_registration_status,
+          registeredAt: p.app_registered_at,
+          lastAppActiveAt: p.last_app_active_at,
+        });
         return {
           id: p.id,
           membership_number: p.membership_number ?? null,

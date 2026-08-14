@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 async function loadAppRegistration(admin: ReturnType<typeof createSupabaseAdminClient>, userId: string) {
   const { data: profile } = await admin
     .from("profiles")
-    .select("app_registration_status,app_registered_at")
+    .select("app_registration_status,app_registered_at,last_app_active_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -32,13 +32,17 @@ async function loadAppRegistration(admin: ReturnType<typeof createSupabaseAdminC
     /* ignore */
   }
 
+  const lastAppActiveAt =
+    (profile as { last_app_active_at?: string | null } | null)?.last_app_active_at ?? null;
+
   const status = resolveAppRegistrationStatus({
     status: (profile as { app_registration_status?: string | null } | null)?.app_registration_status,
     registeredAt: (profile as { app_registered_at?: string | null } | null)?.app_registered_at,
     lastSignInAt,
+    lastAppActiveAt,
   });
 
-  // Lazy-Backfill: schon eingeloggt → als registriert speichern
+  // Lazy-Backfill: schon eingeloggt / App-aktiv → als registriert speichern
   if (
     status === "registered" &&
     (profile as { app_registration_status?: string | null } | null)?.app_registration_status !==
@@ -52,6 +56,7 @@ async function loadAppRegistration(admin: ReturnType<typeof createSupabaseAdminC
         app_registration_status: "registered",
         app_registered_at:
           (profile as { app_registered_at?: string | null } | null)?.app_registered_at ??
+          lastAppActiveAt ??
           lastSignInAt ??
           new Date().toISOString(),
       })
@@ -66,6 +71,7 @@ async function loadAppRegistration(admin: ReturnType<typeof createSupabaseAdminC
     registeredAt:
       status === "registered"
         ? ((profile as { app_registered_at?: string | null } | null)?.app_registered_at ??
+          lastAppActiveAt ??
           lastSignInAt)
         : null,
   } satisfies { status: AppRegistrationStatus; registeredAt: string | null };

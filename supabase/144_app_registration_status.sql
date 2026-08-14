@@ -19,3 +19,11 @@ alter table public.profiles
 
 comment on column public.profiles.app_registration_status is
   'In-App-Registrierung: open = noch nicht eingerichtet, registered = Zugang eingerichtet, deleted = Zugang gelöscht';
+
+-- Bestehende App-Nutzer: aus last_app_active_at nachziehen (nicht deleted überschreiben)
+update public.profiles
+set
+  app_registration_status = 'registered',
+  app_registered_at = coalesce(app_registered_at, last_app_active_at, now())
+where last_app_active_at is not null
+  and coalesce(app_registration_status, 'open') = 'open';

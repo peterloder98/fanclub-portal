@@ -10,16 +10,17 @@ export function isAppRegistrationStatus(value: unknown): value is AppRegistratio
   return value === "open" || value === "registered" || value === "deleted";
 }
 
-/** Status aus Profilspalte (+ optional Auth last_sign_in als Hinweis für Backfill). */
+/** Status aus Profilspalte (+ App-Aktivität / Login als Hinweis vor/ohne Backfill). */
 export function resolveAppRegistrationStatus(input: {
   status?: string | null;
   registeredAt?: string | null;
   lastSignInAt?: string | null;
+  lastAppActiveAt?: string | null;
 }): AppRegistrationStatus {
   if (input.status === "deleted") return "deleted";
   if (input.status === "registered" || input.registeredAt) return "registered";
-  // Bereits eingeloggt, aber Spalte noch nicht gesetzt (vor Migration / Backfill)
-  if (input.lastSignInAt) return "registered";
+  // Bereits in der App aktiv oder eingeloggt, Spalte noch „open“ (vor Backfill)
+  if (input.lastAppActiveAt || input.lastSignInAt) return "registered";
   return "open";
 }
 
