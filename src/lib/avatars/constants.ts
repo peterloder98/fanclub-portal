@@ -2,8 +2,8 @@ export const AVATAR_ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp"] as 
 
 export const AVATAR_ACCEPT = "image/jpeg,image/png,image/webp";
 
-/** Minimum source size so 384×384 output stays sharp enough */
-export const AVATAR_MIN_DIMENSION = 256;
+/** Minimum source size so 256×256 output stays sharp enough */
+export const AVATAR_MIN_DIMENSION = 200;
 
 export function isAllowedAvatarFile(file: File) {
   if (AVATAR_ALLOWED_MIME.includes(file.type as (typeof AVATAR_ALLOWED_MIME)[number])) {

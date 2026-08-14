@@ -1,11 +1,11 @@
-/** Zielgrößen für Storage — an max. Anzeige im UI (inkl. ~2–3× Retina). */
+/** Zielgrößen für Storage — an max. Anzeige im UI (inkl. ~2× Retina). */
 
 /**
- * Mitglieder-Portal bis 128px CSS → 384px Storage für scharfe Retina-Darstellung.
- * (Früher 96px / 28 KB — zu weich auf großen Profilköpfen.)
+ * Portal-Avatar bis 128px CSS → 256px Storage (2× Retina).
+ * WebP-Fotos landen typisch bei ~15–35 KB; 48 KB ist nur die harte Obergrenze.
  */
-export const AVATAR_STORAGE_PX = 384;
-export const AVATAR_MAX_BYTES = 150_000;
+export const AVATAR_STORAGE_PX = 256;
+export const AVATAR_MAX_BYTES = 48_000;
 
 /** Feed-Vorschau max-h-28 (~112px), Lightbox bis ~960px — Storage 720px Seite. */
 export const POST_MEDIA_MAX_SIDE_PX = 720;
