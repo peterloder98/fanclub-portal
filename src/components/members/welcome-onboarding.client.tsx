@@ -273,10 +273,10 @@ export function WelcomeOnboardingClient({
 
             {MEMBER_INTRO_QUESTIONS.map((q) => (
               <label key={q.key} className="grid gap-1.5">
-                <span className="flex items-baseline justify-between gap-2 text-sm font-medium text-slate-700">
-                  <span>{q.label}</span>
+                <span className="flex items-start justify-between gap-2 text-sm font-medium text-slate-700">
+                  <span className="min-w-0 flex-1 break-words leading-snug">{q.label}</span>
                   <span
-                    className={`shrink-0 text-xs font-normal tabular-nums ${
+                    className={`shrink-0 pt-0.5 text-xs font-normal tabular-nums ${
                       answers[q.key].length >= INTRO_ANSWER_MAX_LENGTH
                         ? "text-amber-700"
                         : "text-slate-400"

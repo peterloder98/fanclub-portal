@@ -443,7 +443,9 @@ export default async function MemberPortalPage({
                           <Icon className="h-4 w-4" aria-hidden />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`line-clamp-1 ${PORTAL_CARD_META_CLASS}`}>{q.label}</p>
+                          <p className={`${PORTAL_CARD_META_CLASS} break-words leading-snug`}>
+                            {q.label}
+                          </p>
                           <div className="mt-0.5">
                             <ExpandableClampedText
                               text={q.value!}
