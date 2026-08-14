@@ -33,12 +33,12 @@ function fill(template: string, vars: Record<string, string>) {
 
 const subject = "Wichtiger Hinweis: Bitte nur diesen neuen Link für die Fanclub-App nutzen";
 
-const body_text = `WICHTIG — bitte zuerst lesen
+const body_text = `Bitte nur diese Mail verwenden
 
-Bitte diese Mail verwenden und die vorherige Zugangs-Mail löschen.
-Der alte Link funktioniert oft nicht mehr (z. B. wenn er zweimal geöffnet oder vom Mailprogramm geprüft wurde).
+Ignoriere bitte die vorherige Zugangs-Mail. Der alte Link funktioniert oftmals nicht mehr.
+Leider wurde uns von vielen Mitgliedern gemeldet, dass der Link abgelaufen wäre.
 
-Nutze nur den Link in dieser Mail. Er bleibt gültig, bis du dein Passwort gesetzt hast — auch mehrmals und auf dem Handy oder am Computer.
+Nutze nur den Button bzw. Link in dieser Mail. Er bleibt gültig, bis du dein Passwort gesetzt hast — auch mehrmals und auf dem Handy oder am Computer.
 
 Zugang jetzt einrichten:
 {{setup_url}}
@@ -100,8 +100,8 @@ Jetzt meinen Zugang einrichten:
 {{setup_url}}`;
 
 const body_html = `<div style="margin:0 0 1.35em;padding:16px 18px;background:#fff7ed;border:2px solid #c2410c;border-radius:12px">
-  <p style="margin:0 0 0.65em;font-size:18px;line-height:1.35;color:#7c2d12;font-weight:800">Bitte diese Mail verwenden</p>
-  <p style="margin:0 0 0.75em;font-size:15px;line-height:1.55;color:#7c2d12">Lösche bitte die <strong>vorherige Zugangs-Mail</strong>. Der alte Link funktioniert oft nicht mehr (z.&nbsp;B. wenn er zweimal geöffnet oder vom Mailprogramm geprüft wurde).</p>
+  <p style="margin:0 0 0.65em;font-size:18px;line-height:1.35;color:#7c2d12;font-weight:800">Bitte nur diese Mail verwenden</p>
+  <p style="margin:0 0 0.75em;font-size:15px;line-height:1.55;color:#7c2d12">Ignoriere bitte die vorherige Zugangs-Mail. Der alte Link funktioniert oftmals nicht mehr.<br>Leider wurde uns von vielen Mitgliedern gemeldet, dass der Link abgelaufen wäre.</p>
   <p style="margin:0 0 0.85em;font-size:15px;line-height:1.55;color:#7c2d12"><strong>Nutze nur den Button bzw. Link in dieser Mail.</strong> Er bleibt gültig, bis du dein Passwort gesetzt hast — auch mehrmals und auf dem Handy oder am Computer.</p>
   <p style="margin:0;text-align:center">
     <a href="{{setup_url}}" style="${EMAIL_BUTTON_STYLE}">Zugang jetzt einrichten</a>
