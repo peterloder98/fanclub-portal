@@ -4,18 +4,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   MEMBER_INTRO_QUESTIONS,
+  normalizeIntroAnswer,
   normalizeShortBio,
   type MemberIntroAnswers,
   type MemberIntroKey,
 } from "@/lib/members/intro-questions";
 import { introProgressFromAnswers } from "@/lib/members/intro-progress";
 import { tryAwardSteckbriefBonus } from "@/lib/members/award-intro-bonus";
-
-function trimAnswer(v: unknown): string | null {
-  if (typeof v !== "string") return null;
-  const t = v.trim();
-  return t.length ? t.slice(0, 800) : null;
-}
 
 export async function saveMyIntroAnswers(
   input: MemberIntroAnswers & { dismissOnboarding?: boolean },
@@ -32,7 +27,7 @@ export async function saveMyIntroAnswers(
   const patch: Record<string, string | null> = {};
   for (const q of MEMBER_INTRO_QUESTIONS) {
     if (q.key in input) {
-      patch[q.key] = trimAnswer(input[q.key as MemberIntroKey]);
+      patch[q.key] = normalizeIntroAnswer(input[q.key as MemberIntroKey]);
     }
   }
   if ("short_bio" in input) {
@@ -49,7 +44,7 @@ export async function saveMyIntroAnswers(
     short_bio: normalizeShortBio(input.short_bio),
   };
   for (const q of MEMBER_INTRO_QUESTIONS) {
-    progressInput[q.key] = trimAnswer(input[q.key]);
+    progressInput[q.key] = normalizeIntroAnswer(input[q.key]);
   }
   const progress = introProgressFromAnswers(progressInput);
   let bonusAwarded = false;

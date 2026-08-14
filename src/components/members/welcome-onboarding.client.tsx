@@ -12,6 +12,7 @@ import { CommunityRulesContent } from "@/components/community/community-rules-co
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   MEMBER_INTRO_QUESTIONS,
+  INTRO_ANSWER_MAX_LENGTH,
   SHORT_BIO_LABEL_YOU,
   SHORT_BIO_MAX_LENGTH,
   type MemberIntroKey,
@@ -272,14 +273,25 @@ export function WelcomeOnboardingClient({
 
             {MEMBER_INTRO_QUESTIONS.map((q) => (
               <label key={q.key} className="grid gap-1.5">
-                <span className="text-sm font-medium text-slate-700">{q.label}</span>
+                <span className="flex items-baseline justify-between gap-2 text-sm font-medium text-slate-700">
+                  <span>{q.label}</span>
+                  <span
+                    className={`shrink-0 text-xs font-normal tabular-nums ${
+                      answers[q.key].length >= INTRO_ANSWER_MAX_LENGTH
+                        ? "text-amber-700"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {answers[q.key].length}/{INTRO_ANSWER_MAX_LENGTH}
+                  </span>
+                </span>
                 <textarea
                   value={answers[q.key]}
-                  onChange={(e) => setField(q.key, e.target.value)}
-                  rows={2}
-                  maxLength={800}
-                  placeholder="Optional …"
-                  className="w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  onChange={(e) => setField(q.key, e.target.value.slice(0, INTRO_ANSWER_MAX_LENGTH))}
+                  rows={3}
+                  maxLength={INTRO_ANSWER_MAX_LENGTH}
+                  placeholder={`Optional, max. ${INTRO_ANSWER_MAX_LENGTH} Zeichen …`}
+                  className="w-full resize-none rounded-xl border bg-white px-3 py-2 text-sm leading-snug outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
                 />
               </label>
             ))}

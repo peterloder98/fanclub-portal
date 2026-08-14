@@ -6,6 +6,7 @@ import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   MEMBER_INTRO_QUESTIONS,
+  INTRO_ANSWER_MAX_LENGTH,
   SHORT_BIO_LABEL_ME,
   SHORT_BIO_MAX_LENGTH,
   type MemberIntroKey,
@@ -65,13 +66,16 @@ export function ProfileIntroSection({
       ]);
       if (cancelled) return;
       if (data) {
-        setShortBio(data.short_bio ?? "");
+        setShortBio((data.short_bio ?? "").slice(0, SHORT_BIO_MAX_LENGTH));
         setAnswers({
-          intro_discovered_anni: data.intro_discovered_anni ?? "",
-          intro_favorite_song: data.intro_favorite_song ?? "",
-          intro_other_artists: data.intro_other_artists ?? "",
-          intro_hobbies: data.intro_hobbies ?? "",
-          intro_perfect_concert: data.intro_perfect_concert ?? "",
+          intro_discovered_anni: (data.intro_discovered_anni ?? "").slice(0, INTRO_ANSWER_MAX_LENGTH),
+          intro_favorite_song: (data.intro_favorite_song ?? "").slice(0, INTRO_ANSWER_MAX_LENGTH),
+          intro_other_artists: (data.intro_other_artists ?? "").slice(0, INTRO_ANSWER_MAX_LENGTH),
+          intro_hobbies: (data.intro_hobbies ?? "").slice(0, INTRO_ANSWER_MAX_LENGTH),
+          intro_perfect_concert: (data.intro_perfect_concert ?? "").slice(
+            0,
+            INTRO_ANSWER_MAX_LENGTH,
+          ),
         });
       }
       const hadBonus = Boolean(bonusRow);
@@ -214,16 +218,32 @@ export function ProfileIntroSection({
             </label>
             {MEMBER_INTRO_QUESTIONS.map((q) => (
               <label key={q.key} className="grid gap-1">
-                <span className="text-sm font-medium text-slate-700">{q.label}</span>
+                <span className="flex items-baseline justify-between gap-2 text-sm font-medium text-slate-700">
+                  <span>{q.label}</span>
+                  <span
+                    className={cn(
+                      "shrink-0 text-xs font-normal tabular-nums",
+                      answers[q.key].length >= INTRO_ANSWER_MAX_LENGTH
+                        ? "text-amber-700"
+                        : "text-slate-400",
+                    )}
+                  >
+                    {answers[q.key].length}/{INTRO_ANSWER_MAX_LENGTH}
+                  </span>
+                </span>
                 <textarea
                   value={answers[q.key]}
                   onChange={(e) =>
-                    setAnswers((prev) => ({ ...prev, [q.key]: e.target.value }))
+                    setAnswers((prev) => ({
+                      ...prev,
+                      [q.key]: e.target.value.slice(0, INTRO_ANSWER_MAX_LENGTH),
+                    }))
                   }
-                  rows={2}
-                  maxLength={800}
+                  rows={3}
+                  maxLength={INTRO_ANSWER_MAX_LENGTH}
+                  placeholder={`Optional, max. ${INTRO_ANSWER_MAX_LENGTH} Zeichen …`}
                   className={cn(
-                    "w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]",
+                    "w-full resize-none rounded-xl border bg-white px-3 py-2 text-sm leading-snug outline-none focus:ring-4 focus:ring-[color:var(--ring)]",
                     !answers[q.key].trim() && progress.filled < progress.total && "border-amber-200",
                   )}
                 />

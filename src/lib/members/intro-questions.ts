@@ -2,6 +2,12 @@
 
 export const SHORT_BIO_MAX_LENGTH = 150;
 
+/**
+ * Max. Länge einer Kennenlernen-Antwort ≈ 3 Zeilen Desktop (text-sm).
+ * Bestehende längere Texte bleiben lesbar („mehr anzeigen“), neue Eingaben werden begrenzt.
+ */
+export const INTRO_ANSWER_MAX_LENGTH = 240;
+
 /** Beim Ausfüllen (Willkommen / Profil): Anrede „dich“ bzw. „mich“. */
 export const SHORT_BIO_LABEL_YOU = "Ein paar Worte über dich";
 export const SHORT_BIO_LABEL_ME = "Ein paar Worte über mich";
@@ -57,4 +63,11 @@ export function normalizeShortBio(v: unknown): string | null {
   const t = v.trim().replace(/\s+/g, " ");
   if (!t) return null;
   return t.slice(0, SHORT_BIO_MAX_LENGTH);
+}
+
+export function normalizeIntroAnswer(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const t = v.trim().replace(/\r\n/g, "\n");
+  if (!t) return null;
+  return t.slice(0, INTRO_ANSWER_MAX_LENGTH);
 }
