@@ -7,8 +7,8 @@
  * Trockenlauf:
  *   DRY_RUN=1 npx --yes tsx --env-file=.env.local scripts/send-app-access-relink.ts
  *
- * Live:
- *   EMAIL_OUTBOUND_MODE=live npx --yes tsx --env-file=.env.local scripts/send-app-access-relink.ts
+ * Optional nur eine Mitgliedsnummer:
+ *   EMAIL_OUTBOUND_MODE=live npx --yes tsx --env-file=.env.local scripts/send-app-access-relink.ts --nr=22
  */
 import { createClient } from "@supabase/supabase-js";
 import { sendAppAccessRelinkEmail } from "../src/lib/email/app-access-relink";
@@ -24,8 +24,11 @@ const BURST = 10;
 const BURST_PAUSE_MS = 45_000;
 
 const SKIP_EMAILS = new Set(["mail@peter-loder.de"]);
-const SKIP_MEMBERSHIP_NUMBERS = new Set(["22"]); // Christine Schmidt — Mail noch falsch
-const SKIP_NAME = { first: "christine", last: "schmidt" };
+const onlyNr = (() => {
+  const arg = process.argv.find((a) => a.startsWith("--nr="));
+  if (!arg) return null;
+  return arg.slice("--nr=".length).trim().replace(/^0+/, "") || "0";
+})();
 
 if (!url || !serviceRoleKey) {
   console.error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
@@ -53,18 +56,6 @@ function isInvalidPlaceholderEmail(email: string): boolean {
 
 function membershipKey(n: string | null | undefined): string {
   return String(n ?? "").trim().replace(/^0+/, "") || "";
-}
-
-function isChristineSchmidt(p: {
-  first_name: string | null;
-  last_name: string | null;
-  membership_number: string | null;
-}) {
-  const nr = membershipKey(p.membership_number);
-  if (SKIP_MEMBERSHIP_NUMBERS.has(nr)) return true;
-  const first = (p.first_name ?? "").trim().toLowerCase();
-  const last = (p.last_name ?? "").trim().toLowerCase();
-  return first === SKIP_NAME.first && last === SKIP_NAME.last;
 }
 
 async function backfillAndreasSeidel() {
@@ -103,13 +94,14 @@ async function main() {
   const outboundMode = getOutboundEmailMode();
   console.log(dryRun ? "=== DRY RUN Relink ===" : "=== LIVE Relink (gedrosselt) ===");
   console.log(`EMAIL_OUTBOUND_MODE=${outboundMode}`);
+  if (onlyNr) console.log(`ONLY_NR=${onlyNr}`);
 
   if (!dryRun && outboundMode !== "live") {
     console.error("Abbruch: Echter Versand erfordert EMAIL_OUTBOUND_MODE=live.");
     process.exit(1);
   }
 
-  await backfillAndreasSeidel();
+  if (!onlyNr) await backfillAndreasSeidel();
 
   const { data: memberships, error: mErr } = await admin
     .from("memberships")
@@ -151,10 +143,10 @@ async function main() {
     const nr = membershipKey(p.membership_number);
     const emailRaw = p.email?.trim() ?? "";
     const email = normalizeEmail(emailRaw);
-    const label = `Nr.${nr || "?"} ${p.first_name ?? ""} ${p.last_name ?? ""} <${emailRaw || "—"}>`;
 
+    if (onlyNr && nr !== onlyNr) continue;
     if (isHiddenProfileId(p.id) || SKIP_EMAILS.has(email)) {
-      console.log(`⊘ skip hidden/peter: ${label}`);
+      console.log(`⊘ skip hidden/peter: Nr.${nr || "?"} ${p.first_name ?? ""} ${p.last_name ?? ""}`);
       bump("hidden");
       continue;
     }
@@ -162,28 +154,28 @@ async function main() {
       bump("already-in-app");
       continue;
     }
-    if (isChristineSchmidt(p)) {
-      console.log(`⊘ skip Christine Schmidt (Mail falsch): ${label}`);
-      bump("christine-schmidt");
-      continue;
-    }
     if (!emailRaw || isInvalidPlaceholderEmail(emailRaw)) {
-      console.log(`⊘ skip invalid-email: ${label}`);
+      console.log(`⊘ skip invalid-email: Nr.${nr || "?"} ${p.first_name ?? ""} ${p.last_name ?? ""}`);
       bump("invalid-email");
       continue;
     }
     if (seenInbox.has(email)) {
-      console.log(`⊘ skip duplicate-inbox: ${label}`);
+      console.log(`⊘ skip duplicate-inbox: Nr.${nr || "?"} ${p.first_name ?? ""} ${p.last_name ?? ""}`);
       bump("duplicate-inbox");
       continue;
     }
     seenInbox.add(email);
     recipients.push(p);
-    console.log(`→ ${dryRun ? "WOULD SEND" : "QUEUE"}: ${label}`);
+    console.log(`→ ${dryRun ? "WOULD SEND" : "QUEUE"}: Nr.${nr} ${p.first_name ?? ""} ${p.last_name ?? ""}`);
   }
 
   console.log(`\nEmpfänger: ${recipients.length}`);
   console.log("skip_reasons:", JSON.stringify(skipReasons, null, 2));
+
+  if (onlyNr && recipients.length === 0) {
+    console.error(`Niemand für Nr.${onlyNr} in der Versandliste (bereits in der App oder ungültige Mail?).`);
+    process.exit(1);
+  }
 
   if (dryRun) return;
 
@@ -192,7 +184,7 @@ async function main() {
   for (let i = 0; i < recipients.length; i++) {
     const p = recipients[i];
     const nr = membershipKey(p.membership_number);
-    const label = `Nr.${nr} ${p.first_name} ${p.last_name} <${p.email}>`;
+    const label = `Nr.${nr} ${p.first_name} ${p.last_name}`;
     if (i > 0) {
       await sleep(DELAY_MS);
       if (i % BURST === 0) {
