@@ -43,25 +43,19 @@ export async function awardMembershipReferralPoints(
 
   if (!sendRow?.id) return { awarded: false, points: 0, referralToken: null, sendId: null };
 
-  // Sterne nur einmal pro Absender+Empfänger-Adresse (Reminder nach 14 Tagen ohne neue Sterne)
-  const { data: priorSends } = await admin
-    .from("membership_referral_sends")
-    .select("id")
-    .eq("sender_id", senderId)
-    .ilike("recipient_email", email)
-    .neq("id", sendRow.id);
+  // Atomar: nur der erste Claim für Absender+E-Mail darf Sterne geben (Desktop/Mobile-Race).
+  const { data: claim, error: claimErr } = await admin
+    .from("membership_referral_point_awards")
+    .insert({
+      sender_id: senderId,
+      recipient_email: email,
+      send_id: sendRow.id,
+    })
+    .select("sender_id")
+    .maybeSingle();
 
-  const priorSendIds = (priorSends ?? []).map((s) => s.id);
-  if (priorSendIds.length) {
-    const { data: existingPts } = await admin
-      .from("points_transactions")
-      .select("id")
-      .eq("user_id", senderId)
-      .eq("reason", "membership_referral")
-      .in("entity_id", priorSendIds)
-      .limit(1)
-      .maybeSingle();
-    if (existingPts?.id) {
+  if (claimErr) {
+    if (claimErr.code === "23505") {
       return {
         awarded: false,
         points: 0,
@@ -69,6 +63,44 @@ export async function awardMembershipReferralPoints(
         sendId: sendRow.id,
       };
     }
+    // Migration noch nicht aus: Fallback auf alte Prüfung über Sends
+    if (/membership_referral_point_awards|does not exist/i.test(claimErr.message)) {
+      const { data: priorSends } = await admin
+        .from("membership_referral_sends")
+        .select("id")
+        .eq("sender_id", senderId)
+        .ilike("recipient_email", email)
+        .neq("id", sendRow.id);
+
+      const priorSendIds = (priorSends ?? []).map((s) => s.id);
+      if (priorSendIds.length) {
+        const { data: existingPts } = await admin
+          .from("points_transactions")
+          .select("id")
+          .eq("user_id", senderId)
+          .eq("reason", "membership_referral")
+          .in("entity_id", priorSendIds)
+          .limit(1)
+          .maybeSingle();
+        if (existingPts?.id) {
+          return {
+            awarded: false,
+            points: 0,
+            referralToken: sendRow.referral_token ?? null,
+            sendId: sendRow.id,
+          };
+        }
+      }
+    } else {
+      throw new Error(claimErr.message);
+    }
+  } else if (!claim) {
+    return {
+      awarded: false,
+      points: 0,
+      referralToken: sendRow.referral_token ?? null,
+      sendId: sendRow.id,
+    };
   }
 
   const { error: ptsErr } = await admin.from("points_transactions").insert({

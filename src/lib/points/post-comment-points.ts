@@ -74,6 +74,9 @@ export async function awardPostCommentPoints(
   });
 
   if (error) {
+    if (error.code === "23505") {
+      return { ok: true, points, reason, changed: false };
+    }
     return { ok: false, points, reason, changed: false, error: error.message };
   }
 
