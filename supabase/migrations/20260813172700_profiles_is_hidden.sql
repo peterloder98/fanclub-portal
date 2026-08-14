@@ -1,4 +1,6 @@
--- Mirror of supabase/143_profiles_is_hidden.sql for migration tooling.
+-- Versteckte Profile (z. B. System-Admin): nicht in Mitglieder-UI / Rangliste,
+-- keine Anni-Stars. Rolle und Login bleiben unverändert.
+
 alter table public.profiles
   add column if not exists is_hidden boolean not null default false;
 
@@ -9,11 +11,11 @@ create index if not exists profiles_is_hidden_idx
   on public.profiles (is_hidden)
   where is_hidden = true;
 
--- profiles hat ggf. keine email-Spalte — Match über id, Name und auth.users.email
+-- Peter Loder (Admin) verstecken — nur id + auth.users.email
+-- (profiles.first_name / last_name / email sind in manchen DBs nicht vorhanden)
 update public.profiles p
 set is_hidden = true
 where p.id = '1b70d88f-e28d-48f3-b3cb-646eaf06f19a'
-   or (lower(coalesce(p.first_name, '')) = 'peter' and lower(coalesce(p.last_name, '')) = 'loder')
    or exists (
      select 1
      from auth.users u
@@ -21,6 +23,7 @@ where p.id = '1b70d88f-e28d-48f3-b3cb-646eaf06f19a'
        and lower(u.email) = 'mail@peter-loder.de'
    );
 
+-- Bestehende Sterne / Badges für versteckte Profile entfernen
 delete from public.points_transactions
 where user_id in (select id from public.profiles where is_hidden = true);
 
@@ -32,6 +35,7 @@ begin
   end if;
 end$$;
 
+-- Punkte-Inserts für versteckte Profile still verwerfen
 create or replace function public.skip_points_for_hidden_profiles()
 returns trigger
 language plpgsql
@@ -56,40 +60,96 @@ create trigger points_skip_hidden_profiles
 before insert on public.points_transactions
 for each row execute function public.skip_points_for_hidden_profiles();
 
-create or replace function public.member_year_points_leaderboard(p_limit int default 50)
-returns table (
-  user_id uuid,
-  first_name text,
-  last_name text,
-  points bigint
-)
-language sql
-security definer
-set search_path = public
-stable
-as $$
-  with year_start as (
-    select date_trunc('year', now() at time zone 'Europe/Berlin')::timestamptz as ts
-  ),
-  sums as (
-    select pt.user_id, coalesce(sum(pt.points), 0)::bigint as points
-    from public.points_transactions pt, year_start ys
-    where pt.created_at >= ys.ts
-    group by pt.user_id
-  )
-  select
-    p.id as user_id,
-    p.first_name,
-    p.last_name,
-    s.points
-  from sums s
-  join public.profiles p on p.id = s.user_id
-  join public.memberships m on m.user_id = p.id and m.status = 'active'
-  where s.points > 0
-    and coalesce(p.is_hidden, false) = false
-  order by s.points desc, p.last_name nulls last, p.first_name nulls last
-  limit greatest(1, least(coalesce(p_limit, 50), 100));
-$$;
+-- Jahrespunkte-Rangliste: versteckte Profile ausschließen
+-- Namensspalten nur verwenden, wenn sie existieren.
+do $$
+declare
+  has_names boolean;
+begin
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name = 'first_name'
+  ) into has_names;
+
+  if has_names then
+    execute $fn$
+      create or replace function public.member_year_points_leaderboard(p_limit int default 50)
+      returns table (
+        user_id uuid,
+        first_name text,
+        last_name text,
+        points bigint
+      )
+      language sql
+      security definer
+      set search_path = public
+      stable
+      as $body$
+        with year_start as (
+          select date_trunc('year', now() at time zone 'Europe/Berlin')::timestamptz as ts
+        ),
+        sums as (
+          select pt.user_id, coalesce(sum(pt.points), 0)::bigint as points
+          from public.points_transactions pt, year_start ys
+          where pt.created_at >= ys.ts
+          group by pt.user_id
+        )
+        select
+          p.id as user_id,
+          p.first_name,
+          p.last_name,
+          s.points
+        from sums s
+        join public.profiles p on p.id = s.user_id
+        join public.memberships m on m.user_id = p.id and m.status = 'active'
+        where s.points > 0
+          and coalesce(p.is_hidden, false) = false
+        order by s.points desc, p.last_name nulls last, p.first_name nulls last
+        limit greatest(1, least(coalesce(p_limit, 50), 100));
+      $body$;
+    $fn$;
+  else
+    execute $fn$
+      create or replace function public.member_year_points_leaderboard(p_limit int default 50)
+      returns table (
+        user_id uuid,
+        first_name text,
+        last_name text,
+        points bigint
+      )
+      language sql
+      security definer
+      set search_path = public
+      stable
+      as $body$
+        with year_start as (
+          select date_trunc('year', now() at time zone 'Europe/Berlin')::timestamptz as ts
+        ),
+        sums as (
+          select pt.user_id, coalesce(sum(pt.points), 0)::bigint as points
+          from public.points_transactions pt, year_start ys
+          where pt.created_at >= ys.ts
+          group by pt.user_id
+        )
+        select
+          p.id as user_id,
+          null::text as first_name,
+          null::text as last_name,
+          s.points
+        from sums s
+        join public.profiles p on p.id = s.user_id
+        join public.memberships m on m.user_id = p.id and m.status = 'active'
+        where s.points > 0
+          and coalesce(p.is_hidden, false) = false
+        order by s.points desc
+        limit greatest(1, least(coalesce(p_limit, 50), 100));
+      $body$;
+    $fn$;
+  end if;
+end$$;
 
 revoke all on function public.member_year_points_leaderboard(int) from public;
 grant execute on function public.member_year_points_leaderboard(int) to authenticated;
