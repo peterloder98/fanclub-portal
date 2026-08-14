@@ -1,0 +1,18 @@
+---
+description: Zugangslinks in Mails nicht als Einmal-Token verbrennen (Prefetch, zweites Gerät)
+alwaysApply: true
+---
+
+# E-Mail-Zugangslinks
+
+Supabase-Recovery (`token_hash` / `verifyOtp`) ist **einmalig**. Mail-Scanner, zweiter Klick und Handy→PC machen den Link tot, bevor das Passwort gesetzt ist.
+
+## Pflicht
+
+- Club-Token in `account_setup_tokens` (`setup_token=`), Hash at rest.
+- Gültig bis Passwort gesetzt **oder** Ablauf (14 Tage) — nicht beim ersten Öffnen.
+- Mehrfach / andere Geräte erlaubt. Resend rotiert den Token.
+- Selbstbedienung: Login → Passwort vergessen (Club-SMTP), ohne Vorstand.
+- QR/Einlass-Codes sind eine andere Kategorie (einmalige Entwertung ist ok).
+
+Keine neuen Flows auf One-Shot-OTP als einzigen Schlüssel aufbauen.
