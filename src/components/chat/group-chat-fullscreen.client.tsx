@@ -21,7 +21,7 @@ export function GroupChatFullscreenPage() {
 
   useEffect(() => {
     if (!chat.loaded || !chat.messages.length) return;
-    markChatSeenFromMessages(chat.messages);
+    void markChatSeenFromMessages(chat.messages);
   }, [chat.loaded, chat.messages]);
 
   return (

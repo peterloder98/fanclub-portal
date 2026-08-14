@@ -9,12 +9,15 @@ import { unlockChatAudio } from "@/lib/chat/sound";
 import {
   markChatSeenFromMessages,
   readChatLastSeen,
+  syncChatLastSeenFromServer,
   writeChatLastSeen,
 } from "@/lib/chat/last-seen";
 import { GroupChatPanel } from "@/components/chat/group-chat-panel.client";
 import { useChatUnread } from "@/components/chat/chat-unread-context";
 
 const STORAGE_KEY = "fc-group-chat-open";
+/** Andere Geräte: Lesestatus regelmäßig nachziehen. */
+const LAST_SEEN_POLL_MS = 20_000;
 
 export function GroupChatWidget() {
   const pathname = usePathname();
@@ -38,6 +41,50 @@ export function GroupChatWidget() {
     }
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    let cancelled = false;
+    void (async () => {
+      const synced = await syncChatLastSeenFromServer();
+      if (cancelled || !synced) return;
+      setLastSeenAt((prev) => {
+        if (!prev || synced > prev) return synced;
+        return prev;
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated]);
+
+  /** Solange Chat zu ist: Lesestatus von anderen Geräten übernehmen. */
+  useEffect(() => {
+    if (!hydrated || open) return;
+    let cancelled = false;
+    const tick = async () => {
+      const synced = await syncChatLastSeenFromServer();
+      if (cancelled || !synced) return;
+      setLastSeenAt((prev) => {
+        if (!prev || synced > prev) return synced;
+        return prev;
+      });
+    };
+    const id = window.setInterval(() => {
+      void tick();
+    }, LAST_SEEN_POLL_MS);
+    const onFocus = () => {
+      void tick();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [hydrated, open]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -78,15 +125,26 @@ export function GroupChatWidget() {
       const newest = chat.messages[0]?.created_at ?? new Date().toISOString();
       writeChatLastSeen(newest);
       setLastSeenAt(newest);
+      void markChatSeenFromMessages(chat.messages.length ? chat.messages : [{ created_at: newest }]);
     }
     setSeenBootstrapped(true);
   }, [hydrated, chat.loaded, chat.messages, lastSeenAt, seenBootstrapped, hideDock]);
 
   useEffect(() => {
     if (!open || !chat.messages.length) return;
-    const newest = markChatSeenFromMessages(chat.messages);
-    if (!lastSeenAt || newest > lastSeenAt) setLastSeenAt(newest);
-  }, [open, chat.messages, lastSeenAt]);
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void (async () => {
+        const newest = await markChatSeenFromMessages(chat.messages);
+        if (cancelled) return;
+        setLastSeenAt((prev) => (!prev || newest > prev ? newest : prev));
+      })();
+    }, 400);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, chat.messages]);
 
   const { setHasUnread } = useChatUnread();
 

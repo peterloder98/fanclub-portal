@@ -132,3 +132,61 @@ export async function deleteGroupChatMessage(messageId: string): Promise<{
   await deleteNotificationsByMetadata("chat_message_id", id).catch(() => null);
   return { ok: true };
 }
+
+function maxIso(a: string | null | undefined, b: string | null | undefined): string | null {
+  if (!a) return b ?? null;
+  if (!b) return a;
+  return a >= b ? a : b;
+}
+
+/** Geräteübergreifender Lesestatus des Gruppenchats. */
+export async function fetchGroupChatLastSeen(): Promise<string | null> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("group_chat_last_seen_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    if (/group_chat_last_seen_at|does not exist/i.test(error.message)) return null;
+    console.error("[chat] fetch last seen:", error.message);
+    return null;
+  }
+
+  return (data as { group_chat_last_seen_at?: string | null } | null)?.group_chat_last_seen_at ?? null;
+}
+
+/** Lesestatus vorwärts setzen (nie zurückdrehen). */
+export async function markGroupChatLastSeen(iso: string): Promise<string | null> {
+  const stamp = iso.trim();
+  if (!stamp || Number.isNaN(Date.parse(stamp))) return null;
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const current = await fetchGroupChatLastSeen();
+  const next = maxIso(current, stamp) ?? stamp;
+  if (current && current >= next) return current;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ group_chat_last_seen_at: next })
+    .eq("id", user.id);
+
+  if (error) {
+    if (/group_chat_last_seen_at|does not exist/i.test(error.message)) return null;
+    console.error("[chat] mark last seen:", error.message);
+    return null;
+  }
+
+  return next;
+}
