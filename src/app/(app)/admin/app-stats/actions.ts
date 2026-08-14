@@ -2,6 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isHiddenProfileId, SYSTEM_HIDDEN_PROFILE_IDS } from "@/lib/members/hidden";
 
 export type AppStatsDayPoint = {
   date: string; // YYYY-MM-DD
@@ -72,6 +73,28 @@ async function requireAdmin() {
   return user;
 }
 
+/** System-Geist (Peter) und profiles.is_hidden — Vorstände zählen normal mit. */
+async function loadGhostUserIds(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+): Promise<Set<string>> {
+  const ids = new Set<string>(SYSTEM_HIDDEN_PROFILE_IDS);
+  const { data, error } = await admin
+    .from("profiles")
+    .select("id,is_hidden")
+    .eq("is_hidden", true);
+  if (!error) {
+    for (const row of data ?? []) {
+      if (row.id) ids.add(row.id);
+    }
+  }
+  return ids;
+}
+
+function isGhostUser(userId: string | null | undefined, ghostIds: Set<string>) {
+  if (!userId) return false;
+  return ghostIds.has(userId) || isHiddenProfileId(userId);
+}
+
 function buildDaySeries(
   ym: string,
   byDate: Map<string, number>,
@@ -110,11 +133,19 @@ export async function loadAppStats(monthKey?: string): Promise<AppStatsSnapshot>
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayDate = yesterday.toISOString().slice(0, 10);
 
+  const ghostIds = await loadGhostUserIds(admin);
+
   const { data: activeMemberships } = await admin
     .from("memberships")
     .select("user_id")
     .eq("status", "active");
-  const activeIds = [...new Set((activeMemberships ?? []).map((m) => m.user_id))];
+  const activeIds = [
+    ...new Set(
+      (activeMemberships ?? [])
+        .map((m) => m.user_id)
+        .filter((id): id is string => Boolean(id) && !isGhostUser(id, ghostIds)),
+    ),
+  ];
   const activeMembersTotal = activeIds.length;
 
   let appRegisteredTotal = 0;
@@ -138,7 +169,11 @@ export async function loadAppStats(monthKey?: string): Promise<AppStatsSnapshot>
     .select("user_id")
     .gte("activity_date", curStart)
     .lte("activity_date", curEnd);
-  const activeThisMonth = new Set((curMonthDays ?? []).map((r) => r.user_id)).size;
+  const activeThisMonth = new Set(
+    (curMonthDays ?? [])
+      .map((r) => r.user_id)
+      .filter((id) => !isGhostUser(id, ghostIds)),
+  ).size;
 
   const { data: yesterdayRows } = await admin
     .from("app_activity_days")
@@ -172,6 +207,7 @@ export async function loadAppStats(monthKey?: string): Promise<AppStatsSnapshot>
   const usersByDate = new Map<string, Set<string>>();
   const hitsByDate = new Map<string, number>();
   for (const row of selectedDays ?? []) {
+    if (isGhostUser(row.user_id, ghostIds)) continue;
     const d = String(row.activity_date).slice(0, 10);
     if (!usersByDate.has(d)) usersByDate.set(d, new Set());
     usersByDate.get(d)!.add(row.user_id);
@@ -197,6 +233,7 @@ export async function loadAppStats(monthKey?: string): Promise<AppStatsSnapshot>
 
   const usersByMonth = new Map<string, Set<string>>();
   for (const row of yearDays ?? []) {
+    if (isGhostUser(row.user_id, ghostIds)) continue;
     const d = String(row.activity_date).slice(0, 10);
     const ym = d.slice(0, 7);
     if (!usersByMonth.has(ym)) usersByMonth.set(ym, new Set());
@@ -218,6 +255,7 @@ export async function loadAppStats(monthKey?: string): Promise<AppStatsSnapshot>
 
     const memberIds = new Set<string>();
     for (const m of allMemberships ?? []) {
+      if (isGhostUser(m.user_id, ghostIds)) continue;
       if (m.status === "applied") continue;
       const start = String(m.start_date ?? "").slice(0, 10);
       if (!start || start > end) continue;
@@ -266,7 +304,11 @@ export async function loadAppStats(monthKey?: string): Promise<AppStatsSnapshot>
     activeThisWeek,
     activeThisMonth,
     neverLoggedIn,
-    activeYesterday: new Set((yesterdayRows ?? []).map((r) => r.user_id)).size,
+    activeYesterday: new Set(
+      (yesterdayRows ?? [])
+        .map((r) => r.user_id)
+        .filter((id) => !isGhostUser(id, ghostIds)),
+    ).size,
     postsThisMonth,
     chatMessagesThisMonth,
     monthKey: selected,

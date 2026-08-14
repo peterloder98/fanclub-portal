@@ -746,13 +746,17 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ul",
             items: [
-              "Aktive Mitglieder (Status aktiv gesamt)",
+              "Aktive Mitglieder (Status aktiv gesamt — Vorstände zählen mit, versteckte System-Konten nicht)",
               "In der App registriert (und Anteil an den Aktiven)",
               "Aktiv diese Woche / diesen Monat (verschiedene Personen)",
               "Aktiv gestern",
               "Noch nie in der App (aktive Mitglieder ohne Login)",
               "Beiträge diesen Monat und Chat-Nachrichten im Gruppenchat",
             ],
+          },
+          {
+            type: "note",
+            text: "Vorstände (Nicole, Andreas, Janine) zählen in allen Zahlen als normale Mitglieder mit. Das versteckte Technik-Konto (Peter) erscheint in der Statistik nicht.",
           },
           {
             type: "p",
