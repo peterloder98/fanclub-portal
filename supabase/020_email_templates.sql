@@ -12,6 +12,16 @@ create table if not exists public.email_templates (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 drop trigger if exists email_templates_set_updated_at on public.email_templates;
 create trigger email_templates_set_updated_at
 before update on public.email_templates
