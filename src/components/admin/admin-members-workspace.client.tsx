@@ -376,8 +376,6 @@ export function AdminMembersWorkspace({
             <div className="text-rose-700">{applicationsError}</div>
           ) : applications.length === 0 ? (
             <EmptyState />
-          ) : sortedApps.length === 0 ? (
-            <div className="text-slate-600">Keine Treffer für die Suche.</div>
           ) : (
             <>
             <div className="mb-3">
@@ -392,6 +390,10 @@ export function AdminMembersWorkspace({
                 className="h-10 w-full rounded-xl border px-3 text-sm"
               />
             </div>
+            {sortedApps.length === 0 ? (
+              <div className="text-slate-600">Keine Treffer für die Suche.</div>
+            ) : (
+            <>
             <div className="mb-3 flex items-center gap-2 lg:hidden">
               <label className="text-xs font-semibold text-slate-600">Sortieren</label>
               <select
@@ -539,6 +541,8 @@ export function AdminMembersWorkspace({
               />
             ) : null}
             </>
+            )}
+            </>
           )}
         </CardContent>
       </Card>
@@ -556,8 +560,6 @@ export function AdminMembersWorkspace({
             <div className="text-rose-700">{membersError}</div>
           ) : members.length === 0 ? (
             <EmptyState />
-          ) : sortedMembers.length === 0 ? (
-            <div className="text-slate-600">Keine Treffer für die Suche.</div>
           ) : (
             <>
             <div className="mb-3">
@@ -572,6 +574,10 @@ export function AdminMembersWorkspace({
                 className="h-10 w-full rounded-xl border px-3 text-sm"
               />
             </div>
+            {sortedMembers.length === 0 ? (
+              <div className="text-slate-600">Keine Treffer für die Suche.</div>
+            ) : (
+            <>
             <div className="mb-3 flex items-center gap-2 lg:hidden">
               <label className="text-xs font-semibold text-slate-600">Sortieren</label>
               <select
@@ -801,6 +807,8 @@ export function AdminMembersWorkspace({
                 noun="Mitglieder"
               />
             ) : null}
+            </>
+            )}
             </>
           )}
 
