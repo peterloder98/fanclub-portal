@@ -66,26 +66,38 @@ async function encodeWebpUnderBudget(
   return encodeImageUnderBudget(pipeline, maxBytes, { ...opts, format: "webp" });
 }
 
-/** Quadratisches Profilbild — scharf bei kleinem WebP-Budget. */
+/** Quadratisches Profilbild — eine WebP-Stufe, scharf und klein. */
 export async function processAvatarForStorage(input: Blob | Buffer): Promise<Buffer> {
   const buf = await toBuffer(input);
-  const base = sharp(buf, { failOn: "none" }).rotate().resize(AVATAR_STORAGE_PX, AVATAR_STORAGE_PX, {
-    fit: "cover",
-    position: "centre",
-  });
+  const base = sharp(buf, { failOn: "none" })
+    .rotate()
+    .resize(AVATAR_STORAGE_PX, AVATAR_STORAGE_PX, {
+      fit: "cover",
+      position: "centre",
+      // Lanczos für schärfere Verkleinerung
+      kernel: sharp.kernel.lanczos3,
+    });
 
-  // Qualität hoch halten; Budget erzwingen, ohne unter ~78 zu fallen (sonst weich).
-  let quality = 86;
-  for (let i = 0; i < 5; i++) {
+  // Qualität hoch genug für Gesichter; bei 256px bleibt die Datei trotzdem klein.
+  let quality = 84;
+  for (let i = 0; i < 4; i++) {
     const out = await base
       .clone()
-      .webp({ quality, effort: 5, smartSubsample: false })
+      .webp({
+        quality,
+        effort: 6,
+        smartSubsample: false,
+        // etwas schärfer wirkende chroma
+        alphaQuality: 100,
+      })
       .toBuffer();
     if (out.length <= AVATAR_MAX_BYTES) return out;
-    quality = Math.max(78, quality - 3);
+    quality = Math.max(78, quality - 2);
   }
 
-  return base.webp({ quality: 78, effort: 5, smartSubsample: false }).toBuffer();
+  return base
+    .webp({ quality: 78, effort: 6, smartSubsample: false, alphaQuality: 100 })
+    .toBuffer();
 }
 
 /** Feed-/Post-Bild — AVIF, typisch unter 70 KB. */

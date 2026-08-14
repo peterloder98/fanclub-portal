@@ -482,7 +482,7 @@ export function ProfilePageClient() {
     setAvatarError(null);
     try {
       const fd = new FormData();
-      fd.append("file", params.blob, "avatar.webp");
+      fd.append("file", params.blob, "avatar.png");
       fd.append("contentType", params.contentType);
       const res = await fetch("/api/avatar/upload", { method: "POST", body: fd });
       const json = (await res.json()) as { ok?: boolean; avatar_path?: string; error?: string };

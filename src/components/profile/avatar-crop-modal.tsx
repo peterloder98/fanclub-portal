@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
-import { cropAndOptimizeAvatar } from "@/lib/avatars/crop";
+import { cropAvatarForUpload } from "@/lib/avatars/crop";
 import { AVATAR_STORAGE_PX } from "@/lib/images/specs";
 
 export function AvatarCropModal({
@@ -62,7 +62,7 @@ export function AvatarCropModal({
     setBusy(true);
     setError(null);
     try {
-      const { blob, contentType } = await cropAndOptimizeAvatar({
+      const { blob, contentType } = await cropAvatarForUpload({
         file,
         crop: {
           x: Math.round(croppedAreaPixels.x),
@@ -71,7 +71,6 @@ export function AvatarCropModal({
           height: Math.round(croppedAreaPixels.height),
         },
         outputSize: AVATAR_STORAGE_PX,
-        quality: 0.86,
       });
       await onSave({ blob, contentType });
       onClose();

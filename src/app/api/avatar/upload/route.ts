@@ -18,7 +18,6 @@ export async function POST(request: Request) {
 
   const form = await request.formData();
   const file = form.get("file");
-  const contentType = (form.get("contentType") as string | null) ?? "image/webp";
 
   if (!(file instanceof Blob)) {
     return NextResponse.json({ error: "missing_file" }, { status: 400 });
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
     .from("avatars")
     .upload(objectPath, optimized, {
       upsert: true,
-      contentType,
+      contentType: "image/webp",
       cacheControl: "3600",
     });
   if (uploadErr) {

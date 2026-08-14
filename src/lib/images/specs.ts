@@ -2,10 +2,11 @@
 
 /**
  * Portal-Avatar bis 128px CSS → 256px Storage (2× Retina).
- * WebP-Fotos landen typisch bei ~15–35 KB; 48 KB ist nur die harte Obergrenze.
+ * Einmal WebP serverseitig: typisch ~8–20 KB, hartes Limit 32 KB.
+ * (Zum Vergleich: große Fotos schaffen oft 60–70 KB bei guter Kodierung.)
  */
 export const AVATAR_STORAGE_PX = 256;
-export const AVATAR_MAX_BYTES = 48_000;
+export const AVATAR_MAX_BYTES = 32_000;
 
 /** Feed-Vorschau max-h-28 (~112px), Lightbox bis ~960px — Storage 720px Seite. */
 export const POST_MEDIA_MAX_SIDE_PX = 720;

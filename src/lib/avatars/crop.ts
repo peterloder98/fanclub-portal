@@ -1,10 +1,13 @@
 export type CropAreaPixels = { x: number; y: number; width: number; height: number };
 
-export async function cropAndOptimizeAvatar(params: {
+/**
+ * Zuschneiden für Upload — verlustfrei als PNG.
+ * Die eigentliche WebP-Optimierung macht nur der Server (kein Doppel-Komprimieren).
+ */
+export async function cropAvatarForUpload(params: {
   file: File;
   crop: CropAreaPixels;
   outputSize: number;
-  quality: number; // 0..1
 }): Promise<{ blob: Blob; contentType: string }> {
   let img: ImageBitmap;
   try {
@@ -21,7 +24,6 @@ export async function cropAndOptimizeAvatar(params: {
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // Draw selected crop area into fixed square output
   ctx.drawImage(
     img,
     params.crop.x,
@@ -34,15 +36,23 @@ export async function cropAndOptimizeAvatar(params: {
     params.outputSize,
   );
 
-  const contentType = "image/webp";
+  const contentType = "image/png";
   const blob: Blob = await new Promise((resolve, reject) => {
     canvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error("Failed to encode image"))),
       contentType,
-      params.quality,
     );
   });
 
   return { blob, contentType };
 }
 
+/** @deprecated Nutze cropAvatarForUpload — Doppel-WebP kostet Schärfe. */
+export async function cropAndOptimizeAvatar(params: {
+  file: File;
+  crop: CropAreaPixels;
+  outputSize: number;
+  quality?: number;
+}): Promise<{ blob: Blob; contentType: string }> {
+  return cropAvatarForUpload(params);
+}
