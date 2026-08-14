@@ -481,6 +481,14 @@ export function MemberDetailPanel({
             <CardTitle>Mitgliedschaft</CardTitle>
           </CardHeader>
           <CardContent>
+            {member.membership?.status === "applied" ? (
+              <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                Noch kein Mitglied. Beitrag steht aus — über „Beitrags-Erinnerung senden“ die
+                Überweisung anstoßen. Wenn das Geld da ist: unter Zahlungen bestätigen, Beitrittsdatum
+                eintragen und Status auf „aktiv“ setzen. Erst dann gibt es Mitgliedsnummer und
+                App-Zugang.
+              </p>
+            ) : null}
             <dl>
               <InfoRow label="Status" value={membershipStatusLabel(member.membership?.status ?? "")} />
               {member.membership?.status === "suspended" && member.membership.suspension_reason ? (
@@ -568,8 +576,22 @@ export function MemberDetailPanel({
                   </span>
                 }
               />
-              <InfoRow label="Beitrittsdatum" value={formatDE(member.membership?.start_date ?? null)} />
-              <InfoRow label="Ende" value={formatDE(member.membership?.end_date ?? null)} />
+              <InfoRow
+                label="Beitrittsdatum"
+                value={
+                  member.membership?.status === "applied"
+                    ? "noch nicht (nach Zahlung)"
+                    : formatDE(member.membership?.start_date ?? null)
+                }
+              />
+              <InfoRow
+                label="Ende"
+                value={
+                  member.membership?.status === "applied"
+                    ? "—"
+                    : formatDE(member.membership?.end_date ?? null)
+                }
+              />
               <InfoRow label="Jahresbeitrag" value={`${feeEur} €`} />
               <InfoRow
                 label="Beiträge"

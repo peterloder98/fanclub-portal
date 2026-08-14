@@ -213,6 +213,10 @@ export default async function AdminMemberEditPage({
                     defaultValue={membership?.start_date ?? ""}
                     className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
                   />
+                  <span className="text-xs text-slate-500">
+                    Pflicht, sobald der Status „aktiv“ ist. Bei „Mitgliedschaft beantragt“ könnt ihr
+                    das Datum leer lassen, bis der Beitrag da ist.
+                  </span>
                 </label>
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Mitgliedschaft Ende</span>

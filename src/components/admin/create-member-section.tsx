@@ -17,12 +17,12 @@ export function CreateMemberSection() {
           onClick={() => setOpen(true)}
           className="h-11 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white shadow-sm hover:bg-fc-blue"
         >
-          + Mitglied manuell anlegen
+          + Person manuell anlegen
         </button>
       ) : (
         <Card id="create">
           <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle>Mitglied anlegen (Grundversion)</CardTitle>
+            <CardTitle>Person anlegen</CardTitle>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -126,9 +126,13 @@ export function CreateMemberSection() {
                 <input
                   name="membership_start"
                   type="date"
-                  required
                   className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
                 />
+                <span className="text-xs text-slate-500">
+                  Leer lassen, wenn die Person noch kein Mitglied ist (Beitrag steht noch aus). Dann
+                  wird sie als „Mitgliedschaft beantragt“ angelegt — danach könnt ihr direkt die
+                  Zahlungserinnerung schicken.
+                </span>
               </label>
               <label className="grid gap-1">
                 <span className="text-sm font-medium text-slate-700">Beitrag (€)</span>
@@ -144,7 +148,7 @@ export function CreateMemberSection() {
                 <span className="text-sm font-medium text-slate-700">Status</span>
                 <select
                   name="status"
-                  defaultValue="active"
+                  defaultValue="applied"
                   className="h-11 rounded-xl border bg-white px-3 text-sm outline-none"
                 >
                   <option value="applied">Mitgliedschaft beantragt</option>
@@ -166,7 +170,7 @@ export function CreateMemberSection() {
               </label>
               <div className="md:col-span-2">
                 <button className="h-11 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-fc-blue">
-                  Mitglied erstellen
+                  Person anlegen
                 </button>
               </div>
             </form>

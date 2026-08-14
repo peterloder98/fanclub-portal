@@ -35,6 +35,11 @@ describe("calendar year contributions", () => {
     expect(contributionYearsForMember("2025-08-10", ref)).toEqual([2025, 2026, 2027]);
   });
 
+  it("lists only the current year when join date is today (applicant / no prior years)", () => {
+    const ref = new Date("2026-08-14T12:00:00");
+    expect(contributionYearsForMember("2026-08-14", ref)).toEqual([2026]);
+  });
+
   it("assigns payments by calendar year of entry_date", () => {
     expect(paymentBelongsToCalendarYear("2026-05-01", 2026)).toBe(true);
     expect(paymentBelongsToCalendarYear("2026-05-01", 2027)).toBe(false);

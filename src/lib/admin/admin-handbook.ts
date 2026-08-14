@@ -112,6 +112,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Erst wenn der Beitrag unter Admin → Zahlungen als bezahlt bestätigt ist, lässt sich der Antrag freigeben. Die Freigabe ist technisch gesperrt, solange die Zahlung offen ist. Danach erhält die Person automatisch eine Mitgliedsnummer und eine Willkommens-E-Mail mit App-Zugang (Passwort einrichten).",
               "Fehlt bei einem bestehenden Mitglied die Login-E-Mail (z. B. nach Import): Mitglied öffnen → „Bearbeiten“ → bei E-Mail „Ändern“ (mit Bestätigung) → Adresse eintragen und speichern. Die Adresse muss eindeutig sein und ist zugleich der Login.",
               "Wird eine bereits vorhandene Login-E-Mail später geändert, erhält das Mitglied automatisch eine Info-Mail an die neue und die bisherige Adresse: neue Login-Adresse, Passwort bleibt gleich.",
+              "Jemand kommt ohne digitalen Antrag (z. B. per Mail oder WhatsApp): unter Mitglieder „+ Person manuell anlegen“. Beitrittsdatum leer lassen und Status „Mitgliedschaft beantragt“ — die Person ist dann noch kein Mitglied. Nach dem Speichern öffnet sich direkt die Zahlungserinnerung (Betrag, IBAN, Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“). Unter Zahlungen erscheint eine offene Überweisung. Erst wenn das Geld da ist: Datensatz öffnen → Bearbeiten → Beitrittsdatum eintragen und Status auf „aktiv“. Dann gibt es Mitgliedsnummer und Willkommens-Mail mit App-Zugang.",
             ],
           },
           {
@@ -148,7 +149,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ol",
             items: [
-              "Mitglied in der Liste öffnen.",
+              "Mitglied oder offenen Antrag in der Liste öffnen (auch ohne Beitrittsdatum, Status „Mitgliedschaft beantragt“).",
               "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
               "„Beitrags-Erinnerung senden“: Mail mit Betrag, Kontodaten und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ (z. B. Mitgliedsbeitrag / Max Mustermann). Die interne Buchungsnummer MITGLIED-… ist nur für den Abgleich unter Zahlungen gedacht und steht nicht als Verwendungszweck in der Mail.",
               "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag wird in der Mitgliederverwaltung als bezahlt geführt — er erscheint nicht im Buchhaltungs-Saldo.",

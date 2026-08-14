@@ -327,18 +327,19 @@ export async function getMemberContributionYears(
     .from("memberships")
     .select("start_date,fee_cents,status")
     .eq("user_id", userId)
-    .eq("status", "active")
+    .in("status", ["active", "applied", "suspended"])
     .order("end_date", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  if (!membership?.start_date) return [];
+  if (!membership) return [];
 
+  const startDate = membership.start_date?.trim() || isoDate(new Date());
   const paymentsByMember = await loadMembershipPaymentsForUsers(admin, [userId]);
   const payments = paymentsByMember.get(userId) ?? [];
   return computeMemberContributionYears(
     profile,
-    membership.start_date,
+    startDate,
     membership.fee_cents ?? 1500,
     payments,
     new Date(),
@@ -366,7 +367,7 @@ export async function batchMemberContributionStatus(
     .from("memberships")
     .select("user_id,start_date,fee_cents")
     .in("user_id", ids)
-    .eq("status", "active");
+    .in("status", ["active", "applied", "suspended"]);
   if (mErr) throw new Error(mErr.message);
   if (!memberships?.length) return map;
 
@@ -376,19 +377,19 @@ export async function batchMemberContributionStatus(
     .in("id", memberships.map((m) => m.user_id));
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
-  const activeIds = memberships.map((m) => m.user_id);
-  const paymentsByMember = await loadMembershipPaymentsForUsers(admin, activeIds);
+  const memberIds = memberships.map((m) => m.user_id);
+  const paymentsByMember = await loadMembershipPaymentsForUsers(admin, memberIds);
   const now = new Date();
 
   for (const m of memberships) {
-    if (!m.start_date) continue;
+    const startDate = m.start_date?.trim() || isoDate(now);
     const profile = profileById.get(m.user_id);
     if (!profile) continue;
     map.set(
       m.user_id,
       computeContributionFromPayments(
         m.user_id,
-        m.start_date,
+        startDate,
         m.fee_cents ?? 1500,
         paymentsByMember,
         profile,
