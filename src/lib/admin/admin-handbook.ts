@@ -910,7 +910,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Einrichtungs-Link: Der Link in Zugangs-/Willkommens-/Passwort-vergessen-Mails bleibt nutzbar, bis das Passwort gesetzt ist (auch mehrmals, auf anderen Geräten). Nach erfolgreicher Passwortvergabe ist er ungültig. Jede neue Setup-Mail (Resend / Passwort vergessen) ersetzt den alten Link. Alte Mails mit dem früheren One-Shot-Link können noch scheitern — dann „Passwort vergessen“ oder gezielt neu senden (Skript resend-app-access-one.ts), nicht massenhaft an alle.",
+            text: "Einrichtungs-Link: Der Link in Zugangs-/Willkommens-/Passwort-vergessen-Mails bleibt nutzbar, bis das Passwort gesetzt ist (auch mehrmals, auf anderen Geräten). Nach erfolgreicher Passwortvergabe ist er ungültig. Jede neue Setup-Mail (Resend / Passwort vergessen / Relink-Kampagne) ersetzt den alten Link.",
           },
         ],
       },

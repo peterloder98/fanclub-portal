@@ -1,8 +1,16 @@
 import { createHash, randomBytes } from "crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  createSetupClaimToken,
+  verifySetupClaimToken,
+  SETUP_CLAIM_TTL_SECONDS,
+} from "@/lib/auth/setup-claim";
 
 /** Gültigkeit neuer Setup-Links (14 Tage). */
 export const ACCOUNT_SETUP_TOKEN_TTL_DAYS = 14;
+
+/** Signiertes Token ohne DB (Fallback, wenn account_setup_tokens fehlt). */
+export const SIGNED_SETUP_TOKEN_PREFIX = "sc1.";
 
 export function hashAccountSetupToken(token: string): string {
   return createHash("sha256").update(token, "utf8").digest("hex");
@@ -26,6 +34,10 @@ export function buildAccountSetupUrl(plainToken: string, baseUrl?: string): stri
   return `${base}/setup-account?setup_token=${encodeURIComponent(plainToken)}`;
 }
 
+function isMissingTableError(message: string | undefined) {
+  return Boolean(message && /does not exist|schema cache/i.test(message));
+}
+
 async function resolveUserId(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   input: { userId?: string; email: string },
@@ -43,9 +55,26 @@ async function resolveUserId(
   return profile.id;
 }
 
+async function resolveEmail(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  userId: string,
+  fallbackEmail: string,
+): Promise<string> {
+  const { data, error } = await admin.auth.admin.getUserById(userId);
+  const fromAuth = data.user?.email?.trim();
+  if (!error && fromAuth) return fromAuth;
+  return fallbackEmail.trim();
+}
+
+function signedSetupToken(userId: string, email: string, ttlDays: number): string {
+  const ttlSeconds = Math.max(SETUP_CLAIM_TTL_SECONDS, ttlDays * 86_400);
+  return `${SIGNED_SETUP_TOKEN_PREFIX}${createSetupClaimToken(userId, email, ttlSeconds)}`;
+}
+
 /**
  * Erzeugt einen neuen Setup-Token und invalidiert ältere offene Tokens desselben Users.
  * Gibt die fertige Setup-URL zurück (Klartext-Token nur hier, Hash in DB).
+ * Falls Tabelle 145 fehlt: signiertes Token (mehrfach gültig bis Ablauf).
  */
 export async function rotateAccountSetupToken(input: {
   email: string;
@@ -56,6 +85,8 @@ export async function rotateAccountSetupToken(input: {
   const userId = await resolveUserId(admin, input);
   const ttlDays = input.ttlDays ?? ACCOUNT_SETUP_TOKEN_TTL_DAYS;
   const expiresAt = new Date(Date.now() + ttlDays * 86_400_000).toISOString();
+  const email = await resolveEmail(admin, userId, input.email);
+
   const { token, hash } = generateAccountSetupTokenPlain();
   const nowIso = new Date().toISOString();
 
@@ -64,20 +95,27 @@ export async function rotateAccountSetupToken(input: {
     .update({ consumed_at: nowIso })
     .eq("user_id", userId)
     .is("consumed_at", null);
-  if (revokeErr && !/does not exist|schema cache/i.test(revokeErr.message)) {
-    throw new Error(revokeErr.message);
+  if (revokeErr && isMissingTableError(revokeErr.message)) {
+    return {
+      setupUrl: buildAccountSetupUrl(signedSetupToken(userId, email, ttlDays)),
+      userId,
+      expiresAt,
+    };
   }
-  if (revokeErr && /does not exist|schema cache/i.test(revokeErr.message)) {
-    throw new Error(
-      "Tabelle account_setup_tokens fehlt — Migration 145_account_setup_tokens.sql ausführen.",
-    );
-  }
+  if (revokeErr) throw new Error(revokeErr.message);
 
   const { error: insertErr } = await admin.from("account_setup_tokens").insert({
     user_id: userId,
     token_hash: hash,
     expires_at: expiresAt,
   });
+  if (insertErr && isMissingTableError(insertErr.message)) {
+    return {
+      setupUrl: buildAccountSetupUrl(signedSetupToken(userId, email, ttlDays)),
+      userId,
+      expiresAt,
+    };
+  }
   if (insertErr) throw new Error(insertErr.message);
 
   return {
@@ -105,6 +143,26 @@ export async function lookupValidAccountSetupToken(
 > {
   const trimmed = plainToken.trim();
   if (!trimmed || trimmed.length < 20) return { ok: false, reason: "invalid" };
+
+  if (trimmed.startsWith(SIGNED_SETUP_TOKEN_PREFIX)) {
+    const claim = verifySetupClaimToken(trimmed.slice(SIGNED_SETUP_TOKEN_PREFIX.length));
+    if (!claim) {
+      return { ok: false, reason: "invalid" };
+    }
+    if (claim.exp < Math.floor(Date.now() / 1000)) {
+      return { ok: false, reason: "expired" };
+    }
+    return {
+      ok: true,
+      row: {
+        id: "signed",
+        user_id: claim.userId,
+        expires_at: new Date(claim.exp * 1000).toISOString(),
+        consumed_at: null,
+      },
+      email: claim.email,
+    };
+  }
 
   const admin = createSupabaseAdminClient();
   const hash = hashAccountSetupToken(trimmed);
