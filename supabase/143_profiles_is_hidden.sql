@@ -12,11 +12,17 @@ create index if not exists profiles_is_hidden_idx
   where is_hidden = true;
 
 -- Peter Loder (Admin) verstecken
-update public.profiles
+-- profiles hat ggf. keine email-Spalte — Match über id, Name und auth.users.email
+update public.profiles p
 set is_hidden = true
-where id = '1b70d88f-e28d-48f3-b3cb-646eaf06f19a'
-   or lower(email) = 'mail@peter-loder.de'
-   or (lower(coalesce(first_name, '')) = 'peter' and lower(coalesce(last_name, '')) = 'loder');
+where p.id = '1b70d88f-e28d-48f3-b3cb-646eaf06f19a'
+   or (lower(coalesce(p.first_name, '')) = 'peter' and lower(coalesce(p.last_name, '')) = 'loder')
+   or exists (
+     select 1
+     from auth.users u
+     where u.id = p.id
+       and lower(u.email) = 'mail@peter-loder.de'
+   );
 
 -- Bestehende Sterne / Badges für versteckte Profile entfernen
 delete from public.points_transactions
