@@ -21,7 +21,6 @@ import {
   Server,
   Activity,
   BookOpen,
-  Sparkles,
   Video,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -202,12 +201,6 @@ const SECTIONS: AdminHubSection[] = [
         title: "Protokoll",
         description: "Wer hat wann was geändert",
         icon: ScrollText,
-      },
-      {
-        href: "/willkommen?vorschau=1",
-        title: "Willkommen-Vorschau",
-        description: "Onboarding für neue Mitglieder durchspielen",
-        icon: Sparkles,
       },
     ],
   },

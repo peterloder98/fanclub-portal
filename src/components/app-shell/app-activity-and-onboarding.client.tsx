@@ -30,17 +30,6 @@ export function AppActivityAndOnboarding({
     if (pathname === "/willkommen" || pathname?.startsWith("/willkommen/")) return;
     // Konto-Einrichtung darf vor dem Willkommen abgeschlossen werden
     if (pathname?.startsWith("/setup-account")) return;
-    // Admin verlässt Willkommen-Vorschau → einmalig nicht zurückzwingen
-    try {
-      const raw = sessionStorage.getItem("fc-welcome-preview-exit");
-      if (raw) {
-        const at = Number(raw);
-        sessionStorage.removeItem("fc-welcome-preview-exit");
-        if (Number.isFinite(at) && Date.now() - at < 120_000) return;
-      }
-    } catch {
-      /* ignore */
-    }
     router.replace("/willkommen");
   }, [needsWelcomeOnboarding, pathname, router]);
 

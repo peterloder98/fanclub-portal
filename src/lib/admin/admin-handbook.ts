@@ -707,7 +707,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
               "Mitglieder können unter „Mein Profil → E-Mail-Benachrichtigungen“ einzelne optionale Mails abschalten (Events, Gewinnspiele, Umfragen, Treffen-Erinnerungen, Live mit Anni, App-Erinnerungen). Wer abgeschaltet hat, bekommt diese Mails nicht — auch wenn die Club-Einstellung an ist.",
               "Automatische App-Erinnerungen: Wer die App noch nie genutzt hat, erhält bis zu 4 Mails im Abstand von 7 Tagen. Wer einen Monat nicht aktiv war, erhält einmalig eine freundliche Rückkehr-Mail — sofern das Mitglied App-Erinnerungen nicht abgeschaltet hat.",
-              "Willkommen-Flow für neue Mitglieder: Admin → System → „Willkommen-Vorschau“. Während des Flows (auch in der Vorschau) sind Menü, Chat und Kopfzeile ausgeblendet — erst nach Abschluss geht es in die App. Regeln und Kennenlernen lassen sich durchspielen, ohne etwas zu speichern.",
+              "Willkommen-Flow für neue Mitglieder: Beim ersten Login nach Freigabe erscheinen Fanclub-Regeln und optional Kennenlernen. Währenddessen sind Menü, Chat und Kopfzeile ausgeblendet — erst nach Abschluss geht es in die App.",
             ],
           },
           {
