@@ -90,6 +90,7 @@ export default async function MitgliederPage() {
       userId: p.id,
       postalCode: (p.postal_code ?? "").trim() || "—",
       city: city || memberCountryLabel(p.country),
+      country: p.country,
       lat,
       lng,
       name: profileDisplayName(p),
@@ -145,7 +146,7 @@ export default async function MitgliederPage() {
           Hier sind unsere Mitglieder her
         </h2>
         <p className="mt-1 px-1 text-xs text-[color:var(--muted)]">
-          Nur Regionen (nächste größere Stadt) — keine Wohnadressen.
+          Nur Regionen (nächste größere Stadt im gleichen Land) — keine Wohnadressen.
         </p>
         {missingCoords > 0 ? (
           <p className="mt-1 px-1 text-xs text-amber-800">

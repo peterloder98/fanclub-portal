@@ -19,7 +19,7 @@ export async function maybeGeocodeMissingProfiles(): Promise<void> {
     const admin = createSupabaseAdminClient();
     const { data: missing, error: missingErr } = await admin
       .from("profiles")
-      .select("id,postal_code,city,map_lat")
+      .select("id,postal_code,city,country,map_lat")
       .is("map_lat", null)
       .limit(40);
     if (missingErr) {
@@ -36,7 +36,7 @@ export async function maybeGeocodeMissingProfiles(): Promise<void> {
     if (toSync.length < BATCH_SIZE) {
       const { data: existing, error: existingErr } = await admin
         .from("profiles")
-        .select("id,postal_code,city,map_lat,map_lng")
+        .select("id,postal_code,city,country,map_lat,map_lng")
         .not("map_lat", "is", null)
         .limit(80);
       if (existingErr) {
@@ -47,7 +47,7 @@ export async function maybeGeocodeMissingProfiles(): Promise<void> {
           const lat = typeof p.map_lat === "number" ? p.map_lat : null;
           const lng = typeof p.map_lng === "number" ? p.map_lng : null;
           if (lat == null || lng == null) continue;
-          if (!needsRegionalSnap(lat, lng)) continue;
+          if (!needsRegionalSnap(lat, lng, 3, p.country)) continue;
           if (!((p.postal_code ?? "").trim() || (p.city ?? "").trim())) continue;
           toSync.push(p.id);
         }

@@ -16,6 +16,8 @@ export type MemberMapPoint = {
   userId: string;
   postalCode: string;
   city: string;
+  /** ISO-ähnlich (DE/NL/CH/AT) — Snap bleibt im gleichen Land. */
+  country?: string | null;
   lat: number;
   lng: number;
   name: string;
@@ -41,7 +43,7 @@ function memberFromPoint(p: MemberMapPoint): MemberMapMember {
 }
 
 function centerForPoint(p: MemberMapPoint): RegionalCenter {
-  return snapToRegionalCenter(p.lat, p.lng, p.city || null);
+  return snapToRegionalCenter(p.lat, p.lng, p.city || null, p.country ?? null);
 }
 
 /**

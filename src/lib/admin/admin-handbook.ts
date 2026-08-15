@@ -297,14 +297,15 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "Keine Straßen, Hausnummern oder exakten Wohnorte",
-              "Jeder Standort wird der nächsten größeren Stadt / Region zugeordnet (z. B. „Raum München“)",
+              "Jeder Standort wird der nächsten größeren Stadt im gleichen Land zugeordnet (ca. ab 60–70.000 Einwohnern, z. B. „Raum Erfurt“ oder „Raum Almelo“)",
+              "Mitglieder im Ausland kommen nie in eine deutsche Region — und umgekehrt",
               "Mehrere Mitglieder derselben Region erscheinen als ein Sammelpunkt mit Anzahl",
               "Zoom ist begrenzt — die Karte zeigt Herkunftsregionen, nicht Einzeladressen",
             ],
           },
           {
             type: "note",
-            text: "Adresse und PLZ bleiben intern in den Stammdaten für Verwaltung und Post. Auf der Karte werden sie nicht 1:1 angezeigt. Wenn jemand sich wegen der Karte unsicher fühlt: so erklären — Wohnort erscheint nur als Region.",
+            text: "Adresse und PLZ bleiben intern in den Stammdaten für Verwaltung und Post. Auf der Karte werden sie nicht 1:1 angezeigt. Wenn jemand sich wegen der Karte unsicher fühlt: so erklären — Wohnort erscheint nur als Region im eigenen Land.",
           },
           {
             type: "link",

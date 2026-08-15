@@ -41,6 +41,7 @@ async function geocodeViaZippopotam(plz) {
     const lat = place?.latitude != null ? Number(place.latitude) : NaN;
     const lng = place?.longitude != null ? Number(place.longitude) : NaN;
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
     return { lat, lng };
   } catch {
     return null;

@@ -1,11 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { geocodeGermanPlz, isGermanCountry } from "@/lib/members/geocode-plz";
+import { geocodeGermanPlz, isGermanCountry, isValidMapCoord } from "@/lib/members/geocode-plz";
 import { normalizeMemberCountryCode, memberCountryLabel } from "@/lib/members/country";
 import { snapToRegionalCenter } from "@/lib/members/regional-centers";
 
 /**
  * Grobe Kartenkoordinaten für die Mitglieder-Karte.
- * Niemals Straße/Hausnummer — nur Ort/PLZ, danach Snap auf nächstes Regionalzentrum.
+ * Niemals Straße/Hausnummer — nur Ort/PLZ, danach Snap auf nächstes Regionalzentrum
+ * im gleichen Land (kein DE→NL o. ä.).
  */
 export async function geocodeProfileMapCoords(profile: {
   street?: string | null;
@@ -37,14 +38,14 @@ export async function geocodeProfileMapCoords(profile: {
       country: memberCountryLabel(country),
       timeoutMs: 10_000,
     });
-    if (nom.status === "success") {
+    if (nom.status === "success" && isValidMapCoord(nom.lat, nom.lng)) {
       rough = { lat: nom.lat, lng: nom.lng };
     }
   }
 
-  if (!rough) return null;
+  if (!rough || !isValidMapCoord(rough.lat, rough.lng)) return null;
 
-  const center = snapToRegionalCenter(rough.lat, rough.lng, city || null);
+  const center = snapToRegionalCenter(rough.lat, rough.lng, city || null, country);
   return {
     lat: center.lat,
     lng: center.lng,

@@ -12,7 +12,7 @@
     "test:birthday-cron": "node --env-file=.env.local scripts/test-birthday-cron.mjs",
     "patch:test-addresses": "node --env-file=.env.local scripts/patch-test-member-addresses.mjs",
     "set:gender-from-names": "node --experimental-strip-types --env-file=.env.local scripts/set-profile-gender-from-names.mjs",
-    "geocode:profiles": "node --env-file=.env.local scripts/backfill-profile-map-coords.mjs",
+    "geocode:profiles": "npx --yes tsx --env-file=.env.local scripts/backfill-profile-map-coords.ts",
     "backfill:event-end-at": "node --env-file=.env.local scripts/backfill-event-end-at.mjs",
     "seed:demo-community": "node --env-file=.env.local scripts/seed-demo-community.mjs",
     "wipe:community": "node --env-file=.env.local scripts/wipe-community-content.mjs",

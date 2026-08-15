@@ -9,6 +9,18 @@ export function isGermanCountry(country: string | null | undefined): boolean {
   return c === "DE" || c === "DEU" || c === "DEUTSCHLAND" || c === "GERMANY";
 }
 
+/** Verwirft kaputte Provider-Daten (z. B. Zippopotam lat=16056 für PLZ 99817). */
+export function isValidMapCoord(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
 export async function geocodeGermanPlz(
   plz: string,
   city?: string | null,
@@ -30,7 +42,7 @@ export async function geocodeGermanPlz(
     country: "Deutschland",
     timeoutMs: 6000,
   });
-  if (fromNominatim.status === "success") {
+  if (fromNominatim.status === "success" && isValidMapCoord(fromNominatim.lat, fromNominatim.lng)) {
     const coords = { lat: fromNominatim.lat, lng: fromNominatim.lng };
     cache.set(cacheKey, coords);
     return coords;
@@ -52,7 +64,8 @@ async function geocodeViaZippopotam(plz: string): Promise<{ lat: number; lng: nu
     const place = data.places?.[0];
     const lat = place?.latitude != null ? Number(place.latitude) : NaN;
     const lng = place?.longitude != null ? Number(place.longitude) : NaN;
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    // Manche PLZ liefern bei Zippopotam Unsinn (Eisenach 99817 → lat "16056")
+    if (!isValidMapCoord(lat, lng)) return null;
     return { lat, lng };
   } catch {
     return null;
