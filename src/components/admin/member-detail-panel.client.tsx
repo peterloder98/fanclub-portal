@@ -369,11 +369,7 @@ export function MemberDetailPanel({
           >
             <Mail className="h-4 w-4 shrink-0" aria-hidden />
             <span>
-              {paymentLoading
-                ? "Lade…"
-                : primaryContribution && primaryContribution.status !== "paid"
-                  ? `Beitrags-Erinnerung (${formatEur(openContributions.reduce((s, c) => s + c.openCents, 0))} offen)`
-                  : "Beitrags-Erinnerung senden"}
+              {paymentLoading ? "Lade…" : "Zahlungserinnerung senden"}
             </span>
           </button>
         {member.membership?.status === "active" ? (
@@ -483,7 +479,7 @@ export function MemberDetailPanel({
           <CardContent>
             {member.membership?.status === "applied" ? (
               <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                Noch kein Mitglied. Beitrag steht aus — über „Beitrags-Erinnerung senden“ die
+                Noch kein Mitglied. Beitrag steht aus — über „Zahlungserinnerung senden“ die
                 Überweisung anstoßen. Wenn das Geld da ist: unter Zahlungen bestätigen, Beitrittsdatum
                 eintragen und Status auf „aktiv“ setzen. Erst dann gibt es Mitgliedsnummer und
                 App-Zugang.
@@ -605,15 +601,16 @@ export function MemberDetailPanel({
                         >
                           <ContributionStatusBadge status={c.status} />
                           <span className="text-xs text-slate-600">
-                            {c.calendarYear}:{" "}
-                            {c.status === "paid"
-                              ? "bezahlt"
-                              : `offen ${formatEur(c.openCents)}`}
+                            <span className="block">
+                              {c.calendarYear}:{" "}
+                              {c.status === "paid"
+                                ? "bezahlt"
+                                : `offen ${formatEur(c.openCents)}`}
+                            </span>
                             {c.status !== "paid" ? (
-                              <>
-                                {" "}
-                                · VWZ: <span className="font-mono">{c.paymentReference}</span>
-                              </>
+                              <span className="block">
+                                VWZ: <span className="font-mono">{c.paymentReference}</span>
+                              </span>
                             ) : null}
                           </span>
                           {c.status !== "paid" ? (
@@ -623,7 +620,7 @@ export function MemberDetailPanel({
                               onClick={() => void openPaymentDialog(c.calendarYear)}
                               className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
                             >
-                              Erinnerung {c.calendarYear}
+                              Zahlungserinnerung senden
                             </button>
                           ) : null}
                         </li>
@@ -944,7 +941,7 @@ export function MemberDetailPanel({
 
       {showPaymentDialog ? (
         <EmailDialogShell
-          title="Beitrags-Erinnerung"
+          title="Zahlungserinnerung senden"
           description={`An ${member.email} · offener Jahresbeitrag`}
           onClose={() => setShowPaymentDialog(false)}
           footer={
