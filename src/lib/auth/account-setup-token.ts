@@ -34,6 +34,13 @@ export function buildAccountSetupUrl(plainToken: string, baseUrl?: string): stri
   return `${base}/setup-account?setup_token=${encodeURIComponent(plainToken)}`;
 }
 
+/** Passwort-Reset für bereits registrierte Nutzer (kein Geburtsdatum / Ersteinrichtung). */
+export function buildPasswordResetUrl(plainToken: string, baseUrl?: string): string {
+  const base = (baseUrl ?? appBaseUrl()).replace(/\/$/, "");
+  if (!base) throw new Error("APP_BASE_URL / NEXT_PUBLIC_APP_URL fehlt.");
+  return `${base}/reset-password?setup_token=${encodeURIComponent(plainToken)}`;
+}
+
 function isMissingTableError(message: string | undefined) {
   return Boolean(message && /does not exist|schema cache/i.test(message));
 }
@@ -80,12 +87,16 @@ export async function rotateAccountSetupToken(input: {
   email: string;
   userId?: string;
   ttlDays?: number;
+  /** setup = Ersteinrichtung; reset = Passwort vergessen (bereits registriert). */
+  purpose?: "setup" | "reset";
 }): Promise<{ setupUrl: string; userId: string; expiresAt: string }> {
   const admin = createSupabaseAdminClient();
   const userId = await resolveUserId(admin, input);
   const ttlDays = input.ttlDays ?? ACCOUNT_SETUP_TOKEN_TTL_DAYS;
   const expiresAt = new Date(Date.now() + ttlDays * 86_400_000).toISOString();
   const email = await resolveEmail(admin, userId, input.email);
+  const buildUrl =
+    input.purpose === "reset" ? buildPasswordResetUrl : buildAccountSetupUrl;
 
   const { token, hash } = generateAccountSetupTokenPlain();
   const nowIso = new Date().toISOString();
@@ -97,7 +108,7 @@ export async function rotateAccountSetupToken(input: {
     .is("consumed_at", null);
   if (revokeErr && isMissingTableError(revokeErr.message)) {
     return {
-      setupUrl: buildAccountSetupUrl(signedSetupToken(userId, email, ttlDays)),
+      setupUrl: buildUrl(signedSetupToken(userId, email, ttlDays)),
       userId,
       expiresAt,
     };
@@ -111,7 +122,7 @@ export async function rotateAccountSetupToken(input: {
   });
   if (insertErr && isMissingTableError(insertErr.message)) {
     return {
-      setupUrl: buildAccountSetupUrl(signedSetupToken(userId, email, ttlDays)),
+      setupUrl: buildUrl(signedSetupToken(userId, email, ttlDays)),
       userId,
       expiresAt,
     };
@@ -119,7 +130,7 @@ export async function rotateAccountSetupToken(input: {
   if (insertErr) throw new Error(insertErr.message);
 
   return {
-    setupUrl: buildAccountSetupUrl(token),
+    setupUrl: buildUrl(token),
     userId,
     expiresAt,
   };

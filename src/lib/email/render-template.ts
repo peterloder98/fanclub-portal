@@ -404,6 +404,27 @@ Falls du diese Änderung nicht erwartet hast, melde dich bitte beim Vorstand.`,
 <p style="margin:0;font-size:15px;line-height:1.55;color:#1e293b">Falls du diese Änderung nicht erwartet hast, melde dich bitte beim Vorstand.</p>`,
 };
 
+const PASSWORD_RESET_FALLBACK = {
+  subject: "Neues Passwort für die Fanclub-App",
+  body_text: `{{salutation}},
+
+du hast ein neues Passwort für deinen Fanclub-App-Zugang angefordert.
+
+Über den folgenden Link kannst du ein neues Passwort setzen. Der Link bleibt gültig, bis du das Passwort gespeichert hast — auch auf anderen Geräten. Nutze bitte die neueste Mail.
+
+Neues Passwort setzen:
+{{reset_url}}
+
+Falls du diese Anfrage nicht gestellt hast, kannst du die Mail ignorieren. Dein bisheriges Passwort bleibt dann unverändert.`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">du hast ein neues Passwort für deinen Fanclub-App-Zugang angefordert.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Über den folgenden Button kannst du ein neues Passwort setzen. Der Link bleibt gültig, bis du das Passwort gespeichert hast — auch auf anderen Geräten. Nutze bitte die neueste Mail.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{reset_url}}" style="${EMAIL_BUTTON_STYLE}">Neues Passwort setzen</a>
+</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Falls du diese Anfrage nicht gestellt hast, kannst du die Mail ignorieren. Dein bisheriges Passwort bleibt dann unverändert.</p>`,
+};
+
 export async function renderEmailFromTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string>,
@@ -483,6 +504,18 @@ export async function renderEmailFromTemplate(
       body_text: MEMBER_LOGIN_EMAIL_CHANGED_FALLBACK.body_text,
       body_html: MEMBER_LOGIN_EMAIL_CHANGED_FALLBACK.body_html,
       description: null,
+    };
+  }
+  // Passwort-Reset: Code-Vorlage ist maßgeblich (kein Soft-Launch, klarer CTA).
+  if (key === EMAIL_TEMPLATE_KEYS.passwordReset) {
+    row = {
+      key,
+      name: "Passwort zurücksetzen",
+      subject: PASSWORD_RESET_FALLBACK.subject,
+      body_text: PASSWORD_RESET_FALLBACK.body_text,
+      body_html: PASSWORD_RESET_FALLBACK.body_html,
+      description:
+        "Für bereits registrierte Mitglieder nach „Passwort vergessen“ — nur neues Passwort, keine Ersteinrichtung.",
     };
   }
   if (!row) {

@@ -15,6 +15,7 @@ import {
   consumeAccountSetupTokensForUser,
   lookupValidAccountSetupToken,
 } from "@/lib/auth/account-setup-token";
+import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
 
 const schema = z.object({
   birthdate: z.string().min(1, "Geburtsdatum ist Pflicht."),
@@ -129,6 +130,13 @@ export async function getClaimedSetupSession(): Promise<
   const claim = await readSetupClaim();
   if (!claim) return { ok: false };
   return { ok: true, email: claim.email, userId: claim.userId };
+}
+
+/** Client-fähig: bereits registriert → Passwort-Reset statt Ersteinrichtung. */
+export async function resolveAccountAccessFlow(
+  userId: string,
+): Promise<"password_reset" | "account_setup"> {
+  return getAccountAccessFlowForUser(userId);
 }
 
 export async function completeAccountSetup(input: {

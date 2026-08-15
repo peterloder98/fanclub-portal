@@ -13,6 +13,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   membershipApprovedWelcome: "membership_approved_welcome",
   clubMeetingReminder: "club_meeting_reminder",
   appAccessSetup: "app_access_setup",
+  passwordReset: "password_reset",
   appSignupReminder: "app_signup_reminder",
   appInactiveReminder: "app_inactive_reminder",
   referralAbuseAdminNotify: "referral_abuse_admin_notify",
@@ -126,6 +127,11 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
     { key: "setup_url", label: "Link Zugang einrichten" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.passwordReset]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "reset_url", label: "Link Passwort zurücksetzen" },
   ],
   [EMAIL_TEMPLATE_KEYS.appSignupReminder]: [
     ...personFacingSalutation,

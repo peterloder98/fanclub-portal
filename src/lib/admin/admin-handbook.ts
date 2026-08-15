@@ -241,6 +241,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             text: "Auf der Detailseite könnt ihr den Status manuell auf „Gelöscht“ setzen oder wieder auf „Offen“ zurücksetzen (z. B. vor einer neuen Einladungs-Mail). Das ist unabhängig von einer vorübergehenden App-Sperre wegen Beitragsrückstand.",
           },
           {
+            type: "p",
+            text: "Wenn ein bereits registriertes Mitglied „Passwort vergessen“ nutzt, geht nur der Passwort-Reset — nicht die komplette Ersteinrichtung. Bei Status „Offen“ bleibt der Einrichtungs-Flow (inkl. Geburtsdatum).",
+          },
+          {
             type: "link",
             href: "/admin/members",
             label: "Mitglieder & Anträge",
@@ -911,11 +915,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Einrichtungs-Link: Der Link in Zugangs-/Willkommens-/Passwort-vergessen-Mails bleibt nutzbar, bis das Passwort gesetzt ist (auch mehrmals, auf anderen Geräten). Nach erfolgreicher Passwortvergabe ist er ungültig. Jede neue Setup-Mail (Resend / Passwort vergessen / Relink-Kampagne) ersetzt den alten Link.",
+            text: "Einrichtungs- und Reset-Links: Zugangs-/Willkommens-Mails führen zur Ersteinrichtung (Geburtsdatum + Passwort). „Passwort vergessen“ bei bereits registrierten Mitgliedern sendet einen eigenen Reset-Link — nur neues Passwort, keine erneute Registrierung. Beide Links bleiben nutzbar, bis das Passwort gesetzt ist (auch mehrmals, auf anderen Geräten). Danach sind sie ungültig. Jede neue Mail ersetzt den alten Link.",
           },
           {
             type: "note",
-            text: "Geburtsdatum bei der Einrichtung: Es muss zum Konto in der E-Mail passen (TT.MM.JJJJ). Bei Familien auf demselben Handy/PC bitte jeweils den eigenen Link öffnen — sonst wirkt das Geburtsdatum „falsch“, obwohl es stimmt. Im Zweifel: Privates Fenster oder „Passwort vergessen“ mit der eigenen E-Mail.",
+            text: "Geburtsdatum bei der Ersteinrichtung: Es muss zum Konto in der E-Mail passen (TT.MM.JJJJ). Bei Familien auf demselben Handy/PC bitte jeweils den eigenen Link öffnen — sonst wirkt das Geburtsdatum „falsch“, obwohl es stimmt. Im Zweifel: Privates Fenster oder „Passwort vergessen“ mit der eigenen E-Mail (registrierte Mitglieder landen dann nur beim Passwort-Reset).",
           },
         ],
       },

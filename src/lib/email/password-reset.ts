@@ -1,0 +1,58 @@
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { renderEmailFromTemplate } from "@/lib/email/render-template";
+import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { sendEmailWithLog } from "@/lib/email/send-log";
+import { emailPersonVars } from "@/lib/email/salutation-block";
+import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
+
+/** Club-Token-Mail: nur neues Passwort, keine Ersteinrichtung / Geburtsdatum. */
+export async function sendPasswordResetEmail(input: {
+  email: string;
+  firstName: string;
+  gender?: string | null;
+  userId?: string;
+  logContext?: Record<string, unknown>;
+}) {
+  const admin = createSupabaseAdminClient();
+
+  let genderRaw = input.gender;
+  if (genderRaw == null && input.userId) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("gender")
+      .eq("id", input.userId)
+      .maybeSingle();
+    genderRaw = profile?.gender ?? null;
+  }
+
+  const { setupUrl: resetUrl, userId } = await rotateAccountSetupToken({
+    email: input.email,
+    userId: input.userId,
+    purpose: "reset",
+  });
+  const person = emailPersonVars({ firstName: input.firstName, gender: genderRaw });
+
+  const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.passwordReset, {
+    ...person,
+    reset_url: resetUrl,
+  });
+
+  const result = await sendEmailWithLog({
+    to: input.email,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    attachments: rendered.signatureAttachment
+      ? [rendered.signatureAttachment]
+      : undefined,
+    templateKey: EMAIL_TEMPLATE_KEYS.passwordReset,
+    context: {
+      user_id: userId,
+      setup_path: "/reset-password",
+      setup_token: true,
+      ...input.logContext,
+    },
+  });
+
+  return { ...result, resetUrl };
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildAccountSetupUrl,
+  buildPasswordResetUrl,
   generateAccountSetupTokenPlain,
   hashAccountSetupToken,
 } from "@/lib/auth/account-setup-token";
@@ -19,6 +20,13 @@ describe("account-setup-token", () => {
     const url = buildAccountSetupUrl("abcXYZ", "https://fanclub.anniperka.de");
     expect(url).toBe(
       "https://fanclub.anniperka.de/setup-account?setup_token=abcXYZ",
+    );
+  });
+
+  it("builds password-reset URL with setup_token query", () => {
+    const url = buildPasswordResetUrl("abcXYZ", "https://fanclub.anniperka.de");
+    expect(url).toBe(
+      "https://fanclub.anniperka.de/reset-password?setup_token=abcXYZ",
     );
   });
 });

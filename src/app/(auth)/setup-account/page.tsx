@@ -12,6 +12,7 @@ import {
   completeAccountSetup,
   getClaimedSetupSession,
   redeemAccountSetupToken,
+  resolveAccountAccessFlow,
 } from "@/app/(auth)/setup-account/actions";
 import { mapAuthErrorMessage } from "@/lib/auth/map-auth-error";
 
@@ -35,20 +36,32 @@ function SetupAccountInner() {
     if (initOnce.current) return;
     initOnce.current = true;
 
-    async function resumeFromExisting(): Promise<boolean> {
+    /** Bereits registriert → Claim behalten, nur Passwort-Reset (kein Geburtsdatum). */
+    async function goToPasswordResetIfRegistered(userId: string): Promise<boolean> {
+      const flow = await resolveAccountAccessFlow(userId);
+      if (flow === "password_reset") {
+        router.replace("/reset-password");
+        return true;
+      }
+      return false;
+    }
+
+    async function resumeFromExisting(): Promise<"reset" | "setup" | false> {
       const supabase = createSupabaseBrowserClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
       if (session?.user) {
-        setEmail(session.user.email ?? null);
         await claimAccountSetupSession(session.access_token).catch(() => null);
-        return true;
+        if (await goToPasswordResetIfRegistered(session.user.id)) return "reset";
+        setEmail(session.user.email ?? null);
+        return "setup";
       }
       const claimed = await getClaimedSetupSession();
       if (claimed.ok) {
+        if (await goToPasswordResetIfRegistered(claimed.userId)) return "reset";
         setEmail(claimed.email);
-        return true;
+        return "setup";
       }
       return false;
     }
@@ -69,13 +82,22 @@ function SetupAccountInner() {
             // Fremde Session (z. B. anderes Familienmitglied) nicht stehen lassen —
             // sonst würde die Identitätsprüfung gegen das falsche Profil laufen.
             await supabase.auth.signOut().catch(() => null);
+            const claimed = await getClaimedSetupSession();
+            if (
+              claimed.ok &&
+              (await goToPasswordResetIfRegistered(claimed.userId))
+            ) {
+              return;
+            }
             setEmail(redeemed.email);
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;
           }
           // Token ungültig — evtl. Claim/Session vom gleichen Browser?
-          if (await resumeFromExisting()) {
+          const resumed = await resumeFromExisting();
+          if (resumed === "reset") return;
+          if (resumed === "setup") {
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;
@@ -86,12 +108,16 @@ function SetupAccountInner() {
         }
 
         // 2) Schon eingeloggt / Claim vorhanden → Setup fortsetzen
-        if (await resumeFromExisting()) {
-          if (tokenHash) {
-            router.replace("/setup-account", { scroll: false });
+        {
+          const resumed = await resumeFromExisting();
+          if (resumed === "reset") return;
+          if (resumed === "setup") {
+            if (tokenHash) {
+              router.replace("/setup-account", { scroll: false });
+            }
+            setSessionReady(true);
+            return;
           }
-          setSessionReady(true);
-          return;
         }
 
         // 3) Legacy: Supabase recovery token_hash (einmalig)
@@ -102,14 +128,17 @@ function SetupAccountInner() {
           });
 
           if (!otpErr && data.session?.user) {
-            setEmail(data.session.user.email ?? null);
             await claimAccountSetupSession(data.session.access_token).catch(() => null);
+            if (await goToPasswordResetIfRegistered(data.session.user.id)) return;
+            setEmail(data.session.user.email ?? null);
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;
           }
 
-          if (await resumeFromExisting()) {
+          const resumed = await resumeFromExisting();
+          if (resumed === "reset") return;
+          if (resumed === "setup") {
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;

@@ -15,6 +15,8 @@ describe("forgot-password-request constants", () => {
   it("has clear German copy without soft-launch email-outage wording", () => {
     expect(FORGOT_PASSWORD_RATE_LIMIT_DE).toContain("10 Minuten");
     expect(FORGOT_PASSWORD_OK_DE).toContain("neueste Mail");
+    expect(FORGOT_PASSWORD_OK_DE).toContain("neuer Link");
     expect(FORGOT_PASSWORD_OK_DE.toLowerCase()).not.toContain("wieder läuft");
+    expect(FORGOT_PASSWORD_OK_DE.toLowerCase()).not.toContain("einrichtungs-link");
   });
 });

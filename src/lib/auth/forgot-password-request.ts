@@ -1,6 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendAppAccessSetupEmail } from "@/lib/email/app-access-setup";
+import { sendPasswordResetEmail } from "@/lib/email/password-reset";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { resolveAppRegistrationStatus } from "@/lib/membership/app-registration";
 
 /** Soft-Launch: eigener Versand über Club-SMTP — nicht Supabase /recover. */
 export const FORGOT_PASSWORD_EMAIL_COOLDOWN_SECONDS = 10 * 60;
@@ -10,14 +12,19 @@ export const FORGOT_PASSWORD_RATE_LIMIT_DE =
   "Zu viele Versuche. Bitte warte etwa 10 Minuten und versuche es dann erneut — oder melde dich beim Vorstand.";
 
 export const FORGOT_PASSWORD_OK_DE =
-  "Wenn die E-Mail bei uns hinterlegt ist, wurde ein neuer Einrichtungs-Link gesendet. Nutze die neueste Mail — der Link bleibt gültig, bis du dein Passwort gesetzt hast (auch auf anderen Geräten).";
+  "Wenn die E-Mail bei uns hinterlegt ist, wurde ein neuer Link gesendet. Nutze die neueste Mail — der Link bleibt gültig, bis du dein Passwort gesetzt hast (auch auf anderen Geräten).";
+
+const FORGOT_PASSWORD_TEMPLATE_KEYS = [
+  EMAIL_TEMPLATE_KEYS.appAccessSetup,
+  EMAIL_TEMPLATE_KEYS.passwordReset,
+] as const;
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
 /**
- * Prüft jüngste erfolgreiche App-Zugang-Mails an diese Adresse (Club-SMTP-Log).
+ * Prüft jüngste erfolgreiche Setup-/Reset-Mails an diese Adresse (Club-SMTP-Log).
  */
 export async function recentSetupSendCount(
   email: string,
@@ -29,7 +36,7 @@ export async function recentSetupSendCount(
     .from("email_send_log")
     .select("id", { count: "exact", head: true })
     .eq("status", "sent")
-    .eq("template_key", EMAIL_TEMPLATE_KEYS.appAccessSetup)
+    .in("template_key", [...FORGOT_PASSWORD_TEMPLATE_KEYS])
     .ilike("to_address", normalizeEmail(email))
     .gte("created_at", since);
 
@@ -52,7 +59,7 @@ export async function recentForgotPasswordIpCount(
     .from("email_send_log")
     .select("id", { count: "exact", head: true })
     .eq("status", "sent")
-    .eq("template_key", EMAIL_TEMPLATE_KEYS.appAccessSetup)
+    .in("template_key", [...FORGOT_PASSWORD_TEMPLATE_KEYS])
     .contains("context", { source: "forgot_password", client_ip: ip })
     .gte("created_at", since);
 
@@ -68,7 +75,9 @@ export async function recentForgotPasswordIpCount(
 }
 
 /**
- * Sendet frischen Setup-/Recovery-Link über Club-SMTP (bypass Supabase Auth-Mail-Limit).
+ * Sendet frischen Setup- oder Passwort-Reset-Link über Club-SMTP.
+ * Bereits registrierte Nutzer → nur Passwort-Reset (kein Geburtsdatum).
+ * Noch offene Zugänge → Ersteinrichtung.
  * Antwort verrät nicht, ob die Adresse existiert.
  */
 export async function requestForgotPasswordViaSmtp(input: {
@@ -99,7 +108,9 @@ export async function requestForgotPasswordViaSmtp(input: {
   const admin = createSupabaseAdminClient();
   const { data: profile } = await admin
     .from("profiles")
-    .select("id,email,first_name,gender")
+    .select(
+      "id,email,first_name,gender,app_registration_status,app_registered_at,last_app_active_at",
+    )
     .ilike("email", email)
     .maybeSingle();
 
@@ -108,17 +119,44 @@ export async function requestForgotPasswordViaSmtp(input: {
     return { ok: true, message: FORGOT_PASSWORD_OK_DE };
   }
 
+  let lastSignInAt: string | null = null;
   try {
-    const result = await sendAppAccessSetupEmail({
-      email: profile.email,
-      firstName: profile.first_name?.trim() || "Fan",
-      gender: profile.gender,
-      userId: profile.id,
-      logContext: {
-        source: "forgot_password",
-        client_ip: ip,
-      },
-    });
+    const { data: authUser } = await admin.auth.admin.getUserById(profile.id);
+    lastSignInAt = authUser.user?.last_sign_in_at ?? null;
+  } catch {
+    // ignore — Status fällt auf Profilspalten zurück
+  }
+
+  const registration = resolveAppRegistrationStatus({
+    status: profile.app_registration_status,
+    registeredAt: profile.app_registered_at,
+    lastSignInAt,
+    lastAppActiveAt: profile.last_app_active_at,
+  });
+
+  const logContext = {
+    source: "forgot_password",
+    client_ip: ip,
+    registration_status: registration,
+  };
+
+  try {
+    const result =
+      registration === "registered"
+        ? await sendPasswordResetEmail({
+            email: profile.email,
+            firstName: profile.first_name?.trim() || "Fan",
+            gender: profile.gender,
+            userId: profile.id,
+            logContext,
+          })
+        : await sendAppAccessSetupEmail({
+            email: profile.email,
+            firstName: profile.first_name?.trim() || "Fan",
+            gender: profile.gender,
+            userId: profile.id,
+            logContext,
+          });
 
     if (!result.ok) {
       if ("skipped" in result && result.skipped) {
