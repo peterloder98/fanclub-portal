@@ -3,6 +3,7 @@ import { sendAppAccessSetupEmail } from "@/lib/email/app-access-setup";
 import { sendPasswordResetEmail } from "@/lib/email/password-reset";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { resolveAppRegistrationStatus } from "@/lib/membership/app-registration";
+import { loadForgotPasswordProfileByEmail } from "@/lib/membership/load-registration-profile";
 
 /** Soft-Launch: eigener Versand über Club-SMTP — nicht Supabase /recover. */
 export const FORGOT_PASSWORD_EMAIL_COOLDOWN_SECONDS = 10 * 60;
@@ -105,20 +106,14 @@ export async function requestForgotPasswordViaSmtp(input: {
     }
   }
 
-  const admin = createSupabaseAdminClient();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select(
-      "id,email,first_name,gender,app_registration_status,app_registered_at,last_app_active_at",
-    )
-    .ilike("email", email)
-    .maybeSingle();
+  const profile = await loadForgotPasswordProfileByEmail(email);
 
   // Keine Enumeration: unbekannte Adresse = Erfolg vortäuschen
   if (!profile?.email) {
     return { ok: true, message: FORGOT_PASSWORD_OK_DE };
   }
 
+  const admin = createSupabaseAdminClient();
   let lastSignInAt: string | null = null;
   try {
     const { data: authUser } = await admin.auth.admin.getUserById(profile.id);
