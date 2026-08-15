@@ -139,11 +139,22 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
             setError(null);
             startTransition(async () => {
               try {
-                await deleteMembershipApplication(app.id);
-                router.push("/admin/members");
+                const result = await deleteMembershipApplication(app.id);
+                if (!result.ok) {
+                  setError(result.error);
+                  return;
+                }
+                // Sofort weg von der Detailseite — sonst rendert Next die gelöschte RSC-Seite
+                // und zeigt in Production den undurchsichtigen „Server Components“-Fehler.
+                router.replace("/admin/members");
                 router.refresh();
               } catch (e) {
-                setError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+                const msg = e instanceof Error ? e.message : "Löschen fehlgeschlagen";
+                setError(
+                  /Server Components render|digest property/i.test(msg)
+                    ? "Antrag konnte nicht gelöscht werden. Bitte Seite neu laden und erneut versuchen."
+                    : msg,
+                );
               }
             });
           }}

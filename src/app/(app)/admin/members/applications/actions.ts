@@ -557,36 +557,53 @@ export async function rejectMembershipApplication(input: {
   return { ok: true };
 }
 
-export async function deleteMembershipApplication(applicationId: string) {
-  const { user } = await requireAdminAction();
-  const admin = createSupabaseAdminClient();
-
-  const { data: app } = await admin
-    .from("membership_applications")
-    .select("id,user_id,first_name,last_name")
-    .eq("id", applicationId)
-    .maybeSingle();
-  if (!app) throw new Error("Antrag nicht gefunden.");
-
-  if (app.user_id) {
-    await logMemberActivity({
-      userId: app.user_id,
-      applicationId: app.id,
-      eventType: MEMBER_ACTIVITY_TYPES.applicationDeleted,
-      title: "Mitgliedsantrag vollständig gelöscht",
-      details: `${app.first_name} ${app.last_name} — inkl. Dateien und Testdaten.`,
-      createdBy: user.id,
-    }).catch(() => {});
+function deleteApplicationErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : "Löschen fehlgeschlagen";
+  if (/Server Components render|digest property/i.test(msg)) {
+    return "Antrag konnte nicht gelöscht werden. Bitte Seite neu laden und erneut versuchen.";
   }
+  return msg;
+}
 
-  await deleteMembershipApplicationCompletely(admin, applicationId);
-  await auditLog({
-    actorId: user.id,
-    action: "application.delete",
-    entityType: "membership_application",
-    entityId: applicationId,
-    summary: `Mitgliedsantrag gelöscht: ${app.first_name} ${app.last_name}`,
-  });
-  revalidatePath("/admin/members");
-  return { ok: true };
+export async function deleteMembershipApplication(
+  applicationId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { user } = await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+
+    const { data: app, error: appErr } = await admin
+      .from("membership_applications")
+      .select("id,user_id,first_name,last_name")
+      .eq("id", applicationId)
+      .maybeSingle();
+    if (appErr) return { ok: false, error: appErr.message };
+    if (!app) return { ok: false, error: "Antrag nicht gefunden." };
+
+    if (app.user_id) {
+      await logMemberActivity({
+        userId: app.user_id,
+        applicationId: app.id,
+        eventType: MEMBER_ACTIVITY_TYPES.applicationDeleted,
+        title: "Mitgliedsantrag vollständig gelöscht",
+        details: `${app.first_name} ${app.last_name} — inkl. Dateien und Testdaten.`,
+        createdBy: user.id,
+      }).catch(() => {});
+    }
+
+    await deleteMembershipApplicationCompletely(admin, applicationId);
+    await auditLog({
+      actorId: user.id,
+      action: "application.delete",
+      entityType: "membership_application",
+      entityId: applicationId,
+      summary: `Mitgliedsantrag gelöscht: ${app.first_name} ${app.last_name}`,
+    });
+    revalidatePath("/admin/members");
+    revalidatePath(`/admin/members/applications/${applicationId}`);
+    return { ok: true };
+  } catch (e) {
+    console.error("[application.delete]", e);
+    return { ok: false, error: deleteApplicationErrorMessage(e) };
+  }
 }

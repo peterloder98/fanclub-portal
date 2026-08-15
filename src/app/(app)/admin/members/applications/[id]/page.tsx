@@ -8,7 +8,6 @@ import { PAYMENT_METHOD_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/payments/lab
 import type { PaymentMethod, PaymentStatus } from "@/lib/payments/types";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/require-admin";
-import { redirect } from "next/navigation";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -40,7 +39,26 @@ export default async function AdminMembershipApplicationPage({
     .eq("id", id)
     .maybeSingle();
 
-  if (error || !app) redirect("/admin/members");
+  // Kein redirect()/throw hier: nach erfolgreichem Löschen revalidiert Next die Detail-RSC
+  // noch einmal — redirect würde in Production als undurchsichtiger Digest-Fehler enden.
+  if (error || !app) {
+    return (
+      <div className="min-h-screen">
+        <Topbar title="Antrag" subtitle="Nicht gefunden" />
+        <main className="px-4 py-6 lg:px-8">
+          <p className="text-sm text-slate-700">
+            Dieser Antrag ist nicht mehr vorhanden (bereits gelöscht oder ungültige Adresse).
+          </p>
+          <Link
+            href="/admin/members"
+            className="mt-4 inline-block text-sm font-medium text-fc-blue hover:underline"
+          >
+            ← Zurück zu Mitglieder &amp; Anträge
+          </Link>
+        </main>
+      </div>
+    );
+  }
 
   let membershipStatus: string | null = null;
   if (app.user_id) {
