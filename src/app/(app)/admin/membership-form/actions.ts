@@ -7,6 +7,7 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { describeEmailSendFailure } from "@/lib/smtp/email-send-error";
 import { getMembershipApplicationFormUrl } from "@/lib/membership/application-form-url";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -96,15 +97,11 @@ export async function sendMembershipFormInviteEmail(input: {
     text,
     html,
     attachments,
+    bypassTestAllowlist: true,
   });
 
   if (!result.ok) {
-    if (result.skipped) {
-      throw new Error(
-        "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
-      );
-    }
-    throw new Error("E-Mail konnte nicht gesendet werden (SMTP prüfen).");
+    throw new Error(describeEmailSendFailure(result));
   }
 
   const admin = createSupabaseAdminClient();

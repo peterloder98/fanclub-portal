@@ -130,3 +130,37 @@ export async function awardMembershipReferralPoints(
     sendId: sendRow.id,
   };
 }
+
+/** Nach fehlgeschlagenem Mail-Versand: Send, Ledger und Sterne zurücknehmen. */
+export async function rollbackMembershipReferralSend(sendId: string, senderId: string) {
+  const id = sendId.trim();
+  const uid = senderId.trim();
+  if (!id || !uid) return;
+
+  const admin = createSupabaseAdminClient();
+
+  await admin
+    .from("points_transactions")
+    .delete()
+    .eq("user_id", uid)
+    .eq("reason", "membership_referral")
+    .eq("entity_id", id);
+
+  const { error: awardErr } = await admin
+    .from("membership_referral_point_awards")
+    .delete()
+    .eq("send_id", id)
+    .eq("sender_id", uid);
+  if (awardErr && !/membership_referral_point_awards|does not exist/i.test(awardErr.message)) {
+    console.error("[referral] award rollback:", awardErr.message);
+  }
+
+  const { error: sendErr } = await admin
+    .from("membership_referral_sends")
+    .delete()
+    .eq("id", id)
+    .eq("sender_id", uid);
+  if (sendErr) {
+    console.error("[referral] send rollback:", sendErr.message);
+  }
+}

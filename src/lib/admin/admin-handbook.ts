@@ -263,7 +263,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Mitglieder können unter „Neues Mitglied einladen“ eine Einladung per E-Mail schicken.",
+            text: "Mitglieder können unter „Neues Mitglied einladen“ eine Einladung per E-Mail schicken. Diese Werbe-Mails gehen auch im E-Mail-Testmodus raus (Empfänger sind noch keine Mitglieder). Andere Mitglieder-Mails bleiben im Testmodus auf die Freigabeliste beschränkt.",
           },
           {
             type: "ul",

@@ -12,17 +12,24 @@ export type SendViaAccountInput = {
   attachments?: Attachment[];
   accountId?: string;
   replyTo?: string;
+  /**
+   * Einladungen an Nicht-Mitglieder (Werben / Antragslink): auch im Testmodus erlauben.
+   * Massen-Mails an bestehende Mitglieder bleiben geschützt.
+   */
+  bypassTestAllowlist?: boolean;
 };
 
 export async function sendEmailViaAccount(input: SendViaAccountInput) {
-  const policy = await evaluateOutboundEmail(input.to);
-  if (!policy.allow) {
-    console.warn("[email] Versand blockiert (Testmodus):", policy.reason, input.subject);
-    return {
-      ok: false as const,
-      skipped: true as const,
-      reason: policy.reason as "no_smtp_account",
-    };
+  if (!input.bypassTestAllowlist) {
+    const policy = await evaluateOutboundEmail(input.to);
+    if (!policy.allow) {
+      console.warn("[email] Versand blockiert (Testmodus):", policy.reason, input.subject);
+      return {
+        ok: false as const,
+        skipped: true as const,
+        reason: policy.reason,
+      };
+    }
   }
 
   const creds = input.accountId

@@ -93,7 +93,12 @@ export function MembershipInviteEmailDialog({
           await loadMemberDraft();
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
+        const msg = e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden";
+        setError(
+          /Server Components render|digest property/i.test(msg)
+            ? "Vorlage konnte nicht geladen werden. Bitte Dialog schließen und erneut öffnen."
+            : msg,
+        );
       } finally {
         setLoading(false);
       }
@@ -184,6 +189,10 @@ export function MembershipInviteEmailDialog({
                 subject: mailSubject,
                 body: mailBody,
               });
+              if (!result.ok) {
+                setError(result.error);
+                return;
+              }
               if (result.pointsAwarded > 0) {
                 flyPointsFromElement({
                   fromRect,
@@ -199,7 +208,12 @@ export function MembershipInviteEmailDialog({
             onClose();
             setError(null);
           } catch (e) {
-            setError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
+            const msg = e instanceof Error ? e.message : "Versand fehlgeschlagen";
+            setError(
+              /Server Components render|digest property/i.test(msg)
+                ? "Versand fehlgeschlagen. Bitte erneut versuchen."
+                : msg,
+            );
           }
         });
       }}

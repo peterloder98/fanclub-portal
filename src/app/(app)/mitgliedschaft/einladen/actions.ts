@@ -14,8 +14,13 @@ import {
 import { getMembershipApplicationFormUrlForReferrer } from "@/lib/membership/referral-link";
 import { assertReferralSendAllowed } from "@/lib/membership/referral-limits";
 import { evaluateAndMaybeFlagReferrer } from "@/lib/membership/referral-abuse";
-import { awardMembershipReferralPoints } from "@/lib/points/award-membership-referral";
-import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import {
+  awardMembershipReferralPoints,
+  rollbackMembershipReferralSend,
+} from "@/lib/points/award-membership-referral";
+import { sendEmailWithLog } from "@/lib/email/send-log";
+import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
+import { describeEmailSendFailure } from "@/lib/smtp/email-send-error";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -61,7 +66,7 @@ export async function sendMemberReferralEmailAction(input: {
   senderName: string;
   subject: string;
   body: string;
-}) {
+}): Promise<{ ok: true; pointsAwarded: number } | { ok: false; error: string }> {
   const { user } = await requireMemberAction();
   const admin = createSupabaseAdminClient();
 
@@ -71,50 +76,77 @@ export async function sendMemberReferralEmailAction(input: {
   const recipientGender = input.recipientGender.trim();
   const senderName = input.senderName.trim();
   if (!to || !to.includes("@")) {
-    throw new Error("Bitte eine gültige E-Mail-Adresse eingeben.");
+    return { ok: false, error: "Bitte eine gültige E-Mail-Adresse eingeben." };
   }
-  if (!recipientFirstName) throw new Error("Bitte den Vornamen der Empfängerin / des Empfängers eingeben.");
-  if (!recipientLastName) throw new Error("Bitte den Nachnamen der Empfängerin / des Empfängers eingeben.");
+  if (!recipientFirstName) {
+    return { ok: false, error: "Bitte den Vornamen der Empfängerin / des Empfängers eingeben." };
+  }
+  if (!recipientLastName) {
+    return { ok: false, error: "Bitte den Nachnamen der Empfängerin / des Empfängers eingeben." };
+  }
   if (recipientGender !== "m" && recipientGender !== "w") {
-    throw new Error("Bitte Geschlecht wählen (für Anrede).");
+    return { ok: false, error: "Bitte Geschlecht wählen (für Anrede)." };
   }
-  if (!senderName) throw new Error("Bitte deinen Namen als Absender/in eingeben.");
+  if (!senderName) {
+    return { ok: false, error: "Bitte deinen Namen als Absender/in eingeben." };
+  }
 
   const limit = await assertReferralSendAllowed(admin, user.id, to);
-  if (!limit.ok) throw new Error(limit.message);
+  if (!limit.ok) return { ok: false, error: limit.message };
 
-  const { awarded, points, referralToken } = await awardMembershipReferralPoints(user.id, to, {
-    firstName: recipientFirstName,
-    lastName: recipientLastName,
-    gender: recipientGender,
-  });
+  let sendId: string | null = null;
+  try {
+    const { awarded, points, referralToken, sendId: createdSendId } =
+      await awardMembershipReferralPoints(user.id, to, {
+        firstName: recipientFirstName,
+        lastName: recipientLastName,
+        gender: recipientGender,
+      });
+    sendId = createdSendId;
 
-  const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id, referralToken);
-  const composed = await composeMemberReferralEmail({
-    recipientFirstName,
-    senderName,
-    applicationLink,
-  });
-  const subject = composed.subject;
-  const text = composed.text;
-  const html = buildMemberReferralHtml(text);
+    const applicationLink = getMembershipApplicationFormUrlForReferrer(user.id, referralToken);
+    const composed = await composeMemberReferralEmail({
+      recipientFirstName,
+      senderName,
+      applicationLink,
+    });
+    const subject = composed.subject;
+    const text = composed.text;
+    const html = buildMemberReferralHtml(text);
 
-  const result = await sendEmailViaAccount({ to, subject, text, html });
+    // Werbe-Mails gehen an Nicht-Mitglieder — im Testmodus erlaubt (Massen-Mails bleiben geschützt).
+    const result = await sendEmailWithLog({
+      to,
+      subject,
+      text,
+      html,
+      bypassTestAllowlist: true,
+      templateKey: EMAIL_TEMPLATE_KEYS.membershipReferralInvite,
+      context: { kind: "member_referral_invite", sender_id: user.id, send_id: sendId },
+    });
 
-  if (!result.ok) {
-    if (result.skipped) {
-      throw new Error(
-        "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
-      );
+    if (!result.ok) {
+      if (sendId) await rollbackMembershipReferralSend(sendId, user.id);
+      return { ok: false, error: describeEmailSendFailure(result) };
     }
-    throw new Error(result.error ?? "E-Mail konnte nicht gesendet werden (SMTP prüfen).");
+
+    void evaluateAndMaybeFlagReferrer(admin, user.id).catch((e) =>
+      console.error("[referral-abuse] after send:", e),
+    );
+
+    return { ok: true as const, pointsAwarded: awarded ? points : 0 };
+  } catch (e) {
+    if (sendId) await rollbackMembershipReferralSend(sendId, user.id);
+    const msg = e instanceof Error ? e.message : "Einladung fehlgeschlagen";
+    // Next.js-Digest-Texte nicht an die UI durchreichen
+    if (/Server Components render|digest property/i.test(msg)) {
+      return {
+        ok: false,
+        error: "Einladung fehlgeschlagen. Bitte erneut versuchen oder den Vorstand informieren.",
+      };
+    }
+    return { ok: false, error: msg };
   }
-
-  void evaluateAndMaybeFlagReferrer(admin, user.id).catch((e) =>
-    console.error("[referral-abuse] after send:", e),
-  );
-
-  return { ok: true as const, pointsAwarded: awarded ? points : 0 };
 }
 
 export async function sendMemberReferralReminderAction(sendId: string) {
@@ -203,19 +235,17 @@ export async function sendMemberReferralReminderAction(sendId: string) {
   });
   const html = buildMemberReferralReminderHtml(text);
 
-  const result = await sendEmailViaAccount({
+  const result = await sendEmailWithLog({
     to: send.recipient_email,
     subject,
     text,
     html,
+    bypassTestAllowlist: true,
+    templateKey: EMAIL_TEMPLATE_KEYS.membershipReferralReminder,
+    context: { kind: "member_referral_reminder", sender_id: user.id, send_id: send.id },
   });
   if (!result.ok) {
-    if (result.skipped) {
-      throw new Error(
-        "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
-      );
-    }
-    throw new Error(result.error ?? "E-Mail konnte nicht gesendet werden (SMTP prüfen).");
+    throw new Error(describeEmailSendFailure(result));
   }
 
   const nowIso = new Date().toISOString();
