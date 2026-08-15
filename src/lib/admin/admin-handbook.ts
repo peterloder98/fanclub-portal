@@ -942,7 +942,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Jeden Morgen prüft die App automatisch, wer Geburtstag hat (aktive Mitglieder mit hinterlegtem Geburtsdatum). Für jede Person erscheint ein Glückwunsch-Beitrag im Feed (Dashboard) — freigeschaltet, mit Fanclub-Absender. Das Geburtstagskind erhält zusätzlich eine In-App-Benachrichtigung.",
+            text: "Jeden Morgen prüft die App automatisch, wer Geburtstag hat (aktive Mitglieder mit hinterlegtem Geburtsdatum). Für jede Person erscheint ein Glückwunsch-Beitrag im Feed (Dashboard) — für alle Mitglieder sichtbar und kommentierbar, mit Fanclub-Absender. Das Geburtstagskind erhält zusätzlich eine In-App-Benachrichtigung.",
           },
           {
             type: "ol",
@@ -956,7 +956,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Ihr ändert nur die Textvorlagen. Den täglichen Versand startet die App selbst — keine manuelle Freigabe nötig.",
+            text: "Geburtstags-Beiträge sind Community-Posts: alle Mitglieder sehen sie auf der Startseite und dürfen gratulieren (Kommentare/Reaktionen). Das gilt auch schon im Soft-Launch vor dem offiziellen Start. Ihr ändert nur die Textvorlagen — den täglichen Beitrag startet die App selbst, ohne manuelle Freigabe.",
           },
           {
             type: "link",
@@ -973,7 +973,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Offizieller Start: 16.08.2026 um 10:00 Uhr. Ab App-Zugang (ca. 13.08.) können sich Mitglieder anmelden, Profil und Foto pflegen, die Kennenlern-Fragen beantworten und im Gruppenchat schreiben. Posts, Kommentare, Umfragen und Gewinnspiele bleiben bis zum Start gesperrt.",
+            text: "Offizieller Start: 16.08.2026 um 10:00 Uhr. Ab App-Zugang (ca. 13.08.) können sich Mitglieder anmelden, Profil und Foto pflegen, die Kennenlern-Fragen beantworten, im Gruppenchat schreiben und unter Geburtstags-Beiträgen im Feed gratulieren. Eigene Posts, allgemeine Kommentare, Umfragen und Gewinnspiele bleiben bis zum Start gesperrt.",
           },
           {
             type: "ol",
@@ -985,7 +985,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Am 13.08.: Registrierungs-Mails an alle aktiven Mitglieder senden (Skript send-app-access-all-members.ts).",
               "Reiseinformationen bleiben ausgeblendet (kommen später).",
               "Live mit Anni: Leerhinweis „kein Termin“ ist aktiv; bei Bedarf LiveKit und Anni-Mail (booking@anniperka.de) prüfen.",
-              "Am 16.08. um 10:00: Soft-Launch-Sperre für Feed/Umfragen/Gewinnspiele endet automatisch — kurz Posts und Kommentare testen.",
+              "Am 16.08. um 10:00: Soft-Launch-Sperre für eigene Posts/Umfragen/Gewinnspiele endet automatisch — kurz Posts und Kommentare testen. Geburtstagsgratulationen waren schon vorher freigeschaltet.",
             ],
           },
           {

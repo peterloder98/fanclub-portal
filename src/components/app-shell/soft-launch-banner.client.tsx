@@ -60,8 +60,8 @@ export function SoftLaunchBanner({ className }: { className?: string }) {
         className,
       )}
     >
-      Offizieller Start am <strong>{PORTAL_LAUNCH_LABEL_DE}</strong> — Profil, Kennenlernen und Chat
-      sind schon frei; Posts, Kommentare, Umfragen und Gewinnspiele folgen dann.
+      Offizieller Start am <strong>{PORTAL_LAUNCH_LABEL_DE}</strong> — Profil, Kennenlernen, Chat und
+      Geburtstagsgratulationen sind schon frei; eigene Posts, Umfragen und Gewinnspiele folgen dann.
     </div>
   );
 }

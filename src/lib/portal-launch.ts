@@ -5,9 +5,10 @@
  *   - Profil/Stammdaten (inkl. Avatar) bearbeiten
  *   - Willkommen-/Kennenlern-Fragen beantworten
  *   - im Gruppenchat schreiben
+ *   - unter Geburtstags-Beiträgen im Feed kommentieren/reagieren
  *
- * Gesperrt bis Go-Live: Posts, Kommentare, Reaktionen, Umfragen, Gewinnspiele,
- * Termin-Zusagen, Live-Schreiben usw. Admins sind von der Schreibsperre ausgenommen.
+ * Gesperrt bis Go-Live: eigene Posts, allgemeine Kommentare/Reaktionen, Umfragen,
+ * Gewinnspiele, Termin-Zusagen, Live-Schreiben usw. Admins sind von der Schreibsperre ausgenommen.
  */
 
 /** 16.08.2026 10:00 Europe/Berlin = 08:00 UTC */
@@ -18,7 +19,7 @@ export const PORTAL_LAUNCH_LABEL_DE = "16.08.2026 um 10:00";
 
 /** Für Community-Schreiben (Posts, Kommentare, Umfragen, Gewinnspiele, …). */
 export const BROWSE_ONLY_WRITE_BLOCKED_MESSAGE =
-  `Offizieller Start am ${PORTAL_LAUNCH_LABEL_DE}. Bis dahin sind Posts, Kommentare, Umfragen und Gewinnspiele noch gesperrt — Profil, Kennenlernen und Chat sind schon frei.`;
+  `Offizieller Start am ${PORTAL_LAUNCH_LABEL_DE}. Bis dahin sind eigene Posts, allgemeine Kommentare, Umfragen und Gewinnspiele noch gesperrt — Profil, Kennenlernen, Chat und Geburtstagsgratulationen sind schon frei.`;
 
 export function isPortalFullyLive(now: Date | number = Date.now()): boolean {
   const t = typeof now === "number" ? now : now.getTime();
@@ -36,7 +37,7 @@ export function isAdminRole(role: string | null | undefined): boolean {
 
 /**
  * Community-Schreiben (Feed, Kommentare, Umfragen, Gewinnspiele, RSVP, Live …).
- * Soft-Launch: nur Admins. Chat/Profil/Intro haben eigene Freigabe (immer erlaubt).
+ * Soft-Launch: nur Admins. Chat/Profil/Intro/Geburtstagsposts haben eigene Freigabe.
  */
 export function canMemberWrite(role: string | null | undefined, now: Date | number = Date.now()): boolean {
   if (isAdminRole(role)) return true;
@@ -45,6 +46,19 @@ export function canMemberWrite(role: string | null | undefined, now: Date | numb
 
 /** Gruppenchat: bereits im Soft-Launch für alle Mitglieder freigeschaltet. */
 export function canMemberChat(role: string | null | undefined, _now: Date | number = Date.now()): boolean {
+  void role;
+  void _now;
+  return true;
+}
+
+/**
+ * Geburtstags-Beiträge im Feed: für alle Mitglieder sichtbar und schon im Soft-Launch
+ * kommentier-/reagierbar (Gratulationen zur Community gehören zum Soft-Launch).
+ */
+export function canMemberEngageBirthdayPost(
+  role: string | null | undefined,
+  _now: Date | number = Date.now(),
+): boolean {
   void role;
   void _now;
   return true;

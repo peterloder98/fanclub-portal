@@ -158,7 +158,7 @@ export function BirthdayTemplatesPanel() {
           <p>
             Täglich um <strong>08:00 (Berlin)</strong> wird pro Geburtstagskind ein Post erstellt.
             Die Vorlage wird per Hash aus Mitglied-ID und Datum gewählt — gleiches Kind, gleicher Tag =
-            immer dieselbe Vorlage.
+            immer dieselbe Vorlage. Alle Mitglieder sehen den Beitrag im Feed und dürfen kommentieren.
           </p>
           <p>
             Angeheftet bis <strong>23:59</strong>. Cron:{" "}

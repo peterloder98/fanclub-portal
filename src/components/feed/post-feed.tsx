@@ -49,7 +49,11 @@ import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/com
 import { ScrollHintBox } from "@/components/ui/scroll-hint-box";
 import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
 import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
-import { BROWSE_ONLY_WRITE_BLOCKED_MESSAGE, canMemberWrite } from "@/lib/portal-launch";
+import {
+  BROWSE_ONLY_WRITE_BLOCKED_MESSAGE,
+  canMemberEngageBirthdayPost,
+  canMemberWrite,
+} from "@/lib/portal-launch";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import { PostReactionPicker } from "@/components/feed/post-reaction-picker";
 import {
@@ -460,6 +464,12 @@ function PostFeedInner({
     me &&
     (post.isBirthday ? me.role === "admin" : me.id === post.authorId || me.role === "admin");
 
+  const canEngagePost = (post: FeedPost | undefined) => {
+    if (!me || !post) return false;
+    if (canMemberWrite(me.role)) return true;
+    return Boolean(post.isBirthday) && canMemberEngageBirthdayPost(me.role);
+  };
+
   useEffect(() => {
     async function loadMeAndFeed() {
       try {
@@ -530,6 +540,45 @@ function PostFeedInner({
             throw withPin.error;
           } else {
             postsData = withPin.data as PostRow[] | null;
+          }
+        }
+
+        // Heutige Geburtstagsposts immer nachladen (sichtbar für alle, auch wenn Limit 20 sie sonst auslässt).
+        {
+          const todayBerlin = new Intl.DateTimeFormat("en-CA", {
+            timeZone: "Europe/Berlin",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+          }).format(new Date());
+          let birthdayData: PostRow[] | null = null;
+          const withPinBday = await supabase
+            .from("posts")
+            .select(
+              "id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,is_pinned,pinned_at",
+            )
+            .eq("is_birthday", true)
+            .eq("birthday_date", todayBerlin)
+            .limit(30);
+          if (withPinBday.error && /is_pinned|pinned_at/i.test(withPinBday.error.message)) {
+            const withoutPinBday = await supabase
+              .from("posts")
+              .select(
+                "id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date",
+              )
+              .eq("is_birthday", true)
+              .eq("birthday_date", todayBerlin)
+              .limit(30);
+            if (!withoutPinBday.error) birthdayData = withoutPinBday.data as PostRow[] | null;
+          } else if (!withPinBday.error) {
+            birthdayData = withPinBday.data as PostRow[] | null;
+          }
+          if (birthdayData?.length) {
+            const byId = new Map((postsData ?? []).map((p) => [p.id, p]));
+            for (const row of birthdayData) {
+              if (!byId.has(row.id)) byId.set(row.id, row);
+            }
+            postsData = Array.from(byId.values());
           }
         }
 
@@ -955,7 +1004,7 @@ function PostFeedInner({
     fromRect: { left: number; top: number; width: number; height: number } | null,
   ) {
     if (!me || likeBusy[post.id]) return;
-    if (!canMemberWrite(me.role)) {
+    if (!canEngagePost(post)) {
       setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
       return;
     }
@@ -1037,7 +1086,8 @@ function PostFeedInner({
 
   async function toggleCommentLike(postId: string, comment: FeedComment) {
     if (!me || commentLikeBusy[comment.id]) return;
-    if (!canMemberWrite(me.role)) {
+    const parentPost = posts.find((p) => p.id === postId);
+    if (!canEngagePost(parentPost)) {
       setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
       return;
     }
@@ -1084,11 +1134,11 @@ function PostFeedInner({
     const text = (draftByPostId[postId] ?? "").trim();
     if (!text) return;
     if (!me) return;
-    if (!canMemberWrite(me.role)) {
+    const post = posts.find((p) => p.id === postId);
+    if (!canEngagePost(post)) {
       setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
       return;
     }
-    const post = posts.find((p) => p.id === postId);
     const replyCtx =
       replyingTo?.postId === postId ? replyingTo : null;
     const parentCommentId = replyCtx
