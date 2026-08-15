@@ -31,6 +31,8 @@ import {
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
+import { buildMemberApplicationPaymentDraft } from "@/lib/email/application-payment-draft";
+import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 import {
   listOpenMeetingCharges,
   markMeetingChargePaid,
@@ -322,59 +324,45 @@ export async function sendMemberPaymentReminderEmail(input: {
 /**
  * Vorlage „Antrag eingegangen + bitte zahlen“ — für manuell erfasste Papier-Anträge
  * (kein App-Zugangslink, nur Beitragsinfo; VWZ wie Online-Antrag).
+ * Fehler als Rückgabewert (kein throw) — sonst undurchsichtige Digests in Production.
  */
 export async function getMemberApplicationPaymentDraft(
   userId: string,
   signatureId?: string,
-) {
-  await requireAdminAction();
-  const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select("id,first_name,last_name,email,gender")
-    .eq("id", userId)
-    .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
-  if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
-
-  const { data: membership } = await admin
-    .from("memberships")
-    .select("fee_cents")
-    .eq("user_id", userId)
-    .order("end_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const { signatures, defaultSignatureId, signatureTexts } = await loadSignaturePickerData();
-  const useSignatureId = signatureId ?? defaultSignatureId;
-  const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
-  const bankReference = formatApplicationPaymentReference(
-    profile.first_name ?? "",
-    profile.last_name ?? "",
-  );
-
-  const rendered = await renderEmailFromTemplate(
-    EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,
-    {
-      first_name: profile.first_name?.trim() || "Fan",
-      gender: profile.gender ?? "",
-      last_name: profile.last_name?.trim() || "",
-      applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
-      email: profile.email,
-      fee_eur: feeEur,
-      ...clubBankEmailVars({ bankReference }),
-    },
-    { signatureId: useSignatureId },
-  );
-
-  return {
-    subject: rendered.subject,
-    body: rendered.text,
-    to: profile.email,
-    signatures,
-    defaultSignatureId: useSignatureId,
-    signatureTexts,
-  };
+): Promise<
+  | {
+      ok: true;
+      subject: string;
+      body: string;
+      to: string;
+      signatures: Awaited<ReturnType<typeof loadSignaturePickerData>>["signatures"];
+      defaultSignatureId: string;
+      signatureTexts: Record<string, string>;
+    }
+  | { ok: false; error: string }
+> {
+  try {
+    await requireAdminAction();
+    const draft = await buildMemberApplicationPaymentDraft(userId, signatureId);
+    return {
+      ok: true,
+      subject: draft.subject,
+      body: draft.body,
+      to: draft.to,
+      signatures: draft.signatures,
+      defaultSignatureId: draft.defaultSignatureId,
+      signatureTexts: draft.signatureTexts,
+    };
+  } catch (e) {
+    console.error("[members] Antrags-Zahlungsinfo-Vorlage:", e);
+    return {
+      ok: false,
+      error: userFacingActionError(
+        e,
+        "Vorlage „Antrag / Zahlungsinfo“ konnte nicht geladen werden. Bitte Seite neu laden oder erneut auf „Zahlungsinfo senden“ tippen.",
+      ),
+    };
+  }
 }
 
 export async function sendMemberApplicationPaymentEmail(input: {
@@ -382,104 +370,119 @@ export async function sendMemberApplicationPaymentEmail(input: {
   subject: string;
   body: string;
   signatureId: string;
-}) {
-  const { user } = await requireAdminAction();
-  const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select("id,first_name,last_name,email,gender")
-    .eq("id", input.userId)
-    .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
-  if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { user } = await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const { data: profile, error: pErr } = await admin
+      .from("profiles")
+      .select("id,first_name,last_name,email,gender")
+      .eq("id", input.userId)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
 
-  const { data: membership } = await admin
-    .from("memberships")
-    .select("fee_cents")
-    .eq("user_id", input.userId)
-    .order("end_date", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    const { data: membership } = await admin
+      .from("memberships")
+      .select("fee_cents")
+      .eq("user_id", input.userId)
+      .order("end_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-  const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
-  const bankReference = formatApplicationPaymentReference(
-    profile.first_name ?? "",
-    profile.last_name ?? "",
-  );
+    const feeEur = `${((membership?.fee_cents ?? 1500) / 100).toFixed(2).replace(".", ",")} EUR`;
+    const bankReference = formatApplicationPaymentReference(
+      profile.first_name ?? "",
+      profile.last_name ?? "",
+    );
 
-  const rendered = await renderEmailFromTemplate(
-    EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,
-    {
-      first_name: profile.first_name?.trim() || "Fan",
-      gender: profile.gender ?? "",
-      last_name: profile.last_name?.trim() || "",
-      applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
-      email: profile.email,
-      fee_eur: feeEur,
-      ...clubBankEmailVars({ bankReference }),
-    },
-    { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
-  );
+    const rendered = await renderEmailFromTemplate(
+      EMAIL_TEMPLATE_KEYS.membershipApplicationReceived,
+      {
+        first_name: profile.first_name?.trim() || "Fan",
+        gender: profile.gender ?? "",
+        last_name: profile.last_name?.trim() || "",
+        applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
+        email: profile.email,
+        fee_eur: feeEur,
+        ...clubBankEmailVars({ bankReference }),
+      },
+      { signatureId: input.signatureId || CLUB_SIGNATURE_ID },
+    );
 
-  const attachments = rendered.signatureAttachment
-    ? [
-        {
-          filename: rendered.signatureAttachment.filename,
-          content: Buffer.from(rendered.signatureAttachment.content),
-          contentType: rendered.signatureAttachment.contentType,
-          cid: rendered.signatureAttachment.cid,
-        },
-      ]
-    : undefined;
+    const attachments = rendered.signatureAttachment
+      ? [
+          {
+            filename: rendered.signatureAttachment.filename,
+            content: Buffer.from(rendered.signatureAttachment.content),
+            contentType: rendered.signatureAttachment.contentType,
+            cid: rendered.signatureAttachment.cid,
+          },
+        ]
+      : undefined;
 
-  const subject = input.subject.trim() || rendered.subject;
-  const text = input.body.trim() || rendered.text;
-  const html = input.body.trim()
-    ? buildHtmlFromPlain(text, rendered.signatureHtml, rendered.signatureText)
-    : rendered.html;
+    const subject = input.subject.trim() || rendered.subject;
+    const text = input.body.trim() || rendered.text;
+    const html = input.body.trim()
+      ? buildHtmlFromPlain(text, rendered.signatureHtml, rendered.signatureText)
+      : rendered.html;
 
-  const result = await sendEmailViaAccount({
-    to: profile.email,
-    subject,
-    text,
-    html,
-    attachments,
-  });
+    const result = await sendEmailViaAccount({
+      to: profile.email,
+      subject,
+      text,
+      html,
+      attachments,
+    });
 
-  if (!result.ok) {
-    if (result.skipped) {
-      const reason = "reason" in result ? String(result.reason) : "";
-      if (reason.includes("outbound_test_mode")) {
-        throw new Error(
-          "E-Mail blockiert: Testmodus aktiv (nur Vorstände und offizielle App-Adresse). EMAIL_OUTBOUND_MODE=live erst nach Go-Live setzen.",
-        );
+    if (!result.ok) {
+      if (result.skipped) {
+        const reason = "reason" in result ? String(result.reason) : "";
+        if (reason.includes("outbound_test_mode")) {
+          return {
+            ok: false,
+            error:
+              "E-Mail blockiert: Testmodus aktiv (nur Vorstände und offizielle App-Adresse). EMAIL_OUTBOUND_MODE=live erst nach Go-Live setzen.",
+          };
+        }
+        return {
+          ok: false,
+          error:
+            "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
+        };
       }
-      throw new Error(
-        "E-Mail konnte nicht gesendet werden: Kein SMTP-Konto hinterlegt (Admin → E-Mail / SMTP).",
-      );
+      return { ok: false, error: "E-Mail konnte nicht gesendet werden (SMTP prüfen)." };
     }
-    throw new Error("E-Mail konnte nicht gesendet werden (SMTP prüfen).");
+
+    const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
+    await logMemberActivity({
+      userId: profile.id,
+      eventType: MEMBER_ACTIVITY_TYPES.paymentReminderSent,
+      title: "Antrags-/Zahlungsinfo per E-Mail gesendet",
+      details: `Betreff: ${subject} · VWZ: ${bankReference}`,
+      linkUrl: base ? `${base}/admin/members/${profile.id}` : null,
+      linkLabel: "Mitgliedsdatensatz",
+      createdBy: user.id,
+      metadata: {
+        signature_id: input.signatureId,
+        kind: "application_payment_info",
+        bank_reference: bankReference,
+      },
+    }).catch((e) => console.error("[activity] Antrags-Zahlungsinfo:", e));
+
+    revalidatePath(`/admin/members/${profile.id}`);
+    revalidatePath("/admin/members");
+    return { ok: true };
+  } catch (e) {
+    console.error("[members] Antrags-Zahlungsinfo senden:", e);
+    return {
+      ok: false,
+      error: userFacingActionError(
+        e,
+        "Zahlungsinfo konnte nicht gesendet werden. Bitte erneut versuchen oder SMTP prüfen.",
+      ),
+    };
   }
-
-  const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
-  await logMemberActivity({
-    userId: profile.id,
-    eventType: MEMBER_ACTIVITY_TYPES.paymentReminderSent,
-    title: "Antrags-/Zahlungsinfo per E-Mail gesendet",
-    details: `Betreff: ${subject} · VWZ: ${bankReference}`,
-    linkUrl: base ? `${base}/admin/members/${profile.id}` : null,
-    linkLabel: "Mitgliedsdatensatz",
-    createdBy: user.id,
-    metadata: {
-      signature_id: input.signatureId,
-      kind: "application_payment_info",
-      bank_reference: bankReference,
-    },
-  }).catch((e) => console.error("[activity] Antrags-Zahlungsinfo:", e));
-
-  revalidatePath(`/admin/members/${profile.id}`);
-  revalidatePath("/admin/members");
-  return { ok: true };
 }
 
 export async function suspendMemberAppAccess(input: { userId: string; reason?: string }) {

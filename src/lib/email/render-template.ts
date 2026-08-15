@@ -430,7 +430,13 @@ export async function renderEmailFromTemplate(
   vars: Record<string, string>,
   opts?: { signatureId?: string },
 ) {
-  let row = await getEmailTemplate(key);
+  // DB-Fehler dürfen Hardcoded-Fallbacks nicht blockieren (sonst undurchsichtige RSC-Digests).
+  let row: EmailTemplateRow | null = null;
+  try {
+    row = await getEmailTemplate(key);
+  } catch (e) {
+    console.error("[email] getEmailTemplate failed:", key, e);
+  }
   // Antrag-Bestätigung: Code-Vorlage ist maßgeblich (Überweisungsblock + VWZ).
   if (key === EMAIL_TEMPLATE_KEYS.membershipApplicationReceived) {
     row = {

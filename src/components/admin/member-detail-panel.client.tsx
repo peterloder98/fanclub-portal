@@ -48,6 +48,15 @@ import {
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
 import { cn } from "@/lib/cn";
+import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
+
+export type InitialPaperMailDraft = {
+  subject: string;
+  body: string;
+  signatures: MailSignatureOption[];
+  defaultSignatureId: string;
+  signatureTexts: Record<string, string>;
+};
 
 export type MemberWarningRow = {
   id: string;
@@ -134,6 +143,8 @@ export function MemberDetailPanel({
   contributions = [],
   autoOpenReminder = false,
   autoOpenPaperMail = false,
+  initialPaperMailDraft = null,
+  initialPaperMailError = null,
 }: {
   member: MemberDetailData;
   warnings: MemberWarningRow[];
@@ -145,6 +156,9 @@ export function MemberDetailPanel({
   autoOpenReminder?: boolean;
   /** Nach manuellem Papier-Antrag: Dialog mit Vorlage „Antrag eingegangen + zahlen“ */
   autoOpenPaperMail?: boolean;
+  /** Vom Server vorbereitet (vermeidet Server-Action-Digest beim Auto-Open) */
+  initialPaperMailDraft?: InitialPaperMailDraft | null;
+  initialPaperMailError?: string | null;
 }) {
   const router = useRouter();
   const openContributions = contributions
@@ -220,19 +234,37 @@ export function MemberDetailPanel({
     setPaymentCalendarYear(calendarYear ?? null);
     setPaymentMailKind(kind);
     try {
-      const draft =
-        kind === "application"
-          ? await getMemberApplicationPaymentDraft(member.id)
-          : await getMemberPaymentReminderDraft(member.id, undefined, calendarYear);
-      setPaymentSubject(draft.subject);
-      setPaymentBody(draft.body);
-      setPaymentSignatures(draft.signatures);
-      setPaymentSignatureId(draft.defaultSignatureId);
-      setPaymentSignatureTexts(draft.signatureTexts);
-      setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+      if (kind === "application") {
+        const draft = await getMemberApplicationPaymentDraft(member.id);
+        if (!draft.ok) {
+          setActionError(draft.error);
+          return;
+        }
+        setPaymentSubject(draft.subject);
+        setPaymentBody(draft.body);
+        setPaymentSignatures(draft.signatures);
+        setPaymentSignatureId(draft.defaultSignatureId);
+        setPaymentSignatureTexts(draft.signatureTexts);
+        setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+      } else {
+        const draft = await getMemberPaymentReminderDraft(member.id, undefined, calendarYear);
+        setPaymentSubject(draft.subject);
+        setPaymentBody(draft.body);
+        setPaymentSignatures(draft.signatures);
+        setPaymentSignatureId(draft.defaultSignatureId);
+        setPaymentSignatureTexts(draft.signatureTexts);
+        setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+      }
       setShowPaymentDialog(true);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : "Vorlage konnte nicht geladen werden");
+      setActionError(
+        userFacingActionError(
+          e,
+          kind === "application"
+            ? "Vorlage „Antrag / Zahlungsinfo“ konnte nicht geladen werden. Bitte erneut versuchen."
+            : "Zahlungserinnerungs-Vorlage konnte nicht geladen werden. Bitte erneut versuchen.",
+        ),
+      );
     } finally {
       setPaymentLoading(false);
     }
@@ -240,12 +272,39 @@ export function MemberDetailPanel({
 
   const isApplied = member.membership?.status === "applied";
 
+  function applyPaperMailDraft(draft: InitialPaperMailDraft) {
+    setPaymentMailKind("application");
+    setPaymentSubject(draft.subject);
+    setPaymentBody(draft.body);
+    setPaymentSignatures(draft.signatures);
+    setPaymentSignatureId(draft.defaultSignatureId);
+    setPaymentSignatureTexts(draft.signatureTexts);
+    setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+    setShowPaymentDialog(true);
+  }
+
   useEffect(() => {
     if (!member.email) return;
+
     if (autoOpenPaperMail) {
-      void openPaymentDialog(undefined, "application");
+      if (initialPaperMailDraft) {
+        applyPaperMailDraft(initialPaperMailDraft);
+      } else if (initialPaperMailError) {
+        setActionError(initialPaperMailError);
+      } else {
+        void openPaymentDialog(undefined, "application");
+      }
+      // Query-Param entfernen ohne RSC-Remount (sonst schließt der Dialog wieder)
+      if (typeof window !== "undefined") {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("paperMail")) {
+          url.searchParams.delete("paperMail");
+          window.history.replaceState(null, "", url.pathname + (url.search ? url.search : ""));
+        }
+      }
       return;
     }
+
     if (autoOpenReminder) {
       void openPaymentDialog(undefined, isApplied ? "application" : "reminder");
     }
@@ -993,12 +1052,16 @@ export function MemberDetailPanel({
                 startTransition(async () => {
                   try {
                     if (paymentMailKind === "application") {
-                      await sendMemberApplicationPaymentEmail({
+                      const result = await sendMemberApplicationPaymentEmail({
                         userId: member.id,
                         subject: paymentSubject,
                         body: paymentBody,
                         signatureId: paymentSignatureId,
                       });
+                      if (!result.ok) {
+                        setActionError(result.error);
+                        return;
+                      }
                     } else {
                       await sendMemberPaymentReminderEmail({
                         userId: member.id,
@@ -1011,7 +1074,12 @@ export function MemberDetailPanel({
                     setShowPaymentDialog(false);
                     router.refresh();
                   } catch (e) {
-                    setActionError(e instanceof Error ? e.message : "Versand fehlgeschlagen");
+                    setActionError(
+                      userFacingActionError(
+                        e,
+                        "E-Mail konnte nicht gesendet werden. Bitte erneut versuchen oder SMTP prüfen.",
+                      ),
+                    );
                   }
                 });
               }}

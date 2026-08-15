@@ -14,6 +14,9 @@ import {
   resolveAppRegistrationStatus,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
+import { buildMemberApplicationPaymentDraft } from "@/lib/email/application-payment-draft";
+import type { ApplicationPaymentMailDraft } from "@/lib/email/application-payment-draft";
+import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 
 export const dynamic = "force-dynamic";
 
@@ -177,6 +180,20 @@ export default async function AdminMemberDetailPage({
   const contributions = await getMemberContributionYears(id).catch(() => []);
   const appReg = await loadAppRegistration(admin, id);
 
+  let initialPaperMailDraft: ApplicationPaymentMailDraft | null = null;
+  let initialPaperMailError: string | null = null;
+  if (paperMail === "1" && profile.email) {
+    try {
+      initialPaperMailDraft = await buildMemberApplicationPaymentDraft(id);
+    } catch (e) {
+      console.error("[admin/members] paperMail draft:", e);
+      initialPaperMailError = userFacingActionError(
+        e,
+        "Vorlage „Antrag / Zahlungsinfo“ konnte nicht geladen werden. Bitte „Zahlungsinfo senden“ erneut tippen.",
+      );
+    }
+  }
+
   const member: MemberDetailData = {
     id: profile.id,
     membership_number: profile.membership_number,
@@ -233,6 +250,18 @@ export default async function AdminMemberDetailPage({
           contributions={contributions}
           autoOpenReminder={remind === "1"}
           autoOpenPaperMail={paperMail === "1"}
+          initialPaperMailDraft={
+            initialPaperMailDraft
+              ? {
+                  subject: initialPaperMailDraft.subject,
+                  body: initialPaperMailDraft.body,
+                  signatures: initialPaperMailDraft.signatures,
+                  defaultSignatureId: initialPaperMailDraft.defaultSignatureId,
+                  signatureTexts: initialPaperMailDraft.signatureTexts,
+                }
+              : null
+          }
+          initialPaperMailError={initialPaperMailError}
         />
         </div>
       </main>
