@@ -15,7 +15,10 @@ import {
   consumeAccountSetupTokensForUser,
   lookupValidAccountSetupToken,
 } from "@/lib/auth/account-setup-token";
-import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
+import {
+  getAccountAccessFlowForUser,
+  markAppAccessRegistered,
+} from "@/lib/auth/account-access-flow";
 
 const schema = z.object({
   birthdate: z.string().min(1, "Geburtsdatum ist Pflicht."),
@@ -213,19 +216,7 @@ export async function completeAccountSetup(input: {
   });
   if (pwErr) return { ok: false, error: pwErr.message };
 
-  const nowIso = new Date().toISOString();
-  const { error: regErr } = await admin
-    .from("profiles")
-    .update({
-      app_registration_status: "registered",
-      app_registered_at: nowIso,
-      app_registration_deleted_at: null,
-    })
-    .eq("id", userId);
-  if (regErr && !/app_registration_status|does not exist/i.test(regErr.message)) {
-    console.error("[setup-account] Registrierungsstatus:", regErr.message);
-  }
-
+  await markAppAccessRegistered(userId);
   await consumeAccountSetupTokensForUser(userId);
   await clearSetupClaim();
   return { ok: true };

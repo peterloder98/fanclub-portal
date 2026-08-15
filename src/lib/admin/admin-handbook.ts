@@ -242,7 +242,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "p",
-            text: "Wenn ein bereits registriertes Mitglied „Passwort vergessen“ nutzt, geht nur der Passwort-Reset — nicht die komplette Ersteinrichtung. Bei Status „Offen“ bleibt der Einrichtungs-Flow (inkl. Geburtsdatum).",
+            text: "Wenn ein bereits registriertes Mitglied „Passwort vergessen“ nutzt, geht nur der Passwort-Reset — nicht die komplette Ersteinrichtung. Alte Einrichtungs-Links leiten registrierte Personen ebenfalls auf den Passwort-Reset um. Bei Status „Offen“ (noch nie eingerichtet) bleibt der Einrichtungs-Flow inkl. Geburtsdatum.",
+          },
+          {
+            type: "note",
+            text: "Die Erkennung „schon in der App“ nutzt mehrere Hinweise (Status, Registrierungsdatum, letzte App-Aktivität, letzter Login). Deshalb landet z. B. Janine nach „Passwort vergessen“ nur beim neuen Passwort — ohne Geburtsdatum und ohne erneute Registrierung.",
           },
           {
             type: "link",
@@ -732,6 +736,42 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
         ],
       },
+      {
+        id: "zugang-passwort",
+        number: "5.2",
+        title: "Zugang & Passwort vergessen",
+        summary: "Ersteinrichtung vs. nur neues Passwort",
+        blocks: [
+          {
+            type: "p",
+            text: "Mitglieder mit Problemen beim Anmelden sollen selbst unter Login → „Passwort vergessen“ einen neuen Link anfordern. Der Vorstand muss das nicht manuell auslösen.",
+          },
+          {
+            type: "ul",
+            items: [
+              "Schon in der App registriert (Passwort eingerichtet / schon angemeldet, z. B. Janine): Es geht nur ein Passwort-Reset — kein Geburtsdatum, keine erneute Registrierung.",
+              "Noch nie eingerichtet (Status „Offen“): Der Link führt zur Ersteinrichtung mit Geburtsdatum und Passwort — das ist so gewollt.",
+              "Alte Setup-Links von registrierten Mitgliedern leiten automatisch auf den Passwort-Reset um.",
+              "Der Link aus der Club-Mail bleibt gültig, bis das Passwort wirklich gesetzt ist (auch mehrmals und auf anderen Geräten). Jede neue Mail ersetzt den alten Link.",
+              "Schlägt der Versand fehl, erscheint eine Fehlermeldung — kein stiller Erfolg. Unter „E-Mail-Historie“ könnt ihr nachschauen, ob die Mail rausgegangen ist.",
+            ],
+          },
+          {
+            type: "note",
+            text: "Wenn jemand meldet, die Erfolgsmeldung käme ohne Mail: unter Admin → E-Mail-Historie prüfen. Bei echtem Versandfehler zeigt „Passwort vergessen“ einen Fehler — kein stiller Erfolg. Der E-Mail-Versand ist live; Mitglieder können jederzeit einen neuen Link anfordern.",
+          },
+          {
+            type: "link",
+            href: "/admin/settings/email-log",
+            label: "E-Mail-Historie",
+          },
+          {
+            type: "link",
+            href: "/forgot-password",
+            label: "Passwort vergessen (Mitglieder-Ansicht)",
+          },
+        ],
+      },
     ],
   },
   {
@@ -945,7 +985,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Einrichtungs- und Reset-Links: Zugangs-/Willkommens-Mails führen zur Ersteinrichtung (Geburtsdatum + Passwort). „Passwort vergessen“ bei bereits registrierten Mitgliedern sendet einen eigenen Reset-Link — nur neues Passwort, keine erneute Registrierung. Beide Links bleiben nutzbar, bis das Passwort gesetzt ist (auch mehrmals, auf anderen Geräten). Danach sind sie ungültig. Jede neue Mail ersetzt den alten Link.",
+            text: "Zugang & Passwort: Registrierte Mitglieder bekommen bei „Passwort vergessen“ nur den Passwort-Reset (kein Geburtsdatum). Noch offene Zugänge bekommen die Ersteinrichtung. Willkommens-/Zugangs-Mails für neue Mitglieder führen weiterhin zur Ersteinrichtung — aber nicht erneut, wenn jemand die App schon genutzt hat. Links bleiben bis zur Passwortvergabe wiederverwendbar; jede neue Mail ersetzt den alten Link. Details: Abschnitt 5.2.",
           },
           {
             type: "note",

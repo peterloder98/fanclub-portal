@@ -4,6 +4,7 @@ import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
+import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 
 const SIGNUP_MAX = 4;
@@ -26,6 +27,9 @@ function daysSince(iso: string | null | undefined, ref = new Date()): number | n
 
 async function buildSetupUrl(email: string, userId: string): Promise<string | null> {
   try {
+    // Keine Setup-Erinnerung an bereits registrierte (z. B. Login ohne last_app_active_at)
+    const flow = await getAccountAccessFlowForUser(userId);
+    if (flow === "password_reset") return null;
     const { setupUrl } = await rotateAccountSetupToken({ email, userId });
     return setupUrl;
   } catch (e) {

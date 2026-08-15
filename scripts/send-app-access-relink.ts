@@ -154,6 +154,14 @@ async function main() {
       bump("already-in-app");
       continue;
     }
+    // Zusätzlich Auth-Login: auch ohne last_app_active_at nicht erneut durch Setup jagen
+    {
+      const { data: auth } = await admin.auth.admin.getUserById(p.id);
+      if (auth.user?.last_sign_in_at) {
+        bump("already-signed-in");
+        continue;
+      }
+    }
     if (!emailRaw || isInvalidPlaceholderEmail(emailRaw)) {
       console.log(`⊘ skip invalid-email: Nr.${nr || "?"} ${p.first_name ?? ""} ${p.last_name ?? ""}`);
       bump("invalid-email");

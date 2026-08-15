@@ -1,3 +1,4 @@
+import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 import { loadDefaultMailSignature } from "@/lib/email/default-mail-signature";
 import {
@@ -6,6 +7,7 @@ import {
   EMAIL_PARAGRAPH_STYLE,
   wrapEmailDocument,
 } from "@/lib/email/email-layout";
+import { sendPasswordResetEmail } from "@/lib/email/password-reset";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 
@@ -126,6 +128,23 @@ export async function sendAppAccessRelinkEmail(input: {
   userId?: string;
   logContext?: Record<string, unknown>;
 }) {
+  // Bereits registriert → kein Ersteinrichtungs-Relink mit Geburtsdatum
+  if (input.userId) {
+    const flow = await getAccountAccessFlowForUser(input.userId);
+    if (flow === "password_reset") {
+      return sendPasswordResetEmail({
+        email: input.email,
+        firstName: input.firstName,
+        gender: input.gender,
+        userId: input.userId,
+        logContext: {
+          ...input.logContext,
+          redirected_from: "app_access_relink",
+        },
+      });
+    }
+  }
+
   const { setupUrl, userId } = await rotateAccountSetupToken({
     email: input.email,
     userId: input.userId,

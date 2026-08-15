@@ -10,6 +10,7 @@ import {
   createSetupClaimToken,
   verifySetupClaimToken,
 } from "@/lib/auth/setup-claim";
+import { markAppAccessRegistered } from "@/lib/auth/account-access-flow";
 import {
   consumeAccountSetupTokensForUser,
   lookupValidAccountSetupToken,
@@ -129,6 +130,7 @@ export async function completePasswordReset(input: {
   });
   if (pwErr) return { ok: false, error: pwErr.message };
 
+  await markAppAccessRegistered(userId);
   await consumeAccountSetupTokensForUser(userId);
   await clearSetupClaim();
   return { ok: true };

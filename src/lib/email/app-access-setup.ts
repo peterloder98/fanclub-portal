@@ -1,9 +1,11 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
+import { sendPasswordResetEmail } from "@/lib/email/password-reset";
 
 export async function sendAppAccessSetupEmail(input: {
   email: string;
@@ -12,7 +14,28 @@ export async function sendAppAccessSetupEmail(input: {
   userId?: string;
   /** Extra Felder für email_send_log.context (z. B. source, client_ip). */
   logContext?: Record<string, unknown>;
+  /**
+   * Wenn true: immer Setup-Mail (Caller hat Flow schon entschieden).
+   * Sonst: registrierte Nutzer → Passwort-Reset statt Ersteinrichtung.
+   */
+  forceSetup?: boolean;
 }) {
+  if (input.userId && !input.forceSetup) {
+    const flow = await getAccountAccessFlowForUser(input.userId);
+    if (flow === "password_reset") {
+      return sendPasswordResetEmail({
+        email: input.email,
+        firstName: input.firstName,
+        gender: input.gender,
+        userId: input.userId,
+        logContext: {
+          ...input.logContext,
+          redirected_from: "app_access_setup",
+        },
+      });
+    }
+  }
+
   const admin = createSupabaseAdminClient();
 
   let genderRaw = input.gender;

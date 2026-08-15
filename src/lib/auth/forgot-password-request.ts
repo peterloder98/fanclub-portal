@@ -1,8 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { sendAppAccessSetupEmail } from "@/lib/email/app-access-setup";
-import { sendPasswordResetEmail } from "@/lib/email/password-reset";
+import { sendAccountAccessEmail } from "@/lib/email/account-access-email";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
-import { resolveAppRegistrationStatus } from "@/lib/membership/app-registration";
+import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
 import { loadForgotPasswordProfileByEmail } from "@/lib/membership/load-registration-profile";
 
 /** Soft-Launch: eigener Versand über Club-SMTP — nicht Supabase /recover. */
@@ -79,7 +78,7 @@ export async function recentForgotPasswordIpCount(
  * Sendet frischen Setup- oder Passwort-Reset-Link über Club-SMTP.
  * Bereits registrierte Nutzer → nur Passwort-Reset (kein Geburtsdatum).
  * Noch offene Zugänge → Ersteinrichtung.
- * Antwort verrät nicht, ob die Adresse existiert.
+ * Antwort verrät nicht, ob die Adresse existiert — außer echter Versandfehler.
  */
 export async function requestForgotPasswordViaSmtp(input: {
   email: string;
@@ -113,45 +112,21 @@ export async function requestForgotPasswordViaSmtp(input: {
     return { ok: true, message: FORGOT_PASSWORD_OK_DE };
   }
 
-  const admin = createSupabaseAdminClient();
-  let lastSignInAt: string | null = null;
-  try {
-    const { data: authUser } = await admin.auth.admin.getUserById(profile.id);
-    lastSignInAt = authUser.user?.last_sign_in_at ?? null;
-  } catch {
-    // ignore — Status fällt auf Profilspalten zurück
-  }
-
-  const registration = resolveAppRegistrationStatus({
-    status: profile.app_registration_status,
-    registeredAt: profile.app_registered_at,
-    lastSignInAt,
-    lastAppActiveAt: profile.last_app_active_at,
-  });
-
+  const flow = await getAccountAccessFlowForUser(profile.id);
   const logContext = {
     source: "forgot_password",
     client_ip: ip,
-    registration_status: registration,
+    access_flow: flow,
   };
 
   try {
-    const result =
-      registration === "registered"
-        ? await sendPasswordResetEmail({
-            email: profile.email,
-            firstName: profile.first_name?.trim() || "Fan",
-            gender: profile.gender,
-            userId: profile.id,
-            logContext,
-          })
-        : await sendAppAccessSetupEmail({
-            email: profile.email,
-            firstName: profile.first_name?.trim() || "Fan",
-            gender: profile.gender,
-            userId: profile.id,
-            logContext,
-          });
+    const result = await sendAccountAccessEmail({
+      email: profile.email,
+      firstName: profile.first_name?.trim() || "Fan",
+      gender: profile.gender,
+      userId: profile.id,
+      logContext,
+    });
 
     if (!result.ok) {
       if ("skipped" in result && result.skipped) {
@@ -168,6 +143,10 @@ export async function requestForgotPasswordViaSmtp(input: {
           error: "E-Mail konnte gerade nicht gesendet werden. Bitte später erneut versuchen.",
         };
       }
+      return {
+        ok: false,
+        error: "E-Mail konnte gerade nicht gesendet werden. Bitte später erneut versuchen.",
+      };
     }
   } catch (e) {
     console.error("[forgot-password]", e);
