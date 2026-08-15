@@ -1,4 +1,10 @@
-/** Mitgliedsstandorte zu Karten-Clustern (Standard: 30 km Umkreis). */
+/** Mitgliedsstandorte → Regionen-Cluster (Datenschutz: keine Einzel-Heimatadressen). */
+
+import {
+  regionMapLabel,
+  snapToRegionalCenter,
+  type RegionalCenter,
+} from "@/lib/members/regional-centers";
 
 export type MemberMapMember = {
   userId: string;
@@ -22,20 +28,9 @@ export type MemberMapCluster = {
   lng: number;
   count: number;
   label: string;
+  regionName: string;
   members: MemberMapMember[];
 };
-
-const EARTH_KM = 6371;
-
-function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * EARTH_KM * Math.asin(Math.min(1, Math.sqrt(x)));
-}
 
 function memberFromPoint(p: MemberMapPoint): MemberMapMember {
   return {
@@ -45,51 +40,55 @@ function memberFromPoint(p: MemberMapPoint): MemberMapMember {
   };
 }
 
-export function clusterMemberPoints(
-  points: MemberMapPoint[],
-  maxKm = 30,
-): MemberMapCluster[] {
-  const clusters: {
-    lat: number;
-    lng: number;
-    count: number;
-    members: MemberMapMember[];
-  }[] = [];
+function centerForPoint(p: MemberMapPoint): RegionalCenter {
+  return snapToRegionalCenter(p.lat, p.lng, p.city || null);
+}
+
+/**
+ * Aggregiert Mitglieder je Regionalzentrum (nächste größere Stadt/Region).
+ * Einzelpins an Wohnadressen gibt es nicht.
+ */
+export function clusterMemberPoints(points: MemberMapPoint[]): MemberMapCluster[] {
+  const byRegion = new Map<
+    string,
+    { center: RegionalCenter; members: MemberMapMember[] }
+  >();
 
   for (const p of points) {
-    let placed = false;
-    for (const c of clusters) {
-      if (haversineKm(p, c) <= maxKm) {
-        const n = c.count + 1;
-        c.lat = (c.lat * c.count + p.lat) / n;
-        c.lng = (c.lng * c.count + p.lng) / n;
-        c.count = n;
-        c.members.push(memberFromPoint(p));
-        placed = true;
-        break;
-      }
-    }
-    if (!placed) {
-      clusters.push({
-        lat: p.lat,
-        lng: p.lng,
-        count: 1,
+    const center = centerForPoint(p);
+    const bucket = byRegion.get(center.id);
+    if (bucket) {
+      bucket.members.push(memberFromPoint(p));
+    } else {
+      byRegion.set(center.id, {
+        center,
         members: [memberFromPoint(p)],
       });
     }
   }
 
-  return clusters.map((c, i) => ({
-    id: `cluster-${i}`,
-    lat: c.lat,
-    lng: c.lng,
-    count: c.count,
-    label: c.count === 1 ? "1 Mitglied" : `${c.count} Mitglieder`,
-    members: [...c.members].sort((a, b) => a.name.localeCompare(b.name, "de")),
-  }));
+  return [...byRegion.values()]
+    .map(({ center, members }) => {
+      const sorted = [...members].sort((a, b) => a.name.localeCompare(b.name, "de"));
+      return {
+        id: center.id,
+        lat: center.lat,
+        lng: center.lng,
+        count: sorted.length,
+        regionName: center.name,
+        label: regionMapLabel(center, sorted.length),
+        members: sorted,
+      };
+    })
+    .sort((a, b) => b.count - a.count || a.regionName.localeCompare(b.regionName, "de"));
 }
 
-/** Alias: bündelt ebenfalls im 30-km-Radius. */
+/** @deprecated Alias — bündelt nach Region, nicht nach km-Radius. */
 export function groupMembersByMapLocation(points: MemberMapPoint[]): MemberMapCluster[] {
-  return clusterMemberPoints(points, 30);
+  return clusterMemberPoints(points);
+}
+
+/** @deprecated Radius-Clustering entfällt zugunsten von Regionalzentren. */
+export function clusterMemberPointsByKm(points: MemberMapPoint[], _maxKm = 30): MemberMapCluster[] {
+  return clusterMemberPoints(points);
 }

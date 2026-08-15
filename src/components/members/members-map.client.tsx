@@ -75,16 +75,16 @@ function FitMembersBounds({ points }: { points: Array<{ lat: number; lng: number
   useEffect(() => {
     if (!points.length) return;
     if (points.length === 1) {
-      map.setView([points[0].lat, points[0].lng], 10, { animate: false });
+      map.setView([points[0].lat, points[0].lng], 7, { animate: false });
     } else {
       const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
       map.fitBounds(bounds.pad(0.06), {
         padding: [12, 12],
-        maxZoom: 11,
+        maxZoom: 8,
         animate: false,
       });
       // Ein Zoom-Schritt näher als der reine Fit — sonst bleibt die Ansicht oft zu weit draußen.
-      const closer = Math.min(map.getZoom() + 1, 11);
+      const closer = Math.min(map.getZoom() + 1, 8);
       map.setZoom(closer, { animate: false });
     }
     requestAnimationFrame(() => map.invalidateSize());
@@ -104,6 +104,7 @@ function ClusterMemberCard({
   return (
     <div>
       <p className="text-sm font-bold text-fc-navy">{cluster.label}</p>
+      <p className="mt-0.5 text-[10px] text-slate-500">Regionalzentrum · keine genaue Adresse</p>
       {pinned ? (
         <p className="mt-0.5 text-[10px] text-slate-500">Erneut klicken oder Karte tippen zum Schließen</p>
       ) : null}
@@ -169,7 +170,8 @@ export function MembersMapClient({
         className="grid h-full min-h-[280px] place-items-center rounded-xl border border-fc-ice bg-fc-ice px-4 text-center text-sm text-slate-600"
         role="status"
       >
-        Noch keine Standorte — sobald Mitglieder PLZ und Ort hinterlegt haben, erscheinen Pins.
+        Noch keine Regionen — sobald Mitglieder PLZ und Ort hinterlegt haben, erscheinen regionale
+        Sammelpunkte.
       </div>
     );
   }
@@ -181,7 +183,7 @@ export function MembersMapClient({
           center={GERMANY_CENTER}
           zoom={7}
           minZoom={4}
-          maxZoom={12}
+          maxZoom={9}
           maxBounds={GERMANY_BOUNDS}
           maxBoundsViscosity={0.85}
           className="absolute inset-0 h-full w-full"

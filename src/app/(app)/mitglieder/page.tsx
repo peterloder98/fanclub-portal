@@ -97,7 +97,7 @@ export default async function MitgliederPage() {
     });
   }
 
-  const clusters: MemberMapCluster[] = clusterMemberPoints(mapPoints, 30);
+  const clusters: MemberMapCluster[] = clusterMemberPoints(mapPoints);
 
   const birthdayRows = buildUpcomingBirthdays(
     profiles.map((p) => ({
@@ -144,6 +144,9 @@ export default async function MitgliederPage() {
         <h2 className="px-1 text-base font-semibold text-fc-navy">
           Hier sind unsere Mitglieder her
         </h2>
+        <p className="mt-1 px-1 text-xs text-[color:var(--muted)]">
+          Nur Regionen (nächste größere Stadt) — keine Wohnadressen.
+        </p>
         {missingCoords > 0 ? (
           <p className="mt-1 px-1 text-xs text-amber-800">
             {missingCoords} Mitglied(er) ohne Kartenposition.

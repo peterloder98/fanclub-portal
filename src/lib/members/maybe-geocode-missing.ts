@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
+import { needsRegionalSnap } from "@/lib/members/regional-centers";
 
 /** Max. Profile pro Seitenaufruf (Nominatim Rate-Limit). */
 const BATCH_SIZE = 5;
@@ -8,34 +9,58 @@ const BATCH_SIZE = 5;
 let running = false;
 
 /**
- * Geocodiert Profile ohne map_lat/map_lng aus Adresse (auch CH/NL).
- * Im Hintergrund nach Mitglieder-Seitenaufruf.
+ * Geocodiert fehlende Kartenpositionen und migriert noch zu präzise gespeicherte
+ * Koordinaten auf Regionalzentren (Datenschutz Mitglieder-Karte).
  */
 export async function maybeGeocodeMissingProfiles(): Promise<void> {
   if (running) return;
   running = true;
   try {
     const admin = createSupabaseAdminClient();
-    const { data: profiles, error } = await admin
+    const { data: missing, error: missingErr } = await admin
       .from("profiles")
       .select("id,postal_code,city,map_lat")
       .is("map_lat", null)
       .limit(40);
-    if (error) {
-      console.error("[geocode] missing-profiles query failed:", error.message);
+    if (missingErr) {
+      console.error("[geocode] missing-profiles query failed:", missingErr.message);
       return;
     }
 
-    const candidates = (profiles ?? []).filter(
+    const missingCandidates = (missing ?? []).filter(
       (p) => Boolean((p.postal_code ?? "").trim() || (p.city ?? "").trim()),
     );
-    if (!candidates.length) return;
 
-    for (const p of candidates.slice(0, BATCH_SIZE)) {
+    const toSync: string[] = missingCandidates.slice(0, BATCH_SIZE).map((p) => p.id);
+
+    if (toSync.length < BATCH_SIZE) {
+      const { data: existing, error: existingErr } = await admin
+        .from("profiles")
+        .select("id,postal_code,city,map_lat,map_lng")
+        .not("map_lat", "is", null)
+        .limit(80);
+      if (existingErr) {
+        console.error("[geocode] refresh-profiles query failed:", existingErr.message);
+      } else {
+        for (const p of existing ?? []) {
+          if (toSync.length >= BATCH_SIZE) break;
+          const lat = typeof p.map_lat === "number" ? p.map_lat : null;
+          const lng = typeof p.map_lng === "number" ? p.map_lng : null;
+          if (lat == null || lng == null) continue;
+          if (!needsRegionalSnap(lat, lng)) continue;
+          if (!((p.postal_code ?? "").trim() || (p.city ?? "").trim())) continue;
+          toSync.push(p.id);
+        }
+      }
+    }
+
+    if (!toSync.length) return;
+
+    for (const id of toSync) {
       try {
-        await syncProfileMapCoords(admin, p.id);
+        await syncProfileMapCoords(admin, id);
       } catch (e) {
-        console.error("[geocode] sync failed for", p.id, e);
+        console.error("[geocode] sync failed for", id, e);
       }
       await new Promise((r) => setTimeout(r, 1100));
     }

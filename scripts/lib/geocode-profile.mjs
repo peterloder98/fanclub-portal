@@ -1,17 +1,15 @@
-/** Gemeinsame Geocodierung für Skripte (Straße + PLZ + Ort → Nominatim, sonst Zippopotam). */
+/** Gemeinsame Geocodierung für Skripte — nur PLZ/Ort, dann grob (keine Straße). */
 
 export function isGermanCountry(country) {
   const c = (country ?? "DE").trim().toUpperCase();
   return c === "DE" || c === "DEU" || c === "DEUTSCHLAND" || c === "GERMANY";
 }
 
-function buildQueries({ street, postal_code, city }) {
+function buildQueries({ postal_code, city }) {
   const plz = (postal_code ?? "").replace(/\D/g, "").slice(0, 5);
   const cityTrim = (city ?? "").trim();
-  const streetTrim = (street ?? "").trim();
   const country = "Deutschland";
   return [
-    [streetTrim, plz, cityTrim, country].filter(Boolean).join(", "),
     [plz, cityTrim, country].filter(Boolean).join(", "),
     cityTrim ? `${cityTrim}, ${country}` : null,
   ].filter(Boolean);
@@ -49,10 +47,10 @@ async function geocodeViaZippopotam(plz) {
   }
 }
 
+/** Grobe Koordinaten aus PLZ/Ort (ohne Straße) — für Mitglieder-Karte. */
 export async function geocodeProfileAddress(profile) {
   const plz = (profile.postal_code ?? "").replace(/\D/g, "");
   const city = (profile.city ?? "").trim();
-  const street = (profile.street ?? "").trim();
   const countryRaw = (profile.country ?? "DE").trim().toUpperCase();
   const countryLabel =
     countryRaw === "CH" || countryRaw === "SCHWEIZ"
@@ -66,22 +64,23 @@ export async function geocodeProfileAddress(profile) {
   if (!plz && !city) return null;
 
   if (!isGermanCountry(profile.country)) {
-    const q = [street, profile.postal_code, city, countryLabel].filter(Boolean).join(", ");
-    const coords = await nominatimSearch(q);
-    if (coords) return coords;
-    return null;
+    const q = [profile.postal_code, city, countryLabel].filter(Boolean).join(", ");
+    return nominatimSearch(q);
   }
 
   const dePlz = plz.slice(0, 5);
-  if (!dePlz || dePlz.length !== 5) return null;
+  if (dePlz.length === 5) {
+    const fromZip = await geocodeViaZippopotam(dePlz);
+    if (fromZip) return fromZip;
+  }
 
-  for (const q of buildQueries({ street, postal_code: dePlz, city })) {
+  for (const q of buildQueries({ postal_code: dePlz, city })) {
     const coords = await nominatimSearch(q);
     if (coords) return coords;
     await sleep(1100);
   }
 
-  return geocodeViaZippopotam(dePlz);
+  return null;
 }
 
 export function sleep(ms) {

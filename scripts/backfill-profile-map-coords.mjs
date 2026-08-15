@@ -1,6 +1,6 @@
 /**
- * Geocodiert Profile ohne map_lat/map_lng (Straße + PLZ + Ort).
- * Mit --all auch bereits gesetzte Koordinaten neu berechnen.
+ * Geocodiert Profile ohne map_lat/map_lng (nur PLZ + Ort, keine Straße).
+ * Mit --all auch bereits gesetzte Koordinaten neu berechnen (Datenschutz-Refresh).
  * node --env-file=.env.local scripts/backfill-profile-map-coords.mjs
  * node --env-file=.env.local scripts/backfill-profile-map-coords.mjs --all
  */

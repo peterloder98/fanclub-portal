@@ -77,7 +77,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "an Live-Sessions mit Anni teilnehmen (zuschauen, chatten, Fragen stellen)",
               "an Umfragen und Gewinnspielen teilnehmen",
               "Konzerte und Fanclub-Treffen sehen und „Ich bin dabei“ markieren",
-              "Mitglieder suchen, auf der Karte finden und Profile anschauen",
+              "Mitglieder suchen, auf der regionalen Mitglieder-Karte finden und Profile anschauen",
               "Anni-Stars sammeln und Badges freischalten",
               "sich digital als Mitglied anmelden und den Beitrag überweisen",
               "andere zum Fanclub einladen, erinnern und den Status der Einladung verfolgen",
@@ -276,6 +276,36 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/referrals",
             label: "Empfehlungen",
+          },
+        ],
+      },
+      {
+        id: "mitglieder-karte",
+        number: "2.7",
+        title: "Mitglieder-Karte (Datenschutz)",
+        summary: "Nur Regionen, keine Wohnadressen",
+        blocks: [
+          {
+            type: "p",
+            text: "Unter „Mitglieder“ → Tab „Mitglieder-Karte“ seht ihr, aus welchen Gegenden die Community kommt. Die Karte ist bewusst grob:",
+          },
+          {
+            type: "ul",
+            items: [
+              "Keine Straßen, Hausnummern oder exakten Wohnorte",
+              "Jeder Standort wird der nächsten größeren Stadt / Region zugeordnet (z. B. „Raum München“)",
+              "Mehrere Mitglieder derselben Region erscheinen als ein Sammelpunkt mit Anzahl",
+              "Zoom ist begrenzt — die Karte zeigt Herkunftsregionen, nicht Einzeladressen",
+            ],
+          },
+          {
+            type: "note",
+            text: "Adresse und PLZ bleiben intern in den Stammdaten für Verwaltung und Post. Auf der Karte werden sie nicht 1:1 angezeigt. Wenn jemand sich wegen der Karte unsicher fühlt: so erklären — Wohnort erscheint nur als Region.",
+          },
+          {
+            type: "link",
+            href: "/mitglieder?tab=karte",
+            label: "Mitglieder-Karte öffnen",
           },
         ],
       },
