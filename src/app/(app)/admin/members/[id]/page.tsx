@@ -82,10 +82,10 @@ export default async function AdminMemberDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ remind?: string }>;
+  searchParams: Promise<{ remind?: string; paperMail?: string }>;
 }) {
   const { id } = await params;
-  const { remind } = await searchParams;
+  const { remind, paperMail } = await searchParams;
 
   const supabase = await createSupabaseServerClient();
   const {
@@ -232,6 +232,7 @@ export default async function AdminMemberDetailPage({
           ledgerAvailable={ledgerAvailable}
           contributions={contributions}
           autoOpenReminder={remind === "1"}
+          autoOpenPaperMail={paperMail === "1"}
         />
         </div>
       </main>

@@ -130,8 +130,8 @@ export function CreateMemberSection() {
                 />
                 <span className="text-xs text-slate-500">
                   Leer lassen, wenn die Person noch kein Mitglied ist (Beitrag steht noch aus). Dann
-                  wird sie als „Mitgliedschaft beantragt“ angelegt — danach könnt ihr direkt die
-                  Zahlungserinnerung schicken.
+                  wird sie als „Mitgliedschaft beantragt“ angelegt — danach öffnet sich die Mail
+                  „Antrag eingegangen / bitte zahlen“ (editierbar, Versand optional).
                 </span>
               </label>
               <label className="grid gap-1">

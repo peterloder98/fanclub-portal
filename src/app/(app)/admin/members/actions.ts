@@ -205,7 +205,7 @@ export async function createMember(formData: FormData) {
     }).catch((e) => {
       console.error("[members] Offene Beitragszahlung konnte nicht angelegt werden:", e);
     });
-    redirect(`/admin/members/${userId}?remind=1`);
+    redirect(`/admin/members/${userId}?paperMail=1`);
   }
 
   const { setupUrl } = await rotateAccountSetupToken({

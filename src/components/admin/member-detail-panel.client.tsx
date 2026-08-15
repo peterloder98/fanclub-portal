@@ -14,8 +14,10 @@ import {
   addClubLedgerEntry,
   deleteClubLedgerEntry,
   updateClubLedgerEntry,
+  getMemberApplicationPaymentDraft,
   getMemberPaymentReminderDraft,
   revokeMemberWarning,
+  sendMemberApplicationPaymentEmail,
   sendMemberPaymentReminderEmail,
   suspendMemberAppAccess,
   reactivateMemberAppAccess,
@@ -131,6 +133,7 @@ export function MemberDetailPanel({
   contribution,
   contributions = [],
   autoOpenReminder = false,
+  autoOpenPaperMail = false,
 }: {
   member: MemberDetailData;
   warnings: MemberWarningRow[];
@@ -140,6 +143,8 @@ export function MemberDetailPanel({
   contribution?: MemberContributionInfo | null;
   contributions?: MemberContributionInfo[];
   autoOpenReminder?: boolean;
+  /** Nach manuellem Papier-Antrag: Dialog mit Vorlage „Antrag eingegangen + zahlen“ */
+  autoOpenPaperMail?: boolean;
 }) {
   const router = useRouter();
   const openContributions = contributions
@@ -164,6 +169,7 @@ export function MemberDetailPanel({
   const [paymentActiveSignatureText, setPaymentActiveSignatureText] = useState("");
   const [paymentCalendarYear, setPaymentCalendarYear] = useState<number | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentMailKind, setPaymentMailKind] = useState<"reminder" | "application">("reminder");
 
   const [ledgerType, setLedgerType] = useState<"income" | "expense">("income");
   const [ledgerAmount, setLedgerAmount] = useState("");
@@ -205,12 +211,19 @@ export function MemberDetailPanel({
     });
   }
 
-  async function openPaymentDialog(calendarYear?: number) {
+  async function openPaymentDialog(
+    calendarYear?: number,
+    kind: "reminder" | "application" = "reminder",
+  ) {
     setActionError(null);
     setPaymentLoading(true);
     setPaymentCalendarYear(calendarYear ?? null);
+    setPaymentMailKind(kind);
     try {
-      const draft = await getMemberPaymentReminderDraft(member.id, undefined, calendarYear);
+      const draft =
+        kind === "application"
+          ? await getMemberApplicationPaymentDraft(member.id)
+          : await getMemberPaymentReminderDraft(member.id, undefined, calendarYear);
       setPaymentSubject(draft.subject);
       setPaymentBody(draft.body);
       setPaymentSignatures(draft.signatures);
@@ -225,12 +238,20 @@ export function MemberDetailPanel({
     }
   }
 
+  const isApplied = member.membership?.status === "applied";
+
   useEffect(() => {
-    if (!autoOpenReminder || !member.email) return;
-    void openPaymentDialog();
-    // nur einmal beim Öffnen mit ?remind=1
+    if (!member.email) return;
+    if (autoOpenPaperMail) {
+      void openPaymentDialog(undefined, "application");
+      return;
+    }
+    if (autoOpenReminder) {
+      void openPaymentDialog(undefined, isApplied ? "application" : "reminder");
+    }
+    // nur einmal beim Öffnen mit ?paperMail=1 / ?remind=1
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoOpenReminder, member.id]);
+  }, [autoOpenPaperMail, autoOpenReminder, member.id]);
 
   function onPaymentSignatureChange(signatureId: string) {
     const nextText = paymentSignatureTexts[signatureId] ?? "";
@@ -360,7 +381,9 @@ export function MemberDetailPanel({
           <button
             type="button"
             disabled={pending || paymentLoading || !member.email}
-            onClick={() => void openPaymentDialog()}
+            onClick={() =>
+              void openPaymentDialog(undefined, isApplied ? "application" : "reminder")
+            }
             className={
               primaryContribution && primaryContribution.status !== "paid"
                 ? "inline-flex h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
@@ -369,7 +392,11 @@ export function MemberDetailPanel({
           >
             <Mail className="h-4 w-4 shrink-0" aria-hidden />
             <span>
-              {paymentLoading ? "Lade…" : "Zahlungserinnerung senden"}
+              {paymentLoading
+                ? "Lade…"
+                : isApplied
+                  ? "Zahlungsinfo senden"
+                  : "Zahlungserinnerung senden"}
             </span>
           </button>
         {member.membership?.status === "active" ? (
@@ -479,10 +506,10 @@ export function MemberDetailPanel({
           <CardContent>
             {member.membership?.status === "applied" ? (
               <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                Noch kein Mitglied. Beitrag steht aus — über „Zahlungserinnerung senden“ die
-                Überweisung anstoßen. Wenn das Geld da ist: unter Zahlungen bestätigen, Beitrittsdatum
-                eintragen und Status auf „aktiv“ setzen. Erst dann gibt es Mitgliedsnummer und
-                App-Zugang.
+                Noch kein Mitglied. Beitrag steht aus — über „Zahlungsinfo senden“ die Mail mit
+                Antragseingang und Überweisungsdaten (editierbar) schicken. Wenn das Geld da ist:
+                unter Zahlungen bestätigen, Beitrittsdatum eintragen und Status auf „aktiv“ setzen.
+                Erst dann gibt es Mitgliedsnummer und App-Zugang.
               </p>
             ) : null}
             <dl>
@@ -617,10 +644,15 @@ export function MemberDetailPanel({
                             <button
                               type="button"
                               disabled={pending || paymentLoading || !member.email}
-                              onClick={() => void openPaymentDialog(c.calendarYear)}
+                              onClick={() =>
+                                void openPaymentDialog(
+                                  c.calendarYear,
+                                  isApplied ? "application" : "reminder",
+                                )
+                              }
                               className="text-xs font-semibold text-amber-800 underline-offset-2 hover:underline disabled:opacity-50"
                             >
-                              Zahlungserinnerung senden
+                              {isApplied ? "Zahlungsinfo senden" : "Zahlungserinnerung senden"}
                             </button>
                           ) : null}
                         </li>
@@ -941,8 +973,16 @@ export function MemberDetailPanel({
 
       {showPaymentDialog ? (
         <EmailDialogShell
-          title="Zahlungserinnerung senden"
-          description={`An ${member.email} · offener Jahresbeitrag`}
+          title={
+            paymentMailKind === "application"
+              ? "Antrag / Zahlungsinfo senden"
+              : "Zahlungserinnerung senden"
+          }
+          description={
+            paymentMailKind === "application"
+              ? `An ${member.email} · Vorlage editierbar · Versand optional · kein App-Zugangslink`
+              : `An ${member.email} · offener Jahresbeitrag`
+          }
           onClose={() => setShowPaymentDialog(false)}
           footer={
             <button
@@ -952,13 +992,22 @@ export function MemberDetailPanel({
               onClick={() => {
                 startTransition(async () => {
                   try {
-                    await sendMemberPaymentReminderEmail({
-                      userId: member.id,
-                      subject: paymentSubject,
-                      body: paymentBody,
-                      signatureId: paymentSignatureId,
-                      calendarYear: paymentCalendarYear ?? undefined,
-                    });
+                    if (paymentMailKind === "application") {
+                      await sendMemberApplicationPaymentEmail({
+                        userId: member.id,
+                        subject: paymentSubject,
+                        body: paymentBody,
+                        signatureId: paymentSignatureId,
+                      });
+                    } else {
+                      await sendMemberPaymentReminderEmail({
+                        userId: member.id,
+                        subject: paymentSubject,
+                        body: paymentBody,
+                        signatureId: paymentSignatureId,
+                        calendarYear: paymentCalendarYear ?? undefined,
+                      });
+                    }
                     setShowPaymentDialog(false);
                     router.refresh();
                   } catch (e) {
