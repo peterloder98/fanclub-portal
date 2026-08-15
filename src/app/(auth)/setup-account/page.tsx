@@ -66,6 +66,9 @@ function SetupAccountInner() {
         if (setupToken) {
           const redeemed = await redeemAccountSetupToken(setupToken);
           if (redeemed.ok) {
+            // Fremde Session (z. B. anderes Familienmitglied) nicht stehen lassen —
+            // sonst würde die Identitätsprüfung gegen das falsche Profil laufen.
+            await supabase.auth.signOut().catch(() => null);
             setEmail(redeemed.email);
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);

@@ -149,14 +149,23 @@ export async function completeAccountSetup(input: {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const claim = user ? null : await readSetupClaim();
-  const userId = user?.id ?? claim?.userId;
+  // Claim aus dem E-Mail-Link hat Vorrang vor einer evtl. fremden Browser-Session
+  // (z. B. Familienmitglied auf demselben Gerät bereits angemeldet).
+  const claim = await readSetupClaim();
+  const userId = claim?.userId ?? user?.id ?? null;
   if (!userId) {
     return {
       ok: false,
       error:
         "Sitzung abgelaufen. Bitte den Link aus der neuesten E-Mail öffnen oder unter „Passwort vergessen“ einen neuen Link anfordern.",
     };
+  }
+  if (claim && user && claim.userId !== user.id) {
+    // Fremde Session nicht für die Identitätsprüfung nutzen — Claim bleibt maßgeblich.
+    console.warn(
+      "[setup-account] Session-User weicht vom Setup-Claim ab; nutze Claim.",
+      { sessionUserId: user.id, claimUserId: claim.userId },
+    );
   }
 
   const entered = normalizeBirthdateIso(parsed.data.birthdate);
@@ -186,7 +195,8 @@ export async function completeAccountSetup(input: {
   if (stored !== entered) {
     return {
       ok: false,
-      error: "Geburtsdatum stimmt nicht. Bitte erneut prüfen.",
+      error:
+        "Geburtsdatum stimmt nicht mit dem Konto oben überein. Bitte TT.MM.JJJJ prüfen — und bei geteiltem Gerät den eigenen Einrichtungs-Link aus der E-Mail nutzen.",
     };
   }
 
