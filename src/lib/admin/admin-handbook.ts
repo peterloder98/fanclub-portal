@@ -426,10 +426,15 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Das Gewinnspiel muss beendet sein (Enddatum erreicht oder vorzeitig beendet).",
-              "Button „Jetzt Gewinner ermitteln“ tippen.",
-              "Pro Preis wird zufällig eine berechtigte Person gezogen; niemand gewinnt denselben Lauf mehrfach.",
+              "Button „Jetzt Gewinner ermitteln“ tippen — die App zieht zufällig je eine berechtigte Person pro Preis; niemand gewinnt denselben Lauf mehrfach.",
               "Danach ist der Status „Ausgelost“ — Gewinner können per E-Mail benachrichtigt werden.",
+              "Ein beendetes Gewinnspiel kann nicht wieder geöffnet werden (sonst ändert sich der Teilnehmerkreis). Bei Bedarf neu anlegen.",
+              "Doppelklick oder zwei Tabs: Die Auslosung läuft nur einmal; ein zweiter Versuch meldet „bereits ermittelt“.",
             ],
+          },
+          {
+            type: "note",
+            text: "Die Auslosung wird im Admin-Protokoll vermerkt. Cron legt die Jahresverlosung nur an — ausgelost wird immer manuell vom Vorstand.",
           },
           {
             type: "link",
@@ -708,6 +713,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "note",
             text: "Die optionalen Massen-Mails (Gewinnspiel / Event / Umfrage) sind standardmäßig aus und müssen unter „Mitglieder-Benachrichtigungen“ einzeln freigeschaltet werden. In-App-Benachrichtigungen (Glocke oben) laufen unabhängig davon weiter. Nicht abschaltbar für Mitglieder: Verwarnungen, Beitrags-/Zahlungserinnerungen, Zugangs-/Freigabe-Mails und Sicherheitsmeldungen (z. B. geänderte Login-E-Mail).",
+          },
+          {
+            type: "note",
+            text: "Solange der E-Mail-Versand im Testmodus läuft (Standard vor Go-Live), gehen Massen-Mails und die meisten Mitglieder-Mails nur an die Allowlist (Vorstand/SMTP) — nicht an alle Mitglieder. Live-Versand: EMAIL_OUTBOUND_MODE=live. Wenn nach Freischaltung die Einladungs-Mail fehlschlägt, bleibt das Mitglied aktiv; die App zeigt einen Hinweis — Zugangslink unter Mitglieder erneut senden oder E-Mail-Log prüfen.",
           },
           {
             type: "link",

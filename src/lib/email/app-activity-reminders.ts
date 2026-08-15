@@ -148,7 +148,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
           ...person,
           setup_url: setupUrl,
         });
-        await sendEmailWithLog({
+        const result = await sendEmailWithLog({
           to: profile.email,
           subject: rendered.subject,
           text: rendered.text,
@@ -162,6 +162,16 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
             reminder_number: count + 1,
           },
         });
+
+        if (!result.ok) {
+          console.error(
+            "[app-activity-reminders] signup send failed:",
+            profile.id,
+            result.skipped ? result.reason : result.error,
+          );
+          skipped += 1;
+          continue;
+        }
 
         await admin
           .from("profiles")
@@ -207,7 +217,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
         ...person,
         app_url: appUrl,
       });
-      await sendEmailWithLog({
+      const result = await sendEmailWithLog({
         to: profile.email,
         subject: rendered.subject,
         text: rendered.text,
@@ -221,6 +231,16 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
           inactive_days: inactiveDays,
         },
       });
+
+      if (!result.ok) {
+        console.error(
+          "[app-activity-reminders] inactive send failed:",
+          profile.id,
+          result.skipped ? result.reason : result.error,
+        );
+        skipped += 1;
+        continue;
+      }
 
       await admin
         .from("profiles")

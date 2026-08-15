@@ -31,6 +31,7 @@ export default async function AdminMembershipApplicationPage({
   const { id } = await params;
   const sp = await searchParams;
   const approved = sp.approved === "1";
+  const inviteEmailFailed = sp.invite_email === "failed";
 
   const admin = createSupabaseAdminClient();
   const { data: app, error } = await admin
@@ -145,7 +146,11 @@ export default async function AdminMembershipApplicationPage({
           />
         </div>
 
-        <ApplicationDetailPanels app={detail} showApprovedBanner={approved} />
+        <ApplicationDetailPanels
+          app={detail}
+          showApprovedBanner={approved}
+          inviteEmailFailed={inviteEmailFailed}
+        />
 
         <div id="application-activity" className="mt-6">
           <MemberActivityTimeline userId={app.user_id} applicationId={app.id} />

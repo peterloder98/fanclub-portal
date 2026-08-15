@@ -86,9 +86,11 @@ function Field({ label, value }: { label: string; value: string }) {
 export function ApplicationDetailPanels({
   app,
   showApprovedBanner,
+  inviteEmailFailed,
 }: {
   app: ApplicationDetailData;
   showApprovedBanner?: boolean;
+  inviteEmailFailed?: boolean;
 }) {
   const paymentPaid = app.payment_status === "paid";
   const [busy, setBusy] = useState(false);
@@ -100,10 +102,17 @@ export function ApplicationDetailPanels({
 
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      {showApprovedBanner ? (
+      {showApprovedBanner && inviteEmailFailed ? (
+        <div className="xl:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Mitgliedschaft ist freigeschaltet, aber die Einladungs-E-Mail konnte nicht zugestellt
+          werden. Bitte Zugangslink unter Mitglieder erneut senden oder Admin → E-Mail-Log prüfen
+          (Testmodus/SMTP).
+        </div>
+      ) : null}
+      {showApprovedBanner && !inviteEmailFailed ? (
         <div className="xl:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
           Mitgliedschaft wurde freigeschaltet. Einladungs-E-Mail wurde versendet (sofern SMTP
-          konfiguriert).
+          konfiguriert und Versand nicht im Testmodus blockiert).
         </div>
       ) : null}
       {error ? (

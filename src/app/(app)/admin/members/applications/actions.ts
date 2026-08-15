@@ -185,8 +185,9 @@ async function activateApplication(
     metadata: { membership_number: assignedNumber, application_id: applicationId },
   }).catch(console.error);
 
+  let inviteEmailOk: boolean | null = null;
   if (app.email) {
-    await sendMemberInviteAfterApproval({
+    const mail = await sendMemberInviteAfterApproval({
       email: app.email,
       firstName: app.first_name?.trim() || "Fan",
       membershipNumber: assignedNumber,
@@ -194,7 +195,15 @@ async function activateApplication(
       userId: app.user_id,
     }).catch((e) => {
       console.error("[membership] Freischaltungs-Mail fehlgeschlagen:", e);
+      return { ok: false as const, error: e instanceof Error ? e.message : "send failed" };
     });
+    inviteEmailOk = mail.ok;
+    if (!mail.ok) {
+      console.error(
+        "[membership] Freischaltungs-Mail nicht zugestellt:",
+        "error" in mail ? mail.error : "reason" in mail ? mail.reason : mail,
+      );
+    }
   }
 
   const referrerId = (app as { referred_by_user_id?: string | null }).referred_by_user_id;
@@ -206,16 +215,18 @@ async function activateApplication(
     }
   }
 
-  return app;
+  return { app, inviteEmailOk };
 }
 
 export async function approveMembershipApplication(applicationId: string) {
   await requireAdmin();
   const admin = createSupabaseAdminClient();
-  await activateApplication(admin, applicationId);
+  const { inviteEmailOk } = await activateApplication(admin, applicationId);
   revalidatePath("/admin/members");
   revalidatePath(`/admin/members/applications/${applicationId}`);
-  redirect(`/admin/members/applications/${applicationId}?approved=1`);
+  const q =
+    inviteEmailOk === false ? "approved=1&invite_email=failed" : "approved=1";
+  redirect(`/admin/members/applications/${applicationId}?${q}`);
 }
 
 export async function approveMembershipApplicationWithNumber(
@@ -224,16 +235,24 @@ export async function approveMembershipApplicationWithNumber(
 ) {
   const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  await activateApplication(admin, applicationId, undefined, user.id);
+  const { inviteEmailOk } = await activateApplication(admin, applicationId, undefined, user.id);
   await auditLog({
     actorId: user.id,
     action: "application.approve",
     entityType: "membership_application",
     entityId: applicationId,
-    summary: "Mitgliedsantrag freigegeben",
+    summary:
+      inviteEmailOk === false
+        ? "Mitgliedsantrag freigegeben (Einladungs-E-Mail fehlgeschlagen)"
+        : "Mitgliedsantrag freigegeben",
+    metadata: { invite_email_ok: inviteEmailOk },
   });
   revalidatePath("/admin/members");
-  redirect("/admin/members");
+  redirect(
+    inviteEmailOk === false
+      ? "/admin/members?invite_email=failed"
+      : "/admin/members",
+  );
 }
 
 export async function getPaymentReminderDraft(

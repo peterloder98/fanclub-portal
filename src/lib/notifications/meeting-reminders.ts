@@ -119,13 +119,20 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
             cost_hint: costHint,
           },
         );
-        await sendEmailViaAccount({
+        const result = await sendEmailViaAccount({
           to: profile.email,
           subject: rendered.subject,
           text: rendered.text,
           html: rendered.html,
         });
-        emails += 1;
+        if (result.ok) emails += 1;
+        else {
+          console.error(
+            "[meeting-reminder] email not sent:",
+            profile.email,
+            result.skipped ? result.reason : result.error,
+          );
+        }
       } catch (e) {
         console.error("[meeting-reminder] email:", e);
       }

@@ -240,7 +240,19 @@ export async function createYearEndGiveaway(
     giveaway_id: row.id,
     top_user_ids: top.map((t) => t.userId),
   });
-  if (runErr) throw new Error(runErr.message);
+  if (runErr) {
+    // Race: paralleler Create hat den Run gewonnen — Orphan-Gewinnspiel entfernen
+    await admin.from("giveaways").delete().eq("id", row.id);
+    const { data: winnerRun } = await admin
+      .from("year_end_lottery_runs")
+      .select("giveaway_id")
+      .eq("points_year", pointsYear)
+      .maybeSingle();
+    if (winnerRun?.giveaway_id) {
+      return { giveawayId: winnerRun.giveaway_id, created: false, topCount: 0 };
+    }
+    throw new Error(runErr.message);
+  }
 
   try {
     await notifyAdminsGiveawayEnded({
@@ -258,6 +270,7 @@ export async function confirmYearEndGiveaway(
   admin: SupabaseClient,
   giveawayId: string,
   signatureId?: string,
+  actorId?: string,
 ) {
   const { data: g } = await admin
     .from("giveaways")
@@ -273,6 +286,7 @@ export async function confirmYearEndGiveaway(
     skipEndCheck: true,
     notifyAllWinners: true,
     signatureId,
+    actorId,
   });
 
   const now = new Date().toISOString();

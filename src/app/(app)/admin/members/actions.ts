@@ -368,7 +368,7 @@ export async function updateMember(formData: FormData) {
       .maybeSingle();
     if (profile?.email) {
       await admin.auth.admin.updateUserById(input.user_id, { email_confirm: true });
-      await sendMemberInviteAfterApproval({
+      const mail = await sendMemberInviteAfterApproval({
         email: profile.email,
         firstName: profile.first_name?.trim() || "Fan",
         membershipNumber: profile.membership_number?.trim() || "—",
@@ -376,7 +376,23 @@ export async function updateMember(formData: FormData) {
         userId: input.user_id,
       }).catch((e) => {
         console.error("[membership] Einladungs-E-Mail fehlgeschlagen:", e);
+        return { ok: false as const, error: e instanceof Error ? e.message : "send failed" };
       });
+      if (!mail.ok) {
+        console.error(
+          "[membership] Einladungs-E-Mail nicht zugestellt:",
+          "error" in mail ? mail.error : "reason" in mail ? mail.reason : mail,
+        );
+        await logAdminAction(admin, {
+          actorId: user.id,
+          action: "member.update",
+          entityType: "profile",
+          entityId: input.user_id,
+          summary: `Mitglied aktiviert, Einladungs-E-Mail fehlgeschlagen: ${input.first_name} ${input.last_name}`,
+          metadata: { invite_email_ok: false },
+        });
+        redirect(`/admin/members/${input.user_id}?invite_email=failed`);
+      }
     }
   }
 

@@ -1,14 +1,23 @@
 export function formatMembershipEmailWarning(parts: {
-  applicant?: { ok: boolean; skipped?: boolean; error?: string };
+  applicant?: { ok: boolean; skipped?: boolean; error?: string; reason?: string };
   admin?: { sent: boolean; reason?: string; error?: string };
 }): string | null {
   const messages: string[] = [];
 
   if (parts.applicant) {
     if (parts.applicant.skipped) {
-      messages.push(
-        "Bestätigungs-E-Mail: Kein SMTP-Konto hinterlegt (Admin → E-Mail-Einstellungen).",
-      );
+      const reason = parts.applicant.reason ?? parts.applicant.error ?? "";
+      if (/outbound_test_mode/i.test(reason)) {
+        messages.push(
+          "Bestätigungs-E-Mail: Im Testmodus blockiert (Empfänger nicht auf der Allowlist). Für echte Mitglieder-Mails EMAIL_OUTBOUND_MODE=live setzen.",
+        );
+      } else if (reason === "no_smtp_account" || !reason) {
+        messages.push(
+          "Bestätigungs-E-Mail: Kein SMTP-Konto hinterlegt (Admin → E-Mail-Einstellungen).",
+        );
+      } else {
+        messages.push(`Bestätigungs-E-Mail übersprungen (${reason}).`);
+      }
     } else if (!parts.applicant.ok) {
       messages.push(
         parts.applicant.error?.includes("SMTP_SECRET")
@@ -23,6 +32,10 @@ export function formatMembershipEmailWarning(parts: {
       messages.push("Admin-Benachrichtigung: Keine Admin-E-Mail in den Profilen.");
     } else if (parts.admin.reason === "no_smtp_account") {
       messages.push("Admin-Benachrichtigung: Kein SMTP-Konto konfiguriert.");
+    } else if (parts.admin.reason && /outbound_test_mode/i.test(parts.admin.reason)) {
+      messages.push(
+        "Admin-Benachrichtigung: Im Testmodus blockiert (Allowlist). Live-Versand: EMAIL_OUTBOUND_MODE=live.",
+      );
     } else if (parts.admin.reason === "send_failed") {
       messages.push(
         parts.admin.error

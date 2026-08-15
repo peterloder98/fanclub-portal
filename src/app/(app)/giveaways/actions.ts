@@ -243,7 +243,7 @@ export async function createGiveaway(formData: FormData): Promise<{ ok: true; id
 }
 
 export async function drawGiveawayWinners(giveawayId: string) {
-  const { admin } = await requireAdmin();
+  const { admin, userId } = await requireAdmin();
   const { data: g } = await admin
     .from("giveaways")
     .select("is_year_end_lottery")
@@ -254,7 +254,7 @@ export async function drawGiveawayWinners(giveawayId: string) {
       "Jahresend-Sonderverlosung: bitte „Bestätigen & auslosen“ verwenden (nach Preiseintrag).",
     );
   }
-  const result = await performGiveawayDraw(admin, giveawayId);
+  const result = await performGiveawayDraw(admin, giveawayId, { actorId: userId });
   revalidatePath("/giveaways");
   revalidatePath(`/giveaways/${giveawayId}`);
   return { winnerCount: result.winnerCount };
@@ -291,6 +291,14 @@ export async function sendGiveawayWinnerEmail(
     giveawayTitle: g?.title ?? "Gewinnspiel",
     prizeName: prize?.name ?? "Preis",
     signatureId: signatureId || undefined,
+  }).then((result) => {
+    if (!result.ok) {
+      throw new Error(
+        result.skipped
+          ? `Gewinner-Mail blockiert (${result.reason}).`
+          : `Gewinner-Mail fehlgeschlagen${result.error ? `: ${result.error}` : ""}.`,
+      );
+    }
   });
 
   await admin
@@ -510,8 +518,8 @@ export async function confirmYearEndGiveawayAction(
   giveawayId: string,
   signatureId?: string,
 ) {
-  const { admin } = await requireAdmin();
-  const result = await confirmYearEndGiveaway(admin, giveawayId, signatureId);
+  const { admin, userId } = await requireAdmin();
+  const result = await confirmYearEndGiveaway(admin, giveawayId, signatureId, userId);
   revalidatePath("/giveaways");
   revalidatePath(`/giveaways/${giveawayId}`);
   return result;
@@ -684,29 +692,29 @@ export async function updateGiveawayBasics(formData: FormData) {
     .eq("id", id)
     .maybeSingle();
   if (!g) throw new Error("Gewinnspiel nicht gefunden.");
-  if (g.status === "drawn") throw new Error("Nach Auslosung nur Titel/Beschreibung – Enddatum nicht änderbar.");
-
   if (g.status === "drawn") {
     await admin
       .from("giveaways")
       .update({ title, description: description || null })
       .eq("id", id);
-  } else {
-    const patch: {
-      title: string;
-      description: string | null;
-      ends_at: string;
-      status?: string;
-    } = {
+    revalidatePath("/giveaways");
+    revalidatePath(`/giveaways/${id}`);
+    return;
+  }
+  if (g.status === "ended") {
+    throw new Error(
+      "Beendete Gewinnspiele können nicht wieder geöffnet werden — sonst ändert sich der Auslosungspool. Bitte neu anlegen oder auslosen.",
+    );
+  }
+
+  await admin
+    .from("giveaways")
+    .update({
       title,
       description: description || null,
       ends_at: endsAt.toISOString(),
-    };
-    if (endsAt.getTime() > Date.now() && g.status === "ended") {
-      patch.status = "active";
-    }
-    await admin.from("giveaways").update(patch).eq("id", id);
-  }
+    })
+    .eq("id", id);
   revalidatePath("/giveaways");
   revalidatePath(`/giveaways/${id}`);
 }
@@ -749,6 +757,11 @@ export async function updateGiveawayFull(formData: FormData) {
   if (!g) throw new Error("Gewinnspiel nicht gefunden.");
   if (g.is_year_end_lottery) throw new Error("Jahresend-Gewinnspiel bitte über die Sonderverlosung bearbeiten.");
   if (g.status === "drawn") throw new Error("Nach Auslosung nicht mehr vollständig bearbeitbar.");
+  if (g.status === "ended") {
+    throw new Error(
+      "Beendete Gewinnspiele können nicht wieder geöffnet werden — sonst ändert sich der Auslosungspool.",
+    );
+  }
 
   const { count: entryCount } = await admin
     .from("giveaway_entries")

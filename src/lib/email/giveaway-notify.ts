@@ -20,7 +20,7 @@ export async function notifyAdminsGiveawayEnded(input: {
     .not("email", "is", null);
 
   const recipients = (admins ?? []).filter((a) => a.email?.trim());
-  if (!recipients.length) return { sent: 0 };
+  if (!recipients.length) return { sent: 0, failed: 0 };
 
   const base = appBaseUrl();
   const giveawayAdminUrl = base
@@ -28,6 +28,7 @@ export async function notifyAdminsGiveawayEnded(input: {
     : `/giveaways/${input.giveawayId}`;
 
   let sent = 0;
+  let failed = 0;
   for (const adm of recipients) {
     const rendered = await renderEmailFromTemplate(
       EMAIL_TEMPLATE_KEYS.giveawayEndedAdminNotify,
@@ -36,16 +37,17 @@ export async function notifyAdminsGiveawayEnded(input: {
         giveaway_admin_url: giveawayAdminUrl,
       },
     );
-    await sendEmailViaAccount({
+    const result = await sendEmailViaAccount({
       to: adm.email!.trim(),
       subject: rendered.subject,
       text: rendered.text,
       html: rendered.html,
       attachments: rendered.signatureAttachment ? [rendered.signatureAttachment] : [],
     });
-    sent += 1;
+    if (result.ok) sent += 1;
+    else failed += 1;
   }
-  return { sent };
+  return { sent, failed };
 }
 
 export async function notifyGiveawayWinner(input: {
@@ -67,7 +69,7 @@ export async function notifyGiveawayWinner(input: {
     { signatureId: input.signatureId },
   );
 
-  await sendEmailViaAccount({
+  return sendEmailViaAccount({
     to: input.winnerEmail,
     subject: rendered.subject,
     text: rendered.text,

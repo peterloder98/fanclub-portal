@@ -16,8 +16,9 @@ export async function isSmtpConfigured() {
 export async function sendEmail(input: SendEmailInput) {
   const result = await sendEmailViaAccount(input);
   if (result.skipped) {
-    console.warn("[email] Kein SMTP-Konto – E-Mail übersprungen:", input.subject);
-    return { ok: false as const, skipped: true as const };
+    console.warn("[email] Versand übersprungen:", result.reason, input.subject);
+  } else if (!result.ok) {
+    console.warn("[email] Versand fehlgeschlagen:", result.error, input.subject);
   }
-  return { ok: true as const, skipped: false as const };
+  return result;
 }

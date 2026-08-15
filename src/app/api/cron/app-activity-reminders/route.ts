@@ -13,5 +13,8 @@ export async function GET(request: Request) {
 
   const admin = createSupabaseAdminClient();
   const result = await runAppActivityReminders(admin);
+  if (result.error) {
+    return NextResponse.json({ ok: false, ...result }, { status: 500 });
+  }
   return NextResponse.json({ ok: true, ...result });
 }

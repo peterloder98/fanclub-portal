@@ -1,5 +1,3 @@
-import { getDefaultSmtpAccountWithPassword } from "@/lib/smtp/accounts";
-import { createTransportFromCredentials, formatFromHeader } from "@/lib/smtp/transport";
 import { buildHtmlFromPlain } from "@/lib/email/build-html-from-plain";
 import { loadMailSignature, CLUB_SIGNATURE_ID } from "@/lib/email/signatures";
 import {
@@ -18,6 +16,8 @@ import {
 } from "@/lib/email/member-email-prefs";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { sendEmailWithLog } from "@/lib/email/send-log";
+import { isSmtpReady } from "@/lib/smtp/send-via-account";
 
 export type MemberBroadcastKind = "giveaway" | "poll" | "event";
 
@@ -133,12 +133,14 @@ export type MemberBroadcastResult = {
   recipientCount: number;
   sent: number;
   failed: number;
+  skipped: number;
   skippedReason?: string;
 };
 
 /**
  * Versendet in kleinen Batches mit Pause — schont SMTP-Limits bei vielen Empfängern.
- * Fehler einzelner Mails brechen den Lauf nicht ab.
+ * Läuft über sendEmailWithLog → Outbound-Policy (Testmodus-Allowlist).
+ * Nur ok:true zählt als gesendet.
  */
 export async function sendMemberActivityBroadcast(input: {
   kind: MemberBroadcastKind;
@@ -153,16 +155,16 @@ export async function sendMemberActivityBroadcast(input: {
         : NOTIFY_MEMBERS_NEW_EVENT_KEY;
   const enabled = await getAppSettingBool(settingKey, false);
   if (!enabled) {
-    return { enabled: false, recipientCount: 0, sent: 0, failed: 0 };
+    return { enabled: false, recipientCount: 0, sent: 0, failed: 0, skipped: 0 };
   }
 
-  const creds = await getDefaultSmtpAccountWithPassword();
-  if (!creds) {
+  if (!(await isSmtpReady())) {
     return {
       enabled: true,
       recipientCount: 0,
       sent: 0,
       failed: 0,
+      skipped: 0,
       skippedReason: "no_smtp_account",
     };
   }
@@ -180,7 +182,7 @@ export async function sendMemberActivityBroadcast(input: {
   }
 
   if (!recipients.length) {
-    return { enabled: true, recipientCount: 0, sent: 0, failed: 0 };
+    return { enabled: true, recipientCount: 0, sent: 0, failed: 0, skipped: 0 };
   }
 
   const entityPath =
@@ -191,65 +193,64 @@ export async function sendMemberActivityBroadcast(input: {
         : `/events?focus=${input.entityId}`;
 
   const sig = await loadMailSignature(CLUB_SIGNATURE_ID);
-  const subject = memberBroadcastSubject(input.kind, input.eventMeta);
-
-  const transport = createTransportFromCredentials({
-    server: creds.public.server,
-    port: creds.public.port,
-    encryption: creds.public.encryption,
-    email: creds.public.email,
-    password: creds.password,
-  });
-
-  const from = formatFromHeader(creds.public.email, creds.public.display_name);
-  const replyTo = creds.public.reply_to ?? creds.public.email;
 
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
 
-  try {
-    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-      const batch = recipients.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        batch.map(async (recipient) => {
-          try {
-            const msg = buildMessageForRecipient(
-              recipient,
-              input.kind,
-              entityPath,
-              sig,
-              input.eventMeta,
-            );
-            await transport.sendMail({
-              from,
-              replyTo,
-              to: recipient.email,
-              subject,
-              text: msg.text,
-              html: msg.html,
-              attachments: msg.attachments,
-            });
+  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+    const batch = recipients.slice(i, i + BATCH_SIZE);
+    await Promise.all(
+      batch.map(async (recipient) => {
+        try {
+          const msg = buildMessageForRecipient(
+            recipient,
+            input.kind,
+            entityPath,
+            sig,
+            input.eventMeta,
+          );
+          const result = await sendEmailWithLog({
+            to: recipient.email,
+            subject: msg.subject,
+            text: msg.text,
+            html: msg.html,
+            attachments: msg.attachments,
+            templateKey: `member_broadcast_${input.kind}`,
+            context: {
+              entity_id: input.entityId,
+              user_id: recipient.userId,
+              kind: input.kind,
+            },
+          });
+          if (result.ok) {
             sent += 1;
-          } catch (e) {
+          } else if ("skipped" in result && result.skipped) {
+            skipped += 1;
+          } else {
             failed += 1;
             console.error(
               `[member-broadcast] Fehler an ${recipient.email}:`,
-              e instanceof Error ? e.message : e,
+              "error" in result ? result.error : "unknown",
             );
           }
-        }),
-      );
+        } catch (e) {
+          failed += 1;
+          console.error(
+            `[member-broadcast] Fehler an ${recipient.email}:`,
+            e instanceof Error ? e.message : e,
+          );
+        }
+      }),
+    );
 
-      if (i + BATCH_SIZE < recipients.length) {
-        await sleep(DELAY_BETWEEN_BATCHES_MS);
-      }
+    if (i + BATCH_SIZE < recipients.length) {
+      await sleep(DELAY_BETWEEN_BATCHES_MS);
     }
-  } finally {
-    transport.close();
   }
 
   console.info(
-    `[member-broadcast] ${input.kind} ${input.entityId}: ${sent} gesendet, ${failed} fehlgeschlagen, ${recipients.length} Empfänger`,
+    `[member-broadcast] ${input.kind} ${input.entityId}: ${sent} gesendet, ${failed} fehlgeschlagen, ${skipped} übersprungen (Policy), ${recipients.length} Empfänger`,
   );
 
   return {
@@ -257,6 +258,7 @@ export async function sendMemberActivityBroadcast(input: {
     recipientCount: recipients.length,
     sent,
     failed,
+    skipped,
   };
 }
 

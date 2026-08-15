@@ -100,7 +100,8 @@ export async function filterRecipientsByEmailPref(
   if (error) {
     if (/email_pref_|does not exist/i.test(error.message)) return recipients;
     console.error("[member-email-prefs] filter:", error.message);
-    return recipients;
+    // Fail-closed: bei unerwarteten DB-Fehlern niemanden anschreiben (Opt-out schützen)
+    return [];
   }
 
   const allowed = new Set<string>();
