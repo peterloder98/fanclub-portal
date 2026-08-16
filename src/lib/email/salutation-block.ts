@@ -1,4 +1,4 @@
-import { normalizeGender, salutation } from "@/lib/person/gender";
+import { personSalutation, resolveGenderForSalutation } from "@/lib/person/gender";
 
 /**
  * Wiederverwendbarer E-Mail-Baustein: geschlechtskorrekte Anrede.
@@ -25,7 +25,7 @@ export function buildEmailSalutation(
   firstName: string,
   genderRaw?: string | null,
 ): string {
-  return salutation(firstName, normalizeGender(genderRaw));
+  return personSalutation(firstName, genderRaw);
 }
 
 /** Basis-Variablen für personenbezogene Mails (inkl. Baustein). */
@@ -34,11 +34,11 @@ export function emailPersonVars(input: {
   gender?: string | null;
 }): { first_name: string; salutation: string; gender: string } {
   const first_name = input.firstName.trim() || "Fan";
-  const gender = normalizeGender(input.gender);
+  const gender = resolveGenderForSalutation(input.gender, first_name);
   return {
     first_name,
     gender,
-    salutation: buildEmailSalutation(first_name, gender),
+    salutation: buildEmailSalutation(first_name, input.gender),
   };
 }
 

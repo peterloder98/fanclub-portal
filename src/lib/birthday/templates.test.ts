@@ -11,6 +11,13 @@ describe("birthdayPostBody", () => {
     expect(m.body).not.toEqual(w.body);
   });
 
+  it("infers female salutation when profile gender is d but name is clear", () => {
+    const c = birthdayPostBody("Celina", "d", "user-c", "2026-08-16");
+    expect(c.body.startsWith(`Liebe Celina ${formatMentionToken("Celina", "user-c")}`)).toBe(
+      true,
+    );
+  });
+
   it("picks stable different templates per user", () => {
     const a = birthdayPostBody("A", "w", "id-1", "2026-06-04");
     const b = birthdayPostBody("B", "w", "id-2", "2026-06-04");

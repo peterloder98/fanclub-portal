@@ -9,8 +9,9 @@ describe("email salutation block", () => {
   it("genders Lieber / Liebe / Liebe/r", () => {
     expect(buildEmailSalutation("Max", "m")).toBe("Lieber Max");
     expect(buildEmailSalutation("Anna", "w")).toBe("Liebe Anna");
+    expect(buildEmailSalutation("Celina", "d")).toBe("Liebe Celina");
     expect(buildEmailSalutation("Alex", "d")).toBe("Liebe/r Alex");
-    expect(buildEmailSalutation("Alex", null)).toBe("Liebe/r Alex");
+    expect(buildEmailSalutation("Xyzzy", null)).toBe("Liebe/r Xyzzy");
   });
 
   it("fills salutation from first_name + gender", () => {

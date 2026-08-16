@@ -1,5 +1,5 @@
 import { formatMentionToken } from "@/lib/mentions/format";
-import { normalizeGender, salutation, type NormalizedGender } from "@/lib/person/gender";
+import { personSalutation } from "@/lib/person/gender";
 import type { BirthdayGreetingTemplate } from "@/lib/birthday/template-store";
 import { loadActiveBirthdayTemplates } from "@/lib/birthday/template-store";
 
@@ -50,13 +50,12 @@ export function renderBirthdayTemplateText(
   genderRaw: string | null | undefined,
   mentionToken?: string,
 ) {
-  const g = normalizeGender(genderRaw);
   const name = firstName.trim() || "Fan";
   const mention = mentionToken ?? name;
   return template
     .replace(/\{\{first_name\}\}/g, name)
     .replace(/\{\{mention\}\}/g, mention)
-    .replace(/\{\{salutation\}\}/g, salutation(name, g));
+    .replace(/\{\{salutation\}\}/g, personSalutation(name, genderRaw));
 }
 
 export function birthdayPostBodyFromList(
