@@ -108,11 +108,11 @@ export default async function AdminMemberDetailPage({
     const full = await admin
       .from("profiles")
       .select(
-        "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date,welcome_email_sent_at",
+        "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date,greeting_post_sent_at",
       )
       .eq("id", id)
       .maybeSingle();
-    if (full.error && /welcome_email_sent_at|does not exist/i.test(full.error.message)) {
+    if (full.error && /greeting_post_sent_at|does not exist/i.test(full.error.message)) {
       const fallback = await admin
         .from("profiles")
         .select(
@@ -243,7 +243,7 @@ export default async function AdminMemberDetailPage({
     application_id: application?.id ?? null,
     app_registration_status: appReg.status,
     app_registered_at: appReg.registeredAt,
-    welcome_email_sent_at: (profile.welcome_email_sent_at as string | null | undefined) ?? null,
+    greeting_post_sent_at: (profile.greeting_post_sent_at as string | null | undefined) ?? null,
   };
 
   return (

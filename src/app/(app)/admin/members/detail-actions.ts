@@ -603,6 +603,76 @@ export async function markMemberAppRegistrationDeleted(userId: string) {
   return { ok: true };
 }
 
+/** Begrüßungspost (manuell per Post): Datum setzen oder auf offen zurücksetzen. */
+export async function setMemberGreetingPostSentAt(
+  userId: string,
+  sentOn: string | null,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { user, profile: adminProfile } = await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+
+    let value: string | null = null;
+    if (sentOn?.trim()) {
+      const raw = sentOn.trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        return { ok: false, error: "Bitte ein gültiges Datum wählen (TT.MM.JJJJ)." };
+      }
+      value = raw;
+    }
+
+    const { error: updErr } = await admin
+      .from("profiles")
+      .update({ greeting_post_sent_at: value })
+      .eq("id", userId);
+    if (updErr) {
+      if (/greeting_post_sent_at|does not exist/i.test(updErr.message)) {
+        return {
+          ok: false,
+          error:
+            "Datenbank-Spalte fehlt. Bitte supabase/149_greeting_post_sent_at.sql im SQL-Editor ausführen.",
+        };
+      }
+      return { ok: false, error: updErr.message };
+    }
+
+    const adminName =
+      `${adminProfile.first_name ?? ""} ${adminProfile.last_name ?? ""}`.trim() || "Admin";
+
+    if (value) {
+      const label = new Date(`${value}T12:00:00`).toLocaleDateString("de-DE", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      await logMemberActivity({
+        userId,
+        eventType: MEMBER_ACTIVITY_TYPES.greetingPostSent,
+        title: "Begrüßungspost vermerkt",
+        details: `Versendet am ${label} (eingetragen von ${adminName}).`,
+        createdBy: user.id,
+      }).catch(console.error);
+    } else {
+      await logMemberActivity({
+        userId,
+        eventType: MEMBER_ACTIVITY_TYPES.greetingPostCleared,
+        title: "Begrüßungspost zurückgesetzt",
+        details: `Status wieder „offen“ (durch ${adminName}).`,
+        createdBy: user.id,
+      }).catch(console.error);
+    }
+
+    revalidatePath(`/admin/members/${userId}`);
+    revalidatePath("/admin/members");
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Begrüßungspost konnte nicht gespeichert werden."),
+    };
+  }
+}
+
 /** Registrierungsstatus zurücksetzen auf „Offen“ (z. B. nach Neu-Einladung). */
 export async function clearMemberAppRegistration(userId: string) {
   const { user, profile: adminProfile } = await requireAdminAction();

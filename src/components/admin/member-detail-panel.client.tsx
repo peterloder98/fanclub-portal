@@ -23,6 +23,7 @@ import {
   reactivateMemberAppAccess,
   markMemberAppRegistrationDeleted,
   clearMemberAppRegistration,
+  setMemberGreetingPostSentAt,
 } from "@/app/(app)/admin/members/detail-actions";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
@@ -96,7 +97,7 @@ export type MemberDetailData = {
   application_id: string | null;
   app_registration_status: AppRegistrationStatus;
   app_registered_at: string | null;
-  welcome_email_sent_at: string | null;
+  greeting_post_sent_at: string | null;
 };
 
 function formatDE(date: string | null) {
@@ -115,6 +116,111 @@ function formatWhen(iso: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function todayIsoDate() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function GreetingPostEditor({
+  userId,
+  sentAt,
+  disabled,
+  onError,
+  onSaved,
+}: {
+  userId: string;
+  sentAt: string | null;
+  disabled?: boolean;
+  onError: (msg: string | null) => void;
+  onSaved: () => void;
+}) {
+  const [pendingLocal, startLocal] = useTransition();
+  const [dateValue, setDateValue] = useState(sentAt?.slice(0, 10) ?? "");
+
+  useEffect(() => {
+    setDateValue(sentAt?.slice(0, 10) ?? "");
+  }, [sentAt]);
+
+  function save(next: string | null) {
+    onError(null);
+    startLocal(async () => {
+      const result = await setMemberGreetingPostSentAt(userId, next);
+      if (!result.ok) {
+        onError(result.error);
+        return;
+      }
+      onSaved();
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="inline-flex flex-wrap items-center gap-2">
+        {sentAt ? (
+          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+            Versendet
+          </span>
+        ) : (
+          <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+            Offen
+          </span>
+        )}
+        {sentAt ? (
+          <span className="text-xs text-slate-500">am {formatDE(sentAt)}</span>
+        ) : (
+          <span className="text-xs text-slate-500">noch kein Begrüßungspost vermerkt</span>
+        )}
+      </span>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="date"
+          value={dateValue}
+          disabled={disabled || pendingLocal}
+          onChange={(e) => setDateValue(e.target.value)}
+          className="h-9 rounded-lg border border-slate-200 bg-white px-2 text-sm outline-none focus:ring-2 focus:ring-fc-blue/30 disabled:opacity-50"
+          aria-label="Datum Begrüßungspost"
+        />
+        <button
+          type="button"
+          disabled={disabled || pendingLocal || !dateValue}
+          onClick={() => save(dateValue)}
+          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+        >
+          Datum speichern
+        </button>
+        <button
+          type="button"
+          disabled={disabled || pendingLocal}
+          onClick={() => {
+            const today = todayIsoDate();
+            setDateValue(today);
+            save(today);
+          }}
+          className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-50"
+        >
+          Heute als versendet
+        </button>
+        {sentAt ? (
+          <button
+            type="button"
+            disabled={disabled || pendingLocal}
+            onClick={() => {
+              setDateValue("");
+              save(null);
+            }}
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            Auf offen setzen
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -668,22 +774,15 @@ export function MemberDetailPanel({
                 }
               />
               <InfoRow
-                label="Willkommens-Mail"
+                label="Begrüßungspost"
                 value={
-                  member.welcome_email_sent_at ? (
-                    <span className="inline-flex flex-wrap items-center gap-2">
-                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
-                        Gesendet
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        am {formatWhen(member.welcome_email_sent_at)}
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
-                      Noch nicht gesendet
-                    </span>
-                  )
+                  <GreetingPostEditor
+                    userId={member.id}
+                    sentAt={member.greeting_post_sent_at}
+                    disabled={pending}
+                    onError={setActionError}
+                    onSaved={() => router.refresh()}
+                  />
                 }
               />
               <InfoRow
