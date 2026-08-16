@@ -9,6 +9,7 @@ import {
   rejectPostAction,
 } from "@/app/(app)/admin/posts/actions";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
+import { PostMediaGallery } from "@/components/feed/post-media-gallery";
 
 export type PendingPostRow = {
   id: string;
@@ -64,17 +65,13 @@ export function PendingPostsQueue({ posts }: { posts: PendingPostRow[] }) {
             </p>
 
             {p.mediaUrls.length ? (
-              <div className="flex flex-wrap gap-2">
-                {p.mediaUrls.map((url) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={url}
-                    src={url}
-                    alt=""
-                    className="h-20 w-20 rounded-lg object-cover ring-1 ring-slate-200"
-                  />
-                ))}
-              </div>
+              <PostMediaGallery
+                size="md"
+                media={p.mediaUrls.map((url, i) => ({
+                  id: `${p.id}-media-${i}`,
+                  url,
+                }))}
+              />
             ) : null}
 
             <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">

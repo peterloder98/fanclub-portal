@@ -50,7 +50,7 @@ export function ComposerMediaGrid({
             setOverIndex(null);
           }}
           className={cn(
-            "group relative aspect-square overflow-hidden rounded-lg border bg-white shadow-sm",
+            "group relative flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-slate-100 shadow-sm",
             overIndex === index && dragIndex !== null && dragIndex !== index
               ? "border-fc-blue ring-2 ring-fc-sky/40"
               : "border-white",
@@ -75,10 +75,10 @@ export function ComposerMediaGrid({
             <X className="h-3 w-3" />
           </button>
           {m.mediaType === "video" ? (
-            <video src={m.url} className="h-full w-full object-cover" muted playsInline />
+            <video src={m.url} className="max-h-full max-w-full object-contain" muted playsInline />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={m.url} alt="" className="h-full w-full object-cover" />
+            <img src={m.url} alt="" className="max-h-full max-w-full object-contain" />
           )}
         </div>
       ))}

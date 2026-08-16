@@ -14,10 +14,20 @@ function inferMediaType(url: string): "image" | "video" {
   return /\.mp4(\?|$)/i.test(url) ? "video" : "image";
 }
 
-export function PostMediaGallery({ media }: { media: PostMediaItem[] }) {
+export function PostMediaGallery({
+  media,
+  size = "sm",
+}: {
+  media: PostMediaItem[];
+  /** sm = Feed-Kompakt, md = Moderation / größere Vorschau ohne Zuschnitt */
+  size?: "sm" | "md";
+}) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [lightboxType, setLightboxType] = useState<"image" | "video">("image");
   const items = media.slice(0, 6);
+  const maxH = size === "md" ? "max-h-40" : "max-h-28";
+  const singleMaxW = size === "md" ? "max-w-[min(100%,20rem)]" : "max-w-[min(100%,14rem)]";
+  const multiMaxW = size === "md" ? "max-w-[calc(50%-0.25rem)] sm:max-w-[11rem]" : "max-w-[calc(50%-0.25rem)] sm:max-w-[9rem]";
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -45,15 +55,26 @@ export function PostMediaGallery({ media }: { media: PostMediaItem[] }) {
               }}
               className={cn(
                 "rounded-lg border bg-slate-50 p-0.5 transition hover:ring-2 hover:ring-blue-200",
-                items.length === 1 ? "max-w-[min(100%,12rem)]" : "max-w-[calc(50%-0.25rem)] sm:max-w-[7rem]",
+                items.length === 1 ? singleMaxW : multiMaxW,
               )}
               aria-label={type === "video" ? "Video abspielen" : "Bild vergrößern"}
             >
               {type === "video" ? (
-                <video src={m.url} className="block max-h-20 w-auto max-w-full object-contain" muted playsInline />
+                <video
+                  src={m.url}
+                  className={cn("block w-auto max-w-full object-contain", maxH)}
+                  muted
+                  playsInline
+                />
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.url} alt="" className="block max-h-20 w-auto max-w-full object-contain" loading="lazy" decoding="async" />
+                <img
+                  src={m.url}
+                  alt=""
+                  className={cn("block w-auto max-w-full object-contain", maxH)}
+                  loading="lazy"
+                  decoding="async"
+                />
               )}
             </button>
           );

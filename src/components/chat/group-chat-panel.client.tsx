@@ -20,6 +20,7 @@ import { formatChatTime, type OnlineMember } from "@/lib/chat/types";
 import type { ChatMessage } from "@/lib/chat/use-group-chat";
 import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTransition } from "react";
 import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 import { isHiddenProfileId } from "@/lib/members/hidden";
