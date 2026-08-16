@@ -1,4 +1,3 @@
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { loadApplicationPdfBytes } from "@/lib/membership/application-pdf-service";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
@@ -7,6 +6,7 @@ import { emailPersonVars } from "@/lib/email/salutation-block";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
+import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -27,17 +27,10 @@ export async function notifyAdminsNewMembershipApplication(input: {
   email: string;
   submittedAt: string;
 }) {
-  const admin = createSupabaseAdminClient();
-  const { data: admins } = await admin
-    .from("profiles")
-    .select("id,email,first_name,last_name")
-    .eq("role", "admin")
-    .not("email", "is", null);
-
-  const recipients = (admins ?? []).filter((a) => a.email?.trim());
-  if (!recipients.length) {
-    console.warn("[email] Keine Admin-E-Mail-Adressen gefunden.");
-    return { sent: false, reason: "no_admin_emails" as const };
+  const to = await resolveOfficialFanclubEmail();
+  if (!to) {
+    console.warn("[email] Keine offizielle Fanclub-E-Mail für Antrags-Benachrichtigung.");
+    return { sent: false, reason: "no_official_email" as const };
   }
 
   const base = appBaseUrl();
@@ -62,53 +55,46 @@ export async function notifyAdminsNewMembershipApplication(input: {
       }
     : null;
 
-  let sentCount = 0;
-  let lastError: string | undefined;
-  for (const adm of recipients) {
-    const adminFirst =
-      adm.first_name?.trim() || adm.last_name?.trim() || "Vorstand";
+  const rendered = await renderEmailFromTemplate(
+    EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
+    {
+      admin_first_name: "Vorstand",
+      applicant_name: input.applicantName,
+      email: input.email,
+      application_id: input.applicationId,
+      submitted_at: submittedAtLabel,
+      application_admin_url: applicationAdminUrl,
+      admin_applications_url: adminApplicationsUrl,
+    },
+  );
 
-    const rendered = await renderEmailFromTemplate(
-      EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
-      {
-        admin_first_name: adminFirst,
-        applicant_name: input.applicantName,
-        email: input.email,
-        application_id: input.applicationId,
-        submitted_at: submittedAtLabel,
-        application_admin_url: applicationAdminUrl,
-        admin_applications_url: adminApplicationsUrl,
-      },
-    );
+  const attachments = [
+    ...(pdfAttachment ? [pdfAttachment] : []),
+    ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
+  ];
 
-    const attachments = [
-      ...(pdfAttachment ? [pdfAttachment] : []),
-      ...(rendered.signatureAttachment ? [rendered.signatureAttachment] : []),
-    ];
+  const result = await sendEmailWithLog({
+    to,
+    subject: rendered.subject,
+    text: rendered.text,
+    html: rendered.html,
+    attachments: attachments.length ? attachments : undefined,
+    templateKey: EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
+    context: { application_id: input.applicationId },
+    bypassTestAllowlist: true,
+  });
 
-    const result = await sendEmailWithLog({
-      to: adm.email!.trim(),
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
-      attachments: attachments.length ? attachments : undefined,
-      templateKey: EMAIL_TEMPLATE_KEYS.membershipApplicationAdminNotify,
-      context: { application_id: input.applicationId },
-    });
-
-    if (result.ok) sentCount += 1;
-    else if ("error" in result && result.error) lastError = result.error;
-  }
-
-  if (sentCount === 0) {
+  if (!result.ok) {
     return {
       sent: false,
-      reason: lastError ? ("send_failed" as const) : ("no_smtp_account" as const),
-      error: lastError,
+      reason: ("error" in result && result.error ? "send_failed" : "no_smtp_account") as
+        | "send_failed"
+        | "no_smtp_account",
+      error: "error" in result ? result.error : undefined,
     };
   }
 
-  return { sent: true as const, count: sentCount };
+  return { sent: true as const, count: 1 };
 }
 
 export async function sendApplicantConfirmationEmail(input: {

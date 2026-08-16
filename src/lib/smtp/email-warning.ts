@@ -28,8 +28,10 @@ export function formatMembershipEmailWarning(parts: {
   }
 
   if (parts.admin && !parts.admin.sent) {
-    if (parts.admin.reason === "no_admin_emails") {
-      messages.push("Admin-Benachrichtigung: Keine Admin-E-Mail in den Profilen.");
+    if (parts.admin.reason === "no_admin_emails" || parts.admin.reason === "no_official_email") {
+      messages.push(
+        "Admin-Benachrichtigung: Keine offizielle Fanclub-E-Mail konfiguriert (SMTP/Env).",
+      );
     } else if (parts.admin.reason === "no_smtp_account") {
       messages.push("Admin-Benachrichtigung: Kein SMTP-Konto konfiguriert.");
     } else if (parts.admin.reason && /outbound_test_mode/i.test(parts.admin.reason)) {

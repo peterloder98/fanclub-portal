@@ -1,6 +1,6 @@
 import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import { sendEmailWithLog } from "@/lib/email/send-log";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
 import {
   createUserNotification,
   notifyAllAdmins,
@@ -14,14 +14,13 @@ function appBaseUrl() {
   );
 }
 
-/** Admin: In-App + E-Mail bei Stammdaten-Änderungsantrag. */
+/** Admin: In-App an alle Vorstände + E-Mail nur an die offizielle Fanclub-Adresse. */
 export async function notifyAdminsProfileChangeRequest(input: {
   requestId: string;
   membershipNumber: string | null;
   memberName: string;
   createdAt: string;
 }) {
-  const admin = createSupabaseAdminClient();
   const base = appBaseUrl();
   const reviewUrl = base
     ? `${base}/admin/members/profile-changes?focus=${input.requestId}`
@@ -54,13 +53,12 @@ export async function notifyAdminsProfileChangeRequest(input: {
     },
   }).catch(console.error);
 
-  const { data: admins } = await admin
-    .from("profiles")
-    .select("email,first_name")
-    .eq("role", "admin")
-    .not("email", "is", null);
+  const to = await resolveOfficialFanclubEmail();
+  if (!to) {
+    console.warn("[email] Keine offizielle Fanclub-E-Mail für Stammdaten-Benachrichtigung.");
+    return { sent: 0 };
+  }
 
-  const recipients = (admins ?? []).filter((a) => a.email?.trim());
   const subject = `Stammdaten-Änderung: ${input.memberName} (Nr. ${nr})`;
   const text = `Hallo,
 
@@ -71,19 +69,17 @@ ${reviewUrl}
 
 Anni Perka Fanclub`;
 
-  let sent = 0;
-  for (const adm of recipients) {
-    const result = await sendEmailWithLog({
-      to: adm.email!,
-      subject,
-      text,
-      html: buildEmailFromPlainText(text),
-      templateKey: "profile_change_pending_admin",
-      context: { request_id: input.requestId },
-    });
-    if (result.ok) sent++;
-  }
-  return { sent };
+  const result = await sendEmailWithLog({
+    to,
+    subject,
+    text,
+    html: buildEmailFromPlainText(text),
+    templateKey: "profile_change_pending_admin",
+    context: { request_id: input.requestId },
+    bypassTestAllowlist: true,
+  });
+
+  return { sent: result.ok ? 1 : 0 };
 }
 
 export async function notifyMemberProfileChangeResult(input: {

@@ -1,6 +1,6 @@
 import { buildEmailFromPlainText } from "@/lib/email/email-layout";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendEmailWithLog } from "@/lib/email/send-log";
+import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
 import {
   createUserNotification,
   notifyAllAdmins,
@@ -19,18 +19,15 @@ function snippet(body: string, max = 140) {
   return t.length > max ? `${t.slice(0, max)}…` : t;
 }
 
-/** Admin: In-App + E-Mail bei neuem Pending-Post. */
+/** Admin: In-App an alle Vorstände + E-Mail nur an die offizielle Fanclub-Adresse. */
 export async function notifyAdminsPendingPost(input: {
   postId: string;
   authorId: string;
   authorName: string;
   body: string;
 }) {
-  const admin = createSupabaseAdminClient();
   const base = appBaseUrl();
-  const reviewUrl = base
-    ? `${base}/admin/posts`
-    : "/admin/posts";
+  const reviewUrl = base ? `${base}/admin/posts` : "/admin/posts";
 
   await notifyAllAdmins({
     kind: NOTIFICATION_KINDS.postPendingReview,
@@ -41,13 +38,12 @@ export async function notifyAdminsPendingPost(input: {
     metadata: { post_id: input.postId, author_id: input.authorId },
   }).catch(console.error);
 
-  const { data: admins } = await admin
-    .from("profiles")
-    .select("email,first_name")
-    .eq("role", "admin")
-    .not("email", "is", null);
+  const to = await resolveOfficialFanclubEmail();
+  if (!to) {
+    console.warn("[email] Keine offizielle Fanclub-E-Mail für Admin-Benachrichtigung.");
+    return { sent: 0 };
+  }
 
-  const recipients = (admins ?? []).filter((a) => a.email?.trim());
   const subject = `Post zur Freigabe: ${input.authorName}`;
   const text = `Hallo,
 
@@ -60,19 +56,17 @@ ${reviewUrl}
 
 Anni Perka Fanclub`;
 
-  let sent = 0;
-  for (const adm of recipients) {
-    const result = await sendEmailWithLog({
-      to: adm.email!,
-      subject,
-      text,
-      html: buildEmailFromPlainText(text),
-      templateKey: "post_pending_admin",
-      context: { post_id: input.postId },
-    });
-    if (result.ok) sent++;
-  }
-  return { sent };
+  const result = await sendEmailWithLog({
+    to,
+    subject,
+    text,
+    html: buildEmailFromPlainText(text),
+    templateKey: "post_pending_admin",
+    context: { post_id: input.postId },
+    bypassTestAllowlist: true,
+  });
+
+  return { sent: result.ok ? 1 : 0 };
 }
 
 /** Mitglied: nur In-App bei Freigabe oder Ablehnung. */

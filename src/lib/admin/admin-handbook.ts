@@ -100,7 +100,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Sobald jemand den digitalen Antrag absendet, werdet ihr als Vorstand sofort informiert: per E-Mail und per Benachrichtigung in der App. In der Benachrichtigung könnt ihr direkt auf den Antrag tippen und ihn öffnen.",
+            text: "Sobald jemand den digitalen Antrag absendet, werdet ihr als Vorstand sofort informiert: per E-Mail an die offizielle Fanclub-Adresse und per Benachrichtigung in der App an alle Vorstände. In der Benachrichtigung könnt ihr direkt auf den Antrag tippen und ihn öffnen.",
           },
           {
             type: "ol",
@@ -195,7 +195,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Mitglieder können im Profil Änderungen beantragen (z. B. Adresse).",
-              "Admin → „Stammdaten freigeben“ öffnen.",
+              "Admin → „Stammdaten freigeben“ öffnen (Hinweis kommt per In-App an alle Vorstände und per E-Mail an die offizielle Fanclub-Adresse).",
               "Änderung prüfen und annehmen oder ablehnen.",
             ],
           },
@@ -523,7 +523,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App (antippen öffnet die Freigabe) und zusätzlich per E-Mail.",
+            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App an alle Vorstände (antippen öffnet die Freigabe) und zusätzlich per E-Mail an die offizielle Fanclub-Adresse.",
           },
           {
             type: "ol",
@@ -714,6 +714,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "note",
             text: "Die optionalen Massen-Mails (Gewinnspiel / Event / Umfrage) sind standardmäßig aus und müssen unter „Mitglieder-Benachrichtigungen“ einzeln freigeschaltet werden. In-App-Benachrichtigungen (Glocke oben) laufen unabhängig davon weiter. Nicht abschaltbar für Mitglieder: Verwarnungen, Beitrags-/Zahlungserinnerungen, Zugangs-/Freigabe-Mails und Sicherheitsmeldungen (z. B. geänderte Login-E-Mail).",
+          },
+          {
+            type: "note",
+            text: "Admin-Mails (neuer Antrag, Beitragsfreigabe, Stammdaten-Änderung, Gewinnspiel beendet, Auffällige Einladungen u. Ä.) gehen nur an die offizielle Fanclub-Adresse — nicht an private Vorstands-Mails. In-App-Benachrichtigungen erreichen weiterhin alle Vorstände.",
           },
           {
             type: "note",
