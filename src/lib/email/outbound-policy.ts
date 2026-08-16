@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listSmtpAccounts } from "@/lib/smtp/accounts";
+import { isPortalFullyLive } from "@/lib/portal-launch";
 
 export type OutboundEmailMode = "live" | "test";
 
@@ -31,10 +32,15 @@ function extractRecipients(to: string | string[]): string[] {
     .filter(Boolean);
 }
 
-/** Standard: test — nur Vorstände + offizielle App-Mail bis EMAIL_OUTBOUND_MODE=live. */
-export function getOutboundEmailMode(): OutboundEmailMode {
-  const mode = (process.env.EMAIL_OUTBOUND_MODE ?? "test").trim().toLowerCase();
-  return mode === "live" ? "live" : "test";
+/**
+ * Explizit `live` / `test` über Env.
+ * Ohne Env: nach Go-Live (16.08.2026 10:00) live, davor test.
+ */
+export function getOutboundEmailMode(now: Date | number = Date.now()): OutboundEmailMode {
+  const mode = (process.env.EMAIL_OUTBOUND_MODE ?? "").trim().toLowerCase();
+  if (mode === "live") return "live";
+  if (mode === "test") return "test";
+  return isPortalFullyLive(now) ? "live" : "test";
 }
 
 export function evaluateOutboundEmailAgainstAllowlist(

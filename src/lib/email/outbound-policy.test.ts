@@ -13,9 +13,19 @@ describe("outbound email policy", () => {
     clearOutboundTestAllowlistCache();
   });
 
-  it("defaults to test mode", () => {
+  it("defaults to test mode before go-live when env unset", () => {
     delete process.env.EMAIL_OUTBOUND_MODE;
-    expect(getOutboundEmailMode()).toBe("test");
+    expect(getOutboundEmailMode(new Date("2026-08-15T12:00:00.000Z"))).toBe("test");
+  });
+
+  it("defaults to live mode after go-live when env unset", () => {
+    delete process.env.EMAIL_OUTBOUND_MODE;
+    expect(getOutboundEmailMode(new Date("2026-08-16T12:00:00.000Z"))).toBe("live");
+  });
+
+  it("respects explicit test mode even after go-live", () => {
+    process.env.EMAIL_OUTBOUND_MODE = "test";
+    expect(getOutboundEmailMode(new Date("2026-08-16T12:00:00.000Z"))).toBe("test");
   });
 
   it("blocks recipients not on allowlist in test mode", () => {

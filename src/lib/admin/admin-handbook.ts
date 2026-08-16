@@ -717,7 +717,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Solange der E-Mail-Versand im Testmodus läuft (Standard vor Go-Live), gehen Massen-Mails und die meisten Mitglieder-Mails nur an die Allowlist (Vorstand/SMTP) — nicht an alle Mitglieder. Live-Versand: EMAIL_OUTBOUND_MODE=live. Wenn nach Freischaltung die Einladungs-Mail fehlschlägt, bleibt das Mitglied aktiv; die App zeigt einen Hinweis — Zugangslink unter Mitglieder erneut senden oder E-Mail-Log prüfen.",
+            text: "Solange der E-Mail-Versand im Testmodus läuft, gehen Massen-Mails und die meisten Mitglieder-Mails nur an die Allowlist (Vorstand/SMTP). Nach dem Go-Live (16.08.2026 10:00) ist der Standard live, sofern EMAIL_OUTBOUND_MODE nicht explizit auf test steht. Vorstands-Mails wie Zahlungsinfo/Zahlungserinnerung und Mitglieder-Werbeeinladungen gehen auch im Testmodus raus. Live erzwingen: EMAIL_OUTBOUND_MODE=live in Vercel.",
           },
           {
             type: "link",

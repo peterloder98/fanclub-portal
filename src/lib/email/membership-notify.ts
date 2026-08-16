@@ -209,6 +209,7 @@ export async function sendMemberInviteAfterApproval(input: {
       setup_path: "/setup-account",
       setup_token: true,
     },
+    bypassTestAllowlist: true,
   });
 
   return { ...result, setupUrl };
