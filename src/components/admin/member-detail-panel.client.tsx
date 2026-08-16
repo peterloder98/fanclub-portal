@@ -218,9 +218,17 @@ export function MemberDetailPanel({
     setActionError(null);
     startTransition(async () => {
       try {
-        await deleteMember(member.id);
+        const result = await deleteMember(member.id);
+        if (!result.ok) {
+          setActionError(result.error);
+          return;
+        }
+        router.replace("/admin/members");
+        router.refresh();
       } catch (e) {
-        setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
+        setActionError(
+          userFacingActionError(e, "Mitglied konnte nicht gelöscht werden. Bitte erneut versuchen."),
+        );
       }
     });
   }

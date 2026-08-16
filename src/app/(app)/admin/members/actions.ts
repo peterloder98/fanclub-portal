@@ -19,6 +19,8 @@ import {
 import { normalizeMemberCountryCode } from "@/lib/members/country";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 import { ensureOpenMembershipFeePayment } from "@/lib/payments/membership-fee-payment";
+import { deleteMemberCompletely } from "@/lib/membership/delete-member";
+import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -421,30 +423,44 @@ export async function updateMember(formData: FormData) {
   redirect(`/admin/members/${input.user_id}`);
 }
 
-export async function deleteMember(userId: string) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+export async function deleteMember(
+  userId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "Nicht angemeldet." };
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (me?.role !== "admin") return { ok: false, error: "Keine Berechtigung." };
 
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin.auth.admin.deleteUser(userId);
-  if (error) throw new Error(error.message);
-  await logAdminAction(admin, {
-    actorId: user.id,
-    action: "member.delete",
-    entityType: "profile",
-    entityId: userId,
-    summary: "Mitgliedskonto gelöscht",
-  });
-  revalidatePath("/admin/members");
-  redirect("/admin/members");
+    const admin = createSupabaseAdminClient();
+    const result = await deleteMemberCompletely(admin, userId);
+
+    await logAdminAction(admin, {
+      actorId: user.id,
+      action: "member.delete",
+      entityType: "profile",
+      entityId: userId,
+      summary: result.name
+        ? `Mitgliedskonto gelöscht: ${result.name}`
+        : "Mitgliedskonto gelöscht",
+    });
+    revalidatePath("/admin/members");
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: userFacingActionError(
+        e,
+        "Mitglied konnte nicht gelöscht werden. Bitte Seite neu laden und erneut versuchen.",
+      ),
+    };
+  }
 }
 

@@ -6,7 +6,7 @@ function deError(prefix: string, message: string) {
   return new Error(`${prefix}: ${message}`);
 }
 
-async function deletePaymentsForIds(admin: SupabaseClient, paymentIds: string[]) {
+export async function deletePaymentsForIds(admin: SupabaseClient, paymentIds: string[]) {
   for (const paymentId of paymentIds) {
     const { error: auditErr } = await admin
       .from("payment_audit_log")
@@ -36,7 +36,7 @@ async function deletePaymentsForIds(admin: SupabaseClient, paymentIds: string[])
   }
 }
 
-async function collectPaymentIds(
+export async function collectPaymentIds(
   admin: SupabaseClient,
   opts: { applicationId?: string; userId?: string },
 ): Promise<string[]> {
