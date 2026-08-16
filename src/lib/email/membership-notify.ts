@@ -7,6 +7,7 @@ import { emailPersonVars } from "@/lib/email/salutation-block";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
+import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -210,6 +211,25 @@ export async function sendMemberInviteAfterApproval(input: {
       setup_token: true,
     },
   });
+
+  if (result.ok && userId) {
+    const admin = createSupabaseAdminClient();
+    const nowIso = new Date().toISOString();
+    const { error: stampErr } = await admin
+      .from("profiles")
+      .update({ welcome_email_sent_at: nowIso })
+      .eq("id", userId);
+    if (stampErr && !/welcome_email_sent_at|does not exist/i.test(stampErr.message)) {
+      console.error("[membership] welcome_email_sent_at:", stampErr.message);
+    }
+
+    await logMemberActivity({
+      userId,
+      eventType: MEMBER_ACTIVITY_TYPES.welcomeEmailSent,
+      title: "Willkommens-Mail gesendet",
+      details: `Zugangs-Mail an ${input.email} (Mitgliedsnummer ${input.membershipNumber}).`,
+    }).catch(console.error);
+  }
 
   return { ...result, setupUrl };
 }

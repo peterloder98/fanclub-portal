@@ -103,14 +103,31 @@ export default async function AdminMemberDetailPage({
   if (me?.role !== "admin") redirect("/dashboard");
 
   const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select(
-      "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date",
-    )
-    .eq("id", id)
-    .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
+  let profile: Record<string, unknown> | null = null;
+  {
+    const full = await admin
+      .from("profiles")
+      .select(
+        "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date,welcome_email_sent_at",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    if (full.error && /welcome_email_sent_at|does not exist/i.test(full.error.message)) {
+      const fallback = await admin
+        .from("profiles")
+        .select(
+          "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date",
+        )
+        .eq("id", id)
+        .maybeSingle();
+      if (fallback.error) throw new Error(fallback.error.message);
+      profile = fallback.data;
+    } else if (full.error) {
+      throw new Error(full.error.message);
+    } else {
+      profile = full.data;
+    }
+  }
   if (!profile) redirect("/admin/members");
 
   const { data: membership } = await admin
@@ -162,7 +179,10 @@ export default async function AdminMemberDetailPage({
   }));
 
   const warningCountFromRows = warnings.length;
-  const warningCount = Math.max(profile.warning_count ?? 0, warningCountFromRows);
+  const warningCount = Math.max(
+    typeof profile.warning_count === "number" ? profile.warning_count : 0,
+    warningCountFromRows,
+  );
 
   let ledgerEntries: Awaited<ReturnType<typeof listClubLedger>> = [];
   let ledgerAvailable = true;
@@ -195,22 +215,22 @@ export default async function AdminMemberDetailPage({
   }
 
   const member: MemberDetailData = {
-    id: profile.id,
-    membership_number: profile.membership_number,
-    first_name: profile.first_name,
-    last_name: profile.last_name,
-    email: profile.email,
-    username: profile.username,
-    role: profile.role,
-    phone: profile.phone,
-    birthdate: profile.birthdate,
-    gender: profile.gender,
-    street: profile.street,
-    postal_code: profile.postal_code,
-    city: profile.city,
-    country: profile.country,
+    id: String(profile.id),
+    membership_number: (profile.membership_number as string | null) ?? null,
+    first_name: String(profile.first_name ?? ""),
+    last_name: String(profile.last_name ?? ""),
+    email: (profile.email as string | null) ?? null,
+    username: (profile.username as string | null) ?? null,
+    role: String(profile.role ?? "member"),
+    phone: (profile.phone as string | null) ?? null,
+    birthdate: (profile.birthdate as string | null) ?? null,
+    gender: (profile.gender as string | null) ?? null,
+    street: (profile.street as string | null) ?? null,
+    postal_code: (profile.postal_code as string | null) ?? null,
+    city: (profile.city as string | null) ?? null,
+    country: (profile.country as string | null) ?? null,
     warning_count: warningCount,
-    contribution_date: (profile as { contribution_date?: string | null }).contribution_date ?? null,
+    contribution_date: (profile.contribution_date as string | null) ?? null,
     membership: membership
       ? {
           start_date: membership.start_date,
@@ -223,13 +243,16 @@ export default async function AdminMemberDetailPage({
     application_id: application?.id ?? null,
     app_registration_status: appReg.status,
     app_registered_at: appReg.registeredAt,
+    welcome_email_sent_at: (profile.welcome_email_sent_at as string | null | undefined) ?? null,
   };
 
   return (
     <div className="min-h-screen">
       <Topbar
         title="Mitgliedsdatensatz"
-        subtitle={`${profile.first_name} ${profile.last_name}${profile.membership_number ? ` · Nr. ${profile.membership_number}` : ""}`}
+        subtitle={`${String(profile.first_name ?? "")} ${String(profile.last_name ?? "")}${
+          profile.membership_number ? ` · Nr. ${profile.membership_number}` : ""
+        }`}
       />
       <main className="px-4 py-6 lg:px-8">
         <AdminBackLink href="/admin/members" label="← Mitgliederliste" />

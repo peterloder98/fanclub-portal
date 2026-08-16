@@ -96,6 +96,7 @@ export type MemberDetailData = {
   application_id: string | null;
   app_registration_status: AppRegistrationStatus;
   app_registered_at: string | null;
+  welcome_email_sent_at: string | null;
 };
 
 function formatDE(date: string | null) {
@@ -664,6 +665,25 @@ export function MemberDetailPanel({
                       ) : null}
                     </span>
                   </span>
+                }
+              />
+              <InfoRow
+                label="Willkommens-Mail"
+                value={
+                  member.welcome_email_sent_at ? (
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                        Gesendet
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        am {formatWhen(member.welcome_email_sent_at)}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+                      Noch nicht gesendet
+                    </span>
+                  )
                 }
               />
               <InfoRow
