@@ -21,6 +21,7 @@ import {
   type OnlineMember,
 } from "@/lib/chat/types";
 import { installChatAudioUnlock, isChatMuted, playChatBling, setChatMuted, unlockChatAudio } from "@/lib/chat/sound";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export type ChatMessage = GroupChatMessageRow & { author: ChatAuthor };
 
@@ -110,7 +111,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   const cooldownLeftMs = Math.max(0, cooldownUntil - nowTick);
   const cooldownActive = cooldownLeftMs > 0;
   const overLimit = draft.length > GROUP_CHAT_MAX_LEN;
-  const onlineCount = Math.max(onlineMembers.length ? onlineMembers.length : 0, meProfile ? 1 : 0);
+  const onlineCount = Math.max(
+    onlineMembers.length,
+    meProfile && !isHiddenProfileId(meProfile.id) ? 1 : 0,
+  );
 
   const shouldPlaySoundForMessage = useCallback(
     (messageId: string, authorId: string, createdAt: string) => {
@@ -423,11 +427,12 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     presenceChannelRef.current = presenceChannel;
 
     const flushOnlineMembers = () => {
-      const list = [...onlineSnapshotRef.current.values()].sort((a, b) =>
-        a.name.localeCompare(b.name, "de"),
-      );
+      const list = [...onlineSnapshotRef.current.values()]
+        .filter((m) => !isHiddenProfileId(m.id))
+        .sort((a, b) => a.name.localeCompare(b.name, "de"));
       const me = meProfileRef.current;
-      setOnlineMembers(list.length ? list : me ? [me] : []);
+      const meVisible = me && !isHiddenProfileId(me.id) ? me : null;
+      setOnlineMembers(list.length ? list : meVisible ? [meVisible] : []);
     };
 
     const syncPresence = () => {
@@ -617,7 +622,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     isAdmin,
     loaded,
     onlineMembers,
-    onlineCount: Math.max(1, onlineCount || onlineMembers.length || 1),
+    onlineCount,
     cooldownActive,
     overLimit,
     muted,

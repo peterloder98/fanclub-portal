@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
 import { AlertTriangle, HelpCircle, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -13,6 +12,7 @@ import { LIVE_SESSION_QUESTION_MAX_LEN } from "@/lib/live/types";
 import { formatChatTime } from "@/lib/chat/types";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { cn } from "@/lib/cn";
+import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 
 type QItem = {
   id: string;
@@ -340,12 +340,12 @@ export function LiveMemberQuestions({
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <Link
-                          href={`/mitglieder/${q.authorId}`}
+                        <MemberProfileAnchor
+                          userId={q.authorId}
                           className="truncate text-xs font-semibold text-fc-navy hover:underline"
                         >
                           {q.authorName}
-                        </Link>
+                        </MemberProfileAnchor>
                         <time
                           className="shrink-0 text-[10px] tabular-nums text-slate-400"
                           dateTime={q.createdAt}

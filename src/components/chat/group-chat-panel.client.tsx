@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import {
   AlertTriangle,
   ChevronDown,
@@ -22,6 +21,8 @@ import type { ChatMessage } from "@/lib/chat/use-group-chat";
 import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
+import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
+import { isHiddenProfileId } from "@/lib/members/hidden";
 
 export function OnlineMembersControl({
   onlineCount,
@@ -72,16 +73,18 @@ export function OnlineMembersControl({
             Gerade online
           </p>
           <ul className="max-h-56 overflow-y-auto">
-            {onlineMembers.map((m) => (
+            {onlineMembers
+              .filter((m) => !isHiddenProfileId(m.id))
+              .map((m) => (
               <li key={m.id}>
-                <Link
-                  href={`/mitglieder/${m.id}`}
+                <MemberProfileAnchor
+                  userId={m.id}
                   className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-fc-ice"
-                  onClick={(e) => e.stopPropagation()}
+                  linkProps={{ onClick: (e) => e.stopPropagation() }}
                 >
                   <UserAvatar name={m.name} avatarUrl={m.avatarUrl} size="xs" />
                   <span className="min-w-0 truncate font-medium text-fc-navy">{m.name}</span>
-                </Link>
+                </MemberProfileAnchor>
               </li>
             ))}
           </ul>
@@ -336,24 +339,24 @@ export function GroupChatPanel({
                 >
                   <div className="min-w-0 w-full">
                     <div className="flex items-center gap-1.5">
-                      <Link
-                        href={`/mitglieder/${m.author_id}`}
+                      <MemberProfileAnchor
+                        userId={m.author_id}
                         className="shrink-0 sm:hidden"
-                        aria-label={`Portal von ${m.author.name}`}
+                        linkProps={{ "aria-label": `Portal von ${m.author.name}` }}
                       >
                         <UserAvatar
                           name={m.author.name}
                           avatarUrl={m.author.avatarUrl}
                           size="xs"
                         />
-                      </Link>
+                      </MemberProfileAnchor>
                       <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
-                        <Link
-                          href={`/mitglieder/${m.author_id}`}
+                        <MemberProfileAnchor
+                          userId={m.author_id}
                           className="hover:text-fc-blue hover:underline"
                         >
                           {m.author.name}
-                        </Link>
+                        </MemberProfileAnchor>
                         {m.author_id === userId ? (
                           <span className="ml-1 font-normal text-slate-400">(du)</span>
                         ) : null}

@@ -12,6 +12,7 @@ import {
 } from "@/lib/posts/reactions";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
+import { memberProfileHref } from "@/lib/members/hidden";
 
 const LONG_PRESS_MS = 450;
 const HOVER_OPEN_MS = 220;
@@ -109,7 +110,7 @@ function ReactionBreakdownPopover({
                         name={u.name}
                         avatarUrl={u.avatarUrl}
                         size="xs"
-                        href={`/mitglieder/${u.id}`}
+                        href={memberProfileHref(u.id)}
                       >
                         <span className="min-w-0 truncate text-[11px] text-slate-600">{u.name}</span>
                       </HoverEnlargeAvatar>

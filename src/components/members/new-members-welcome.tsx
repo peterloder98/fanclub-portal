@@ -1,7 +1,7 @@
 import { CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import type { RecentMemberWelcome } from "@/lib/members/recent-members";
-import { memberPortalPath } from "@/lib/members/intro-questions";
+import { memberProfileHref } from "@/lib/members/hidden";
 
 function formatJoinDate(iso: string | null) {
   if (!iso) return null;
@@ -45,7 +45,7 @@ export function NewMembersWelcome({ members }: { members: RecentMemberWelcome[] 
                 avatarUrl={m.avatarUrl}
                 size="sm"
                 className="w-full gap-3"
-                href={memberPortalPath(m.userId)}
+                href={memberProfileHref(m.userId)}
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-fc-navy">{m.name}</p>

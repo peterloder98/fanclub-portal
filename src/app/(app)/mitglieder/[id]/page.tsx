@@ -97,9 +97,6 @@ export default async function MemberPortalPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  const viewerIsAdmin = me?.role === "admin";
-
   const { data: membership } = await supabase
     .from("memberships")
     .select("status,start_date")
@@ -130,7 +127,8 @@ export default async function MemberPortalPage({
         ).data
       : null);
   if (!profileRow) notFound();
-  if (isProfileHidden(profileRow) && !viewerIsAdmin && user.id !== id) notFound();
+  // Geist: Profilseite nur für den Account selbst — auch Vorstände sehen /mitglieder/… nicht.
+  if (isProfileHidden(profileRow) && user.id !== id) notFound();
   const profile = profileRow as typeof profileRow & { short_bio?: string | null };
 
   const name = profileDisplayName(profile);

@@ -2,6 +2,7 @@
 
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import type { YearLeaderboardData } from "@/lib/points/year-leaderboard";
+import { memberProfileHref } from "@/lib/members/hidden";
 
 function LeaderboardEntry({
   rank,
@@ -22,7 +23,7 @@ function LeaderboardEntry({
     <li className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 hover:bg-slate-50">
       <span className="flex min-w-0 items-center gap-2">
         <span className="w-6 shrink-0 text-sm font-bold tabular-nums text-slate-500">{rank}.</span>
-        <HoverEnlargeAvatar name={name} avatarUrl={avatarUrl} size="xs" href={`/mitglieder/${userId}`}>
+        <HoverEnlargeAvatar name={name} avatarUrl={avatarUrl} size="xs" href={memberProfileHref(userId)}>
           <span
             className={
               highlight

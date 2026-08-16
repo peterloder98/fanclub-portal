@@ -20,6 +20,7 @@ import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoj
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
 import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
+import { memberProfileHref } from "@/lib/members/hidden";
 type Poll = {
   id: string;
   question: string;
@@ -466,7 +467,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
                     name={c.authorName}
                     avatarUrl={c.authorAvatarUrl}
                     size="xs"
-                    href={`/mitglieder/${c.author_id}`}
+                    href={memberProfileHref(c.author_id)}
                   >
                     <span className="font-semibold text-slate-700">{c.authorName}</span>
                   </HoverEnlargeAvatar>

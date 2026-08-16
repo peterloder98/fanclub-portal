@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-15";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-16";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -214,7 +214,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Technische Vorstands-Konten können für die Mitglieder-App unsichtbar sein. Sie erscheinen nicht im Verzeichnis, in der Suche, auf der Karte, in Avatar-Listen, in der Anni-Stars-Rangliste oder als Geburtstags-Beitrag und sammeln keine Sterne/Badges. Unter Admin → Mitglieder & Anträge bleiben sie für den Vorstand sichtbar; Login und alle Admin-Funktionen funktionieren weiter.",
+            text: "Technische Vorstands-Konten können für die Mitglieder-App unsichtbar sein („Geist“). Sie erscheinen nicht im Verzeichnis, in der Suche, auf der Karte, in Avatar-Listen, in der Anni-Stars-Rangliste, in der Online-Liste im Chat oder als Geburtstags-Beitrag und sammeln keine Sterne/Badges. Wenn der Geist selbst kommentiert oder schreibt, kann der Name sichtbar sein — aber ohne klickbaren Profil-Link. Die Direkt-URL zum Mitglieder-Portal liefert für alle anderen (auch Vorstand) eine 404; nur der eigene Account kann die Seite sehen. Unter Admin → Mitglieder & Anträge bleiben die Konten für den Vorstand sichtbar; Login und alle Admin-Funktionen funktionieren weiter.",
           },
         ],
       },
@@ -529,7 +529,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → „Beiträge freigeben“ öffnen (oder den Link in der Benachrichtigung/E-Mail).",
-              "Eingereichten Beitrag prüfen.",
+              "Eingereichten Beitrag prüfen — Bilder werden vollständig (ohne Zuschnitt) angezeigt; Antippen vergrößert sie.",
               "Annehmen (erscheint im Feed) oder ablehnen — das Mitglied wird in der App über das Ergebnis informiert.",
             ],
           },

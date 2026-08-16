@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { initialsFromName } from "@/lib/user/initials";
 import { cn } from "@/lib/cn";
+import { isHiddenProfileId, memberProfileHref } from "@/lib/members/hidden";
 
 const profileCache = new Map<string, { name: string; avatarUrl: string | null }>();
 const HOVER_CLOSE_MS = 200;
@@ -93,6 +94,11 @@ export function MentionProfileLink({
   }, [open, updatePosition]);
 
   const display = profile ?? { name, avatarUrl: null };
+  const href = memberProfileHref(userId);
+
+  if (!href || isHiddenProfileId(userId)) {
+    return <span className={cn("font-semibold text-slate-700", className)}>{name}</span>;
+  }
 
   const preview = open ? (
     <div
@@ -122,7 +128,7 @@ export function MentionProfileLink({
     <>
       <Link
         ref={anchorRef}
-        href={`/mitglieder/${userId}`}
+        href={href}
         className={cn(
           "rounded-md bg-fc-ice px-1 py-0.5 font-semibold text-fc-blue hover:bg-fc-sky/30",
           className,

@@ -1,5 +1,6 @@
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import type { UpcomingBirthdayRow } from "@/lib/members/upcoming-birthdays";
+import { memberProfileHref } from "@/lib/members/hidden";
 
 export function UpcomingBirthdays({ rows }: { rows: UpcomingBirthdayRow[] }) {
   if (!rows.length) {
@@ -10,7 +11,7 @@ export function UpcomingBirthdays({ rows }: { rows: UpcomingBirthdayRow[] }) {
     <ul className="divide-y divide-slate-100">
       {rows.map((r) => (
         <li key={r.userId} className="flex items-center gap-3 px-3 py-2.5">
-          <HoverEnlargeAvatar name={r.name} avatarUrl={r.avatarUrl} size="sm" href={`/mitglieder/${r.userId}`}>
+          <HoverEnlargeAvatar name={r.name} avatarUrl={r.avatarUrl} size="sm" href={memberProfileHref(r.userId)}>
             <div className="min-w-0">
               <div className="truncate text-sm font-medium text-slate-900">{r.name}</div>
               <div className="text-xs text-slate-600">{r.dateLabel}</div>

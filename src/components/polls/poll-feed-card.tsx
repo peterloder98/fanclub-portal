@@ -9,6 +9,7 @@ import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PollOptionsList } from "@/components/polls/poll-options-list";
 import { cn } from "@/lib/cn";
 import { useMemo } from "react";
+import { memberProfileHref } from "@/lib/members/hidden";
 
 export type PollFeedData = {
   id: string;
@@ -126,7 +127,7 @@ export function PollFeedCard({
             avatarUrl={poll.authorAvatarUrl}
             size="sm"
             className="shrink-0"
-            href={poll.authorId ? `/mitglieder/${poll.authorId}` : null}
+            href={memberProfileHref(poll.authorId)}
           >
             <span className="font-medium text-slate-800">{poll.authorName}</span>
           </HoverEnlargeAvatar>

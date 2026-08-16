@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { AlertTriangle, MessageCircle, SendHorizontal, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
@@ -13,6 +12,7 @@ import { LIVE_SESSION_CHAT_COOLDOWN_MS, LIVE_SESSION_CHAT_MAX_LEN } from "@/lib/
 import { profileDisplayName } from "@/lib/profiles/display";
 import { formatChatTime } from "@/lib/chat/types";
 import { cn } from "@/lib/cn";
+import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 
 export type LiveChatMessage = {
   id: string;
@@ -320,12 +320,12 @@ export function LiveSessionChatPanel({
                 >
                   <div className="flex items-center gap-1.5">
                     <p className="min-w-0 flex-1 truncate text-xs font-semibold text-fc-navy">
-                      <Link
-                        href={`/mitglieder/${m.authorId}`}
+                      <MemberProfileAnchor
+                        userId={m.authorId}
                         className="hover:text-fc-blue hover:underline"
                       >
                         {m.authorName}
-                      </Link>
+                      </MemberProfileAnchor>
                       {m.authorId === chat.userId ? (
                         <span className="ml-1 font-normal text-slate-400">(du)</span>
                       ) : null}

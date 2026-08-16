@@ -6,7 +6,7 @@ import type { MemberMapCluster } from "@/lib/members/cluster-map";
 import { MAP_CI } from "@/lib/maps/ci-colors";
 import { MapHoverOverlay } from "@/components/maps/map-hover-overlay";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import Link from "next/link";
+import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 import L from "leaflet";
 
 const GERMANY_BOUNDS: [[number, number], [number, number]] = [
@@ -111,13 +111,13 @@ function ClusterMemberCard({
       <ul className="mt-2 max-h-40 space-y-1.5 overflow-y-auto overscroll-contain">
         {cluster.members.map((m) => (
           <li key={m.userId} className="flex items-center gap-2">
-            <Link
-              href={`/mitglieder/${m.userId}`}
+            <MemberProfileAnchor
+              userId={m.userId}
               className="flex min-w-0 items-center gap-2 hover:text-fc-blue"
             >
               <UserAvatar name={m.name} avatarUrl={m.avatarUrl} size="xs" />
               <span className="min-w-0 truncate text-xs font-medium text-slate-700">{m.name}</span>
-            </Link>
+            </MemberProfileAnchor>
           </li>
         ))}
       </ul>

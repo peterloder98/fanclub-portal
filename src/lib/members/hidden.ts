@@ -1,4 +1,4 @@
-/** Versteckte Profile: nicht in Mitglieder-UI / Ranglisten / Mentions. */
+/** Versteckte Profile („Geist“): nicht in Mitglieder-UI / Ranglisten / Mentions; kein Profil-Link. */
 
 export type HiddenFlag = { id?: string; is_hidden?: boolean | null };
 
@@ -18,6 +18,15 @@ export function isProfileHidden(row: HiddenFlag | null | undefined): boolean {
   if (!row) return false;
   if (row.id && SYSTEM_HIDDEN_PROFILE_IDS.has(row.id)) return true;
   return Boolean(row.is_hidden);
+}
+
+/**
+ * Öffentlicher Mitglieder-Portal-Pfad — `null` für Geister (Name darf sichtbar bleiben, Link nicht).
+ * Eigenes Portal bleibt über Direkt-URL nur für den Account selbst erreichbar.
+ */
+export function memberProfileHref(userId: string | null | undefined): string | null {
+  if (!userId || isHiddenProfileId(userId)) return null;
+  return `/mitglieder/${userId}`;
 }
 
 export function excludeHiddenProfiles<T extends HiddenFlag>(

@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { Search, MapPin, X } from "lucide-react";
-import { memberPortalPath } from "@/lib/members/intro-questions";
+import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 import { cn } from "@/lib/cn";
 
 export type SearchableMember = {
@@ -102,10 +101,10 @@ export function MemberDirectorySearch({
           ) : (
             results.map((m) => (
               <li key={m.userId} role="option">
-                <Link
-                  href={memberPortalPath(m.userId)}
-                  onClick={() => setOpen(false)}
+                <MemberProfileAnchor
+                  userId={m.userId}
                   className="flex items-center gap-2.5 px-3 py-2 hover:bg-fc-ice/70"
+                  linkProps={{ onClick: () => setOpen(false) }}
                 >
                   {m.avatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -134,7 +133,7 @@ export function MemberDirectorySearch({
                       </span>
                     ) : null}
                   </span>
-                </Link>
+                </MemberProfileAnchor>
               </li>
             ))
           )}

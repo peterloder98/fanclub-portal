@@ -1,5 +1,7 @@
 /** Öffentliche Intro-Fragen für das Mitglieder-Portal (alle optional). */
 
+import { memberProfileHref } from "@/lib/members/hidden";
+
 export const SHORT_BIO_MAX_LENGTH = 150;
 
 /**
@@ -41,8 +43,9 @@ export type MemberIntroAnswers = Partial<Record<MemberIntroKey, string | null>> 
   short_bio?: string | null;
 };
 
+/** @deprecated Prefer memberProfileHref — returns null for Geist/system-hidden profiles. */
 export function memberPortalPath(userId: string) {
-  return `/mitglieder/${userId}`;
+  return memberProfileHref(userId);
 }
 
 export function formatMemberOrigin(input: {
