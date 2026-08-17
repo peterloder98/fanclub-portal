@@ -12,6 +12,7 @@ import {
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { batchMemberContributionStatus } from "@/lib/club/membership-contribution";
+import { loadMemberBoardNotesMap } from "@/lib/members/board-notes";
 import {
   resolveAppRegistrationStatus,
   type AppRegistrationStatus,
@@ -137,6 +138,10 @@ export default async function AdminMembersPage({
       });
 
       const contribByUser = await batchMemberContributionStatus(baseMembers.map((m) => m.id));
+      const boardNotes = await loadMemberBoardNotesMap(
+        admin,
+        baseMembers.map((m) => m.id),
+      ).catch(() => new Map<string, string>());
 
       return {
         members: baseMembers.map((m) => {
@@ -145,6 +150,7 @@ export default async function AdminMembersPage({
             ...m,
             contribution_status: contrib?.status ?? null,
             contribution_open_cents: contrib?.openCents ?? null,
+            board_note: boardNotes.get(m.id) ?? null,
           };
         }),
         membersError: null,

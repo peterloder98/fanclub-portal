@@ -16,6 +16,7 @@ import {
 } from "@/lib/membership/app-registration";
 import { buildMemberApplicationPaymentDraft } from "@/lib/email/application-payment-draft";
 import type { ApplicationPaymentMailDraft } from "@/lib/email/application-payment-draft";
+import { loadMemberBoardNote } from "@/lib/members/board-notes";
 import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 
 export const dynamic = "force-dynamic";
@@ -244,6 +245,7 @@ export default async function AdminMemberDetailPage({
     app_registration_status: appReg.status,
     app_registered_at: appReg.registeredAt,
     greeting_post_sent_at: (profile.greeting_post_sent_at as string | null | undefined) ?? null,
+    board_note: await loadMemberBoardNote(admin, id).catch(() => ""),
   };
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Ban, Mail, Pencil, ShieldCheck, Trash2 } from "lucide-react";
+import { AlertTriangle, Ban, Mail, Pencil, ShieldCheck, StickyNote, Trash2 } from "lucide-react";
 import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +24,7 @@ import {
   markMemberAppRegistrationDeleted,
   clearMemberAppRegistration,
   setMemberGreetingPostSentAt,
+  saveMemberBoardNote,
 } from "@/app/(app)/admin/members/detail-actions";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
@@ -50,6 +51,7 @@ import {
 } from "@/lib/membership/app-registration";
 import { cn } from "@/lib/cn";
 import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
+import { MEMBER_BOARD_NOTE_MAX } from "@/lib/members/board-notes";
 
 export type InitialPaperMailDraft = {
   subject: string;
@@ -98,6 +100,7 @@ export type MemberDetailData = {
   app_registration_status: AppRegistrationStatus;
   app_registered_at: string | null;
   greeting_post_sent_at: string | null;
+  board_note: string;
 };
 
 function formatDE(date: string | null) {
@@ -218,6 +221,88 @@ function GreetingPostEditor({
             Auf offen setzen
           </button>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function BoardNoteEditor({
+  userId,
+  note,
+  disabled,
+  onError,
+  onSaved,
+}: {
+  userId: string;
+  note: string;
+  disabled?: boolean;
+  onError: (msg: string | null) => void;
+  onSaved: () => void;
+}) {
+  const [pendingLocal, startLocal] = useTransition();
+  const [value, setValue] = useState(note);
+
+  useEffect(() => {
+    setValue(note);
+  }, [note]);
+
+  const dirty = value.trim() !== note.trim();
+  const hasNote = Boolean(note.trim());
+
+  function save() {
+    onError(null);
+    startLocal(async () => {
+      const result = await saveMemberBoardNote(userId, value);
+      if (!result.ok) {
+        onError(result.error);
+        return;
+      }
+      onSaved();
+    });
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border px-4 py-3",
+        hasNote
+          ? "border-amber-300 bg-amber-50/90"
+          : "border-slate-200 bg-slate-50/80",
+      )}
+    >
+      <div className="flex items-start gap-2">
+        <StickyNote
+          className={cn("mt-0.5 h-4 w-4 shrink-0", hasNote ? "text-amber-700" : "text-slate-500")}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">Interne Bemerkung</p>
+          <p className="mt-0.5 text-xs text-slate-600">
+            Nur für den Vorstand sichtbar — nicht im Mitgliederprofil und nicht in der App.
+          </p>
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value.slice(0, MEMBER_BOARD_NOTE_MAX))}
+            disabled={disabled || pendingLocal}
+            rows={4}
+            maxLength={MEMBER_BOARD_NOTE_MAX}
+            placeholder="z. B. nicht kontaktieren, Hinweis zur Barrierefreiheit …"
+            className="mt-2 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-fc-navy/20 focus:ring-2 disabled:opacity-60"
+          />
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-[11px] text-slate-500">
+              {value.trim().length}/{MEMBER_BOARD_NOTE_MAX}
+            </span>
+            <button
+              type="button"
+              disabled={disabled || pendingLocal || !dirty}
+              onClick={save}
+              className="rounded-lg bg-fc-navy px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-fc-navy/90 disabled:opacity-50"
+            >
+              {pendingLocal ? "Speichert…" : "Speichern"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -638,6 +723,14 @@ export function MemberDetailPanel({
         />
         </div>
       </div>
+
+      <BoardNoteEditor
+        userId={member.id}
+        note={member.board_note}
+        disabled={pending}
+        onError={setActionError}
+        onSaved={() => router.refresh()}
+      />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <Card>

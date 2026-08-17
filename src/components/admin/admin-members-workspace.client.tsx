@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, StickyNote } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
@@ -113,6 +113,7 @@ export type AdminMemberRow = {
   contribution_open_cents: number | null;
   email: string | null;
   app_registration_status: AppRegistrationStatus;
+  board_note: string | null;
 };
 
 export type AdminApplicationRow = {
@@ -263,6 +264,7 @@ export function AdminMembersWorkspace({
         r.email,
         r.membership_number,
         String(r.warning_count),
+        r.board_note,
       ]),
     );
     const dir = memberSort.dir === "asc" ? 1 : -1;
@@ -610,6 +612,14 @@ export function AdminMembersWorkspace({
                     <div className="min-w-0">
                       <div className="truncate font-semibold text-fc-navy">
                         {m.first_name} {m.last_name}
+                        {m.board_note ? (
+                          <span title={m.board_note} className="ml-1.5 inline-flex align-text-bottom">
+                            <StickyNote
+                              className="h-3.5 w-3.5 text-amber-700"
+                              aria-label="Interne Bemerkung"
+                            />
+                          </span>
+                        ) : null}
                       </div>
                       <div className="mt-0.5 text-xs text-slate-500">
                         Nr. {m.membership_number ?? "—"}
@@ -749,7 +759,19 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2 tabular-nums font-medium text-fc-navy">
                         {m.membership_number ?? "—"}
                       </td>
-                      <td className="px-3 py-2">{m.first_name}</td>
+                      <td className="px-3 py-2">
+                        <span className="inline-flex items-center gap-1.5">
+                          {m.first_name}
+                          {m.board_note ? (
+                            <span title={m.board_note} className="inline-flex">
+                              <StickyNote
+                                className="h-3.5 w-3.5 shrink-0 text-amber-700"
+                                aria-label="Interne Bemerkung"
+                              />
+                            </span>
+                          ) : null}
+                        </span>
+                      </td>
                       <td className="px-3 py-2">{m.last_name}</td>
                       <td className="px-3 py-2">{formatDE(m.birthdate)}</td>
                       <td className="px-3 py-2">{formatDE(m.joined_at)}</td>

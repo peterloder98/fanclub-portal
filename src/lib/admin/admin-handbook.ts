@@ -256,8 +256,37 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         ],
       },
       {
-        id: "empfehlungen",
+        id: "interne-bemerkungen",
         number: "2.6",
+        title: "Interne Bemerkungen",
+        summary: "Nur für den Vorstand sichtbar",
+        blocks: [
+          {
+            type: "p",
+            text: "Am Mitgliedsdatensatz gibt es das Feld „Interne Bemerkung“ — z. B. „nicht kontaktieren“ oder ein Hinweis zur Barrierefreiheit. Das sieht nur der Vorstand unter Admin → Mitglieder, nicht das Mitglied selbst und nicht die übrige Community.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Mitglied in der Liste öffnen.",
+              "Oben unter „Interne Bemerkung“ den Text eintragen und speichern.",
+              "Leeres Feld + Speichern entfernt die Bemerkung.",
+            ],
+          },
+          {
+            type: "note",
+            text: "In der Mitgliederliste erscheint ein kleines Notiz-Symbol, wenn eine Bemerkung hinterlegt ist. Den Inhalt seht ihr in der Liste per Finger draufhalten / Maus drauf und vollständig im Datensatz. Technik: einmal SQL-Skript „152_member_board_notes.sql“ im Supabase-Editor ausführen.",
+          },
+          {
+            type: "link",
+            href: "/admin/members",
+            label: "Mitglieder & Anträge",
+          },
+        ],
+      },
+      {
+        id: "empfehlungen",
+        number: "2.7",
         title: "Mitglieder werben",
         summary: "Einladungen und Anni-Stars",
         blocks: [
@@ -285,7 +314,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
       },
       {
         id: "mitglieder-karte",
-        number: "2.7",
+        number: "2.8",
         title: "Mitglieder-Karte (Datenschutz)",
         summary: "Nur Regionen, keine Wohnadressen",
         blocks: [

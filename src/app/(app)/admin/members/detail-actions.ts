@@ -33,6 +33,8 @@ import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 import { buildMemberApplicationPaymentDraft } from "@/lib/email/application-payment-draft";
 import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
+import { logAdminAction } from "@/lib/admin/audit-log";
+import { MEMBER_BOARD_NOTE_MAX } from "@/lib/members/board-notes";
 import {
   listOpenMeetingCharges,
   markMeetingChargePaid,
@@ -672,6 +674,76 @@ export async function setMemberGreetingPostSentAt(
     return {
       ok: false,
       error: userFacingActionError(e, "Begrüßungspost konnte nicht gespeichert werden."),
+    };
+  }
+}
+
+export async function saveMemberBoardNote(
+  userId: string,
+  note: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { user } = await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const trimmed = note.trim();
+    if (trimmed.length > MEMBER_BOARD_NOTE_MAX) {
+      return { ok: false, error: `Maximal ${MEMBER_BOARD_NOTE_MAX} Zeichen.` };
+    }
+
+    if (!trimmed) {
+      const { error: delErr } = await admin.from("member_board_notes").delete().eq("user_id", userId);
+      if (delErr) {
+        if (/member_board_notes|does not exist/i.test(delErr.message)) {
+          return {
+            ok: false,
+            error:
+              "Datenbank-Tabelle fehlt. Bitte supabase/152_member_board_notes.sql im SQL-Editor ausführen.",
+          };
+        }
+        return { ok: false, error: delErr.message };
+      }
+      await logAdminAction(admin, {
+        actorId: user.id,
+        action: "member.board_note.clear",
+        entityType: "profile",
+        entityId: userId,
+        summary: "Interne Bemerkung entfernt",
+      });
+    } else {
+      const { error: upErr } = await admin.from("member_board_notes").upsert(
+        {
+          user_id: userId,
+          note: trimmed,
+          updated_by: user.id,
+        },
+        { onConflict: "user_id" },
+      );
+      if (upErr) {
+        if (/member_board_notes|does not exist/i.test(upErr.message)) {
+          return {
+            ok: false,
+            error:
+              "Datenbank-Tabelle fehlt. Bitte supabase/152_member_board_notes.sql im SQL-Editor ausführen.",
+          };
+        }
+        return { ok: false, error: upErr.message };
+      }
+      await logAdminAction(admin, {
+        actorId: user.id,
+        action: "member.board_note.save",
+        entityType: "profile",
+        entityId: userId,
+        summary: "Interne Bemerkung gespeichert",
+      });
+    }
+
+    revalidatePath(`/admin/members/${userId}`);
+    revalidatePath("/admin/members");
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Bemerkung konnte nicht gespeichert werden."),
     };
   }
 }
