@@ -278,6 +278,7 @@ function PostFeedInner({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
   const [likeBusy, setLikeBusy] = useState<Record<string, boolean>>({});
+  const likeBusyRef = useRef<Record<string, boolean>>({});
   const [commentLikeBusy, setCommentLikeBusy] = useState<Record<string, boolean>>({});
   const [composerExpanded, setComposerExpanded] = useState(false);
   const composerRef = useRef<HTMLDivElement>(null);
@@ -1004,11 +1005,12 @@ function PostFeedInner({
     nextReaction: PostReactionType | null,
     fromRect: { left: number; top: number; width: number; height: number } | null,
   ) {
-    if (!me || likeBusy[post.id]) return;
+    if (!me || likeBusyRef.current[post.id]) return;
     if (!canEngagePost(post)) {
       setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
       return;
     }
+    likeBusyRef.current[post.id] = true;
     const prevReaction = post.myReaction;
     applyReactionOptimistic(post.id, nextReaction);
     invalidateReactors(post.id);
@@ -1040,7 +1042,17 @@ function PostFeedInner({
         });
         if (error) throw error;
         if (post.authorId !== me.id) {
-          flyPointsFromElement({ fromRect, delta: +1 });
+          const { data: likeTxn } = await supabase
+            .from("points_transactions")
+            .select("id")
+            .eq("user_id", me.id)
+            .eq("entity_type", "post")
+            .eq("entity_id", post.id)
+            .eq("reason", "post_like")
+            .maybeSingle();
+          if (likeTxn) {
+            flyPointsFromElement({ fromRect, delta: +1 });
+          }
           void fetch("/api/posts/notify-reaction", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -1056,6 +1068,7 @@ function PostFeedInner({
       invalidateReactors(post.id);
       setLoadError(err instanceof Error ? err.message : "Reaktion fehlgeschlagen");
     } finally {
+      likeBusyRef.current[post.id] = false;
       setLikeBusy((b) => ({ ...b, [post.id]: false }));
     }
   }

@@ -10,9 +10,6 @@ export function usePointsTopbar(userId: string | null) {
   const [rank, setRank] = useState(rankFromPoints(0));
   const userIdRef = useRef(userId);
   const pointsRef = useRef(0);
-  const expectedMinRef = useRef(0);
-  const syncBlockedUntilRef = useRef(0);
-  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   userIdRef.current = userId;
 
@@ -48,62 +45,30 @@ export function usePointsTopbar(userId: string | null) {
     [],
   );
 
-  const syncFromDb = useCallback(
-    async (attempt = 0) => {
-      const uid = userIdRef.current;
-      if (!uid) return;
-
-      const dbSum = await refreshPoints(uid);
-      const displayed = pointsRef.current;
-
-      if (dbSum >= displayed || dbSum >= expectedMinRef.current) {
-        expectedMinRef.current = 0;
-        syncBlockedUntilRef.current = 0;
-        applyPoints(dbSum);
-        return;
-      }
-
-      // DB noch hinter optimistischer Anzeige (typisch bei +Punkten kurz nach Like/Umfrage)
-      if (attempt < 10 && Date.now() < syncBlockedUntilRef.current + 12_000) {
-        syncTimerRef.current = setTimeout(() => void syncFromDb(attempt + 1), 1200);
-        return;
-      }
-
-      expectedMinRef.current = 0;
-      syncBlockedUntilRef.current = 0;
-      applyPoints(dbSum);
-    },
-    [applyPoints, refreshPoints],
-  );
-
-  const scheduleDbSync = useCallback(() => {
-    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
-    syncTimerRef.current = setTimeout(() => void syncFromDb(0), 1800);
-  }, [syncFromDb]);
+  const syncFromDb = useCallback(async () => {
+    const uid = userIdRef.current;
+    if (!uid) return;
+    applyPoints(await refreshPoints(uid));
+  }, [applyPoints, refreshPoints]);
 
   useEffect(() => {
     function onGain(e: Event) {
       const delta = (e as CustomEvent<PointsGainDetail>).detail?.delta ?? 0;
       if (!delta) return;
 
-      syncBlockedUntilRef.current = Date.now() + 12_000;
-      const next = Math.max(0, pointsRef.current + delta);
-      if (delta > 0) {
-        expectedMinRef.current = Math.max(expectedMinRef.current, next);
-      }
-      applyPoints(next);
-      scheduleDbSync();
+      // Nur DB-Stand anzeigen. Realtime hat die Buchung oft schon eingerechnet;
+      // Fly-Animation +delta nochmal drauf ergab kurz 16/17 und sprang zurück.
+      void syncFromDb();
     }
 
     window.addEventListener(POINTS_GAIN_EVENT, onGain);
     return () => window.removeEventListener(POINTS_GAIN_EVENT, onGain);
-  }, [applyPoints, scheduleDbSync]);
+  }, [syncFromDb]);
 
   useEffect(() => {
     if (!userId) return;
     void (async () => {
-      const sum = await refreshPoints(userId);
-      applyPoints(sum);
+      applyPoints(await refreshPoints(userId));
     })();
   }, [userId, refreshPoints, applyPoints]);
 
@@ -121,14 +86,12 @@ export function usePointsTopbar(userId: string | null) {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          if (Date.now() < syncBlockedUntilRef.current) return;
-          void syncFromDb(0);
+          void syncFromDb();
         },
       )
       .subscribe();
 
     return () => {
-      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
       void supabase.removeChannel(channel);
     };
   }, [userId, syncFromDb]);
