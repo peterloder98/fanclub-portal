@@ -11,6 +11,7 @@ import {
   sendMemberLoginEmailChangedNotice,
 } from "@/lib/email/member-login-email-changed";
 import { logAdminAction } from "@/lib/admin/audit-log";
+import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
 import {
   allocateNextMembershipNumber,
@@ -83,138 +84,163 @@ function addYear(dateStr: string) {
   return d.toISOString().slice(0, 10);
 }
 
-export async function createMember(formData: FormData) {
-  // Auth + role check
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+function mapCreateUserError(message: string) {
+  if (/already|registered|exists/i.test(message)) {
+    return "Diese E-Mail ist bereits als Login vergeben.";
+  }
+  if (/invalid.*email|email.*invalid/i.test(message)) {
+    return "E-Mail-Adresse ist ungültig.";
+  }
+  return message;
+}
 
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+export async function createMember(
+  formData: FormData,
+): Promise<{ ok: false; error: string } | void> {
+  let redirectTo = "";
+  try {
+    const { user } = await requireAdminAction();
 
-  const input = schema.parse(Object.fromEntries(formData.entries()));
-  const admin = createSupabaseAdminClient();
-
-  // Generate unique username
-  const base = baseUsername(input.first_name, input.last_name);
-  let username = base;
-  for (let i = 0; i < 50; i++) {
-    const candidate = i === 0 ? base : `${base}${i + 1}`;
-    const { data: existing } = await admin
-      .from("profiles")
-      .select("id")
-      .eq("username", candidate)
-      .maybeSingle();
-    if (!existing) {
-      username = candidate;
-      break;
+    const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message ?? "Eingaben ungültig." };
     }
-  }
+    const input = parsed.data;
+    const admin = createSupabaseAdminClient();
 
-  // Create auth user + generate recovery (invite) link
-  const startInput = input.membership_start.trim();
-  let status = input.status;
-  if (!startInput && status === "active") {
-    status = "applied";
-  }
+    const base = baseUsername(input.first_name, input.last_name);
+    let username = base;
+    for (let i = 0; i < 50; i++) {
+      const candidate = i === 0 ? base : `${base}${i + 1}`;
+      const { data: existing } = await admin
+        .from("profiles")
+        .select("id")
+        .eq("username", candidate)
+        .maybeSingle();
+      if (!existing) {
+        username = candidate;
+        break;
+      }
+    }
 
-  const passwordTemp = crypto.randomUUID();
-  const { data: created, error: createErr } = await admin.auth.admin.createUser({
-    email: input.email,
-    password: passwordTemp,
-    email_confirm: status === "active",
-    user_metadata: {
-      role: input.role,
-      username,
-      first_name: input.first_name,
-      last_name: input.last_name,
-    },
-  });
-  if (createErr) throw new Error(createErr.message);
+    const startInput = input.membership_start.trim();
+    let status = input.status;
+    if (!startInput && status === "active") {
+      status = "applied";
+    }
 
-  const userId = created.user.id;
-
-  // Profile — Mitgliedsnummer erst bei Freigabe (Status aktiv)
-  let membershipNumber = input.membership_number?.trim() || null;
-  if (status === "active" && !membershipNumber) {
-    membershipNumber = await allocateNextMembershipNumber(admin);
-  }
-
-  const { error: profileErr } = await admin.from("profiles").upsert(
-    {
-      id: userId,
-      role: input.role,
-      username,
-      membership_number: membershipNumber,
+    const passwordTemp = crypto.randomUUID();
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email: input.email,
-      first_name: input.first_name,
-      last_name: input.last_name,
-      birthdate: input.birthdate || null,
-      gender: input.gender,
-      street: input.street || null,
-      postal_code: input.postal_code || null,
-      city: input.city || null,
-      country: input.country ? normalizeMemberCountryCode(input.country) : "DE",
-      phone: input.phone || null,
-    },
-    { onConflict: "id" },
-  );
-  if (profileErr) throw new Error(profileErr.message);
-  await syncProfileMapCoords(admin, userId);
-
-  // Membership — ohne Beitrittsdatum: Antrag (DB braucht ein Datum → Erfassungsdatum)
-  const start = startInput || new Date().toISOString().slice(0, 10);
-  const end = addYear(start);
-  const fee_cents = Math.round((input.fee_eur ?? 0) * 100);
-
-  const { data: membershipRow, error: membershipErr } = await admin
-    .from("memberships")
-    .insert({
-      user_id: userId,
-      start_date: start,
-      end_date: end,
-      fee_cents,
-      status,
-    })
-    .select("id")
-    .single();
-  if (membershipErr) throw new Error(membershipErr.message);
-
-  await logAdminAction(admin, {
-    actorId: user.id,
-    action: "member.create",
-    entityType: "profile",
-    entityId: userId,
-    summary:
-      status === "applied"
-        ? `Antrag erfasst (noch kein Mitglied): ${input.first_name} ${input.last_name}`
-        : `Mitglied angelegt: ${input.first_name} ${input.last_name}`,
-  });
-
-  if (status === "applied" && membershipRow?.id) {
-    await ensureOpenMembershipFeePayment({
-      userId,
-      membershipId: membershipRow.id,
-      amountCents: fee_cents || 1500,
-      firstName: input.first_name,
-      lastName: input.last_name,
-    }).catch((e) => {
-      console.error("[members] Offene Beitragszahlung konnte nicht angelegt werden:", e);
+      password: passwordTemp,
+      email_confirm: status === "active",
+      user_metadata: {
+        role: input.role,
+        username,
+        first_name: input.first_name,
+        last_name: input.last_name,
+      },
     });
-    redirect(`/admin/members/${userId}?paperMail=1`);
+    if (createErr || !created.user) {
+      return {
+        ok: false,
+        error: mapCreateUserError(createErr?.message ?? "Konto konnte nicht angelegt werden."),
+      };
+    }
+
+    const userId = created.user.id;
+
+    let membershipNumber = input.membership_number?.trim() || null;
+    if (status === "active" && !membershipNumber) {
+      membershipNumber = await allocateNextMembershipNumber(admin);
+    }
+
+    const { error: profileErr } = await admin.from("profiles").upsert(
+      {
+        id: userId,
+        role: input.role,
+        username,
+        membership_number: membershipNumber,
+        email: input.email,
+        first_name: input.first_name,
+        last_name: input.last_name,
+        birthdate: input.birthdate || null,
+        gender: input.gender,
+        street: input.street || null,
+        postal_code: input.postal_code || null,
+        city: input.city || null,
+        country: input.country ? normalizeMemberCountryCode(input.country) : "DE",
+        phone: input.phone || null,
+      },
+      { onConflict: "id" },
+    );
+    if (profileErr) {
+      return { ok: false, error: profileErr.message };
+    }
+    void syncProfileMapCoords(admin, userId).catch((e) => {
+      console.error("[members] Karten-Koordinaten:", e);
+    });
+
+    const start = startInput || new Date().toISOString().slice(0, 10);
+    const end = addYear(start);
+    const fee_cents = Math.round((input.fee_eur ?? 0) * 100);
+
+    const { data: membershipRow, error: membershipErr } = await admin
+      .from("memberships")
+      .insert({
+        user_id: userId,
+        start_date: start,
+        end_date: end,
+        fee_cents,
+        status,
+      })
+      .select("id")
+      .single();
+    if (membershipErr) {
+      return { ok: false, error: membershipErr.message };
+    }
+
+    await logAdminAction(admin, {
+      actorId: user.id,
+      action: "member.create",
+      entityType: "profile",
+      entityId: userId,
+      summary:
+        status === "applied"
+          ? `Antrag erfasst (noch kein Mitglied): ${input.first_name} ${input.last_name}`
+          : `Mitglied angelegt: ${input.first_name} ${input.last_name}`,
+    });
+
+    if (status === "applied" && membershipRow?.id) {
+      await ensureOpenMembershipFeePayment({
+        userId,
+        membershipId: membershipRow.id,
+        amountCents: fee_cents || 1500,
+        firstName: input.first_name,
+        lastName: input.last_name,
+      }).catch((e) => {
+        console.error("[members] Offene Beitragszahlung konnte nicht angelegt werden:", e);
+      });
+      redirectTo = `/admin/members/${userId}?paperMail=1`;
+    } else {
+      const { setupUrl } = await rotateAccountSetupToken({
+        email: input.email,
+        userId,
+      });
+      redirectTo = `/admin/members?invite=${encodeURIComponent(setupUrl)}`;
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      error: userFacingActionError(
+        e,
+        "Person konnte nicht angelegt werden. Bitte erneut versuchen — du bleibst angemeldet.",
+      ),
+    };
   }
 
-  const { setupUrl } = await rotateAccountSetupToken({
-    email: input.email,
-    userId,
-  });
-  redirect(`/admin/members?invite=${encodeURIComponent(setupUrl)}`);
+  revalidatePath("/admin/members");
+  redirect(redirectTo);
 }
 
 export async function updateMember(formData: FormData) {

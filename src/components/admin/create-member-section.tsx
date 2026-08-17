@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
@@ -8,6 +8,18 @@ import { createMember } from "@/app/(app)/admin/members/actions";
 
 export function CreateMemberSection() {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function onSubmit(formData: FormData) {
+    setError(null);
+    startTransition(async () => {
+      const result = await createMember(formData);
+      if (result && !result.ok) {
+        setError(result.error);
+      }
+    });
+  }
 
   return (
     <div className="mb-4">
@@ -32,7 +44,12 @@ export function CreateMemberSection() {
             </button>
           </CardHeader>
           <CardContent>
-            <form action={createMember} className="grid gap-3 md:grid-cols-2">
+            <form action={onSubmit} className="grid gap-3 md:grid-cols-2">
+              {error ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 md:col-span-2">
+                  {error}
+                </div>
+              ) : null}
               <label className="grid gap-1">
                 <span className="text-sm font-medium text-slate-700">Mitgliedsnummer</span>
                 <input
@@ -169,8 +186,12 @@ export function CreateMemberSection() {
                 </select>
               </label>
               <div className="md:col-span-2">
-                <button className="h-11 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-fc-blue">
-                  Person anlegen
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="h-11 w-full rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 hover:bg-fc-blue disabled:opacity-50"
+                >
+                  {pending ? "Wird gespeichert…" : "Person anlegen"}
                 </button>
               </div>
             </form>

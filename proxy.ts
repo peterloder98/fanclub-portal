@@ -57,25 +57,51 @@ function createProxySupabase(request: NextRequest) {
   return { supabase, getResponse: () => response };
 }
 
+function isServerActionRequest(request: NextRequest) {
+  return request.headers.has("next-action") || request.headers.has("Next-Action");
+}
+
+function redirectPreservingCookies(
+  request: NextRequest,
+  sessionResponse: NextResponse,
+  pathname: string,
+  search?: Record<string, string>,
+) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = "";
+  if (search) {
+    for (const [key, value] of Object.entries(search)) {
+      url.searchParams.set(key, value);
+    }
+  }
+  const redirectResponse = NextResponse.redirect(url);
+  sessionResponse.cookies.getAll().forEach((cookie) => {
+    redirectResponse.cookies.set(cookie);
+  });
+  return redirectResponse;
+}
+
 export async function proxy(request: NextRequest) {
   const { supabase, getResponse } = createProxySupabase(request);
   const pathname = request.nextUrl.pathname;
-
-  await supabase.auth.getUser();
-
-  if (isPublicPath(pathname)) {
-    return getResponse();
-  }
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Speichern/Server Actions nicht auf Login umleiten — sonst fliegt die Session
+  // nach einem abgelaufenen Access-Token weg, obwohl der Refresh gerade lief.
+  if (isServerActionRequest(request)) {
+    return getResponse();
+  }
+
+  if (isPublicPath(pathname)) {
+    return getResponse();
+  }
+
   if (!user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
+    return redirectPreservingCookies(request, getResponse(), "/login", { next: pathname });
   }
 
   const { data: profile } = await supabase
@@ -96,27 +122,21 @@ export async function proxy(request: NextRequest) {
     if (membership?.status === "applied") {
       const pendingPath = "/mitgliedschaft/ausstehend";
       if (pathname !== pendingPath && !pathname.startsWith("/api/")) {
-        const url = request.nextUrl.clone();
-        url.pathname = pendingPath;
-        return NextResponse.redirect(url);
+        return redirectPreservingCookies(request, getResponse(), pendingPath);
       }
     }
 
     if (membership?.status === "suspended") {
       const allowedWhenSuspended = pathname === "/gesperrt";
       if (!allowedWhenSuspended && !pathname.startsWith("/api/")) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/gesperrt";
-        return NextResponse.redirect(url);
+        return redirectPreservingCookies(request, getResponse(), "/gesperrt");
       }
     }
   }
 
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     if (profile?.role !== "admin") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+      return redirectPreservingCookies(request, getResponse(), "/dashboard");
     }
   }
 
