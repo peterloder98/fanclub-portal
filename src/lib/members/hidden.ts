@@ -1,6 +1,6 @@
 /** Versteckte Profile („Geist“): nicht in Mitglieder-UI / Ranglisten / Mentions; kein Profil-Link. */
 
-export type HiddenFlag = { id?: string; is_hidden?: boolean | null };
+export type HiddenFlag = { id?: string; is_hidden?: boolean | null; no_app_access?: boolean | null };
 
 /**
  * Explizit freigegebene System-Accounts (zusätzlich zu profiles.is_hidden).
@@ -17,7 +17,7 @@ export function isHiddenProfileId(userId: string | null | undefined): boolean {
 export function isProfileHidden(row: HiddenFlag | null | undefined): boolean {
   if (!row) return false;
   if (row.id && SYSTEM_HIDDEN_PROFILE_IDS.has(row.id)) return true;
-  return Boolean(row.is_hidden);
+  return Boolean(row.is_hidden || row.no_app_access);
 }
 
 /**

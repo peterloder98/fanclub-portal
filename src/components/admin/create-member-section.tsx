@@ -13,6 +13,7 @@ export function CreateMemberSection() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [noAppAccess, setNoAppAccess] = useState(false);
 
   useEffect(() => {
     if (!error) return;
@@ -106,15 +107,50 @@ export function CreateMemberSection() {
                   className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
                 />
               </label>
-              <label className="grid gap-1 md:col-span-2">
-                <span className="text-sm font-medium text-slate-700">E-Mail</span>
+              <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 md:col-span-2">
                 <input
-                  name="email"
-                  type="email"
-                  required
-                  className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  type="checkbox"
+                  name="no_app_access"
+                  checked={noAppAccess}
+                  onChange={(e) => setNoAppAccess(e.target.checked)}
+                  className="mt-1 h-4 w-4"
                 />
+                <span>
+                  <span className="block text-sm font-medium text-slate-800">
+                    Kein eigener App-Zugang
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-600">
+                    Für Mitglieder ohne eigene E-Mail (z. B. mit Behinderung): nicht in der App und
+                    nicht in die WhatsApp-Gruppe. Nur aktive Mitgliedschaft. Eine andere Adresse
+                    (z. B. der Mutter, auch wenn sie schon Mitglied ist) erhält ausschließlich
+                    Beitrags-/Zahlungserinnerungen — keine sonstigen Infos.
+                  </span>
+                </span>
               </label>
+              {noAppAccess ? (
+                <label className="grid gap-1 md:col-span-2">
+                  <span className="text-sm font-medium text-slate-700">
+                    E-Mail nur für Beitragszahlungen *
+                  </span>
+                  <input
+                    name="billing_email"
+                    type="email"
+                    required
+                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                    placeholder="z. B. E-Mail der Mutter"
+                  />
+                </label>
+              ) : (
+                <label className="grid gap-1 md:col-span-2">
+                  <span className="text-sm font-medium text-slate-700">E-Mail (Login) *</span>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+                  />
+                </label>
+              )}
               <label className="grid gap-1">
                 <span className="text-sm font-medium text-slate-700">Telefon</span>
                 <input

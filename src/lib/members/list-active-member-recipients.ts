@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isHiddenProfileId } from "@/lib/members/hidden";
+import { receivesCommunityEmails } from "@/lib/members/no-app-access";
 
 export type ActiveMemberRecipient = {
   userId: string;
@@ -20,17 +21,25 @@ export async function listActiveMemberRecipients(): Promise<ActiveMemberRecipien
   const userIds = [...new Set((memberships ?? []).map((m) => m.user_id).filter(Boolean))];
   if (!userIds.length) return [];
 
-  const { data: profiles, error: pErr } = await admin
+  const full = await admin
     .from("profiles")
-    .select("id,email,first_name")
+    .select("id,email,first_name,no_app_access")
     .in("id", userIds);
-  if (pErr) throw new Error(pErr.message);
+  let profiles = full.data;
+  if (full.error) {
+    if (!/no_app_access|does not exist/i.test(full.error.message)) {
+      throw new Error(full.error.message);
+    }
+    const fb = await admin.from("profiles").select("id,email,first_name").in("id", userIds);
+    if (fb.error) throw new Error(fb.error.message);
+    profiles = (fb.data ?? []) as typeof profiles;
+  }
 
   const out: ActiveMemberRecipient[] = [];
   for (const p of profiles ?? []) {
     if (isHiddenProfileId(p.id)) continue;
-    const email = p.email?.trim();
-    if (!email || !email.includes("@")) continue;
+    if (!receivesCommunityEmails(p)) continue;
+    const email = p.email!.trim();
     out.push({
       userId: p.id,
       email,

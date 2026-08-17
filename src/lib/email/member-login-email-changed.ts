@@ -2,13 +2,7 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { emailPersonVars } from "@/lib/email/salutation-block";
-
-function isRealMemberEmail(email: string | null | undefined): email is string {
-  const e = email?.trim().toLowerCase() ?? "";
-  if (!e || !e.includes("@")) return false;
-  if (/noemail|fanclub-import\.invalid|@invalid$/i.test(e)) return false;
-  return true;
-}
+import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
 
 /** Info an Mitglied (und ggf. alte Adresse), wenn Login-E-Mail geändert wurde. */
 export async function sendMemberLoginEmailChangedNotice(input: {

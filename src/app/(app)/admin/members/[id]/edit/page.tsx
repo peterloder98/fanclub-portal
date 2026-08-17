@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MembershipNumberEditField } from "@/components/admin/membership-number-edit-field.client";
-import { MemberEmailEditField } from "@/components/admin/member-email-edit-field.client";
+import { MemberAppAccessFields } from "@/components/admin/member-app-access-fields.client";
 import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
 import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../../actions";
@@ -47,12 +47,48 @@ export default async function AdminMemberEditPage({
   if (me?.role !== "admin") redirect("/dashboard");
 
   const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
+  const full = await admin
     .from("profiles")
-    .select("id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count")
+    .select(
+      "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,no_app_access,billing_email",
+    )
     .eq("id", id)
     .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
+  let profile = full.data as
+    | {
+        id: string;
+        membership_number: string | null;
+        first_name: string;
+        last_name: string;
+        email: string | null;
+        username: string | null;
+        role: string;
+        phone: string | null;
+        birthdate: string | null;
+        gender: string | null;
+        street: string | null;
+        postal_code: string | null;
+        city: string | null;
+        country: string | null;
+        warning_count?: number | null;
+        no_app_access?: boolean | null;
+        billing_email?: string | null;
+      }
+    | null;
+  const pErr = full.error;
+  if (pErr && /no_app_access|billing_email|does not exist/i.test(pErr.message)) {
+    const fb = await admin
+      .from("profiles")
+      .select(
+        "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count",
+      )
+      .eq("id", id)
+      .maybeSingle();
+    if (fb.error) throw new Error(fb.error.message);
+    profile = fb.data;
+  } else if (pErr) {
+    throw new Error(pErr.message);
+  }
   if (!profile) redirect("/admin/members");
 
   const { data: membership } = await admin
@@ -122,7 +158,11 @@ export default async function AdminMemberEditPage({
                   />
                 </label>
 
-                <MemberEmailEditField value={profile.email ?? ""} />
+                <MemberAppAccessFields
+                  noAppAccess={Boolean(profile.no_app_access)}
+                  loginEmail={profile.email ?? ""}
+                  billingEmail={profile.billing_email ?? ""}
+                />
 
                 <label className="grid gap-1">
                   <span className="text-sm font-medium text-slate-700">Mobil</span>

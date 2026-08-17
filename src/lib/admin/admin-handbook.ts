@@ -113,6 +113,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Fehlt bei einem bestehenden Mitglied die Login-E-Mail (z. B. nach Import): Mitglied öffnen → „Bearbeiten“ → bei E-Mail „Ändern“ (mit Bestätigung) → Adresse eintragen und speichern. Die Adresse muss eindeutig sein und ist zugleich der Login.",
               "Wird eine bereits vorhandene Login-E-Mail später geändert, erhält das Mitglied automatisch eine Info-Mail an die neue und die bisherige Adresse: neue Login-Adresse, Passwort bleibt gleich.",
               "Jemand kommt ohne digitalen Antrag (z. B. per Zettel, Mail oder WhatsApp): unter Mitglieder „+ Person manuell anlegen“. Beitrittsdatum leer lassen und Status „Mitgliedschaft beantragt“ — die Person ist dann noch kein Mitglied. Nach dem Speichern öffnet sich die Mail „Antrag eingegangen / bitte zahlen“ (Betreff und Text editierbar, Versand optional). Inhalt: Antragseingang, Betrag, IBAN und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ — derselbe wie beim Online-Antrag. Kein App-Zugangslink in dieser Mail. Unter Zahlungen erscheint eine offene Überweisung. Erst wenn das Geld da ist: Datensatz öffnen → Bearbeiten → Beitrittsdatum eintragen und Status auf „aktiv“. Dann gibt es Mitgliedsnummer und Willkommens-Mail mit App-Zugang. Schlägt das Speichern fehl, bleibt ihr angemeldet und seht die Fehlermeldung direkt am Formular (z. B. E-Mail schon vergeben).",
+              "Sonderfall ohne eigene E-Mail / ohne App (z. B. mit Behinderung): siehe Abschnitt 2.9 — Mitgliedschaft ohne App-Zugang.",
             ],
           },
           {
@@ -340,6 +341,46 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/mitglieder?tab=karte",
             label: "Mitglieder-Karte öffnen",
+          },
+        ],
+      },
+      {
+        id: "ohne-app-zugang",
+        number: "2.9",
+        title: "Mitgliedschaft ohne App-Zugang",
+        summary: "Ohne eigene E-Mail, nur Beitrag",
+        blocks: [
+          {
+            type: "p",
+            text: "Manche Mitglieder sollen vollwertig im Verein sein (Beitrag, Mitgliedsnummer, aktiv), aber nicht in die App und nicht in die WhatsApp-Gruppe — zum Beispiel, weil sie keine eigene E-Mail haben oder eine Behinderung das nicht sinnvoll macht.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Admin → Mitglieder → „+ Person manuell anlegen“.",
+              "Häkchen „Kein eigener App-Zugang“ setzen.",
+              "Unter „E-Mail nur für Beitragszahlungen“ eine Adresse eintragen, an die Zahlungserinnerungen gehen dürfen — oft die der Mutter oder eines anderen Mitglieds. Dieselbe Adresse darf schon als Login eines anderen Mitglieds verwendet werden.",
+              "Name, Anschrift, Beitrag und Status wie üblich. Nach dem Speichern könnt ihr die Zahlungsinfo an genau diese Adresse schicken.",
+              "In die WhatsApp-Gruppe nicht aufnehmen — das macht ihr wie bisher manuell; in der App steht der Hinweis am Datensatz.",
+            ],
+          },
+          {
+            type: "ul",
+            items: [
+              "Diese Person erscheint nicht in der Mitglieder-App (Liste, Karte, Geburtstage, Ranglisten).",
+              "Sie bekommt keine Gewinnspiel-, Event-, Live- oder App-Erinnerungsmails.",
+              "Beitrags- und Zahlungserinnerungen gehen nur an die hinterlegte Zahlungs-Mail. Der Text bezieht sich auf das Mitglied selbst (Name, Verwendungszweck), nicht auf die Person, der die Mailadresse gehört.",
+              "Später umstellen geht unter Bearbeiten: Häkchen entfernen und eine eigene Login-E-Mail eintragen.",
+            ],
+          },
+          {
+            type: "note",
+            text: "Ohne das Häkchen bleibt die Login-E-Mail eindeutig — eine Adresse kann nicht zwei App-Zugänge haben. Nur die Zahlungs-Mail darf geteilt werden.",
+          },
+          {
+            type: "link",
+            href: "/admin/members",
+            label: "Mitglieder & Anträge",
           },
         ],
       },

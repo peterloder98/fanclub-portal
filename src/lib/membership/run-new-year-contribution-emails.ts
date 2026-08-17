@@ -11,6 +11,7 @@ import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { resolvePaymentEmail } from "@/lib/members/no-app-access";
 
 const BERLIN_TZ = "Europe/Berlin";
 
@@ -84,11 +85,22 @@ export async function runNewYearContributionEmails(
     };
   }
 
-  const { data: profiles, error: pErr } = await admin
+  const full = await admin
     .from("profiles")
-    .select("id,first_name,last_name,email,gender,membership_number")
+    .select("id,first_name,last_name,email,gender,membership_number,billing_email,no_app_access")
     .in("id", userIds);
-  if (pErr) throw new Error(pErr.message);
+  let profiles = full.data;
+  if (full.error) {
+    if (!/billing_email|no_app_access|does not exist/i.test(full.error.message)) {
+      throw new Error(full.error.message);
+    }
+    const fb = await admin
+      .from("profiles")
+      .select("id,first_name,last_name,email,gender,membership_number")
+      .in("id", userIds);
+    if (fb.error) throw new Error(fb.error.message);
+    profiles = (fb.data ?? []) as typeof profiles;
+  }
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
@@ -129,7 +141,12 @@ export async function runNewYearContributionEmails(
     }
 
     const profile = profileById.get(m.user_id);
-    if (!profile?.email?.trim()) {
+    if (!profile) {
+      skippedNoEmail++;
+      continue;
+    }
+    const payTo = resolvePaymentEmail(profile);
+    if (!payTo) {
       skippedNoEmail++;
       continue;
     }
@@ -176,7 +193,7 @@ export async function runNewYearContributionEmails(
       );
 
       const result = await sendEmailViaAccount({
-        to: profile.email.trim(),
+        to: payTo,
         subject: rendered.subject,
         text: rendered.text,
         html: rendered.html,
@@ -194,7 +211,7 @@ export async function runNewYearContributionEmails(
 
       if (!result.ok) {
         failed++;
-        errors.push(`${profile.email}: ${result.skipped ? "SMTP nicht konfiguriert" : "Senden fehlgeschlagen"}`);
+        errors.push(`${payTo}: ${result.skipped ? "SMTP nicht konfiguriert" : "Senden fehlgeschlagen"}`);
         continue;
       }
 
@@ -205,14 +222,14 @@ export async function runNewYearContributionEmails(
       });
       if (insErr && !/duplicate|unique/i.test(insErr.message)) {
         failed++;
-        errors.push(`${profile.email}: Protokoll fehlgeschlagen`);
+        errors.push(`${payTo}: Protokoll fehlgeschlagen`);
         continue;
       }
 
       sent++;
     } catch (e) {
       failed++;
-      errors.push(`${profile.email}: ${e instanceof Error ? e.message : "Fehler"}`);
+      errors.push(`${payTo}: ${e instanceof Error ? e.message : "Fehler"}`);
     }
   }
 

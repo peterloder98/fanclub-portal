@@ -70,15 +70,30 @@ export async function userAllowsMemberEmail(
   const col = COLUMN_BY_KEY[pref];
   const { data, error } = await admin
     .from("profiles")
-    .select(prefsSelectColumns())
+    .select(`${prefsSelectColumns()},no_app_access`)
     .eq("id", userId)
     .maybeSingle();
   if (error) {
+    if (/no_app_access|does not exist/i.test(error.message) && !/email_pref_/i.test(error.message)) {
+      const fb = await admin
+        .from("profiles")
+        .select(prefsSelectColumns())
+        .eq("id", userId)
+        .maybeSingle();
+      if (fb.error) {
+        if (/email_pref_|does not exist/i.test(fb.error.message)) return true;
+        console.error("[member-email-prefs] load:", fb.error.message);
+        return true;
+      }
+      const row = (fb.data ?? null) as Record<string, boolean | null> | null;
+      return row?.[col] !== false;
+    }
     if (/email_pref_|does not exist/i.test(error.message)) return true;
     console.error("[member-email-prefs] load:", error.message);
     return true;
   }
   const row = (data ?? null) as Record<string, boolean | null> | null;
+  if (row?.no_app_access) return false;
   return row?.[col] !== false;
 }
 
@@ -95,9 +110,26 @@ export async function filterRecipientsByEmailPref(
 
   const { data, error } = await admin
     .from("profiles")
-    .select(`id,${prefsSelectColumns()}`)
+    .select(`id,no_app_access,${prefsSelectColumns()}`)
     .in("id", ids);
   if (error) {
+    if (/no_app_access|does not exist/i.test(error.message) && !/email_pref_/i.test(error.message)) {
+      const fb = await admin
+        .from("profiles")
+        .select(`id,${prefsSelectColumns()}`)
+        .in("id", ids);
+      if (fb.error) {
+        if (/email_pref_|does not exist/i.test(fb.error.message)) return recipients;
+        console.error("[member-email-prefs] filter:", fb.error.message);
+        return [];
+      }
+      const allowed = new Set<string>();
+      for (const row of fb.data ?? []) {
+        const r = row as unknown as Record<string, unknown>;
+        if (r[col] !== false && typeof r.id === "string") allowed.add(r.id);
+      }
+      return recipients.filter((r) => allowed.has(r.userId));
+    }
     if (/email_pref_|does not exist/i.test(error.message)) return recipients;
     console.error("[member-email-prefs] filter:", error.message);
     // Fail-closed: bei unerwarteten DB-Fehlern niemanden anschreiben (Opt-out schützen)
@@ -107,6 +139,7 @@ export async function filterRecipientsByEmailPref(
   const allowed = new Set<string>();
   for (const row of data ?? []) {
     const r = row as unknown as Record<string, unknown>;
+    if (r.no_app_access === true) continue;
     if (r[col] !== false && typeof r.id === "string") allowed.add(r.id);
   }
 

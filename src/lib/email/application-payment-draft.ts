@@ -1,4 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  loadPaymentMailProfile,
+  resolvePaymentEmail,
+} from "@/lib/members/no-app-access";
 import { loadSignaturePickerData } from "@/lib/email/draft-with-signatures";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
@@ -27,13 +31,11 @@ export async function buildMemberApplicationPaymentDraft(
   signatureId?: string,
 ): Promise<ApplicationPaymentMailDraft> {
   const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select("id,first_name,last_name,email,gender")
-    .eq("id", userId)
-    .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
-  if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
+  const profile = await loadPaymentMailProfile(admin, userId);
+  const to = profile ? resolvePaymentEmail(profile) : null;
+  if (!profile || !to) {
+    throw new Error("Keine E-Mail für Beitragszahlungen hinterlegt.");
+  }
 
   const { data: membership } = await admin
     .from("memberships")
@@ -61,7 +63,7 @@ export async function buildMemberApplicationPaymentDraft(
       ...person,
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
-      email: profile.email,
+      email: to,
       fee_eur: feeEur,
       ...clubBankEmailVars({ bankReference }),
     },
@@ -71,7 +73,7 @@ export async function buildMemberApplicationPaymentDraft(
   return {
     subject: rendered.subject,
     body: rendered.text,
-    to: profile.email,
+    to,
     signatures,
     defaultSignatureId: useSignatureId,
     signatureTexts,

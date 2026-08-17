@@ -5,6 +5,7 @@ import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { listActiveMemberRecipients } from "@/lib/members/list-active-member-recipients";
+import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
 import {
   filterRecipientsByEmailPref,
   userAllowsMemberEmail,
@@ -311,7 +312,7 @@ async function runRemindersForSessions(
     let anniReminderDone = Boolean(session.anni_reminder_sent_at);
 
     for (const profile of profiles ?? []) {
-      if (!profile.email) continue;
+      if (!isRealMemberEmail(profile.email)) continue;
       const dedupeKey = `${session.id}:1d`;
       if (
         await hasNotificationDedupe(

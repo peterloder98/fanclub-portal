@@ -7,6 +7,7 @@ import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
 import { createUserNotification } from "@/lib/notifications/create";
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
 
 function daysUntil(startAt: string, ref = new Date()) {
   const start = new Date(startAt);
@@ -70,7 +71,7 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
 
     for (const part of parts) {
       const profile = profileById.get(part.user_id);
-      if (!profile?.email) continue;
+      if (!profile || !isRealMemberEmail(profile.email)) continue;
 
       const dedupeKey = `${meeting.id}:${days}`;
       const kind =

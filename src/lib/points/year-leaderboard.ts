@@ -35,6 +35,7 @@ type LeaderboardProfile = {
   avatar_path: string | null;
   updated_at: string | null;
   role: string | null;
+  no_app_access?: boolean | null;
 };
 
 export async function loadYearLeaderboard(
@@ -51,12 +52,22 @@ export async function loadYearLeaderboard(
 
   const rpcRows = ((leaderboard ?? []) as RpcRow[]).filter((r) => !isHiddenProfileId(r.user_id));
   const userIds = rpcRows.map((r) => r.user_id);
-  const { data: profiles } = userIds.length
-    ? await supabase
+  let profiles: LeaderboardProfile[] = [];
+  if (userIds.length) {
+    const full = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,avatar_path,updated_at,role,no_app_access")
+      .in("id", userIds);
+    if (full.error && /no_app_access|does not exist/i.test(full.error.message)) {
+      const fb = await supabase
         .from("profiles")
         .select("id,first_name,last_name,email,avatar_path,updated_at,role")
-        .in("id", userIds)
-    : { data: [] };
+        .in("id", userIds);
+      profiles = (fb.data ?? []) as LeaderboardProfile[];
+    } else {
+      profiles = (full.data ?? []) as LeaderboardProfile[];
+    }
+  }
   const profileById = new Map(
     excludeHiddenProfiles((profiles ?? []) as LeaderboardProfile[])
       .filter((p) => !isExcludedFromYearPointsRanking(p.role))

@@ -36,6 +36,10 @@ import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 import { logAdminAction } from "@/lib/admin/audit-log";
 import { MEMBER_BOARD_NOTE_MAX } from "@/lib/members/board-notes";
 import {
+  loadPaymentMailProfile,
+  resolvePaymentEmail,
+} from "@/lib/members/no-app-access";
+import {
   listOpenMeetingCharges,
   markMeetingChargePaid,
 } from "@/lib/club/meeting-charges";
@@ -126,13 +130,9 @@ export async function getMemberPaymentReminderDraft(
 ) {
   await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select("id,first_name,last_name,email,gender,membership_number")
-    .eq("id", userId)
-    .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
-  if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
+  const profile = await loadPaymentMailProfile(admin, userId);
+  const to = profile ? resolvePaymentEmail(profile) : null;
+  if (!profile || !to) throw new Error("Keine E-Mail für Beitragszahlungen hinterlegt.");
 
   const { data: membership } = await admin
     .from("memberships")
@@ -169,7 +169,7 @@ export async function getMemberPaymentReminderDraft(
       gender: profile.gender ?? "",
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
-      email: profile.email,
+      email: to,
       fee_eur: contribVars.fee_eur,
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
@@ -188,7 +188,7 @@ export async function getMemberPaymentReminderDraft(
   return {
     subject: rendered.subject,
     body: rendered.text,
-    to: profile.email,
+    to,
     signatures,
     defaultSignatureId: useSignatureId,
     signatureTexts,
@@ -204,13 +204,9 @@ export async function sendMemberPaymentReminderEmail(input: {
 }) {
   const { user } = await requireAdminAction();
   const admin = createSupabaseAdminClient();
-  const { data: profile, error: pErr } = await admin
-    .from("profiles")
-    .select("id,first_name,last_name,email,gender,membership_number")
-    .eq("id", input.userId)
-    .maybeSingle();
-  if (pErr) throw new Error(pErr.message);
-  if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
+  const profile = await loadPaymentMailProfile(admin, input.userId);
+  const to = profile ? resolvePaymentEmail(profile) : null;
+  if (!profile || !to) throw new Error("Keine E-Mail für Beitragszahlungen hinterlegt.");
 
   const { data: membership } = await admin
     .from("memberships")
@@ -244,7 +240,7 @@ export async function sendMemberPaymentReminderEmail(input: {
       gender: profile.gender ?? "",
       last_name: profile.last_name?.trim() || "",
       applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
-      email: profile.email,
+      email: to,
       fee_eur: contribVars.fee_eur,
       fee_paid_eur: contribVars.fee_paid_eur,
       fee_open_eur: contribVars.fee_open_eur,
@@ -279,7 +275,7 @@ export async function sendMemberPaymentReminderEmail(input: {
     : rendered.html;
 
   const result = await sendEmailViaAccount({
-    to: profile.email,
+    to,
     subject,
     text,
     html,
@@ -378,13 +374,9 @@ export async function sendMemberApplicationPaymentEmail(input: {
   try {
     const { user } = await requireAdminAction();
     const admin = createSupabaseAdminClient();
-    const { data: profile, error: pErr } = await admin
-      .from("profiles")
-      .select("id,first_name,last_name,email,gender")
-      .eq("id", input.userId)
-      .maybeSingle();
-    if (pErr) throw new Error(pErr.message);
-    if (!profile?.email) throw new Error("E-Mail des Mitglieds fehlt.");
+    const profile = await loadPaymentMailProfile(admin, input.userId);
+    const to = profile ? resolvePaymentEmail(profile) : null;
+    if (!profile || !to) throw new Error("Keine E-Mail für Beitragszahlungen hinterlegt.");
 
     const { data: membership } = await admin
       .from("memberships")
@@ -407,7 +399,7 @@ export async function sendMemberApplicationPaymentEmail(input: {
         gender: profile.gender ?? "",
         last_name: profile.last_name?.trim() || "",
         applicant_name: `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim(),
-        email: profile.email,
+        email: to,
         fee_eur: feeEur,
         ...clubBankEmailVars({ bankReference }),
       },
@@ -432,7 +424,7 @@ export async function sendMemberApplicationPaymentEmail(input: {
       : rendered.html;
 
     const result = await sendEmailViaAccount({
-      to: profile.email,
+      to,
       subject,
       text,
       html,

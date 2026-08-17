@@ -6,10 +6,8 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { sendMemberInviteAfterApproval } from "@/lib/email/membership-notify";
-import {
-  isRealMemberEmail,
-  sendMemberLoginEmailChangedNotice,
-} from "@/lib/email/member-login-email-changed";
+import { sendMemberLoginEmailChangedNotice } from "@/lib/email/member-login-email-changed";
+import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
 import { logAdminAction } from "@/lib/admin/audit-log";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { syncProfileMapCoords } from "@/lib/members/geocode-profile";
@@ -22,6 +20,10 @@ import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 import { ensureOpenMembershipFeePayment } from "@/lib/payments/membership-fee-payment";
 import { deleteMemberCompletely } from "@/lib/membership/delete-member";
 import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
+import {
+  generateNoAppAuthEmail,
+  isNoAppPlaceholderEmail,
+} from "@/lib/members/no-app-access";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -33,11 +35,9 @@ const schema = z.object({
   country: z.string().min(2, "Land ist Pflichtfeld."),
   birthdate: z.string().optional().default(""),
   gender: z.enum(["m", "w", "d"], { message: "Geschlecht ist Pflichtfeld." }),
-  email: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .email("Bitte eine gültige E-Mail eintragen."),
+  email: z.string().optional().default(""),
+  no_app_access: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
+  billing_email: z.string().optional().default(""),
   phone: z.string().optional().default(""),
   membership_start: z.string().optional().default(""),
   fee_eur: z.preprocess((v) => {
@@ -46,6 +46,26 @@ const schema = z.object({
   }, z.coerce.number().min(0).default(15)),
   status: z.enum(["active", "inactive", "applied"]).default("applied"),
   role: z.enum(["member", "anni", "admin"]).default("member"),
+}).superRefine((data, ctx) => {
+  if (data.no_app_access) {
+    const billing = data.billing_email.trim().toLowerCase();
+    if (!z.string().email().safeParse(billing).success) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Bitte eine E-Mail nur für Beitragszahlungen eintragen (z. B. der Mutter).",
+        path: ["billing_email"],
+      });
+    }
+  } else {
+    const email = data.email.trim().toLowerCase();
+    if (!z.string().email().safeParse(email).success) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Bitte eine gültige E-Mail eintragen.",
+        path: ["email"],
+      });
+    }
+  }
 });
 
 const updateSchema = z.object({
@@ -64,15 +84,44 @@ const updateSchema = z.object({
     .trim()
     .optional()
     .default("")
-    .refine((v) => !v || z.string().email().safeParse(v).success, {
-      message: "E-Mail ungültig.",
-    }),
+    .refine(
+      (v) =>
+        !v ||
+        v.toLowerCase().includes("fanclub-import.invalid") ||
+        z.string().email().safeParse(v).success,
+      { message: "E-Mail ungültig." },
+    ),
+  no_app_access: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
+  billing_email: z.string().optional().default(""),
   phone: z.string().optional().default(""),
   membership_start: z.string().optional().default(""),
   membership_end: z.string().optional().default(""),
   fee_eur: z.coerce.number().min(0).default(15),
   status: z.enum(["active", "inactive", "applied"]).default("active"),
   role: z.enum(["member", "anni", "admin"]).default("member"),
+}).superRefine((data, ctx) => {
+  if (data.no_app_access) {
+    const billing = data.billing_email.trim().toLowerCase();
+    if (!z.string().email().safeParse(billing).success) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Bitte eine E-Mail nur für Beitragszahlungen eintragen.",
+        path: ["billing_email"],
+      });
+    }
+  } else {
+    const email = data.email.trim().toLowerCase();
+    if (
+      !z.string().email().safeParse(email).success ||
+      email.includes("fanclub-import.invalid")
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Bitte eine gültige Login-E-Mail eintragen.",
+        path: ["email"],
+      });
+    }
+  }
 });
 
 function baseUsername(first: string, last: string) {
@@ -113,18 +162,22 @@ export async function createMember(
     }
     const input = parsed.data;
     const admin = createSupabaseAdminClient();
-    const email = input.email.trim().toLowerCase();
+    const noApp = Boolean(input.no_app_access);
+    const billingEmail = input.billing_email.trim().toLowerCase() || null;
+    const email = noApp ? generateNoAppAuthEmail() : input.email.trim().toLowerCase();
 
-    const { data: emailTaken } = await admin
-      .from("profiles")
-      .select("id,first_name,last_name")
-      .ilike("email", email)
-      .maybeSingle();
-    if (emailTaken) {
-      return {
-        ok: false,
-        error: `Diese E-Mail ist bereits vergeben (${emailTaken.first_name} ${emailTaken.last_name}).`,
-      };
+    if (!noApp) {
+      const { data: emailTaken } = await admin
+        .from("profiles")
+        .select("id,first_name,last_name")
+        .ilike("email", email)
+        .maybeSingle();
+      if (emailTaken) {
+        return {
+          ok: false,
+          error: `Diese E-Mail ist bereits vergeben (${emailTaken.first_name} ${emailTaken.last_name}).`,
+        };
+      }
     }
 
     const base = baseUsername(input.first_name, input.last_name);
@@ -152,7 +205,7 @@ export async function createMember(
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
       email,
       password: passwordTemp,
-      email_confirm: status === "active",
+      email_confirm: status === "active" && !noApp,
       user_metadata: {
         role: input.role,
         username,
@@ -190,10 +243,21 @@ export async function createMember(
         city: input.city || null,
         country: input.country ? normalizeMemberCountryCode(input.country) : "DE",
         phone: input.phone || null,
+        no_app_access: noApp,
+        billing_email: noApp ? billingEmail : null,
+        app_registration_status: noApp ? "deleted" : "open",
+        app_registration_deleted_at: noApp ? new Date().toISOString() : null,
       },
       { onConflict: "id" },
     );
     if (profileErr) {
+      if (/no_app_access|billing_email|does not exist/i.test(profileErr.message)) {
+        return {
+          ok: false,
+          error:
+            "Datenbank-Spalte fehlt. Bitte supabase/153_no_app_access_billing_email.sql im SQL-Editor ausführen.",
+        };
+      }
       return { ok: false, error: profileErr.message };
     }
     void syncProfileMapCoords(admin, userId).catch((e) => {
@@ -240,6 +304,17 @@ export async function createMember(
       }).catch((e) => {
         console.error("[members] Offene Beitragszahlung konnte nicht angelegt werden:", e);
       });
+    }
+
+    if (noApp) {
+      revalidatePath("/admin/members");
+      if (status === "applied") {
+        return { ok: true, href: `/admin/members/${userId}?paperMail=1` };
+      }
+      return { ok: true, href: `/admin/members/${userId}` };
+    }
+
+    if (status === "applied" && membershipRow?.id) {
       revalidatePath("/admin/members");
       return { ok: true, href: `/admin/members/${userId}?paperMail=1` };
     }
@@ -290,29 +365,50 @@ export async function updateMember(formData: FormData) {
     redirect(`/admin/members/${input.user_id}/edit?error=${encodeURIComponent(msg)}`);
   };
 
-  const { data: existingProfile } = await admin
+  const { data: existingFull, error: existingErr } = await admin
     .from("profiles")
-    .select("membership_number,email,gender")
+    .select("membership_number,email,gender,no_app_access,billing_email")
     .eq("id", input.user_id)
     .maybeSingle();
+  let existingProfile = existingFull;
+  if (existingErr && /no_app_access|billing_email|does not exist/i.test(existingErr.message)) {
+    const fb = await admin
+      .from("profiles")
+      .select("membership_number,email,gender")
+      .eq("id", input.user_id)
+      .maybeSingle();
+    existingProfile = fb.data
+      ? { ...fb.data, no_app_access: false, billing_email: null }
+      : null;
+  }
 
-  const nextEmail = input.email.trim().toLowerCase() || null;
+  const noApp = Boolean(input.no_app_access);
+  const billingEmail = noApp ? input.billing_email.trim().toLowerCase() || null : null;
   const previousEmail = existingProfile?.email?.trim().toLowerCase() || null;
+  let nextEmail = input.email.trim().toLowerCase() || null;
+  if (noApp) {
+    nextEmail =
+      previousEmail && isNoAppPlaceholderEmail(previousEmail)
+        ? previousEmail
+        : generateNoAppAuthEmail();
+  }
   let notifyLoginEmailChange: { oldEmail: string; newEmail: string } | null = null;
 
   if (nextEmail && nextEmail !== previousEmail) {
-    const { data: emailClash } = await admin
-      .from("profiles")
-      .select("id")
-      .ilike("email", nextEmail)
-      .neq("id", input.user_id)
-      .maybeSingle();
-    if (emailClash) {
-      fail("Diese E-Mail ist bereits einem anderen Mitglied zugeordnet.");
+    if (isRealMemberEmail(nextEmail)) {
+      const { data: emailClash } = await admin
+        .from("profiles")
+        .select("id")
+        .ilike("email", nextEmail)
+        .neq("id", input.user_id)
+        .maybeSingle();
+      if (emailClash) {
+        fail("Diese E-Mail ist bereits einem anderen Mitglied zugeordnet.");
+      }
     }
     const { error: authEmailErr } = await admin.auth.admin.updateUserById(input.user_id, {
       email: nextEmail,
-      email_confirm: true,
+      email_confirm: isRealMemberEmail(nextEmail),
     });
     if (authEmailErr) {
       fail(
@@ -321,8 +417,7 @@ export async function updateMember(formData: FormData) {
           : `E-Mail konnte nicht gesetzt werden: ${authEmailErr.message}`,
       );
     }
-    // Nur wenn schon eine echte Login-Mail existierte (Zugang vorhanden)
-    if (isRealMemberEmail(previousEmail)) {
+    if (isRealMemberEmail(previousEmail) && isRealMemberEmail(nextEmail)) {
       notifyLoginEmailChange = { oldEmail: previousEmail, newEmail: nextEmail };
     }
   }
@@ -365,9 +460,20 @@ export async function updateMember(formData: FormData) {
       city: input.city || null,
       country: input.country ? normalizeMemberCountryCode(input.country) : "DE",
       phone: input.phone || null,
+      no_app_access: noApp,
+      billing_email: billingEmail,
+      ...(noApp
+        ? {
+            app_registration_status: "deleted",
+            app_registration_deleted_at: new Date().toISOString(),
+          }
+        : {}),
     })
     .eq("id", input.user_id);
   if (profileErr) {
+    if (/no_app_access|billing_email|does not exist/i.test(profileErr.message)) {
+      fail("Datenbank-Spalte fehlt. Bitte supabase/153_no_app_access_billing_email.sql ausführen.");
+    }
     if (/membership_number|duplicate|unique/i.test(profileErr.message)) {
       fail(
         `Das ist nicht möglich, da die Mitgliedsnummer ${membershipNumber ?? ""} bereits vorhanden ist.`,
@@ -412,7 +518,7 @@ export async function updateMember(formData: FormData) {
       .select("email,first_name,membership_number,gender")
       .eq("id", input.user_id)
       .maybeSingle();
-    if (profile?.email) {
+    if (profile?.email && isRealMemberEmail(profile.email) && !noApp) {
       await admin.auth.admin.updateUserById(input.user_id, { email_confirm: true });
       const mail = await sendMemberInviteAfterApproval({
         email: profile.email,

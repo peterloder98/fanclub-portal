@@ -17,6 +17,7 @@ import {
   resolveAppRegistrationStatus,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
+import { adminVisibleEmail } from "@/lib/members/no-app-access";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,7 @@ export default async function AdminMembersPage({
           admin
             .from("profiles")
             .select(
-              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status,last_app_active_at,app_registered_at",
+              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status,last_app_active_at,app_registered_at,no_app_access,billing_email",
             )
             .order("membership_number", { ascending: true, nullsFirst: false }),
         ]);
@@ -78,10 +79,46 @@ export default async function AdminMembersPage({
         app_registration_status?: string | null;
         last_app_active_at?: string | null;
         app_registered_at?: string | null;
+        no_app_access?: boolean | null;
+        billing_email?: string | null;
       };
       let profileRows: ProfileListRow[] = (profiles ?? []) as ProfileListRow[];
       if (pErr) {
-        if (/app_registration_status|app_registered_at|does not exist/i.test(pErr.message)) {
+        if (/no_app_access|billing_email|does not exist/i.test(pErr.message) && !/app_registration_status|app_registered_at/i.test(pErr.message)) {
+          const { data: withoutNoApp, error: noAppErr } = await admin
+            .from("profiles")
+            .select(
+              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status,last_app_active_at,app_registered_at",
+            )
+            .order("membership_number", { ascending: true, nullsFirst: false });
+          if (!noAppErr) {
+            profileRows = (withoutNoApp ?? []) as ProfileListRow[];
+          } else if (/app_registration_status|app_registered_at|does not exist/i.test(noAppErr.message)) {
+            // fall through to existing app_registration fallback by reusing noAppErr as pErr-like
+            const { data: fallback, error: fbErr } = await admin
+              .from("profiles")
+              .select(
+                "id,membership_number,first_name,last_name,birthdate,email,warning_count,last_app_active_at",
+              )
+              .order("membership_number", { ascending: true, nullsFirst: false });
+            if (fbErr) {
+              if (/last_app_active_at|does not exist/i.test(fbErr.message)) {
+                const { data: minimal, error: minErr } = await admin
+                  .from("profiles")
+                  .select("id,membership_number,first_name,last_name,birthdate,email,warning_count")
+                  .order("membership_number", { ascending: true, nullsFirst: false });
+                if (minErr) return { members: [], membersError: minErr.message };
+                profileRows = (minimal ?? []) as ProfileListRow[];
+              } else {
+                return { members: [], membersError: fbErr.message };
+              }
+            } else {
+              profileRows = (fallback ?? []) as ProfileListRow[];
+            }
+          } else {
+            return { members: [], membersError: noAppErr.message };
+          }
+        } else if (/app_registration_status|app_registered_at|does not exist/i.test(pErr.message)) {
           const { data: fallback, error: fbErr } = await admin
             .from("profiles")
             .select(
@@ -132,7 +169,8 @@ export default async function AdminMembersPage({
           joined_at: membershipByUser.get(p.id)?.start_date ?? null,
           warning_count: (p as { warning_count?: number }).warning_count ?? 0,
           membership_status: membershipByUser.get(p.id)?.status ?? null,
-          email: p.email ?? null,
+          email: adminVisibleEmail(p) ?? p.email ?? null,
+          no_app_access: Boolean(p.no_app_access),
           app_registration_status,
         };
       });

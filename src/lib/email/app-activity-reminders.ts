@@ -6,6 +6,7 @@ import { emailPersonVars } from "@/lib/email/salutation-block";
 import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
 import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
+import { receivesCommunityEmails } from "@/lib/members/no-app-access";
 
 const SIGNUP_MAX = 4;
 const SIGNUP_INTERVAL_DAYS = 7;
@@ -51,6 +52,7 @@ type ProfileReminderRow = {
   app_signup_reminder_count: number | null;
   app_signup_reminder_last_at: string | null;
   app_inactive_reminder_sent_at: string | null;
+  no_app_access?: boolean | null;
 };
 
 export async function runAppActivityReminders(admin: SupabaseClient) {
@@ -77,15 +79,15 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
   const userIds = members.map((m) => m.user_id);
   const startByUser = new Map(members.map((m) => [m.user_id, m.start_date as string | null]));
 
-  const { data: profiles, error: profileErr } = await admin
+  let profileRows: ProfileReminderRow[] = [];
+  const full = await admin
     .from("profiles")
     .select(
-      "id,first_name,email,gender,last_app_active_at,created_at,app_signup_reminder_count,app_signup_reminder_last_at,app_inactive_reminder_sent_at",
+      "id,first_name,email,gender,last_app_active_at,created_at,app_signup_reminder_count,app_signup_reminder_last_at,app_inactive_reminder_sent_at,no_app_access",
     )
     .in("id", userIds);
-
-  if (profileErr) {
-    if (/app_signup_reminder|app_inactive_reminder|does not exist/i.test(profileErr.message)) {
+  if (full.error) {
+    if (/app_signup_reminder|app_inactive_reminder/i.test(full.error.message) && /does not exist/i.test(full.error.message)) {
       return {
         signupSent: 0,
         inactiveSent: 0,
@@ -94,7 +96,30 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
         error: "Migration 122_app_activity_reminder_emails.sql fehlt",
       };
     }
-    throw new Error(profileErr.message);
+    if (!/no_app_access|does not exist/i.test(full.error.message)) {
+      throw new Error(full.error.message);
+    }
+    const fb = await admin
+      .from("profiles")
+      .select(
+        "id,first_name,email,gender,last_app_active_at,created_at,app_signup_reminder_count,app_signup_reminder_last_at,app_inactive_reminder_sent_at",
+      )
+      .in("id", userIds);
+    if (fb.error) {
+      if (/app_signup_reminder|app_inactive_reminder|does not exist/i.test(fb.error.message)) {
+        return {
+          signupSent: 0,
+          inactiveSent: 0,
+          skipped: 0,
+          checked: 0,
+          error: "Migration 122_app_activity_reminder_emails.sql fehlt",
+        };
+      }
+      throw new Error(fb.error.message);
+    }
+    profileRows = (fb.data ?? []) as ProfileReminderRow[];
+  } else {
+    profileRows = (full.data ?? []) as ProfileReminderRow[];
   }
 
   let signupSent = 0;
@@ -102,11 +127,12 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
   let skipped = 0;
   const now = new Date();
 
-  for (const profile of (profiles ?? []) as ProfileReminderRow[]) {
-    if (!profile.email?.trim()) {
+  for (const profile of profileRows) {
+    if (!receivesCommunityEmails(profile)) {
       skipped += 1;
       continue;
     }
+    const loginEmail = profile.email!.trim();
 
     if (!(await userAllowsMemberEmail(profile.id, "app_activity"))) {
       skipped += 1;
@@ -132,7 +158,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
         continue;
       }
 
-      const setupUrl = await buildSetupUrl(profile.email, profile.id);
+      const setupUrl = await buildSetupUrl(loginEmail, profile.id);
       if (!setupUrl) {
         skipped += 1;
         continue;
@@ -149,7 +175,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
           setup_url: setupUrl,
         });
         const result = await sendEmailWithLog({
-          to: profile.email,
+          to: loginEmail,
           subject: rendered.subject,
           text: rendered.text,
           html: rendered.html,
@@ -218,7 +244,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
         app_url: appUrl,
       });
       const result = await sendEmailWithLog({
-        to: profile.email,
+        to: loginEmail,
         subject: rendered.subject,
         text: rendered.text,
         html: rendered.html,
@@ -258,6 +284,6 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
     signupSent,
     inactiveSent,
     skipped,
-    checked: profiles?.length ?? 0,
+    checked: profileRows.length,
   };
 }

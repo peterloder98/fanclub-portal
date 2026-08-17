@@ -39,14 +39,33 @@ export default async function MitgliederPage() {
   const activeIds = new Set((activeMemberships ?? []).map((m) => m.user_id));
 
   const activeList = [...activeIds];
-  const { data: profilesRaw } = activeList.length
-    ? await supabase
-        .from("profiles")
-        .select(
-          "id,first_name,last_name,postal_code,city,country,map_lat,map_lng,birthdate,avatar_path,updated_at,email",
-        )
-        .in("id", activeList)
-    : { data: null };
+  const memberCols =
+    "id,first_name,last_name,postal_code,city,country,map_lat,map_lng,birthdate,avatar_path,updated_at,email";
+  type MemberDirectoryRow = {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    postal_code: string | null;
+    city: string | null;
+    country: string | null;
+    map_lat: number | null;
+    map_lng: number | null;
+    birthdate: string | null;
+    avatar_path: string | null;
+    updated_at: string | null;
+    email: string | null;
+    no_app_access?: boolean | null;
+  };
+  let profilesRaw: MemberDirectoryRow[] | null = null;
+  if (activeList.length) {
+    const full = await supabase.from("profiles").select(`${memberCols},no_app_access`).in("id", activeList);
+    if (full.error && /no_app_access|does not exist/i.test(full.error.message)) {
+      const fb = await supabase.from("profiles").select(memberCols).in("id", activeList);
+      profilesRaw = (fb.data ?? null) as MemberDirectoryRow[] | null;
+    } else {
+      profilesRaw = (full.data ?? null) as MemberDirectoryRow[] | null;
+    }
+  }
   const profiles = excludeHiddenProfiles(profilesRaw ?? undefined);
 
   const mapPoints: MemberMapPoint[] = [];

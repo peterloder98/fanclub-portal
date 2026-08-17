@@ -112,6 +112,7 @@ export type AdminMemberRow = {
   contribution_status: ContributionStatus | null;
   contribution_open_cents: number | null;
   email: string | null;
+  no_app_access?: boolean;
   app_registration_status: AppRegistrationStatus;
   board_note: string | null;
 };
@@ -612,6 +613,11 @@ export function AdminMembersWorkspace({
                     <div className="min-w-0">
                       <div className="truncate font-semibold text-fc-navy">
                         {m.first_name} {m.last_name}
+                        {m.no_app_access ? (
+                          <span className="ml-1.5 inline-flex rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                            ohne App
+                          </span>
+                        ) : null}
                         {m.board_note ? (
                           <span title={m.board_note} className="ml-1.5 inline-flex align-text-bottom">
                             <StickyNote
@@ -762,6 +768,11 @@ export function AdminMembersWorkspace({
                       <td className="px-3 py-2">
                         <span className="inline-flex items-center gap-1.5">
                           {m.first_name}
+                          {m.no_app_access ? (
+                            <span className="inline-flex rounded-full border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                              ohne App
+                            </span>
+                          ) : null}
                           {m.board_note ? (
                             <span title={m.board_note} className="inline-flex">
                               <StickyNote

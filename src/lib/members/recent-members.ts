@@ -29,12 +29,20 @@ export async function loadRecentWelcomeMembers(
   if (error || !memberships?.length) return [];
 
   const userIds = [...new Set(memberships.map((m) => m.user_id))];
-  const { data: profiles } = await supabase
+  const full = await supabase
     .from("profiles")
     .select(
-      "id,first_name,last_name,email,city,country,avatar_path,updated_at,last_app_active_at",
+      "id,first_name,last_name,email,city,country,avatar_path,updated_at,last_app_active_at,no_app_access",
     )
     .in("id", userIds);
+  let profiles = full.data;
+  if (full.error && /no_app_access|does not exist/i.test(full.error.message)) {
+    const fb = await supabase
+      .from("profiles")
+      .select("id,first_name,last_name,email,city,country,avatar_path,updated_at,last_app_active_at")
+      .in("id", userIds);
+    profiles = (fb.data ?? []) as typeof profiles;
+  }
 
   const byId = new Map(excludeHiddenProfiles(profiles).map((p) => [p.id, p]));
   const out: RecentMemberWelcome[] = [];

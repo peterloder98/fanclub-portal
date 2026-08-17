@@ -52,10 +52,12 @@ import {
 import { cn } from "@/lib/cn";
 import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 import { MEMBER_BOARD_NOTE_MAX } from "@/lib/members/board-notes";
+import { resolvePaymentEmail } from "@/lib/members/no-app-access";
 
 export type InitialPaperMailDraft = {
   subject: string;
   body: string;
+  to?: string;
   signatures: MailSignatureOption[];
   defaultSignatureId: string;
   signatureTexts: Record<string, string>;
@@ -101,6 +103,8 @@ export type MemberDetailData = {
   app_registered_at: string | null;
   greeting_post_sent_at: string | null;
   board_note: string;
+  no_app_access?: boolean;
+  billing_email?: string | null;
 };
 
 function formatDE(date: string | null) {
@@ -376,6 +380,9 @@ export function MemberDetailPanel({
   const [paymentCalendarYear, setPaymentCalendarYear] = useState<number | null>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentMailKind, setPaymentMailKind] = useState<"reminder" | "application">("reminder");
+  const [paymentTo, setPaymentTo] = useState("");
+  const paymentEmail = resolvePaymentEmail(member);
+  const hasPaymentEmail = Boolean(paymentEmail);
 
   const [ledgerType, setLedgerType] = useState<"income" | "expense">("income");
   const [ledgerAmount, setLedgerAmount] = useState("");
@@ -446,6 +453,7 @@ export function MemberDetailPanel({
         setPaymentSignatureId(draft.defaultSignatureId);
         setPaymentSignatureTexts(draft.signatureTexts);
         setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+        setPaymentTo(draft.to);
       } else {
         const draft = await getMemberPaymentReminderDraft(member.id, undefined, calendarYear);
         setPaymentSubject(draft.subject);
@@ -454,6 +462,7 @@ export function MemberDetailPanel({
         setPaymentSignatureId(draft.defaultSignatureId);
         setPaymentSignatureTexts(draft.signatureTexts);
         setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+        setPaymentTo(draft.to);
       }
       setShowPaymentDialog(true);
     } catch (e) {
@@ -480,11 +489,12 @@ export function MemberDetailPanel({
     setPaymentSignatureId(draft.defaultSignatureId);
     setPaymentSignatureTexts(draft.signatureTexts);
     setPaymentActiveSignatureText(draft.signatureTexts[draft.defaultSignatureId] ?? "");
+    setPaymentTo(draft.to ?? paymentEmail ?? "");
     setShowPaymentDialog(true);
   }
 
   useEffect(() => {
-    if (!member.email) return;
+    if (!hasPaymentEmail) return;
 
     if (autoOpenPaperMail) {
       if (initialPaperMailDraft) {
@@ -639,7 +649,7 @@ export function MemberDetailPanel({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={pending || paymentLoading || !member.email}
+            disabled={pending || paymentLoading || !hasPaymentEmail}
             onClick={() =>
               void openPaymentDialog(undefined, isApplied ? "application" : "reminder")
             }
@@ -737,6 +747,11 @@ export function MemberDetailPanel({
           <CardHeader>
             <CardTitle className="flex flex-wrap items-center gap-2">
               Stammdaten
+              {member.no_app_access ? (
+                <Badge variant="neutral" className="font-semibold">
+                  Kein App-/WhatsApp-Zugang
+                </Badge>
+              ) : null}
               {warningCount > 0 ? (
                 <Badge variant="danger" className="inline-flex items-center gap-1">
                   <AlertTriangle className="h-3 w-3" aria-hidden />
@@ -749,7 +764,20 @@ export function MemberDetailPanel({
             <dl>
               <InfoRow label="Mitgliedsnr." value={member.membership_number ?? "—"} />
               <InfoRow label="Name" value={fullName} />
-              <InfoRow label="E-Mail" value={member.email ?? "—"} />
+              {member.no_app_access ? (
+                <>
+                  <InfoRow
+                    label="E-Mail (nur Beitrag)"
+                    value={member.billing_email?.trim() || "—"}
+                  />
+                  <InfoRow
+                    label="App / WhatsApp"
+                    value="Kein eigener Zugang — nicht in die App und nicht in die WhatsApp-Gruppe aufnehmen."
+                  />
+                </>
+              ) : (
+                <InfoRow label="E-Mail" value={member.email ?? "—"} />
+              )}
               <InfoRow label="Benutzername" value={member.username ?? "—"} />
               <InfoRow label="Mobil" value={member.phone ?? "—"} />
               <InfoRow label="Geburtsdatum" value={formatDE(member.birthdate)} />
@@ -804,6 +832,12 @@ export function MemberDetailPanel({
                       ) : null}
                     </span>
                     <span className="inline-flex flex-wrap gap-2">
+                      {member.no_app_access ? (
+                        <span className="text-xs text-slate-600">
+                          Bewusst ohne App — keine Einladung senden, nicht in die WhatsApp-Gruppe.
+                        </span>
+                      ) : (
+                        <>
                       {member.app_registration_status !== "deleted" ? (
                         <button
                           type="button"
@@ -862,6 +896,8 @@ export function MemberDetailPanel({
                           Auf Offen zurücksetzen
                         </button>
                       ) : null}
+                        </>
+                      )}
                     </span>
                   </span>
                 }
@@ -922,7 +958,7 @@ export function MemberDetailPanel({
                           {c.status !== "paid" ? (
                             <button
                               type="button"
-                              disabled={pending || paymentLoading || !member.email}
+                              disabled={pending || paymentLoading || !hasPaymentEmail}
                               onClick={() =>
                                 void openPaymentDialog(
                                   c.calendarYear,
@@ -1259,8 +1295,8 @@ export function MemberDetailPanel({
           }
           description={
             paymentMailKind === "application"
-              ? `An ${member.email} · Vorlage editierbar · Versand optional · kein App-Zugangslink`
-              : `An ${member.email} · offener Jahresbeitrag`
+              ? `An ${paymentTo || paymentEmail || "—"} · Vorlage editierbar · Versand optional · kein App-Zugangslink`
+              : `An ${paymentTo || paymentEmail || "—"} · offener Jahresbeitrag`
           }
           onClose={() => setShowPaymentDialog(false)}
           footer={

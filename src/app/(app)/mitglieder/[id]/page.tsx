@@ -108,7 +108,7 @@ export default async function MemberPortalPage({
   const { data: profileWithBio, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id,first_name,last_name,email,city,country,avatar_path,updated_at,short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert",
+      "id,first_name,last_name,email,city,country,avatar_path,updated_at,short_bio,intro_discovered_anni,intro_favorite_song,intro_other_artists,intro_hobbies,intro_perfect_concert,no_app_access,is_hidden",
     )
     .eq("id", id)
     .maybeSingle();

@@ -109,11 +109,34 @@ export default async function AdminMemberDetailPage({
     const full = await admin
       .from("profiles")
       .select(
-        "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date,greeting_post_sent_at",
+        "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date,greeting_post_sent_at,no_app_access,billing_email",
       )
       .eq("id", id)
       .maybeSingle();
-    if (full.error && /greeting_post_sent_at|does not exist/i.test(full.error.message)) {
+    if (full.error && /no_app_access|billing_email|does not exist/i.test(full.error.message) && !/greeting_post_sent_at/i.test(full.error.message)) {
+      const fallbackNoApp = await admin
+        .from("profiles")
+        .select(
+          "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date,greeting_post_sent_at",
+        )
+        .eq("id", id)
+        .maybeSingle();
+      if (fallbackNoApp.error && /greeting_post_sent_at|does not exist/i.test(fallbackNoApp.error.message)) {
+        const fallback = await admin
+          .from("profiles")
+          .select(
+            "id,membership_number,first_name,last_name,email,username,role,phone,birthdate,gender,street,postal_code,city,country,warning_count,contribution_date",
+          )
+          .eq("id", id)
+          .maybeSingle();
+        if (fallback.error) throw new Error(fallback.error.message);
+        profile = fallback.data;
+      } else if (fallbackNoApp.error) {
+        throw new Error(fallbackNoApp.error.message);
+      } else {
+        profile = fallbackNoApp.data;
+      }
+    } else if (full.error && /greeting_post_sent_at|does not exist/i.test(full.error.message)) {
       const fallback = await admin
         .from("profiles")
         .select(
@@ -203,7 +226,7 @@ export default async function AdminMemberDetailPage({
 
   let initialPaperMailDraft: ApplicationPaymentMailDraft | null = null;
   let initialPaperMailError: string | null = null;
-  if (paperMail === "1" && profile.email) {
+  if (paperMail === "1") {
     try {
       initialPaperMailDraft = await buildMemberApplicationPaymentDraft(id);
     } catch (e) {
@@ -246,6 +269,8 @@ export default async function AdminMemberDetailPage({
     app_registered_at: appReg.registeredAt,
     greeting_post_sent_at: (profile.greeting_post_sent_at as string | null | undefined) ?? null,
     board_note: await loadMemberBoardNote(admin, id).catch(() => ""),
+    no_app_access: Boolean(profile.no_app_access),
+    billing_email: (profile.billing_email as string | null | undefined) ?? null,
   };
 
   return (
@@ -283,6 +308,7 @@ export default async function AdminMemberDetailPage({
                   signatures: initialPaperMailDraft.signatures,
                   defaultSignatureId: initialPaperMailDraft.defaultSignatureId,
                   signatureTexts: initialPaperMailDraft.signatureTexts,
+                  to: initialPaperMailDraft.to,
                 }
               : null
           }

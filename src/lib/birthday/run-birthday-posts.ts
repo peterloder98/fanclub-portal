@@ -28,10 +28,18 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
   const todayMd = berlinTodayMd();
   const todayIso = berlinTodayIsoDate();
 
-  const { data: profiles } = await admin
+  const full = await admin
     .from("profiles")
-    .select("id,first_name,last_name,birthdate,gender")
+    .select("id,first_name,last_name,birthdate,gender,no_app_access")
     .not("birthdate", "is", null);
+  let profiles = full.data;
+  if (full.error && /no_app_access|does not exist/i.test(full.error.message)) {
+    const fb = await admin
+      .from("profiles")
+      .select("id,first_name,last_name,birthdate,gender")
+      .not("birthdate", "is", null);
+    profiles = (fb.data ?? null) as typeof profiles;
+  }
 
   const { data: activeMemberships } = await admin
     .from("memberships")
@@ -43,6 +51,7 @@ export async function runBirthdayPosts(admin: SupabaseClient) {
 
   for (const p of profiles ?? []) {
     if (isHiddenProfileId(p.id)) continue;
+    if ((p as { no_app_access?: boolean | null }).no_app_access) continue;
     if (!activeIds.has(p.id) || !p.birthdate) continue;
     if (!birthdateMatchesToday(String(p.birthdate), todayMd)) continue;
 
