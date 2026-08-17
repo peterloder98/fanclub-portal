@@ -1,22 +1,45 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
 import { createMember } from "@/app/(app)/admin/members/actions";
+import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 
 export function CreateMemberSection() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  useEffect(() => {
+    if (!error) return;
+    document.getElementById("create-member-error")?.scrollIntoView({
+      block: "center",
+      behavior: "smooth",
+    });
+  }, [error]);
+
   function onSubmit(formData: FormData) {
     setError(null);
     startTransition(async () => {
-      const result = await createMember(formData);
-      if (result && !result.ok) {
-        setError(result.error);
+      try {
+        const result = await createMember(formData);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        router.push(result.href);
+        router.refresh();
+      } catch (e) {
+        setError(
+          userFacingActionError(
+            e,
+            "Speichern hat nicht geklappt. Bitte Eingaben prüfen (Geschlecht, E-Mail) und erneut versuchen.",
+          ),
+        );
       }
     });
   }
@@ -44,9 +67,18 @@ export function CreateMemberSection() {
             </button>
           </CardHeader>
           <CardContent>
-            <form action={onSubmit} className="grid gap-3 md:grid-cols-2">
+            <form
+              action={onSubmit}
+              onInvalid={(e) => {
+                (e.target as HTMLElement).scrollIntoView({ block: "center", behavior: "smooth" });
+              }}
+              className="grid gap-3 md:grid-cols-2"
+            >
               {error ? (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 md:col-span-2">
+                <div
+                  id="create-member-error"
+                  className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 md:col-span-2"
+                >
                   {error}
                 </div>
               ) : null}

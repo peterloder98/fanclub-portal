@@ -33,10 +33,17 @@ const schema = z.object({
   country: z.string().min(2, "Land ist Pflichtfeld."),
   birthdate: z.string().optional().default(""),
   gender: z.enum(["m", "w", "d"], { message: "Geschlecht ist Pflichtfeld." }),
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Bitte eine gültige E-Mail eintragen."),
   phone: z.string().optional().default(""),
   membership_start: z.string().optional().default(""),
-  fee_eur: z.coerce.number().min(0).default(15),
+  fee_eur: z.preprocess((v) => {
+    if (typeof v === "string") return v.trim().replace(",", ".");
+    return v;
+  }, z.coerce.number().min(0).default(15)),
   status: z.enum(["active", "inactive", "applied"]).default("applied"),
   role: z.enum(["member", "anni", "admin"]).default("member"),
 });
@@ -96,8 +103,7 @@ function mapCreateUserError(message: string) {
 
 export async function createMember(
   formData: FormData,
-): Promise<{ ok: false; error: string } | void> {
-  let redirectTo = "";
+): Promise<{ ok: false; error: string } | { ok: true; href: string }> {
   try {
     const { user } = await requireAdminAction();
 
@@ -107,6 +113,19 @@ export async function createMember(
     }
     const input = parsed.data;
     const admin = createSupabaseAdminClient();
+    const email = input.email.trim().toLowerCase();
+
+    const { data: emailTaken } = await admin
+      .from("profiles")
+      .select("id,first_name,last_name")
+      .ilike("email", email)
+      .maybeSingle();
+    if (emailTaken) {
+      return {
+        ok: false,
+        error: `Diese E-Mail ist bereits vergeben (${emailTaken.first_name} ${emailTaken.last_name}).`,
+      };
+    }
 
     const base = baseUsername(input.first_name, input.last_name);
     let username = base;
@@ -131,7 +150,7 @@ export async function createMember(
 
     const passwordTemp = crypto.randomUUID();
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
-      email: input.email,
+      email,
       password: passwordTemp,
       email_confirm: status === "active",
       user_metadata: {
@@ -161,7 +180,7 @@ export async function createMember(
         role: input.role,
         username,
         membership_number: membershipNumber,
-        email: input.email,
+        email,
         first_name: input.first_name,
         last_name: input.last_name,
         birthdate: input.birthdate || null,
@@ -221,14 +240,16 @@ export async function createMember(
       }).catch((e) => {
         console.error("[members] Offene Beitragszahlung konnte nicht angelegt werden:", e);
       });
-      redirectTo = `/admin/members/${userId}?paperMail=1`;
-    } else {
-      const { setupUrl } = await rotateAccountSetupToken({
-        email: input.email,
-        userId,
-      });
-      redirectTo = `/admin/members?invite=${encodeURIComponent(setupUrl)}`;
+      revalidatePath("/admin/members");
+      return { ok: true, href: `/admin/members/${userId}?paperMail=1` };
     }
+
+    const { setupUrl } = await rotateAccountSetupToken({
+      email,
+      userId,
+    });
+    revalidatePath("/admin/members");
+    return { ok: true, href: `/admin/members?invite=${encodeURIComponent(setupUrl)}` };
   } catch (e) {
     return {
       ok: false,
@@ -238,9 +259,6 @@ export async function createMember(
       ),
     };
   }
-
-  revalidatePath("/admin/members");
-  redirect(redirectTo);
 }
 
 export async function updateMember(formData: FormData) {
