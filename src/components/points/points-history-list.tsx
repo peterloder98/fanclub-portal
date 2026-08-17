@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { pointsReasonLabel } from "@/lib/points/reason-labels";
+import { currentBerlinYearStartIso } from "@/lib/points/year-bounds";
 
 type TxRow = {
   id: string;
@@ -42,7 +43,7 @@ export function PointsHistoryList({ userId }: { userId: string | null }) {
     }
     void (async () => {
       setLoading(true);
-      const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
+      const yearStart = currentBerlinYearStartIso();
       const { data } = await supabase
         .from("points_transactions")
         .select("id,points,reason,created_at,held_at")

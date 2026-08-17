@@ -35,13 +35,16 @@ export async function awardPostCommentPoints(
 
   const { data: post } = await admin
     .from("posts")
-    .select("is_birthday,author_id,status")
+    .select("is_birthday,author_id,birthday_user_id,status")
     .eq("id", postId)
     .maybeSingle();
 
-  // Keine Punkte für Kommentare am eigenen Beitrag
+  // Keine Punkte für Kommentare am eigenen Beitrag oder am eigenen Geburtstag
   if (post?.author_id && post.author_id === userId) {
     return { ok: true, points: 0, reason: "post_comment", changed: false };
+  }
+  if (post?.birthday_user_id && post.birthday_user_id === userId) {
+    return { ok: true, points: 0, reason: "birthday_comment", changed: false };
   }
   if (post?.status && post.status !== "approved") {
     return { ok: true, points: 0, reason: "post_comment", changed: false };

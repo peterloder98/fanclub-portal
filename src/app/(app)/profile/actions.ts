@@ -16,6 +16,7 @@ import {
 import { getMemberContributionInfo } from "@/lib/club/membership-contribution";
 import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
 import { rankFromPoints } from "@/lib/points/rank";
+import { sumUserPointsForBerlinYear } from "@/lib/points/sum-transactions";
 import {
   loadUserAchievementsForDisplay,
   type UserAchievementRow,
@@ -197,13 +198,7 @@ export async function loadMyProfileBundle(): Promise<MyProfileBundle> {
     }
   }
 
-  const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-  const { data: pointsRows } = await supabase
-    .from("points_transactions")
-    .select("points")
-    .eq("user_id", user.id)
-    .gte("created_at", yearStart);
-  const yearPoints = (pointsRows ?? []).reduce((sum, r) => sum + (r.points ?? 0), 0);
+  const yearPoints = await sumUserPointsForBerlinYear(supabase, user.id);
   const yearRank = rankFromPoints(yearPoints);
   const achievements = await loadUserAchievementsForDisplay(user.id).catch(() => []);
 

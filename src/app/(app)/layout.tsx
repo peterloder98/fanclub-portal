@@ -6,6 +6,7 @@ import type { SidebarUser } from "@/components/app-shell/sidebar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { rankFromPoints } from "@/lib/points/rank";
 import { avatarPublicUrl } from "@/lib/avatars/public";
+import { sumUserPointsForBerlinYear } from "@/lib/points/sum-transactions";
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -56,15 +57,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         ? `${safeProfile.first_name} ${safeProfile.last_name}`
         : user.email ?? "Mitglied";
 
-    const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-    const { data: pointsRows } = await supabase
-      .from("points_transactions")
-      .select("points,held_at")
-      .eq("user_id", user.id)
-      .gte("created_at", yearStart);
-    const points = (pointsRows ?? [])
-      .filter((r) => !(r as { held_at?: string | null }).held_at)
-      .reduce((sum, r) => sum + (r.points ?? 0), 0);
+    const points = await sumUserPointsForBerlinYear(supabase, user.id);
 
     sidebarUser = {
       name,

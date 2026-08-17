@@ -7,67 +7,56 @@ import {
   type YearEndCandidate,
 } from "@/lib/giveaways/year-end-ranking";
 import { isHiddenProfileId } from "@/lib/members/hidden";
+import {
+  defaultPointsYearForYearEndRun,
+  yearBoundsBerlin,
+} from "@/lib/points/year-bounds";
+import {
+  freezePointsYear,
+  liveYearTotalsPaged,
+  loadYearArchiveTotals,
+  markArchiveLotteryCompleted,
+} from "@/lib/points/year-archive";
 
 export const YEAR_END_LOTTERY_TOP_N = 10;
-export { YEAR_END_TIE_BREAK_SUMMARY };
+export { YEAR_END_TIE_BREAK_SUMMARY, defaultPointsYearForYearEndRun };
 
 export function yearBounds(pointsYear: number) {
-  const start = new Date(pointsYear, 0, 1).toISOString();
-  const end = new Date(pointsYear + 1, 0, 1).toISOString();
-  return { start, end };
-}
-
-/** Kalenderjahr, für das die Verlosung gilt (z. B. am 1.1.2026 → 2025). */
-export function defaultPointsYearForYearEndRun(at = new Date()) {
-  return at.getMonth() === 0 && at.getDate() <= 15
-    ? at.getFullYear() - 1
-    : at.getFullYear();
+  return yearBoundsBerlin(pointsYear);
 }
 
 export async function sumPointsByUserForYear(
   admin: SupabaseClient,
   pointsYear: number,
 ): Promise<Array<{ user_id: string; total: number; activityCount: number }>> {
-  const { start, end } = yearBounds(pointsYear);
-  const { data: rows, error } = await admin
-    .from("points_transactions")
-    .select("user_id,points,held_at")
-    .gte("created_at", start)
-    .lt("created_at", end);
-  if (error) {
-    if (/held_at|does not exist/i.test(error.message)) {
-      const { data: fb, error: fbErr } = await admin
-        .from("points_transactions")
-        .select("user_id,points")
-        .gte("created_at", start)
-        .lt("created_at", end);
-      if (fbErr) throw fbErr;
-      const byUserFb = new Map<string, { total: number; activityCount: number }>();
-      for (const r of fb ?? []) {
-        const cur = byUserFb.get(r.user_id) ?? { total: 0, activityCount: 0 };
-        cur.total += r.points ?? 0;
-        cur.activityCount += 1;
-        byUserFb.set(r.user_id, cur);
-      }
-      return [...byUserFb.entries()]
-        .map(([user_id, stats]) => ({ user_id, ...stats }))
-        .filter((x) => x.total > 0);
-    }
-    throw error;
+  const archived = await loadYearArchiveTotals(admin, pointsYear);
+  if (archived && archived.length > 0) {
+    return archived.map((r) => ({
+      user_id: r.user_id,
+      total: r.points,
+      activityCount: r.activity_count,
+    }));
   }
 
-  const byUser = new Map<string, { total: number; activityCount: number }>();
-  for (const r of rows ?? []) {
-    if ((r as { held_at?: string | null }).held_at) continue;
-    const cur = byUser.get(r.user_id) ?? { total: 0, activityCount: 0 };
-    cur.total += r.points ?? 0;
-    cur.activityCount += 1;
-    byUser.set(r.user_id, cur);
+  const { data: rpcRows, error: rpcErr } = await admin.rpc("sum_points_by_user_for_year", {
+    p_year: pointsYear,
+  });
+  if (!rpcErr && rpcRows) {
+    return (rpcRows as Array<{ user_id: string; points: number; activity_count: number }>).map(
+      (r) => ({
+        user_id: r.user_id,
+        total: Number(r.points),
+        activityCount: Number(r.activity_count),
+      }),
+    );
   }
 
-  return [...byUser.entries()]
-    .map(([user_id, stats]) => ({ user_id, ...stats }))
-    .filter((x) => x.total > 0);
+  const live = await liveYearTotalsPaged(admin, pointsYear);
+  return live.map((r) => ({
+    user_id: r.user_id,
+    total: r.points,
+    activityCount: r.activity_count,
+  }));
 }
 
 async function buildYearEndCandidates(
@@ -193,6 +182,11 @@ export async function createYearEndGiveaway(
     return { giveawayId: existingRun.giveaway_id, created: false, topCount: 0 };
   }
 
+  const freeze = await freezePointsYear(admin, pointsYear);
+  if (!freeze.ok && freeze.error && freeze.error !== "year_not_ended") {
+    console.warn("[year-end] Archiv:", freeze.error);
+  }
+
   const top = await getTopMembersForYear(admin, pointsYear);
   if (top.length < 1) {
     throw new Error(
@@ -207,7 +201,8 @@ export async function createYearEndGiveaway(
     `Genau ${YEAR_END_LOTTERY_TOP_N} Mitglieder mit den meisten Statuspunkten in ${pointsYear} nehmen automatisch teil. ` +
     `Bei Punktgleichstand gilt: ${YEAR_END_TIE_BREAK_SUMMARY} ` +
     `Weitere Teilnahme ist nicht möglich. Nach Eintrag der Preise durch den Vorstand wird ausgelost und die Gewinner per E-Mail benachrichtigt. ` +
-    `Ab dem neuen Jahr startet die Statuspunkte-Zählung wieder bei null.`;
+    `Ab dem 1. Januar 0:00 (Berlin) zählen die Anni-Stars des neuen Jahres wieder bei null. ` +
+    `Die Auswertung ${pointsYear} bleibt bis zur Auslosung archiviert.`;
 
   const { data: row, error: gErr } = await admin
     .from("giveaways")
@@ -300,6 +295,7 @@ export async function confirmYearEndGiveaway(
       .from("year_end_lottery_runs")
       .update({ points_reset_notified_at: now })
       .eq("points_year", g.points_year);
+    await markArchiveLotteryCompleted(admin, g.points_year);
   }
 
   return result;

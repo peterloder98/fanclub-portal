@@ -2,33 +2,11 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { rankFromPoints } from "@/lib/points/rank";
-
-function yearStartIso() {
-  return new Date(new Date().getFullYear(), 0, 1).toISOString();
-}
+import { sumUserPointsForBerlinYear } from "@/lib/points/sum-transactions";
 
 export async function sumUserPointsThisYear(userId: string): Promise<number> {
   const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("points_transactions")
-    .select("points,held_at")
-    .eq("user_id", userId)
-    .gte("created_at", yearStartIso());
-  if (error) {
-    if (/held_at|does not exist/i.test(error.message)) {
-      const { data: fallback, error: fbErr } = await admin
-        .from("points_transactions")
-        .select("points")
-        .eq("user_id", userId)
-        .gte("created_at", yearStartIso());
-      if (fbErr) throw new Error(fbErr.message);
-      return (fallback ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
-    }
-    throw new Error(error.message);
-  }
-  return (data ?? [])
-    .filter((r) => !r.held_at)
-    .reduce((s, r) => s + (r.points ?? 0), 0);
+  return sumUserPointsForBerlinYear(admin, userId);
 }
 
 /** Nach Punktevergabe prüfen, ob sich der Jahresrang geändert hat. */

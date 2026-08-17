@@ -59,7 +59,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Zum Geburtstag gratuliert",
     points: POINT_VALUES.birthdayComment,
     how: "Einmal einen Kommentar unter einem Geburtstags-Beitrag im Feed schreiben.",
-    note: "Einmal pro Geburtstags-Beitrag. Kommentar löschen: −2 Anni-Stars.",
+    note: "Einmal pro Geburtstags-Beitrag. Das Geburtstagskind darf gratulieren und liken, erhält dafür aber keine Sterne. Kommentar löschen: −2 Anni-Stars.",
   },
   {
     id: "post_comment",
@@ -73,7 +73,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "An Gewinnspiel teilgenommen",
     points: POINT_VALUES.giveawayEntry,
     how: "Einmalig bei einem Gewinnspiel mitmachen (Eintrag absenden).",
-    note: "Geringer Bonus — der mögliche Gewinn ist der Hauptanreiz.",
+    note: "Geringer Bonus fürs Mitmachen — auch wenn Quiz-Antworten falsch sind. Der mögliche Gewinn ist der Hauptanreiz.",
   },
   {
     id: "live_session_participation",
@@ -94,7 +94,7 @@ export const POINTS_RULES: PointsRule[] = [
     label: "Beitrag geliked",
     points: POINT_VALUES.postLike,
     how: "Den Daumen bei einem Beitrag setzen.",
-    note: "Like zurücknehmen oder Reaktion ändern: Anni-Star wird wieder abgezogen bzw. bleibt gleich. Likes auf eigene Beiträge geben keine Sterne.",
+    note: "Like zurücknehmen oder Reaktion ändern: Anni-Star wird wieder abgezogen bzw. bleibt gleich. Likes auf eigene Beiträge und auf den eigenen Geburtstags-Post geben keine Sterne. Vor der Freigabe eines Beitrags sind Likes, Kommentare und Bearbeiten gesperrt.",
   },
   {
     id: "giveaway_like",

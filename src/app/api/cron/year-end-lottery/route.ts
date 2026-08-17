@@ -5,11 +5,15 @@ import {
   defaultPointsYearForYearEndRun,
   findYearEndGiveawayForYear,
 } from "@/lib/giveaways/year-end-lottery";
+import { freezePointsYear } from "@/lib/points/year-archive";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-/** Am Jahreswechsel (z. B. Vercel Cron 1. Jan. 06:00 UTC): Top-10-Gewinnspiel für das abgelaufene Jahr anlegen. */
+/**
+ * Täglich im Januar: Vorjahr einfrieren (Archiv) und Top-10-Gewinnspiel anlegen,
+ * falls noch nicht vorhanden. Auslosung bleibt manuell.
+ */
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -17,6 +21,7 @@ export async function GET(request: Request) {
 
   const admin = createSupabaseAdminClient();
   const pointsYear = defaultPointsYearForYearEndRun();
+  const freeze = await freezePointsYear(admin, pointsYear);
 
   const existing = await findYearEndGiveawayForYear(admin, pointsYear);
   if (existing) {
@@ -24,6 +29,7 @@ export async function GET(request: Request) {
       ok: true,
       skipped: true,
       pointsYear,
+      freeze,
       giveawayId: existing.id,
     });
   }
@@ -35,7 +41,7 @@ export async function GET(request: Request) {
     .limit(1)
     .maybeSingle();
   if (!adminProfile?.id) {
-    return NextResponse.json({ error: "no_admin_profile" }, { status: 500 });
+    return NextResponse.json({ error: "no_admin_profile", freeze }, { status: 500 });
   }
 
   try {
@@ -43,9 +49,9 @@ export async function GET(request: Request) {
       pointsYear,
       authorId: adminProfile.id,
     });
-    return NextResponse.json({ ok: true, pointsYear, ...result });
+    return NextResponse.json({ ok: true, pointsYear, freeze, ...result });
   } catch (e) {
     const message = e instanceof Error ? e.message : "unknown_error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, freeze }, { status: 500 });
   }
 }

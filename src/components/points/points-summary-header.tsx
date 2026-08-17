@@ -6,6 +6,8 @@ import { AnniStarCount } from "@/components/anni-stars/anni-star-count";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { rankFromPoints } from "@/lib/points/rank";
 import { YearEndLotteryCollapsible } from "@/components/points/year-end-lottery-collapsible";
+import { PreviousYearArchiveBanner } from "@/components/points/previous-year-archive-banner";
+import { sumUserPointsForBerlinYear } from "@/lib/points/sum-transactions";
 
 export function PointsSummaryHeader({ userId }: { userId: string | null }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -15,15 +17,7 @@ export function PointsSummaryHeader({ userId }: { userId: string | null }) {
   useEffect(() => {
     if (!userId) return;
     void (async () => {
-      const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-      const { data: rows } = await supabase
-        .from("points_transactions")
-        .select("points,held_at")
-        .eq("user_id", userId)
-        .gte("created_at", yearStart);
-      const sum = (rows ?? [])
-        .filter((r) => !(r as { held_at?: string | null }).held_at)
-        .reduce((s, r) => s + (r.points ?? 0), 0);
+      const sum = await sumUserPointsForBerlinYear(supabase, userId);
       setPoints(sum);
       setRank(rankFromPoints(sum));
     })();
@@ -32,6 +26,7 @@ export function PointsSummaryHeader({ userId }: { userId: string | null }) {
   return (
     <div className="space-y-4">
       <YearEndLotteryCollapsible />
+      <PreviousYearArchiveBanner userId={userId} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white px-5 py-4 shadow-sm">

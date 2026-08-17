@@ -26,7 +26,7 @@ export const POINTS_RANKS = [
 ] as const;
 
 export const POINTS_YEAR_HINT =
-  "Anni-Stars gelten für das laufende Kalenderjahr. Am 1. Januar startet die Zählung neu — dein Rang in der Leiste zeigt deinen Einsatz im Club.";
+  "Anni-Stars gelten für das laufende Kalenderjahr (Mitternacht 1. Januar, Berlin). Am Jahreswechsel startet die Anzeige bei null — das Vorjahr bleibt archiviert, bis die Sonderverlosung ausgelost ist.";
 
 export const POINTS_YEAR_END_NOTE =
-  "Die zehn Mitglieder mit den meisten Anni-Stars am Jahresende qualifizieren sich automatisch für die Sonderverlosung. Bei Gleichstand zählen: mehr Aktivitäten im Jahr, dann früherer Beitritt, dann Nachname alphabetisch. Der Vorstand legt die Preise fest und startet die Auslosung — die Gewinner werden per E-Mail benachrichtigt. Am 1. Januar starten alle Anni-Stars wieder bei null.";
+  "Die zehn Mitglieder mit den meisten Anni-Stars am 31. Dezember (Mitternacht Berlin) qualifizieren sich automatisch für die Sonderverlosung. Die Punktestände des Jahres werden gespeichert, damit die Auslosung im Januar fair bleibt — auch wenn schon Sterne fürs neue Jahr gesammelt werden. Bei Gleichstand zählen: mehr Aktivitäten im Jahr, dann früherer Beitritt, dann Nachname alphabetisch. Der Vorstand legt die Preise fest und startet die Auslosung — die Gewinner werden per E-Mail benachrichtigt.";

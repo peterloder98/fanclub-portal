@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { rankFromPoints } from "@/lib/points/rank";
 import { POINTS_GAIN_EVENT, type PointsGainDetail } from "@/lib/points/events";
+import { sumUserPointsForBerlinYear } from "@/lib/points/sum-transactions";
 
 export function usePointsTopbar(userId: string | null) {
   const [points, setPoints] = useState(0);
@@ -23,24 +24,7 @@ export function usePointsTopbar(userId: string | null) {
   const refreshPoints = useCallback(
     async (uid: string): Promise<number> => {
       const supabase = createSupabaseBrowserClient();
-      const yearStart = new Date(new Date().getFullYear(), 0, 1).toISOString();
-      const { data: rows, error } = await supabase
-        .from("points_transactions")
-        .select("points,held_at")
-        .eq("user_id", uid)
-        .gte("created_at", yearStart);
-      if (error) {
-        // Fallback bevor Migration 123 läuft
-        const { data: fb } = await supabase
-          .from("points_transactions")
-          .select("points")
-          .eq("user_id", uid)
-          .gte("created_at", yearStart);
-        return (fb ?? []).reduce((s, r) => s + (r.points ?? 0), 0);
-      }
-      return (rows ?? [])
-        .filter((r) => !(r as { held_at?: string | null }).held_at)
-        .reduce((s, r) => s + (r.points ?? 0), 0);
+      return sumUserPointsForBerlinYear(supabase, uid);
     },
     [],
   );

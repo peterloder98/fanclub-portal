@@ -208,7 +208,7 @@ export function GiveawayDetailClient({
       const result = await participateQuiz(giveaway.id, JSON.stringify(payload));
       setQuizResult(result);
       setLocalEntered({ is_eligible: result.eligible });
-      if (result.eligible) flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
+      flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Quiz fehlgeschlagen");
     } finally {
@@ -236,9 +236,7 @@ export function GiveawayDetailClient({
         optionLabel: chosen?.label ?? "",
       });
       setLocalEntered({ is_eligible: result.eligible });
-      if (result.eligible) {
-        flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
-      }
+      flyPointsFromElement({ fromRect, delta: +POINT_VALUES.giveawayEntry });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Teilnahme fehlgeschlagen");
     } finally {

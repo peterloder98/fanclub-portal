@@ -88,6 +88,7 @@ type FeedPost = {
   pinnedAt?: string | null;
   isBirthday?: boolean;
   birthdayDate?: string | null;
+  birthdayUserId?: string | null;
   media: Array<{ id: string; url: string }>;
   myReaction: PostReactionType | null;
   reactionCounts: PostReactionCounts;
@@ -466,11 +467,21 @@ function PostFeedInner({
     me &&
     (post.isBirthday ? me.role === "admin" : me.id === post.authorId || me.role === "admin");
 
+  const isApprovedPost = (post: FeedPost | undefined) =>
+    Boolean(post) && (!post!.status || post!.status === "approved");
+
   const canEngagePost = (post: FeedPost | undefined) => {
-    if (!me || !post) return false;
+    if (!me || !post || !isApprovedPost(post)) return false;
     if (canMemberWrite(me.role)) return true;
     return Boolean(post.isBirthday) && canMemberEngageBirthdayPost(me.role);
   };
+
+  const canEditPost = (post: FeedPost) => Boolean(canManagePost(post) && isApprovedPost(post));
+
+  const earnsEngagementPoints = (post: FeedPost) =>
+    Boolean(me) &&
+    post.authorId !== me!.id &&
+    post.birthdayUserId !== me!.id;
 
   useEffect(() => {
     async function loadMeAndFeed() {
@@ -516,6 +527,7 @@ function PostFeedInner({
           last_activity_at?: string | null;
           is_birthday?: boolean | null;
           birthday_date?: string | null;
+          birthday_user_id?: string | null;
           is_pinned?: boolean | null;
           pinned_at?: string | null;
         };
@@ -523,7 +535,7 @@ function PostFeedInner({
         {
           const withPin = await supabase
             .from("posts")
-            .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,is_pinned,pinned_at")
+            .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,birthday_user_id,is_pinned,pinned_at")
             .order("is_pinned", { ascending: false, nullsFirst: false })
             .order("pinned_at", { ascending: false, nullsFirst: false })
             .order("last_activity_at", { ascending: false, nullsFirst: false })
@@ -532,7 +544,7 @@ function PostFeedInner({
           if (withPin.error && /is_pinned|pinned_at/i.test(withPin.error.message)) {
             const withoutPin = await supabase
               .from("posts")
-              .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date")
+              .select("id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,birthday_user_id")
               .order("last_activity_at", { ascending: false, nullsFirst: false })
               .order("created_at", { ascending: false })
               .limit(20);
@@ -557,7 +569,7 @@ function PostFeedInner({
           const withPinBday = await supabase
             .from("posts")
             .select(
-              "id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,is_pinned,pinned_at",
+              "id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,birthday_user_id,is_pinned,pinned_at",
             )
             .eq("is_birthday", true)
             .eq("birthday_date", todayBerlin)
@@ -566,7 +578,7 @@ function PostFeedInner({
             const withoutPinBday = await supabase
               .from("posts")
               .select(
-                "id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date",
+                "id,title,body,author_id,author_role,created_at,status,last_activity_at,is_birthday,birthday_date,birthday_user_id",
               )
               .eq("is_birthday", true)
               .eq("birthday_date", todayBerlin)
@@ -783,7 +795,8 @@ function PostFeedInner({
               isPinned: Boolean((p as any).is_pinned),
               pinnedAt: (p as any).pinned_at ?? null,
               isBirthday,
-              birthdayDate: (p as any).birthday_date ?? null,
+              birthdayDate: (p as { birthday_date?: string | null }).birthday_date ?? null,
+              birthdayUserId: (p as { birthday_user_id?: string | null }).birthday_user_id ?? null,
               media: mediaByPost.get(p.id) ?? [],
               myReaction: myReactionByPost.get(p.id) ?? null,
               reactionCounts,
@@ -1024,7 +1037,7 @@ function PostFeedInner({
           .eq("post_id", post.id)
           .eq("user_id", me.id);
         if (error) throw error;
-        if (prevReaction && post.authorId !== me.id) {
+        if (prevReaction && earnsEngagementPoints(post)) {
           flyPointsFromElement({ fromRect, delta: -1 });
         }
       } else if (prevReaction) {
@@ -1041,7 +1054,7 @@ function PostFeedInner({
           reaction_type: nextReaction,
         });
         if (error) throw error;
-        if (post.authorId !== me.id) {
+        if (earnsEngagementPoints(post)) {
           const { data: likeTxn } = await supabase
             .from("points_transactions")
             .select("id")
@@ -1305,6 +1318,10 @@ function PostFeedInner({
   }
 
   function startEdit(post: FeedPost) {
+    if (!canEditPost(post)) {
+      setLoadError("Bearbeiten ist erst nach der Freigabe möglich.");
+      return;
+    }
     setEditingId(post.id);
     setEditBody(post.body);
   }
@@ -1312,6 +1329,11 @@ function PostFeedInner({
   async function saveEdit(postId: string) {
     const text = editBody.trim();
     if (!text || !me) return;
+    const post = posts.find((p) => p.id === postId);
+    if (post && !canEditPost(post)) {
+      setLoadError("Bearbeiten ist erst nach der Freigabe möglich.");
+      return;
+    }
     const supabase = createSupabaseBrowserClient();
     const title = text.length > 36 ? `${text.slice(0, 36)}…` : text;
     const { error } = await supabase
@@ -1606,6 +1628,7 @@ function PostFeedInner({
           isPinned: false,
           pinnedAt: null,
           isBirthday: false,
+          birthdayUserId: null,
           birthdayDate: null,
           media: uploadedMedia,
           myReaction: null,
@@ -1688,7 +1711,9 @@ function PostFeedInner({
       );
       const votesAfter = mineSet.size;
 
-      applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
+      if (poll.authorId !== me.id) {
+        applyPollVotePointsFx({ votesBefore, votesAfter, fromRect });
+      }
 
       const nowIso = new Date().toISOString();
       setFeedPolls((prev) =>
@@ -2143,15 +2168,17 @@ function PostFeedInner({
                   ) : null}
                   {canManagePost(post) ? (
                     <>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(post)}
-                        className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
-                        title="Bearbeiten"
-                        aria-label="Bearbeiten"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
+                      {canEditPost(post) ? (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(post)}
+                          className="grid h-7 w-7 place-items-center rounded-lg border text-slate-600 hover:bg-slate-50"
+                          title="Bearbeiten"
+                          aria-label="Bearbeiten"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() => void deletePost(post.id)}
@@ -2208,7 +2235,7 @@ function PostFeedInner({
                 postId={post.id}
                 myReaction={post.myReaction}
                 reactionCounts={post.reactionCounts}
-                disabled={Boolean(likeBusy[post.id]) || !me}
+                disabled={Boolean(likeBusy[post.id]) || !me || !canEngagePost(post)}
                 reactorsByType={reactorsByPostId[post.id] ?? {}}
                 reactorsLoading={reactorsLoadingPostId === post.id}
                 onEnsureReactors={() => void ensureReactors(post.id)}
@@ -2233,50 +2260,58 @@ function PostFeedInner({
               </button>
 
               <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                <MentionInputWithEmoji
-                  multiline={false}
-                  inputRef={(el) => {
-                    commentInputRefs.current[post.id] = el;
-                  }}
-                  value={draftByPostId[post.id] ?? ""}
-                  onChange={(next) =>
-                    setDraftByPostId((d) => ({ ...d, [post.id]: next }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      addComment(post.id, e.currentTarget);
-                    }
-                  }}
-                  placeholder={
-                    replyingTo?.postId === post.id
-                      ? `Antwort an ${replyingTo.userName}…`
-                      : "Kommentieren…"
-                  }
-                  className="min-w-0 flex-1"
-                  inputClassName="box-border h-8 min-w-0 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
-                />
-                {replyingTo?.postId === post.id ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReplyingTo(null);
-                      setDraftByPostId((d) => ({ ...d, [post.id]: "" }));
-                    }}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md border text-slate-500 hover:bg-slate-50"
-                    aria-label="Antwort abbrechen"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+                {canEngagePost(post) ? (
+                  <>
+                    <MentionInputWithEmoji
+                      multiline={false}
+                      inputRef={(el) => {
+                        commentInputRefs.current[post.id] = el;
+                      }}
+                      value={draftByPostId[post.id] ?? ""}
+                      onChange={(next) =>
+                        setDraftByPostId((d) => ({ ...d, [post.id]: next }))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          addComment(post.id, e.currentTarget);
+                        }
+                      }}
+                      placeholder={
+                        replyingTo?.postId === post.id
+                          ? `Antwort an ${replyingTo.userName}…`
+                          : "Kommentieren…"
+                      }
+                      className="min-w-0 flex-1"
+                      inputClassName="box-border h-8 min-w-0 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-900 outline-none focus:border-fc-blue focus:ring-2 focus:ring-fc-sky/30"
+                    />
+                    {replyingTo?.postId === post.id ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setDraftByPostId((d) => ({ ...d, [post.id]: "" }));
+                        }}
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-md border text-slate-500 hover:bg-slate-50"
+                        aria-label="Antwort abbrechen"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={(e) => addComment(post.id, e.currentTarget)}
+                      className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-fc-navy text-white transition-colors hover:bg-fc-blue"
+                      aria-label="Kommentar senden"
+                    >
+                      <SendHorizontal className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                ) : post.status === "pending" ? (
+                  <p className="text-xs text-amber-800">
+                    Wartet auf Freigabe — Likes, Kommentare und Bearbeiten sind erst danach möglich.
+                  </p>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={(e) => addComment(post.id, e.currentTarget)}
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-fc-navy text-white transition-colors hover:bg-fc-blue"
-                  aria-label="Kommentar senden"
-                >
-                  <SendHorizontal className="h-3.5 w-3.5" />
-                </button>
               </div>
             </div>
 

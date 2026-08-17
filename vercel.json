@@ -42,7 +42,7 @@
     },
     {
       "path": "/api/cron/year-end-lottery",
-      "schedule": "0 6 1 1 *"
+      "schedule": "0 5 * 1 *"
     },
     {
       "path": "/api/cron/membership-contribution-new-year",

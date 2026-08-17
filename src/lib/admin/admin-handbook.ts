@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-16";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-17";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -452,7 +452,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Die zehn Mitglieder mit den meisten Anni-Stars am Jahresende qualifizieren sich automatisch für die Sonderverlosung — niemand meldet sich selbst an.",
+            text: "Die zehn Mitglieder mit den meisten Anni-Stars am 31. Dezember um Mitternacht (Berlin) qualifizieren sich automatisch. Die Stände des Jahres werden sofort archiviert — die Auslosung könnt ihr im Januar machen, ohne dass neue Sterne das Ergebnis vermischen. Ab 1. Januar 0:00 zählt das neue Jahr in der App wieder bei null.",
           },
           {
             type: "ol",
@@ -469,6 +469,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Bei Gleichstand entscheiden feste Kriterien: mehr Aktivitäten im Jahr, dann früherer Beitritt, dann Nachname alphabetisch.",
               "Pausieren und vorzeitiges Beenden sind bei der Jahresendverlosung nicht vorgesehen.",
+              "Die App summiert die Sterne in der Datenbank (kein Limit) und speichert das Vorjahr. Erst nach „Bestätigen & auslosen“ gilt die Jahresverlosung als abgeschlossen.",
             ],
           },
           {
@@ -802,19 +803,20 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "ul",
             items: [
-              "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, vollständiger Steckbrief, …) und zählen für das laufende Kalenderjahr — am 1. Januar geht es wieder bei null los.",
+              "Anni-Stars belohnen Mitmachen (Umfragen, Kommentare, Events, Werben, vollständiger Steckbrief, …) und zählen für das laufende Kalenderjahr ab 1. Januar 0:00 Uhr Berlin. Das Vorjahr wird gespeichert, bis ihr die Sonderverlosung ausgelost habt.",
               "Einmalig 10 Anni-Stars, wenn der Steckbrief vollständig ist (Kurztext + fünf Kennenlernen-Fragen unter „Mein Profil“) — die Sterne werden automatisch gutgeschrieben, sobald alles ausgefüllt und gespeichert ist.",
               "Unvollständige Steckbriefe: Die App erinnert Mitglieder automatisch nach 7 und 14 Tagen Mitgliedschaft (danach keine weiteren Erinnerungen — der Hinweis im Profil bleibt).",
               "Ränge zeigen den Stand im Jahr: Fan → Aktiv-Fan (100) → Treue-Fan (250) → Silber-Fan (500) → Gold-Fan (1 000) → Diamond-Fan (2 500).",
               "Badges (z. B. Konzertprofi) können auch wieder sinken — z. B. wenn jemand Likes entfernt, Event-Teilnahmen zurücknimmt oder Kommentare löscht. Die Stufe passt sich automatisch an den aktuellen Stand an.",
-              "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne.",
+              "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne. Das Geburtstagskind darf unter dem eigenen Geburtstags-Post gratulieren und liken, erhält dafür aber keine Sterne.",
+              "Beiträge warten auf Freigabe: solange kein Like, kein Kommentar und kein Bearbeiten — erst nach der Freigabe.",
+              "Gewinnspiel-Quiz: +2 Anni-Stars fürs Mitmachen, auch wenn Antworten falsch sind (falsche Antworten nehmen nur nicht an der Auslosung teil).",
               "Zum Jahresende: Top 10 der Jahres-Sterne → Sonderverlosung (siehe 3.3).",
             ],
           },
           {
-            type: "link",
-            href: "/punkte",
-            label: "Punkte-Seite (Mitgliederansicht)",
+            type: "note",
+            text: "Technik: Nach einem Update einmal SQL-Skript „150_points_year_archive.sql“ im Supabase-Editor ausführen — damit das Jahres-Archiv und die Geburtstags-Punkte-Regel in der Datenbank stehen.",
           },
         ],
       },
