@@ -27,7 +27,7 @@ export function YearEndSetupBanner({
   async function onSetup() {
     if (
       !window.confirm(
-        `Sonderverlosung für Statuspunkte ${pointsYear} anlegen? Die Top-10 werden automatisch eingetragen.`,
+        `Sonderverlosung für Statuspunkte ${pointsYear} anlegen? Die Top-10 der Mitglieder werden automatisch eingetragen (ohne Vorstand).`,
       )
     ) {
       return;

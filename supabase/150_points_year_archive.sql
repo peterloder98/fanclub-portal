@@ -126,6 +126,7 @@ begin
         join public.memberships m on m.user_id = p.id and m.status = 'active'
         where s.points > 0
           and coalesce(p.is_hidden, false) = false
+          and coalesce(p.role, 'member') <> 'admin'
         order by s.points desc, p.last_name nulls last, p.first_name nulls last
         limit greatest(1, least(coalesce(p_limit, 50), 100));
       $body$;
@@ -159,6 +160,7 @@ begin
         join public.profiles p on p.id = s.user_id
         join public.memberships m on m.user_id = p.id and m.status = 'active'
         where s.points > 0
+          and coalesce(p.role, 'member') <> 'admin'
         order by s.points desc, p.last_name nulls last, p.first_name nulls last
         limit greatest(1, least(coalesce(p_limit, 50), 100));
       $body$;

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { compareYearEndCandidates, rankYearEndTopN, type YearEndCandidate } from "./year-end-ranking";
+import {
+  compareYearEndCandidates,
+  isExcludedFromYearPointsRanking,
+  rankYearEndTopN,
+  type YearEndCandidate,
+} from "./year-end-ranking";
 
 function c(partial: Partial<YearEndCandidate> & { user_id: string; total: number }): YearEndCandidate {
   return {
@@ -45,6 +50,13 @@ describe("year-end ranking", () => {
     const z = c({ user_id: "a", total: 50, activityCount: 1, membership_start: "2024-01-01", last_name: "Zimmermann" });
     const a = c({ user_id: "b", total: 50, activityCount: 1, membership_start: "2024-01-01", last_name: "Ackermann" });
     expect(rankYearEndTopN([z, a], 1)[0]?.user_id).toBe("b");
+  });
+
+  it("excludes board members (role=admin) from ranking and lottery", () => {
+    expect(isExcludedFromYearPointsRanking("admin")).toBe(true);
+    expect(isExcludedFromYearPointsRanking("member")).toBe(false);
+    expect(isExcludedFromYearPointsRanking("anni")).toBe(false);
+    expect(isExcludedFromYearPointsRanking(null)).toBe(false);
   });
 
   it("returns exactly 10 when more tie at cutoff", () => {

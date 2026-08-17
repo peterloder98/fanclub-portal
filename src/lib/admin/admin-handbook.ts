@@ -452,7 +452,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Die zehn Mitglieder mit den meisten Anni-Stars am 31. Dezember um Mitternacht (Berlin) qualifizieren sich automatisch. Die Stände des Jahres werden sofort archiviert — die Auslosung könnt ihr im Januar machen, ohne dass neue Sterne das Ergebnis vermischen. Ab 1. Januar 0:00 zählt das neue Jahr in der App wieder bei null.",
+            text: "Die zehn Mitglieder mit den meisten Anni-Stars am 31. Dezember um Mitternacht (Berlin) qualifizieren sich automatisch. Vorstände erscheinen nicht in der Jahres-Rangliste und gehen nicht in die Sonderverlosung ein — auch wenn sie genug Sterne hätten. Die Stände des Jahres werden sofort archiviert — die Auslosung könnt ihr im Januar machen, ohne dass neue Sterne das Ergebnis vermischen. Ab 1. Januar 0:00 zählt das neue Jahr in der App wieder bei null.",
           },
           {
             type: "ol",
@@ -468,6 +468,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ul",
             items: [
               "Bei Gleichstand entscheiden feste Kriterien: mehr Aktivitäten im Jahr, dann früherer Beitritt, dann Nachname alphabetisch.",
+              "Vorstände (Admin-Rolle) stehen nicht in der Jahres-Rangliste und werden nicht in die Sonderverlosung eingetragen — auch wenn sie genug Sterne hätten.",
               "Pausieren und vorzeitiges Beenden sind bei der Jahresendverlosung nicht vorgesehen.",
               "Die App summiert die Sterne in der Datenbank (kein Limit) und speichert das Vorjahr. Erst nach „Bestätigen & auslosen“ gilt die Jahresverlosung als abgeschlossen.",
             ],
@@ -811,12 +812,12 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Für eigene Beiträge oder eigene Umfragen gibt es keine Sterne. Das Geburtstagskind darf unter dem eigenen Geburtstags-Post gratulieren und liken, erhält dafür aber keine Sterne.",
               "Beiträge warten auf Freigabe: solange kein Like, kein Kommentar und kein Bearbeiten — erst nach der Freigabe.",
               "Gewinnspiel-Quiz: +2 Anni-Stars fürs Mitmachen, auch wenn Antworten falsch sind (falsche Antworten nehmen nur nicht an der Auslosung teil).",
-              "Zum Jahresende: Top 10 der Jahres-Sterne → Sonderverlosung (siehe 3.3).",
+              "Zum Jahresende: Top 10 der Jahres-Sterne → Sonderverlosung (siehe 3.3). Vorstände zählen in Rangliste und Verlosung nicht mit.",
             ],
           },
           {
             type: "note",
-            text: "Technik: Nach einem Update einmal SQL-Skript „150_points_year_archive.sql“ im Supabase-Editor ausführen — damit das Jahres-Archiv und die Geburtstags-Punkte-Regel in der Datenbank stehen.",
+            text: "Technik: Nach einem Update die SQL-Skripte „150_points_year_archive.sql“ und „151_exclude_admins_year_ranking.sql“ im Supabase-Editor ausführen — damit Jahres-Archiv, Geburtstags-Punkte-Regel und der Ausschluss der Vorstände aus der Rangliste in der Datenbank stehen.",
           },
         ],
       },

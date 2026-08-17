@@ -468,7 +468,7 @@ export function GiveawayDetailClient({
             <div className="rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-sm text-violet-950">
               {localEntered
                 ? `Du gehörst zu den Top-10 der Statuspunkte ${giveaway.points_year ?? ""} und nimmst automatisch teil.`
-                : `Sonderverlosung nur für die Top-10 der Statuspunkte ${giveaway.points_year ?? ""}. Eine Anmeldung ist nicht möglich.`}
+                : `Sonderverlosung nur für die Top-10 der Mitglieder nach Statuspunkten ${giveaway.points_year ?? ""} (ohne Vorstand). Eine Anmeldung ist nicht möglich.`}
               {localStatus !== "drawn" ? (
                 <span className="mt-1 block text-slate-600">
                   Die Auslosung erfolgt, sobald der Vorstand die Preise eingetragen und bestätigt hat.

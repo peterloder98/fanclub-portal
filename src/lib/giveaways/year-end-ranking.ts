@@ -13,6 +13,11 @@ export type YearEndCandidate = {
 export const YEAR_END_TIE_BREAK_SUMMARY =
   "Bei gleicher Punktzahl zählen nacheinander: mehr einzelne Punkte-Aktivitäten im Jahr, früheres Eintrittsdatum, im Notfall Nachname alphabetisch.";
 
+/** Vorstände sammeln Sterne, stehen aber nicht in der Jahres-Rangliste und nicht in der Sonderverlosung. */
+export function isExcludedFromYearPointsRanking(role: string | null | undefined): boolean {
+  return role === "admin";
+}
+
 /** Größer = besser (für sort desc). */
 export function compareYearEndCandidates(a: YearEndCandidate, b: YearEndCandidate): number {
   if (b.total !== a.total) return b.total - a.total;

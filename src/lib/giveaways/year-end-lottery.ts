@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { performGiveawayDraw } from "@/lib/giveaways/perform-draw";
 import { notifyAdminsGiveawayEnded } from "@/lib/email/giveaway-notify";
 import {
+  isExcludedFromYearPointsRanking,
   rankYearEndTopN,
   YEAR_END_TIE_BREAK_SUMMARY,
   type YearEndCandidate,
@@ -70,7 +71,7 @@ async function buildYearEndCandidates(
 
   const { data: profiles } = await admin
     .from("profiles")
-    .select("id,first_name,last_name,membership_number")
+    .select("id,first_name,last_name,membership_number,role")
     .in("id", ids);
 
   const { data: memberships } = await admin
@@ -86,7 +87,9 @@ async function buildYearEndCandidates(
   }
 
   const profileMap = new Map(
-    (profiles ?? []).filter((p) => !isHiddenProfileId(p.id)).map((p) => [p.id, p]),
+    (profiles ?? [])
+      .filter((p) => !isHiddenProfileId(p.id) && !isExcludedFromYearPointsRanking(p.role))
+      .map((p) => [p.id, p]),
   );
 
   return sums
@@ -199,6 +202,7 @@ export async function createYearEndGiveaway(
   const title = `Sonderverlosung Top-${YEAR_END_LOTTERY_TOP_N} Statuspunkte ${pointsYear}`;
   const description =
     `Genau ${YEAR_END_LOTTERY_TOP_N} Mitglieder mit den meisten Statuspunkten in ${pointsYear} nehmen automatisch teil. ` +
+    `Vorstände sind von Rangliste und Sonderverlosung ausgenommen. ` +
     `Bei Punktgleichstand gilt: ${YEAR_END_TIE_BREAK_SUMMARY} ` +
     `Weitere Teilnahme ist nicht möglich. Nach Eintrag der Preise durch den Vorstand wird ausgelost und die Gewinner per E-Mail benachrichtigt. ` +
     `Ab dem 1. Januar 0:00 (Berlin) zählen die Anni-Stars des neuen Jahres wieder bei null. ` +

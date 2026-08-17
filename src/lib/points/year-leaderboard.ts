@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
+import { isExcludedFromYearPointsRanking } from "@/lib/giveaways/year-end-ranking";
 import { excludeHiddenProfiles, isHiddenProfileId } from "@/lib/members/hidden";
 import { profileDisplayName } from "@/lib/profiles/display";
 
@@ -26,6 +27,16 @@ type RpcRow = {
   points: number | string;
 };
 
+type LeaderboardProfile = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  avatar_path: string | null;
+  updated_at: string | null;
+  role: string | null;
+};
+
 export async function loadYearLeaderboard(
   supabase: SupabaseClient,
   currentUserId: string | null,
@@ -43,12 +54,17 @@ export async function loadYearLeaderboard(
   const { data: profiles } = userIds.length
     ? await supabase
         .from("profiles")
-        .select("id,first_name,last_name,email,avatar_path,updated_at")
+        .select("id,first_name,last_name,email,avatar_path,updated_at,role")
         .in("id", userIds)
     : { data: [] };
-  const profileById = new Map(excludeHiddenProfiles(profiles).map((p) => [p.id, p]));
+  const profileById = new Map(
+    excludeHiddenProfiles((profiles ?? []) as LeaderboardProfile[])
+      .filter((p) => !isExcludedFromYearPointsRanking(p.role))
+      .map((p) => [p.id, p]),
+  );
 
-  const allRows: YearLeaderboardRow[] = rpcRows.map((r, i) => {
+  const eligibleRows = rpcRows.filter((r) => profileById.has(r.user_id));
+  const allRows: YearLeaderboardRow[] = eligibleRows.map((r, i) => {
     const p = profileById.get(r.user_id);
     const name = p
       ? profileDisplayName(p)
