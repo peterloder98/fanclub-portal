@@ -12,7 +12,7 @@ import type { ContributionStatus } from "@/lib/club/membership-contribution";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  APP_REGISTRATION_STATUS_LABELS,
+  appRegistrationStatusLabel,
   appRegistrationBadgeClass,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
@@ -655,7 +655,9 @@ export function AdminMembersWorkspace({
                         appRegistrationBadgeClass(m.app_registration_status),
                       )}
                     >
-                      {APP_REGISTRATION_STATUS_LABELS[m.app_registration_status]}
+                      {appRegistrationStatusLabel(m.app_registration_status, {
+                        noAppAccess: m.no_app_access,
+                      })}
                     </span>
                     {m.contribution_status ? (
                       <ContributionStatusBadge status={m.contribution_status} />
@@ -813,7 +815,9 @@ export function AdminMembersWorkspace({
                             appRegistrationBadgeClass(m.app_registration_status),
                           )}
                         >
-                          {APP_REGISTRATION_STATUS_LABELS[m.app_registration_status]}
+                          {appRegistrationStatusLabel(m.app_registration_status, {
+                            noAppAccess: m.no_app_access,
+                          })}
                         </span>
                       </td>
                       <td className="px-3 py-2">

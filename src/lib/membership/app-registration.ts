@@ -6,6 +6,14 @@ export const APP_REGISTRATION_STATUS_LABELS: Record<AppRegistrationStatus, strin
   deleted: "Gelöscht",
 };
 
+export function appRegistrationStatusLabel(
+  status: AppRegistrationStatus,
+  opts?: { noAppAccess?: boolean | null },
+): string {
+  if (opts?.noAppAccess) return "Keiner";
+  return APP_REGISTRATION_STATUS_LABELS[status];
+}
+
 /** Auth user_metadata-Key: Club-Setup oder Passwort-Reset erfolgreich abgeschlossen. */
 export const APP_PASSWORD_SET_AT_META = "app_password_set_at";
 

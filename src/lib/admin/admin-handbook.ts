@@ -223,7 +223,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         id: "app-registrierung",
         number: "2.5",
         title: "In App registriert",
-        summary: "Offen, Registriert oder Gelöscht",
+        summary: "Offen, Registriert, Gelöscht oder Keiner",
         blocks: [
           {
             type: "p",
@@ -235,6 +235,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Offen — Passwort noch nicht eingerichtet bzw. noch nie angemeldet",
               "Registriert — Zugang eingerichtet (nach Passwort-Setup oder erstem Login)",
               "Gelöscht — Zugang wurde als gelöscht markiert (z. B. wenn jemand den Zugang nicht mehr nutzen soll)",
+              "Keiner — Sonderfall ohne eigenen App-Zugang; die Person bleibt Mitglied, hat aber bewusst keinen App-Login",
             ],
           },
           {

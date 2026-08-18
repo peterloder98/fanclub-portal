@@ -45,7 +45,7 @@ import {
   uploadClubDocument,
 } from "@/components/ui/document-upload-field";
 import {
-  APP_REGISTRATION_STATUS_LABELS,
+  appRegistrationStatusLabel,
   appRegistrationBadgeClass,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
@@ -823,7 +823,9 @@ export function MemberDetailPanel({
                           appRegistrationBadgeClass(member.app_registration_status),
                         )}
                       >
-                        {APP_REGISTRATION_STATUS_LABELS[member.app_registration_status]}
+                        {appRegistrationStatusLabel(member.app_registration_status, {
+                          noAppAccess: member.no_app_access,
+                        })}
                       </span>
                       {member.app_registered_at && member.app_registration_status === "registered" ? (
                         <span className="text-xs text-slate-500">
