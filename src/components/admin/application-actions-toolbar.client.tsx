@@ -171,7 +171,8 @@ export function ApplicationActionsToolbar({ app }: { app: ApplicationActionsApp 
             <p className="mt-1 text-sm text-slate-600">
               {app.first_name} {app.last_name} — Status wird auf „aktiv“ gesetzt. Mitgliedsnummer
               und Vertrag-PDF werden automatisch ergänzt. Das neue Mitglied erhält eine
-              Willkommens-Mail mit Nummer und App-Zugang.
+              Willkommens-Mail mit Nummer und App-Zugang. Nach Zahlungsbestätigung unter
+              Admin → Zahlungen läuft das in der Regel schon automatisch.
             </p>
             {app.payment_paid === false ? (
               <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">

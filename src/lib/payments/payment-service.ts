@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
+import { activatePendingMembershipAfterFeePaid } from "@/lib/membership/activate-application";
 import { createOpenAccountingEntry, confirmAccountingEntry, cancelAccountingEntry } from "@/lib/payments/accounting-service";
 import { prepareBankTransferCheckout } from "@/lib/payments/bank-transfer-service";
 import { prepareWalletCheckout } from "@/lib/payments/wallet-service";
@@ -168,6 +169,46 @@ export async function confirmPaymentManually(input: {
 
   if (payment.payment_type === "membership_fee") {
     await syncMemberContributionDate(admin, payment.user_id);
+    try {
+      const admission = await activatePendingMembershipAfterFeePaid(admin, {
+        userId: payment.user_id,
+        applicationId: (payment as { application_id?: string | null }).application_id ?? null,
+        createdBy: input.adminUserId,
+      });
+      await logPaymentAudit(admin, {
+        paymentId: input.paymentId,
+        action: "manual_confirm",
+        oldStatus: payment.payment_status,
+        newStatus: "paid",
+        note: input.note,
+        changedBy: input.adminUserId,
+      });
+      return {
+        ok: true as const,
+        activated: admission.activated,
+        assignedNumber: admission.assignedNumber ?? null,
+        inviteEmailOk: admission.inviteEmailOk ?? null,
+        admissionError: null as string | null,
+      };
+    } catch (e) {
+      console.error("[payments] Automatische Aufnahme nach Zahlung fehlgeschlagen:", e);
+      await logPaymentAudit(admin, {
+        paymentId: input.paymentId,
+        action: "manual_confirm",
+        oldStatus: payment.payment_status,
+        newStatus: "paid",
+        note: input.note,
+        changedBy: input.adminUserId,
+      });
+      return {
+        ok: true as const,
+        activated: false,
+        assignedNumber: null,
+        inviteEmailOk: null,
+        admissionError:
+          e instanceof Error ? e.message : "Aufnahme als Mitglied ist fehlgeschlagen.",
+      };
+    }
   }
 
   await logPaymentAudit(admin, {
@@ -179,7 +220,7 @@ export async function confirmPaymentManually(input: {
     changedBy: input.adminUserId,
   });
 
-  return { ok: true };
+  return { ok: true as const, activated: false, assignedNumber: null, inviteEmailOk: null, admissionError: null };
 }
 
 export async function cancelPaymentManually(input: {

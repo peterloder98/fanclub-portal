@@ -106,7 +106,7 @@ export async function confirmPaymentAction(input: {
   receiptReference?: string;
 }) {
   const { user } = await requireAdminAction();
-  await confirmPaymentManually({
+  const result = await confirmPaymentManually({
     paymentId: input.paymentId,
     adminUserId: user.id,
     note: input.note,
@@ -117,14 +117,21 @@ export async function confirmPaymentAction(input: {
     action: "payment.confirm",
     entityType: "payment",
     entityId: input.paymentId,
-    summary: "Zahlung manuell bestätigt",
+    summary: result.activated
+      ? `Zahlung bestätigt, Mitglied aufgenommen${result.assignedNumber ? ` (Nr. ${result.assignedNumber})` : ""}`
+      : "Zahlung manuell bestätigt",
+    metadata: {
+      activated: result.activated,
+      assigned_number: result.assignedNumber,
+      invite_email_ok: result.inviteEmailOk,
+    },
   });
   revalidatePath("/admin/payments");
   revalidatePath("/admin/accounting");
   revalidatePath("/admin/merchandise");
-  revalidatePath("/admin/payments");
+  revalidatePath("/admin/members");
   revalidatePath("/profile");
-  return { ok: true };
+  return result;
 }
 
 export async function cancelPaymentAction(input: { paymentId: string; note?: string }) {

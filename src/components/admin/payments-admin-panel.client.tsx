@@ -80,7 +80,7 @@ export function PaymentsAdminPanel({
     const confirmed = selected;
     startTransition(async () => {
       try {
-        await confirmPaymentAction({
+        const result = await confirmPaymentAction({
           paymentId: confirmed.id,
           note,
           receiptReference: receiptRef,
@@ -88,9 +88,26 @@ export function PaymentsAdminPanel({
         reload();
         setSelectedId(null);
         setError(null);
-        setSuccess(
-          `${formatEur(confirmed.amount_cents)} als bezahlt markiert (${confirmed.payment_method_label}, ${confirmed.payment_type_label}).`,
-        );
+        if (result.admissionError) {
+          setSuccess(
+            `${formatEur(confirmed.amount_cents)} als bezahlt markiert. Aufnahme als Mitglied fehlgeschlagen: ${result.admissionError}`,
+          );
+        } else if (result.activated) {
+          const nr = result.assignedNumber ? ` Mitgliedsnummer ${result.assignedNumber}.` : "";
+          const mail =
+            result.inviteEmailOk === false
+              ? " Willkommens-E-Mail konnte nicht gesendet werden."
+              : result.inviteEmailOk
+                ? " Willkommens-E-Mail mit App-Zugang ist raus."
+                : "";
+          setSuccess(
+            `${formatEur(confirmed.amount_cents)} bestätigt — Mitglied aufgenommen.${nr}${mail}`,
+          );
+        } else {
+          setSuccess(
+            `${formatEur(confirmed.amount_cents)} als bezahlt markiert (${confirmed.payment_method_label}, ${confirmed.payment_type_label}).`,
+          );
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Bestätigung fehlgeschlagen");
       }
@@ -133,8 +150,9 @@ export function PaymentsAdminPanel({
       <div>
         <h1 className="text-xl font-bold text-slate-900">Zahlungen</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Offene Posten werden manuell geprüft. PayPal/Stripe laufen im Testmodus — keine automatische
-          Buchung ohne Freigabe.
+          Offene Posten werden manuell geprüft. Bei einem Erstbeitrag neuer Anträge wird die
+          Person mit der Bestätigung automatisch aufgenommen (aktive Mitgliedschaft und nächste
+          Mitgliedsnummer).
         </p>
       </div>
 

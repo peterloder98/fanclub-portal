@@ -237,8 +237,9 @@ export function ApplicationDetailPanels({
                 {busy ? "Wird freigeschaltet…" : "Mitgliedschaft aktiv freischalten"}
               </button>
               <p className="mt-2 text-xs text-slate-500">
-                Nur nach bestätigter Zahlung möglich. Vergibt die Mitgliedsnummer und sendet die
-                Willkommens-E-Mail mit App-Zugang.
+                Nur nach bestätigter Zahlung nötig, falls die Aufnahme nach dem
+                Zahlungs-Häkchen nicht automatisch gelaufen ist. Vergibt die Mitgliedsnummer
+                und sendet die Willkommens-E-Mail mit App-Zugang.
               </p>
             </form>
           ) : null}
