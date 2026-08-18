@@ -57,9 +57,10 @@ export async function confirmAccountingEntry(input: {
       bookkeeping_status: "paid" satisfies BookkeepingStatus,
       entry_date: today,
       created_by: confirmedBy,
+      include_in_accounting: true,
     })
     .eq("payment_id", paymentId)
-    .eq("bookkeeping_status", "open");
+    .or("bookkeeping_status.is.null,bookkeeping_status.eq.open,bookkeeping_status.eq.paid");
 
   if (error) throw new Error(error.message);
 }

@@ -35,17 +35,37 @@ export async function saveAccountingSettings(input: {
   await setAppSetting(ACCOUNTING_OPENING_BALANCE_CENTS_KEY, String(cents));
 }
 
-export function includeInAccountingForCategory(category: ClubLedgerRow["category"]) {
-  return category !== "membership";
+/** Neue Buchungen gehören in die Kasse — inkl. Mitgliedsbeiträge. */
+export function includeInAccountingForCategory(_category: ClubLedgerRow["category"]) {
+  return true;
+}
+
+function isPostedToBank(row: Pick<ClubLedgerRow, "bookkeeping_status">) {
+  return row.bookkeeping_status !== "open" && row.bookkeeping_status !== "cancelled";
 }
 
 export function isAccountingRelevantRow(
-  row: Pick<ClubLedgerRow, "include_in_accounting" | "entry_date">,
+  row: Pick<
+    ClubLedgerRow,
+    "include_in_accounting" | "entry_date" | "category" | "bookkeeping_status"
+  >,
   settings: AccountingSettings,
 ): boolean {
-  if (row.include_in_accounting === false) return false;
+  if (row.bookkeeping_status === "cancelled") return false;
   if (settings.startDate && row.entry_date < settings.startDate) return false;
+  // Altes Flag: Beiträge waren ausgeblendet — ab Startdatum zählen sie trotzdem.
+  if (row.include_in_accounting === false && row.category !== "membership") return false;
   return true;
+}
+
+export function isAccountingBalanceRow(
+  row: Pick<
+    ClubLedgerRow,
+    "include_in_accounting" | "entry_date" | "category" | "bookkeeping_status"
+  >,
+  settings: AccountingSettings,
+): boolean {
+  return isAccountingRelevantRow(row, settings) && isPostedToBank(row);
 }
 
 export function filterAccountingRows(
@@ -55,11 +75,18 @@ export function filterAccountingRows(
   return rows.filter((r) => isAccountingRelevantRow(r, settings));
 }
 
+export function filterAccountingBalanceRows(
+  rows: ClubLedgerRow[],
+  settings: AccountingSettings,
+): ClubLedgerRow[] {
+  return rows.filter((r) => isAccountingBalanceRow(r, settings));
+}
+
 export function computeAccountingBalance(
   rows: ClubLedgerRow[],
   settings: AccountingSettings,
 ) {
-  const relevant = filterAccountingRows(rows, settings);
+  const relevant = filterAccountingBalanceRows(rows, settings);
   const { incomeCents, expenseCents } = sumLedgerRows(relevant);
   return {
     incomeCents,

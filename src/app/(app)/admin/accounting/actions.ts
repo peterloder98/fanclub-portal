@@ -39,16 +39,15 @@ export async function saveAccountingSetupAction(input: {
   const admin = createSupabaseAdminClient();
   const startDate = input.startDate.trim();
 
-  await admin
-    .from("club_ledger_entries")
-    .update({ include_in_accounting: false })
-    .eq("category", "membership");
-
   if (startDate) {
     await admin
       .from("club_ledger_entries")
       .update({ include_in_accounting: false })
       .lt("entry_date", startDate);
+    await admin
+      .from("club_ledger_entries")
+      .update({ include_in_accounting: true })
+      .gte("entry_date", startDate);
   }
 
   revalidatePath("/admin/accounting");

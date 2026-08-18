@@ -37,6 +37,7 @@ import { exportClubLedgerCsvAction } from "@/app/(app)/admin/members/detail-acti
 import { summarizeLedgerByMonth } from "@/lib/club/ledger-export";
 import {
   computeAccountingBalance,
+  filterAccountingBalanceRows,
   filterAccountingRows,
   type AccountingSettings,
 } from "@/lib/club/accounting-settings";
@@ -255,9 +256,14 @@ export function ClubAccountingPanel({
     [accountingEntries, accountingSettings],
   );
   const currentYearSummary = useMemo(() => {
-    const yearEntries = filterLedgerByPeriod(accountingEntries, "year", currentYear, filterMonth);
+    const yearEntries = filterLedgerByPeriod(
+      filterAccountingBalanceRows(entries, accountingSettings),
+      "year",
+      currentYear,
+      filterMonth,
+    );
     return sumLedgerRows(yearEntries);
-  }, [accountingEntries, currentYear, filterMonth]);
+  }, [entries, accountingSettings, currentYear, filterMonth]);
   const currentYearBalance =
     currentYearSummary.incomeCents - currentYearSummary.expenseCents;
 
@@ -353,8 +359,8 @@ export function ClubAccountingPanel({
           <CardTitle className="text-base">Buchhaltungs-Start</CardTitle>
           <p className="text-sm text-slate-600">
             Ab dem Startdatum führt ihr die Kasse in der App. Der Kontostand an diesem Tag ersetzt
-            alle Buchungen davor. Mitgliedsbeiträge bleiben in der Mitgliederverwaltung sichtbar,
-            fließen aber nicht in den Buchhaltungs-Saldo ein.
+            alle Buchungen davor. Ab dann zählen bestätigte Einnahmen und Ausgaben mit — auch
+            Mitgliedsbeiträge, sobald ihr den Zahlungseingang bestätigt.
           </p>
         </CardHeader>
         <CardContent className="grid gap-3">
@@ -433,7 +439,7 @@ export function ClubAccountingPanel({
             {accountingSettings.startDate
               ? ` per ${formatDE(accountingSettings.startDate)}`
               : " (noch nicht gesetzt)"}{" "}
-            plus Buchungen ab Start — ohne Mitgliedsbeiträge
+            plus bestätigte Buchungen ab Start (inkl. Mitgliedsbeiträge)
           </p>
         </CardHeader>
         <CardContent>
@@ -472,7 +478,7 @@ export function ClubAccountingPanel({
         <CardHeader className="pb-2">
           <CardTitle>Saldo {currentYear}</CardTitle>
           <p className="text-sm text-slate-500">
-            Einnahmen und Ausgaben im laufenden Kalenderjahr (ohne Beiträge)
+            Einnahmen und Ausgaben im laufenden Kalenderjahr (inkl. bestätigter Beiträge)
           </p>
         </CardHeader>
         <CardContent>
@@ -575,7 +581,8 @@ export function ClubAccountingPanel({
           <CardHeader>
             <CardTitle>Offene Beiträge ({openContributions.length})</CardTitle>
             <p className="mt-1 text-xs text-slate-500">
-              Folgejahr nicht bezahlt? Erinnerung direkt aus der Liste senden.
+              Noch nicht bestätigt — zählen nicht zum Kontostand. Erinnerung direkt aus der
+              Liste senden; Zahlungseingang unter Zahlungen bestätigen.
             </p>
           </CardHeader>
           <CardContent>

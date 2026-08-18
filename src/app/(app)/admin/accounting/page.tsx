@@ -32,7 +32,7 @@ export default async function AdminAccountingPage() {
 
   try {
     [entries, openContributions, openMeetingCharges, accountingSettings] = await Promise.all([
-      listClubLedger({ limit: 500 }),
+      listClubLedger({ limit: 5000 }),
       listOpenContributions(),
       listOpenMeetingCharges(),
       getAccountingSettings(),

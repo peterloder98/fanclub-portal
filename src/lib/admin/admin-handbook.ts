@@ -153,7 +153,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Mitglied oder offenen Antrag in der Liste öffnen (auch ohne Beitrittsdatum, Status „Mitgliedschaft beantragt“).",
               "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
               "„Zahlungserinnerung senden“ (bei bestehenden Mitgliedern) bzw. „Zahlungsinfo senden“ (bei Status „Mitgliedschaft beantragt“): Mail mit Betrag, Kontodaten und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ (z. B. Mitgliedsbeitrag / Max Mustermann). Bei Papier-/Manuell-Anträgen lautet die Vorlage „Antrag eingegangen“ plus Zahlungsaufforderung — Betreff und Text sind vor dem Versand editierbar; Schließen ohne Senden ist möglich. Die interne Buchungsnummer MITGLIED-… ist nur für den Abgleich unter Zahlungen gedacht und steht nicht als Verwendungszweck in der Mail.",
-              "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag wird in der Mitgliederverwaltung als bezahlt geführt — er erscheint nicht im Buchhaltungs-Saldo.",
+              "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag gilt in der Mitgliederverwaltung als bezahlt und erhöht den Kontostand in der Buchhaltung (ab Buchhaltungs-Start).",
             ],
           },
           {
@@ -166,7 +166,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Admin → Buchhaltung öffnen.",
               "Unter „Buchhaltungs-Start“ das Datum eintragen, ab dem ihr die Kasse in der App führt, und den Kontostand eures Vereinskontos an diesem Tag.",
               "Alles vor diesem Datum bucht ihr nicht einzeln nach — der Anfangsbestand ersetzt die Historie.",
-              "Mitgliedsbeiträge bleiben in der App sichtbar (offen/bezahlt, Erinnerungen), fließen aber nicht in Einnahmen und Saldo der Buchhaltung ein.",
+              "Ab dem Startdatum zählen bestätigte Einnahmen und Ausgaben mit, auch Mitgliedsbeiträge. Offene (noch nicht bestätigte) Zahlungen erscheinen nicht im Kontostand. Steht der Bankstand schon inklusive dieser Beiträge, den Anfangsbestand so lassen — sonst würde derselbe Betrag doppelt zählen.",
               "Weitere Einnahmen und Ausgaben (Events, Merch-Einkauf, Allgemeines) ab Startdatum normal erfassen.",
             ],
           },
