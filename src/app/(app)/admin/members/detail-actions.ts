@@ -44,6 +44,7 @@ import {
   markMeetingChargePaid,
 } from "@/lib/club/meeting-charges";
 import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
+import { activatePendingMembershipAfterFeePaid } from "@/lib/membership/activate-application";
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { buildLedgerCsv } from "@/lib/club/ledger-export";
@@ -738,6 +739,40 @@ export async function saveMemberBoardNote(
       error: userFacingActionError(e, "Bemerkung konnte nicht gespeichert werden."),
     };
   }
+}
+
+/** Beitrag schon bestätigt, Aufnahme aber noch nicht gelaufen (z. B. vor der Automatik). */
+export async function admitPendingMemberAfterFeePaid(userId: string) {
+  const { user } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const admission = await activatePendingMembershipAfterFeePaid(admin, {
+    userId,
+    createdBy: user.id,
+  });
+  if (!admission.activated) {
+    throw new Error(
+      "Keine offene Mitgliedschaft zum Aufnehmen. Beitrag muss bestätigt sein und der Status „Mitgliedschaft beantragt“.",
+    );
+  }
+  await logAdminAction(admin, {
+    actorId: user.id,
+    action: "membership.admit_after_fee",
+    entityType: "profile",
+    entityId: userId,
+    summary: `Mitglied aufgenommen${admission.assignedNumber ? ` (Nr. ${admission.assignedNumber})` : ""} nach bestätigtem Beitrag`,
+    metadata: {
+      assigned_number: admission.assignedNumber,
+      invite_email_ok: admission.inviteEmailOk,
+    },
+  });
+  revalidatePath(`/admin/members/${userId}`);
+  revalidatePath("/admin/members");
+  revalidatePath("/admin/payments");
+  return {
+    ok: true as const,
+    assignedNumber: admission.assignedNumber ?? null,
+    inviteEmailOk: admission.inviteEmailOk ?? null,
+  };
 }
 
 /** Registrierungsstatus zurücksetzen auf „Offen“ (z. B. nach Neu-Einladung). */

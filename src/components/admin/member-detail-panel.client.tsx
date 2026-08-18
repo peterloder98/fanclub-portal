@@ -25,6 +25,7 @@ import {
   clearMemberAppRegistration,
   setMemberGreetingPostSentAt,
   saveMemberBoardNote,
+  admitPendingMemberAfterFeePaid,
 } from "@/app/(app)/admin/members/detail-actions";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
@@ -480,6 +481,9 @@ export function MemberDetailPanel({
   }
 
   const isApplied = member.membership?.status === "applied";
+  const feePaid = (contributions.length ? contributions : contribution ? [contribution] : []).some(
+    (c) => c.status === "paid",
+  );
 
   function applyPaperMailDraft(draft: InitialPaperMailDraft) {
     setPaymentMailKind("application");
@@ -799,13 +803,53 @@ export function MemberDetailPanel({
             <CardTitle>Mitgliedschaft</CardTitle>
           </CardHeader>
           <CardContent>
-            {member.membership?.status === "applied" ? (
-              <p className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                Noch kein Mitglied. Beitrag steht aus — über „Zahlungsinfo senden“ die Mail mit
-                Antragseingang und Überweisungsdaten (editierbar) schicken. Wenn das Geld da ist:
-                unter Zahlungen bestätigen, Beitrittsdatum eintragen und Status auf „aktiv“ setzen.
-                Erst dann gibt es Mitgliedsnummer und App-Zugang.
-              </p>
+            {isApplied ? (
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                {feePaid ? (
+                  <>
+                    <p>
+                      Beitrag ist bestätigt — die Aufnahme (aktiv + Mitgliedsnummer) sollte automatisch
+                      nach der Zahlungsbestätigung laufen. Falls das nicht geklappt hat:
+                    </p>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => {
+                        setActionError(null);
+                        startTransition(async () => {
+                          try {
+                            const result = await admitPendingMemberAfterFeePaid(member.id);
+                            const nr = result.assignedNumber
+                              ? ` Mitgliedsnummer ${result.assignedNumber}.`
+                              : "";
+                            const mail =
+                              result.inviteEmailOk === false
+                                ? " Willkommens-E-Mail konnte nicht gesendet werden."
+                                : result.inviteEmailOk
+                                  ? " Willkommens-E-Mail mit App-Zugang ist raus."
+                                  : "";
+                            window.alert(`Mitglied aufgenommen.${nr}${mail}`);
+                            router.refresh();
+                          } catch (e) {
+                            setActionError(
+                              e instanceof Error ? e.message : "Aufnahme fehlgeschlagen",
+                            );
+                          }
+                        });
+                      }}
+                      className="mt-2 rounded-lg bg-fc-navy px-3 py-1.5 text-xs font-semibold text-white hover:bg-fc-blue disabled:opacity-50"
+                    >
+                      Jetzt aufnehmen
+                    </button>
+                  </>
+                ) : (
+                  <p>
+                    Noch kein Mitglied. Über „Zahlungsinfo senden“ die Mail mit Antragseingang und
+                    Überweisungsdaten schicken. Sobald ihr den Eingang unter Zahlungen bestätigt,
+                    wird die Person automatisch aufgenommen (aktiv + nächste Mitgliedsnummer).
+                  </p>
+                )}
+              </div>
             ) : null}
             <dl>
               <InfoRow label="Status" value={membershipStatusLabel(member.membership?.status ?? "")} />

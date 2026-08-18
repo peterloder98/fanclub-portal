@@ -144,8 +144,38 @@ export async function confirmPaymentManually(input: {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!payment) throw new Error("Zahlung nicht gefunden.");
-  if (payment.payment_status === "paid") throw new Error("Zahlung ist bereits als bezahlt markiert.");
   if (payment.payment_status === "cancelled") throw new Error("Stornierte Zahlung kann nicht bestätigt werden.");
+  if (payment.payment_status === "paid") {
+    if (payment.payment_type === "membership_fee") {
+      try {
+        const admission = await activatePendingMembershipAfterFeePaid(admin, {
+          userId: payment.user_id,
+          applicationId: (payment as { application_id?: string | null }).application_id ?? null,
+          createdBy: input.adminUserId,
+        });
+        if (admission.activated) {
+          return {
+            ok: true as const,
+            activated: true,
+            assignedNumber: admission.assignedNumber ?? null,
+            inviteEmailOk: admission.inviteEmailOk ?? null,
+            admissionError: null as string | null,
+          };
+        }
+      } catch (e) {
+        console.error("[payments] Aufnahme nach bereits bestätigter Zahlung fehlgeschlagen:", e);
+        return {
+          ok: true as const,
+          activated: false,
+          assignedNumber: null,
+          inviteEmailOk: null,
+          admissionError:
+            e instanceof Error ? e.message : "Aufnahme als Mitglied ist fehlgeschlagen.",
+        };
+      }
+    }
+    throw new Error("Zahlung ist bereits als bezahlt markiert.");
+  }
 
   const now = new Date().toISOString();
   const { error: upErr } = await admin

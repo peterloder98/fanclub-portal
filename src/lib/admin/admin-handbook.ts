@@ -118,7 +118,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Zahlungsbestätigung unter Admin → Zahlungen nimmt neu beantragte Mitglieder automatisch auf (aktiv + nächste Mitgliedsnummer). Der Button „Mitgliedschaft aktiv freischalten“ am Antrag bleibt als Reserve, falls die automatische Aufnahme einmal nicht geklappt hat.",
+            text: "Zahlungsbestätigung unter Admin → Zahlungen nimmt neu beantragte Mitglieder automatisch auf (aktiv + nächste Mitgliedsnummer). War der Beitrag schon bestätigt, bevor die Aufnahme gelaufen ist, am Mitglied „Jetzt aufnehmen“ tippen. Am Antrag bleibt „Mitgliedschaft aktiv freischalten“ als weitere Reserve.",
           },
           {
             type: "link",
