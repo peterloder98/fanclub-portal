@@ -154,6 +154,13 @@ export function MemberActivityTimeline({
         ) : (
           <div className="grid gap-2">
             <p className="text-xs font-semibold text-slate-700">Neuer Historie-Eintrag</p>
+            {noteType === "payment_received" ? (
+              <p className="text-xs text-amber-800">
+                Bei neuen Mitgliedern mit offener Zahlung: Beitrag nur unter Admin → Zahlungen
+                bestätigen — dort wird automatisch gebucht. „Beitrag eingegangen“ hier nur für
+                Sonderfälle ohne Zahlungsdatensatz.
+              </p>
+            ) : null}
             <select
               value={noteType}
               onChange={(e) =>

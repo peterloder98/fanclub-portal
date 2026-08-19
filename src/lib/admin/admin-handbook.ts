@@ -118,7 +118,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Zahlungsbestätigung unter Admin → Zahlungen nimmt neu beantragte Mitglieder automatisch auf (aktiv + nächste Mitgliedsnummer). War der Beitrag schon bestätigt, bevor die Aufnahme gelaufen ist, am Mitglied „Jetzt aufnehmen“ tippen. Am Antrag bleibt „Mitgliedschaft aktiv freischalten“ als weitere Reserve.",
+            text: "Zahlungsbestätigung unter Admin → Zahlungen nimmt neu beantragte Mitglieder automatisch auf (aktiv + nächste Mitgliedsnummer). War der Beitrag schon bestätigt, bevor die Aufnahme gelaufen ist, am Mitglied „Jetzt aufnehmen“ tippen. Am Antrag bleibt „Mitgliedschaft aktiv freischalten“ als weitere Reserve. Wichtig: Den Beitrag nicht zusätzlich in der Historie als „Beitrag eingegangen“ oder manuell in der Buchhaltung buchen — sonst entstehen Doppelbuchungen. Bestätigen reicht.",
           },
           {
             type: "link",
@@ -153,7 +153,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Mitglied oder offenen Antrag in der Liste öffnen (auch ohne Beitrittsdatum, Status „Mitgliedschaft beantragt“).",
               "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
               "„Zahlungserinnerung senden“ (bei bestehenden Mitgliedern) bzw. „Zahlungsinfo senden“ (bei Status „Mitgliedschaft beantragt“): Mail mit Betrag, Kontodaten und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ (z. B. Mitgliedsbeitrag / Max Mustermann). Bei Papier-/Manuell-Anträgen lautet die Vorlage „Antrag eingegangen“ plus Zahlungsaufforderung — Betreff und Text sind vor dem Versand editierbar; Schließen ohne Senden ist möglich. Die interne Buchungsnummer MITGLIED-… ist nur für den Abgleich unter Zahlungen gedacht und steht nicht als Verwendungszweck in der Mail.",
-              "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag gilt in der Mitgliederverwaltung als bezahlt und erhöht den Kontostand in der Buchhaltung (ab Buchhaltungs-Start).",
+              "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag gilt in der Mitgliederverwaltung als bezahlt und erhöht den Kontostand in der Buchhaltung (ab Buchhaltungs-Start). Nicht zusätzlich in der Historie oder Buchhaltung manuell buchen.",
             ],
           },
           {

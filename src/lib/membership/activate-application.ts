@@ -14,6 +14,10 @@ import {
   allocateNextMembershipNumber,
   isAssignedMembershipNumber,
 } from "@/lib/membership/numbers";
+import {
+  consumeMembershipNumberReservation,
+  getReservedMembershipNumber,
+} from "@/lib/membership/number-reservations";
 import { storeApprovedMemberContractPdf } from "@/lib/membership/application-pdf-service";
 import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
 
@@ -64,7 +68,8 @@ async function assignMembershipNumber(
     : null;
   if (assignedNumber) return assignedNumber;
 
-  const manual = membershipNumber?.trim() || null;
+  const reserved = await getReservedMembershipNumber(userId);
+  const manual = membershipNumber?.trim() || reserved || null;
   const maxAttempts = manual ? 1 : 5;
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -73,7 +78,12 @@ async function assignMembershipNumber(
       .from("profiles")
       .update({ membership_number: assignedNumber })
       .eq("id", userId);
-    if (!pErr) return assignedNumber;
+    if (!pErr) {
+      if (reserved && assignedNumber === reserved) {
+        await consumeMembershipNumberReservation(userId).catch(console.error);
+      }
+      return assignedNumber;
+    }
     if (!manual && /membership_number|duplicate|unique/i.test(pErr.message)) {
       lastErr = new Error(pErr.message);
       continue;

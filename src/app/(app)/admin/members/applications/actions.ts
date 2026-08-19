@@ -25,6 +25,7 @@ import {
   resolveMemberPaymentReference,
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
+import { memberHasAutomaticMembershipPaymentBooking } from "@/lib/membership/membership-ledger-guard";
 
 export async function approveMembershipApplication(applicationId: string) {
   await requireAdmin();
@@ -286,6 +287,29 @@ export async function addMemberActivityNote(input: {
   }
 
   if (input.eventType === "payment_received" && input.userId) {
+    const admin = createSupabaseAdminClient();
+    const hasPaymentBooking = await memberHasAutomaticMembershipPaymentBooking(
+      admin,
+      input.userId,
+    );
+    if (hasPaymentBooking) {
+      await logMemberActivity({
+        userId: input.userId,
+        applicationId: input.applicationId,
+        eventType: input.eventType,
+        title: input.title.trim(),
+        details:
+          input.details?.trim() ||
+          "Hinweis: Beitrag wird über Admin → Zahlungen verbucht — keine zweite Buchung nötig.",
+        linkUrl: input.linkUrl?.trim() || null,
+        linkLabel: input.linkLabel?.trim() || null,
+        createdBy: user.id,
+      });
+      revalidatePath("/admin/members");
+      if (input.userId) revalidatePath(`/admin/members/${input.userId}`);
+      return;
+    }
+
     const { addClubLedgerEntry } = await import("@/app/(app)/admin/members/detail-actions");
     const amount = input.paymentAmountEur ?? 15;
     const entryDate = input.paymentDate ?? new Date().toISOString().slice(0, 10);

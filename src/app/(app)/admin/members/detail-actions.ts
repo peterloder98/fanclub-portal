@@ -48,6 +48,10 @@ import { activatePendingMembershipAfterFeePaid } from "@/lib/membership/activate
 import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { buildLedgerCsv } from "@/lib/club/ledger-export";
+import {
+  memberHasAutomaticMembershipPaymentBooking,
+  MEMBERSHIP_LEDGER_DUPLICATE_HINT,
+} from "@/lib/membership/membership-ledger-guard";
 
 export async function revokeMemberWarning(warningId: string) {
   const { user, profile: adminProfile } = await requireAdminAction();
@@ -851,6 +855,20 @@ export async function addClubLedgerEntry(input: {
   const parsed = ledgerSchema.parse(input);
   const admin = createSupabaseAdminClient();
   const amountCents = Math.round(parsed.amountEur * 100);
+
+  if (
+    parsed.category === "membership" &&
+    parsed.entryType === "income" &&
+    parsed.memberId
+  ) {
+    const hasPaymentBooking = await memberHasAutomaticMembershipPaymentBooking(
+      admin,
+      parsed.memberId,
+    );
+    if (hasPaymentBooking) {
+      throw new Error(MEMBERSHIP_LEDGER_DUPLICATE_HINT);
+    }
+  }
 
   const base = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
 
