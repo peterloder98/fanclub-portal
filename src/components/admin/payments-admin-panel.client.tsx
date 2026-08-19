@@ -321,6 +321,17 @@ export function PaymentsAdminPanel({
                 />
               </label>
 
+              {selected.payment_type === "membership_fee" &&
+              selected.membership_start_date &&
+              !selected.fee_affects_balance ? (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  Beitritt ({selected.membership_start_date.split("-").reverse().join(".")}) liegt vor
+                  dem Buchhaltungs-Start. Bestätigung markiert den Beitrag als bezahlt und nimmt das
+                  Mitglied auf — der Kontostand ändert sich nicht (Betrag steckt schon im
+                  Anfangsbestand).
+                </p>
+              ) : null}
+
               <div className="flex flex-wrap gap-2 pt-2">
                 {selected.payment_status !== "paid" && selected.payment_status !== "cancelled" ? (
                   <button

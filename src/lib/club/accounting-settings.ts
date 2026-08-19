@@ -40,6 +40,29 @@ export function includeInAccountingForCategory(_category: ClubLedgerRow["categor
   return true;
 }
 
+/** Buchungsdatum bei Bestätigung eines Vor-App-Beitrags (bereits im Anfangsbestand). */
+export function entryDateForConfirmedMembershipFee(input: {
+  membershipStartDate: string | null | undefined;
+  accountingStartDate: string | null | undefined;
+  confirmDate?: string;
+}): string {
+  const today = input.confirmDate ?? new Date().toISOString().slice(0, 10);
+  const start = input.membershipStartDate?.trim();
+  const accountingStart = input.accountingStartDate?.trim();
+  if (!start || !accountingStart) return today;
+  if (start < accountingStart) return start;
+  return today;
+}
+
+export function membershipFeeCountsInAccountingBalance(input: {
+  entryDate: string;
+  accountingStartDate: string | null | undefined;
+}): boolean {
+  const accountingStart = input.accountingStartDate?.trim();
+  if (!accountingStart) return true;
+  return input.entryDate >= accountingStart;
+}
+
 function isPostedToBank(row: Pick<ClubLedgerRow, "bookkeeping_status">) {
   return row.bookkeeping_status !== "open" && row.bookkeeping_status !== "cancelled";
 }

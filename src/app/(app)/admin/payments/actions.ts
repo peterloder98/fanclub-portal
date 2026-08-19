@@ -15,6 +15,7 @@ import {
   PAYMENT_STATUS_LABELS,
   PAYMENT_TYPE_LABELS,
 } from "@/lib/payments/labels";
+import { getAccountingSettings, membershipFeeCountsInAccountingBalance } from "@/lib/club/accounting-settings";
 import type { PaymentMethod, PaymentStatus } from "@/lib/payments/types";
 
 export type AdminPaymentRow = {
@@ -37,6 +38,9 @@ export type AdminPaymentRow = {
   receipt_reference: string | null;
   created_at: string;
   paid_at: string | null;
+  membership_start_date: string | null;
+  /** true wenn Bestätigung den Kontostand erhöht (Beitritt ab Buchhaltungs-Start). */
+  fee_affects_balance: boolean;
 };
 
 export async function listAdminPaymentsAction(filter?: {
@@ -63,17 +67,55 @@ export async function listAdminPaymentsAction(filter?: {
   }
 
   const userIds = [...new Set((data ?? []).map((p) => p.user_id))];
-  const { data: profiles } = userIds.length
-    ? await admin.from("profiles").select("id,first_name,last_name").in("id", userIds)
-    : { data: [] };
+  const [profilesRes, membershipsRes, appsRes, accountingSettings] = await Promise.all([
+    userIds.length
+      ? admin.from("profiles").select("id,first_name,last_name").in("id", userIds)
+      : Promise.resolve({ data: [] as { id: string; first_name: string | null; last_name: string | null }[] }),
+    userIds.length
+      ? admin.from("memberships").select("user_id,start_date,created_at").in("user_id", userIds)
+      : Promise.resolve({ data: [] as { user_id: string; start_date: string | null; created_at: string }[] }),
+    admin
+      .from("membership_applications")
+      .select("id,membership_start_date")
+      .not("membership_start_date", "is", null),
+    getAccountingSettings(),
+  ]);
+  const profiles = profilesRes.data ?? [];
   const nameById = new Map(
-    (profiles ?? []).map((p) => [
+    profiles.map((p) => [
       p.id,
       `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() || "—",
     ]),
   );
 
-  return (data ?? []).map((p) => ({
+  const startByUser = new Map<string, string>();
+  for (const m of membershipsRes.data ?? []) {
+    const start = m.start_date?.trim();
+    if (!start) continue;
+    const prev = startByUser.get(m.user_id);
+    if (!prev || start < prev) startByUser.set(m.user_id, start);
+  }
+
+  const startByApp = new Map(
+    (appsRes.data ?? [])
+      .filter((a) => a.membership_start_date?.trim())
+      .map((a) => [a.id, a.membership_start_date!.trim()] as const),
+  );
+
+  return (data ?? []).map((p) => {
+    const applicationId = (p as { application_id?: string | null }).application_id ?? null;
+    const membershipStartDate =
+      (applicationId ? startByApp.get(applicationId) : null) ??
+      startByUser.get(p.user_id) ??
+      null;
+    const feeAffectsBalance =
+      p.payment_type !== "membership_fee" ||
+      membershipFeeCountsInAccountingBalance({
+        entryDate: membershipStartDate ?? new Date().toISOString().slice(0, 10),
+        accountingStartDate: accountingSettings.startDate,
+      });
+
+    return {
     id: p.id,
     user_id: p.user_id,
     member_name: nameById.get(p.user_id) ?? "—",
@@ -95,7 +137,10 @@ export async function listAdminPaymentsAction(filter?: {
     receipt_reference: p.receipt_reference,
     created_at: p.created_at,
     paid_at: p.paid_at,
-  }));
+    membership_start_date: membershipStartDate,
+    fee_affects_balance: feeAffectsBalance,
+  };
+  });
 }
 
 const methodSchema = z.enum(["bank_transfer", "paypal", "stripe", "apple_pay", "amazon_pay"]);

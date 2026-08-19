@@ -48,14 +48,15 @@ export async function confirmAccountingEntry(input: {
   admin: SupabaseClient;
   paymentId: string;
   confirmedBy: string;
+  entryDate?: string;
 }) {
   const { admin, paymentId, confirmedBy } = input;
-  const today = new Date().toISOString().slice(0, 10);
+  const entryDate = input.entryDate ?? new Date().toISOString().slice(0, 10);
   const { error } = await admin
     .from("club_ledger_entries")
     .update({
       bookkeeping_status: "paid" satisfies BookkeepingStatus,
-      entry_date: today,
+      entry_date: entryDate,
       created_by: confirmedBy,
       include_in_accounting: true,
     })
