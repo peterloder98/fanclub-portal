@@ -6,7 +6,11 @@ import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { setPostPinned, notifyPendingPostCreated } from "@/app/(app)/admin/posts/actions";
+import {
+  setPostPinned,
+  notifyPendingPostCreated,
+  publishFeedPostAction,
+} from "@/app/(app)/admin/posts/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
@@ -1647,50 +1651,16 @@ function PostFeedInner({
     setSubmitting(true);
     setLoadError(null);
     try {
-      const supabase = createSupabaseBrowserClient();
-      const status = me.role === "member" ? "pending" : "approved";
       const title = text.length > 36 ? `${text.slice(0, 36)}…` : text;
+      const uploadedMedia = composerMedia;
 
-      let postRow: {
-        id: string;
-        created_at: string;
-        author_role: "admin" | "anni" | "member";
-        status?: string | null;
-        title: string;
-        body: string;
-      };
-      let uploadedMedia: ComposerMedia[] = [];
-
-      if (composerDraftPostId) {
-        const { data, error: updErr } = await supabase
-          .from("posts")
-          .update({
-            title,
-            body: text,
-            status,
-            last_activity_at: new Date().toISOString(),
-          })
-          .eq("id", composerDraftPostId)
-          .select("id,created_at,author_role,status,title,body")
-          .single();
-        if (updErr) throw updErr;
-        postRow = data;
-        uploadedMedia = composerMedia;
-      } else {
-        const { data, error: insErr } = await supabase
-          .from("posts")
-          .insert({
-            author_id: me.id,
-            author_role: me.role,
-            title,
-            body: text,
-            status,
-          })
-          .select("id,created_at,author_role,status,title,body")
-          .single();
-        if (insErr) throw insErr;
-        postRow = data;
-      }
+      const published = await publishFeedPostAction({
+        postId: composerDraftPostId,
+        title,
+        body: text,
+      });
+      const postRow = published.post;
+      const status = published.status;
 
       void notifyMentionsFromText({ text, postId: postRow.id, context: "post" });
 
@@ -1710,7 +1680,7 @@ function PostFeedInner({
           }),
           title: postRow.title,
           body: postRow.body,
-          status: status === "pending" ? "pending" : "approved",
+          status: status === "pending" ? "pending" : ("approved" as const),
           lastActivityAt: new Date().toISOString(),
           isPinned: false,
           pinnedAt: null,

@@ -11,6 +11,7 @@ import {
   notifyAdminsPendingPost,
   notifyMemberPostModerationResult,
 } from "@/lib/email/post-moderation-notify";
+import { assertMemberCanWrite } from "@/lib/portal-launch";
 
 const createSchema = z.object({
   author_role: z.enum(["admin", "anni"]).default("admin"),
@@ -115,6 +116,85 @@ export async function notifyPendingPostCreated(postId: string) {
     body: post.body,
   });
   return { ok: true as const };
+}
+
+type PublishedFeedPost = {
+  id: string;
+  created_at: string;
+  author_role: "admin" | "anni" | "member";
+  status: string;
+  title: string;
+  body: string;
+};
+
+/** Feed-Composer: Mitglieder → pending, Vorstand/Anni → sofort approved (auch Video-Drafts). */
+export async function publishFeedPostAction(input: {
+  postId?: string | null;
+  title: string;
+  body: string;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Nicht angemeldet.");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  const role = (profile?.role ?? "member") as "admin" | "anni" | "member";
+  assertMemberCanWrite(role);
+
+  const status = role === "member" ? "pending" : "approved";
+  const now = new Date().toISOString();
+  const admin = createSupabaseAdminClient();
+  const payload = {
+    title: input.title.trim(),
+    body: input.body.trim(),
+    status,
+    last_activity_at: now,
+    ...(status === "approved" ? { approved_at: now, approved_by: user.id } : {}),
+  };
+
+  let post: PublishedFeedPost;
+
+  if (input.postId) {
+    const { data: existing, error: loadErr } = await admin
+      .from("posts")
+      .select("id,author_id")
+      .eq("id", input.postId)
+      .maybeSingle();
+    if (loadErr) throw new Error(loadErr.message);
+    if (!existing) throw new Error("Post nicht gefunden.");
+    if (existing.author_id !== user.id) throw new Error("Keine Berechtigung.");
+
+    const { data, error } = await admin
+      .from("posts")
+      .update(payload)
+      .eq("id", input.postId)
+      .select("id,created_at,author_role,status,title,body")
+      .single();
+    if (error) throw new Error(error.message);
+    post = data as PublishedFeedPost;
+  } else {
+    const { data, error } = await admin
+      .from("posts")
+      .insert({
+        author_id: user.id,
+        author_role: role,
+        ...payload,
+      })
+      .select("id,created_at,author_role,status,title,body")
+      .single();
+    if (error) throw new Error(error.message);
+    post = data as PublishedFeedPost;
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/posts");
+  return { ok: true as const, post, status: post.status };
 }
 
 export async function approvePostAction(postId: string) {
