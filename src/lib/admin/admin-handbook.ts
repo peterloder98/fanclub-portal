@@ -628,7 +628,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Dashboard öffnen und oben im Composer Text eingeben.",
               "„Foto auswählen“ für Bilder (bis zu 6 Medien pro Beitrag) — Fotos werden automatisch verkleinert.",
-              "Nur für Vorstände: zusätzlich „Video hochladen“ — Clips aus Galerie oder Dateien wählen, alternativ per Drag-and-Drop in die Drop-Zone ziehen. Videos werden serverseitig moderat komprimiert (max. 720p).",
+              "Nur für Vorstände: zusätzlich „Video hochladen“ — Clips aus Galerie oder Dateien wählen, alternativ per Drag-and-Drop in die Drop-Zone ziehen. Originaldatei bis 80 MB, danach serverseitige Komprimierung (max. 720p, ca. 4 MB im Feed).",
               "„Posten“ tippen — der Beitrag erscheint sofort für alle Mitglieder. Antippen spielt Videos im Feed ab.",
             ],
           },

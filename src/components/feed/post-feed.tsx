@@ -48,7 +48,8 @@ import { MentionText } from "@/components/feed/mention-text";
 import { MentionProfileLink } from "@/components/feed/mention-profile-link";
 import { ComposerMediaGrid, type ComposerMediaItem } from "@/components/feed/composer-media-grid";
 import { ScrollHintBox } from "@/components/ui/scroll-hint-box";
-import { POST_MEDIA_MAX_COUNT } from "@/lib/images/specs";
+import { POST_MEDIA_MAX_COUNT, POST_VIDEO_INPUT_MAX_BYTES } from "@/lib/images/specs";
+import { parseApiJsonResponse } from "@/lib/http/parse-api-json";
 import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 import {
   BROWSE_ONLY_WRITE_BLOCKED_MESSAGE,
@@ -1430,23 +1431,48 @@ function PostFeedInner({
     return data.id;
   }
 
-  async function uploadMediaToPost(postId: string, files: File[], existingCount: number) {
-    const images = files.filter((f) => f.type.startsWith("image/"));
-    const videos = files.filter((f) => f.type.startsWith("video/"));
-    const optimizedImages = await Promise.all(images.map((f) => optimizePostImage(f)));
+  async function uploadVideoToPost(postId: string, file: File, existingCount: number) {
+    const maxMb = Math.round(POST_VIDEO_INPUT_MAX_BYTES / 1024 / 1024);
+    if (file.size > POST_VIDEO_INPUT_MAX_BYTES) {
+      throw new Error(`Video zu groß — bitte kürzeres Video oder kleinere Datei (max. ${maxMb} MB).`);
+    }
 
-    const fd = new FormData();
-    fd.append("postId", postId);
-    fd.append("existingCount", String(existingCount));
-    optimizedImages.forEach((o, idx) => {
-      fd.append("files", o.blob, `img_${idx}.webp`);
+    const prepareRes = await fetch("/api/post-media/video/prepare", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, fileSize: file.size, existingCount }),
     });
-    videos.forEach((v, idx) => {
-      fd.append("files", v, `vid_${idx}.mp4`);
-    });
+    const prepare = await parseApiJsonResponse<{
+      ok?: boolean;
+      signedUrl?: string;
+      rawPath?: string;
+      error?: string;
+    }>(prepareRes, { maxUploadMb: maxMb, fallbackError: "Video-Upload fehlgeschlagen" });
+    if (!prepareRes.ok || !prepare.ok || !prepare.signedUrl || !prepare.rawPath) {
+      throw new Error(prepare.error ?? "Video-Upload konnte nicht vorbereitet werden.");
+    }
 
-    const res = await fetch("/api/post-media/upload", { method: "POST", body: fd });
-    const json = (await res.json()) as {
+    const putRes = await fetch(prepare.signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type || "video/mp4" },
+    });
+    if (!putRes.ok) {
+      const putText = (await putRes.text()).trim();
+      if (putRes.status === 413 || /entity too large|payload too large/i.test(putText)) {
+        throw new Error(
+          `Video zu groß — bitte kürzeres Video oder kleinere Datei (max. ${maxMb} MB).`,
+        );
+      }
+      throw new Error(putText.slice(0, 200) || `Video-Upload fehlgeschlagen (${putRes.status}).`);
+    }
+
+    const finalizeRes = await fetch("/api/post-media/video/finalize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, rawPath: prepare.rawPath }),
+    });
+    const finalize = await parseApiJsonResponse<{
       ok?: boolean;
       error?: string;
       files?: Array<{
@@ -1455,9 +1481,12 @@ function PostFeedInner({
         url: string | null;
         mediaType: "image" | "video";
       }>;
-    };
-    if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
-    return (json.files ?? [])
+    }>(finalizeRes, { maxUploadMb: maxMb, fallbackError: "Video-Verarbeitung fehlgeschlagen" });
+    if (!finalizeRes.ok || !finalize.ok) {
+      throw new Error(finalize.error ?? "Video-Verarbeitung fehlgeschlagen.");
+    }
+
+    return (finalize.files ?? [])
       .map((f) => ({
         id: f.id,
         url: f.url ?? "",
@@ -1465,6 +1494,59 @@ function PostFeedInner({
         mediaType: f.mediaType,
       }))
       .filter((m) => Boolean(m.url));
+  }
+
+  async function uploadMediaToPost(postId: string, files: File[], existingCount: number) {
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    const videos = files.filter((f) => f.type.startsWith("video/"));
+    const uploaded: Array<{
+      id: string;
+      url: string;
+      storagePath: string;
+      mediaType: "image" | "video";
+    }> = [];
+
+    if (images.length) {
+      const optimizedImages = await Promise.all(images.map((f) => optimizePostImage(f)));
+      const fd = new FormData();
+      fd.append("postId", postId);
+      fd.append("existingCount", String(existingCount));
+      optimizedImages.forEach((o, idx) => {
+        fd.append("files", o.blob, `img_${idx}.webp`);
+      });
+
+      const res = await fetch("/api/post-media/upload", { method: "POST", body: fd });
+      const json = await parseApiJsonResponse<{
+        ok?: boolean;
+        error?: string;
+        files?: Array<{
+          id: string;
+          path: string;
+          url: string | null;
+          mediaType: "image" | "video";
+        }>;
+      }>(res, { fallbackError: "Upload fehlgeschlagen" });
+      if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload fehlgeschlagen");
+      uploaded.push(
+        ...(json.files ?? [])
+          .map((f) => ({
+            id: f.id,
+            url: f.url ?? "",
+            storagePath: f.path,
+            mediaType: f.mediaType,
+          }))
+          .filter((m) => Boolean(m.url)),
+      );
+    }
+
+    let videoIndex = existingCount + uploaded.length;
+    for (const video of videos) {
+      const items = await uploadVideoToPost(postId, video, videoIndex);
+      uploaded.push(...items);
+      videoIndex += items.length;
+    }
+
+    return uploaded;
   }
 
   async function removeComposerMedia(item: ComposerMedia) {
@@ -1483,7 +1565,9 @@ function PostFeedInner({
           storagePath: item.storagePath,
         }),
       });
-      const json = (await res.json()) as { ok?: boolean; error?: string };
+      const json = await parseApiJsonResponse<{ ok?: boolean; error?: string }>(res, {
+        fallbackError: "Löschen fehlgeschlagen",
+      });
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Löschen fehlgeschlagen");
       setComposerMedia((prev) => prev.filter((m) => m.id !== item.id));
     } catch (e) {
