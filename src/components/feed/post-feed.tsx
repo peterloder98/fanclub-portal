@@ -1941,8 +1941,7 @@ function PostFeedInner({
                   ref={videoInputRef}
                   type="file"
                   multiple
-                  accept="video/*"
-                  capture
+                  accept="video/mp4,video/quicktime,video/webm,video/*"
                   className="hidden"
                   onChange={(e) => {
                     const picked = Array.from(e.target.files ?? []);
@@ -2024,7 +2023,7 @@ function PostFeedInner({
                     )}
                   >
                     <Video className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    {composerUploading ? "Lädt…" : "Video auswählen"}
+                    {composerUploading ? "Lädt…" : "Video hochladen"}
                   </button>
                 ) : null}
                 {composerExpanded ? (
