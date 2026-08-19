@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash2, X } from "lucide-react";
+import { Heart, MessageCircle, Pencil, Pin, PinOff, Reply, SendHorizontal, Trash2, Video, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -89,7 +89,7 @@ type FeedPost = {
   isBirthday?: boolean;
   birthdayDate?: string | null;
   birthdayUserId?: string | null;
-  media: Array<{ id: string; url: string }>;
+  media: Array<{ id: string; url: string; mediaType?: "image" | "video" }>;
   myReaction: PostReactionType | null;
   reactionCounts: PostReactionCounts;
   comments: Array<{
@@ -242,6 +242,7 @@ function PostFeedInner({
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLDivElement>(null);
   const composerMentionRef = useRef<MentionInputHandle>(null);
   const commentInputRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -607,11 +608,14 @@ function PostFeedInner({
           .in("post_id", postIds.length ? postIds : ["00000000-0000-0000-0000-000000000000"])
           .order("created_at", { ascending: true });
         if (mediaErr) throw mediaErr;
-        const mediaByPost = new Map<string, Array<{ id: string; url: string }>>();
+        const mediaByPost = new Map<string, Array<{ id: string; url: string; mediaType: "image" | "video" }>>();
         (mediaRows ?? []).forEach((m) => {
           if (!mediaByPost.has(m.post_id)) mediaByPost.set(m.post_id, []);
           const url = postMediaPublicUrl(m.storage_path);
-          if (url) mediaByPost.get(m.post_id)!.push({ id: m.id, url });
+          if (url) {
+            const mediaType = /\.mp4(\?|$)/i.test(m.storage_path) ? "video" : "image";
+            mediaByPost.get(m.post_id)!.push({ id: m.id, url, mediaType });
+          }
         });
 
         const { data: reactionsData, error: reactionsErr } = await supabase
@@ -1507,9 +1511,6 @@ function PostFeedInner({
       setLoadError("Videos können nur von Admins gepostet werden.");
       return;
     }
-    if (videos.length && me.role === "admin") {
-      // Admin-Videos werden serverseitig stark komprimiert.
-    }
     const batch = [...images, ...videos];
     if (!batch.length) return;
 
@@ -1534,6 +1535,7 @@ function PostFeedInner({
     } finally {
       setComposerUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (videoInputRef.current) videoInputRef.current.value = "";
     }
   }
 
@@ -1543,6 +1545,7 @@ function PostFeedInner({
     setComposerDraftPostId(null);
     setComposerExpanded(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (videoInputRef.current) videoInputRef.current.value = "";
   }
 
   async function submitNewPost() {
@@ -1630,7 +1633,11 @@ function PostFeedInner({
           isBirthday: false,
           birthdayUserId: null,
           birthdayDate: null,
-          media: uploadedMedia,
+          media: uploadedMedia.map((m) => ({
+            id: m.id,
+            url: m.url,
+            mediaType: m.mediaType,
+          })),
           myReaction: null,
           reactionCounts: emptyReactionCounts(),
           comments: [],
@@ -1922,17 +1929,27 @@ function PostFeedInner({
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept={
-                  me?.role === "admin"
-                    ? "image/jpeg,image/png,image/webp,video/*"
-                    : "image/jpeg,image/png,image/webp"
-                }
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   const picked = Array.from(e.target.files ?? []);
                   if (picked.length) void handleComposerFiles(picked);
                 }}
               />
+              {me?.role === "admin" ? (
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  capture
+                  className="hidden"
+                  onChange={(e) => {
+                    const picked = Array.from(e.target.files ?? []);
+                    if (picked.length) void handleComposerFiles(picked);
+                  }}
+                />
+              ) : null}
               <MentionInput
                 ref={composerMentionRef}
                 value={newText}
@@ -1994,6 +2011,22 @@ function PostFeedInner({
                 >
                   {composerUploading ? "Lädt…" : "Foto auswählen"}
                 </button>
+                {me?.role === "admin" ? (
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    disabled={!me || composerUploading}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 border border-slate-200/90 bg-white font-medium text-slate-700 shadow-sm transition hover:border-fc-sky/30 hover:bg-fc-ice/50 disabled:opacity-50",
+                      composerExpanded
+                        ? "h-9 rounded-xl px-3 text-sm"
+                        : "h-8 rounded-lg px-2.5 text-xs",
+                    )}
+                  >
+                    <Video className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {composerUploading ? "Lädt…" : "Video auswählen"}
+                  </button>
+                ) : null}
                 {composerExpanded ? (
                   <button
                     type="button"
@@ -2047,7 +2080,9 @@ function PostFeedInner({
                     />
                     {!composerMedia.length ? (
                       <p className="text-center text-xs text-slate-500">
-                        Fotos hierher ziehen oder oben auswählen
+                        {me?.role === "admin"
+                          ? "Fotos oder Videos hierher ziehen oder oben auswählen"
+                          : "Fotos hierher ziehen oder oben auswählen"}
                       </p>
                     ) : null}
                   </div>

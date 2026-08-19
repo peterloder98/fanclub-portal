@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-18";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-19";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -602,7 +602,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → „Beiträge freigeben“ öffnen (oder den Link in der Benachrichtigung/E-Mail).",
-              "Eingereichten Beitrag prüfen — Bilder werden vollständig (ohne Zuschnitt) angezeigt; Antippen vergrößert sie.",
+              "Eingereichten Beitrag prüfen — Bilder und Videos werden vollständig (ohne Zuschnitt) angezeigt; Antippen vergrößert bzw. spielt sie ab.",
               "Annehmen (erscheint im Feed) oder ablehnen — das Mitglied wird in der App über das Ergebnis informiert.",
             ],
           },
@@ -614,8 +614,38 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         ],
       },
       {
-        id: "live-anni",
+        id: "feed-vorstand",
         number: "3.6",
+        title: "Feed-Beiträge als Vorstand",
+        summary: "Text, Fotos und Videos posten",
+        blocks: [
+          {
+            type: "p",
+            text: "Auf dem Dashboard (Startseite) könnt ihr als Vorstand direkt Beiträge veröffentlichen — ohne Freigabe durch einen anderen Admin. Mitglieder sehen eure Posts sofort im Feed.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Dashboard öffnen und oben im Composer Text eingeben.",
+              "„Foto auswählen“ für Bilder (bis zu 6 Medien pro Beitrag) — Fotos werden automatisch verkleinert.",
+              "Nur für Vorstände: zusätzlich „Video auswählen“ — kurze Clips aus der Galerie oder per Handy-Kamera aufnehmen. Videos werden serverseitig moderat komprimiert (max. 720p).",
+              "„Posten“ tippen — der Beitrag erscheint sofort für alle Mitglieder. Antippen spielt Videos im Feed ab.",
+            ],
+          },
+          {
+            type: "note",
+            text: "Mitglieder können nur Fotos anhängen und müssen auf Freigabe warten. Die Video-Option sehen sie nicht — ein Video-Upload von Nicht-Vorständen wird serverseitig abgelehnt.",
+          },
+          {
+            type: "link",
+            href: "/dashboard",
+            label: "Zum Dashboard",
+          },
+        ],
+      },
+      {
+        id: "live-anni",
+        number: "3.7",
         title: "Live mit Anni",
         summary: "Video-Session, Einladung, Zusage und Fragen",
         blocks: [

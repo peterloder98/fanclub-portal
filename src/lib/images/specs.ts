@@ -13,7 +13,7 @@ export const POST_MEDIA_MAX_SIDE_PX = 720;
 export const POST_MEDIA_MAX_BYTES = 71_680;
 export const POST_MEDIA_MAX_COUNT = 6;
 
-/** Feed-Videos — stark komprimiert, max. ~4 MB. */
+/** Feed-Videos — moderat komprimiert, max. ~4 MB. */
 export const POST_VIDEO_MAX_BYTES = 4 * 1024 * 1024;
 export const POST_VIDEO_INPUT_MAX_BYTES = 80 * 1024 * 1024;
 
