@@ -124,6 +124,9 @@ type FeedComment = FeedPost["comments"][number];
 
 type ComposerMedia = ComposerMediaItem;
 
+type ComposerUploadKind = "photo" | "video" | null;
+type VideoUploadPhase = "prepare" | "upload" | "finalize" | null;
+
 function organizePostComments(comments: FeedComment[]) {
   const byId = new Map(comments.map((c) => [c.id, c]));
   const roots: FeedComment[] = [];
@@ -243,7 +246,9 @@ function PostFeedInner({
   const [newText, setNewText] = useState("");
   const [composerDraftPostId, setComposerDraftPostId] = useState<string | null>(null);
   const [composerMedia, setComposerMedia] = useState<ComposerMedia[]>([]);
-  const [composerUploading, setComposerUploading] = useState(false);
+  const [composerUploadKind, setComposerUploadKind] = useState<ComposerUploadKind>(null);
+  const [videoUploadPhase, setVideoUploadPhase] = useState<VideoUploadPhase>(null);
+  const composerUploading = composerUploadKind !== null;
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1435,12 +1440,18 @@ function PostFeedInner({
     return data.id;
   }
 
-  async function uploadVideoToPost(postId: string, file: File, existingCount: number) {
+  async function uploadVideoToPost(
+    postId: string,
+    file: File,
+    existingCount: number,
+    onPhase?: (phase: VideoUploadPhase) => void,
+  ) {
     const maxMb = Math.round(POST_VIDEO_INPUT_MAX_BYTES / 1024 / 1024);
     if (file.size > POST_VIDEO_INPUT_MAX_BYTES) {
       throw new Error(`Video zu groß — bitte kürzeres Video oder kleinere Datei (max. ${maxMb} MB).`);
     }
 
+    onPhase?.("prepare");
     const prepareRes = await fetch("/api/post-media/video/prepare", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1456,6 +1467,7 @@ function PostFeedInner({
       throw new Error(prepare.error ?? "Video-Upload konnte nicht vorbereitet werden.");
     }
 
+    onPhase?.("upload");
     const putRes = await fetch(prepare.signedUrl, {
       method: "PUT",
       body: file,
@@ -1471,6 +1483,7 @@ function PostFeedInner({
       throw new Error(putText.slice(0, 200) || `Video-Upload fehlgeschlagen (${putRes.status}).`);
     }
 
+    onPhase?.("finalize");
     const finalizeRes = await fetch("/api/post-media/video/finalize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1487,9 +1500,10 @@ function PostFeedInner({
       }>;
     }>(finalizeRes, { maxUploadMb: maxMb, fallbackError: "Video-Verarbeitung fehlgeschlagen" });
     if (!finalizeRes.ok || !finalize.ok) {
-      throw new Error(finalize.error ?? "Video-Verarbeitung fehlgeschlagen.");
+      throw new Error(finalize.error ?? "Video-Verarbeitung fehlgeschlagen — bitte erneut versuchen.");
     }
 
+    onPhase?.(null);
     return (finalize.files ?? [])
       .map((f) => ({
         id: f.id,
@@ -1500,7 +1514,12 @@ function PostFeedInner({
       .filter((m) => Boolean(m.url));
   }
 
-  async function uploadMediaToPost(postId: string, files: File[], existingCount: number) {
+  async function uploadMediaToPost(
+    postId: string,
+    files: File[],
+    existingCount: number,
+    uploadKind: "photo" | "video" | "mixed",
+  ) {
     const images = files.filter((f) => f.type.startsWith("image/"));
     const videos = files.filter((f) => f.type.startsWith("video/"));
     const uploaded: Array<{
@@ -1511,6 +1530,7 @@ function PostFeedInner({
     }> = [];
 
     if (images.length) {
+      if (uploadKind !== "video") setComposerUploadKind("photo");
       const optimizedImages = await Promise.all(images.map((f) => optimizePostImage(f)));
       const fd = new FormData();
       fd.append("postId", postId);
@@ -1545,7 +1565,8 @@ function PostFeedInner({
 
     let videoIndex = existingCount + uploaded.length;
     for (const video of videos) {
-      const items = await uploadVideoToPost(postId, video, videoIndex);
+      setComposerUploadKind("video");
+      const items = await uploadVideoToPost(postId, video, videoIndex, setVideoUploadPhase);
       uploaded.push(...items);
       videoIndex += items.length;
     }
@@ -1558,7 +1579,7 @@ function PostFeedInner({
       setComposerMedia((prev) => prev.filter((m) => m.id !== item.id));
       return;
     }
-    setComposerUploading(true);
+    setComposerUploadKind("photo");
     try {
       const res = await fetch("/api/post-media/delete", {
         method: "DELETE",
@@ -1577,8 +1598,22 @@ function PostFeedInner({
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
     } finally {
-      setComposerUploading(false);
+      setComposerUploadKind(null);
+      setVideoUploadPhase(null);
     }
+  }
+
+  function photoButtonLabel() {
+    if (composerUploadKind === "photo") return "Lädt…";
+    return "Foto auswählen";
+  }
+
+  function videoButtonLabel() {
+    if (composerUploadKind !== "video") return "Video hochladen";
+    if (videoUploadPhase === "prepare") return "Bereitet vor…";
+    if (videoUploadPhase === "upload") return "Lädt hoch…";
+    if (videoUploadPhase === "finalize") return "Verarbeitet…";
+    return "Lädt…";
   }
 
   function reorderComposerMedia(fromIndex: number, toIndex: number) {
@@ -1610,18 +1645,22 @@ function PostFeedInner({
     }
 
     setComposerExpanded(true);
-    setComposerUploading(true);
     setLoadError(null);
     try {
       const supabase = createSupabaseBrowserClient();
       const postId = await ensureComposerDraftPost(supabase);
-      const uploaded = await uploadMediaToPost(postId, slice, composerMedia.length);
+      const uploadKind =
+        images.length && videos.length ? "mixed" : videos.length ? "video" : "photo";
+      if (uploadKind === "photo") setComposerUploadKind("photo");
+      else if (uploadKind === "video") setComposerUploadKind("video");
+      const uploaded = await uploadMediaToPost(postId, slice, composerMedia.length, uploadKind);
       setComposerMedia((prev) => [...prev, ...uploaded]);
       requestAnimationFrame(() => composerInputRef.current?.focus());
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
     } finally {
-      setComposerUploading(false);
+      setComposerUploadKind(null);
+      setVideoUploadPhase(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (videoInputRef.current) videoInputRef.current.value = "";
     }
@@ -2062,7 +2101,7 @@ function PostFeedInner({
                       : "h-8 rounded-lg px-2.5 text-xs",
                   )}
                 >
-                  {composerUploading ? "Lädt…" : "Foto auswählen"}
+                  {photoButtonLabel()}
                 </button>
                 {me?.role === "admin" ? (
                   <button
@@ -2077,7 +2116,7 @@ function PostFeedInner({
                     )}
                   >
                     <Video className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                    {composerUploading ? "Lädt…" : "Video hochladen"}
+                    {videoButtonLabel()}
                   </button>
                 ) : null}
                 {composerExpanded ? (

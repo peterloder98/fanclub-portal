@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
-import { processPostVideoForStorage } from "@/lib/posts/process-video-server";
+import { processPostVideoForStorage, mapVideoProcessingError } from "@/lib/posts/process-video-server";
 import {
   assertPostMediaAccess,
   isValidPostMediaRawPath,
@@ -48,10 +48,8 @@ export async function POST(request: Request) {
     buffer = await processPostVideoForStorage(Buffer.from(await rawBlob.arrayBuffer()));
   } catch (e) {
     await admin.storage.from("post-media").remove([rawPath]).catch(() => {});
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Video konnte nicht verarbeitet werden." },
-      { status: 400 },
-    );
+    const message = mapVideoProcessingError(e instanceof Error ? e.message : String(e));
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   const finalPath = `${postId}/${user.id}/${Date.now()}_0.mp4`;
