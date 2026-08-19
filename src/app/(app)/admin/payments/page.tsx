@@ -4,6 +4,7 @@ import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AdminMembersNav } from "@/components/admin/admin-members-nav";
 import { PaymentsAdminPanel } from "@/components/admin/payments-admin-panel.client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getAccountingSettings } from "@/lib/club/accounting-settings";
 import { listAdminPaymentsAction } from "@/app/(app)/admin/payments/actions";
 
 export const dynamic = "force-dynamic";
@@ -27,9 +28,15 @@ export default async function AdminPaymentsPage({
   if (me?.role !== "admin") redirect("/dashboard");
 
   let payments: Awaited<ReturnType<typeof listAdminPaymentsAction>> = [];
+  let accountingStartDate: string | null = null;
   let available = true;
   try {
-    payments = await listAdminPaymentsAction();
+    const [rows, accounting] = await Promise.all([
+      listAdminPaymentsAction(),
+      getAccountingSettings(),
+    ]);
+    payments = rows;
+    accountingStartDate = accounting.startDate;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (/payments|does not exist/i.test(msg)) available = false;
@@ -50,6 +57,7 @@ export default async function AdminPaymentsPage({
           <PaymentsAdminPanel
             initialPayments={payments}
             highlightPaymentId={highlightPaymentId ?? null}
+            accountingStartDate={accountingStartDate}
           />
         )}
       </main>

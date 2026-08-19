@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatEur } from "@/lib/club/ledger";
+import { membershipFeeCountsInAccountingBalance } from "@/lib/club/accounting-settings";
 import { paymentStatusBadgeClass } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
 import {
@@ -26,15 +27,18 @@ const FILTERS: Array<{ id: PaymentStatus | "all"; label: string }> = [
 export function PaymentsAdminPanel({
   initialPayments,
   highlightPaymentId = null,
+  accountingStartDate = null,
 }: {
   initialPayments: AdminPaymentRow[];
   highlightPaymentId?: string | null;
+  accountingStartDate?: string | null;
 }) {
   const [payments, setPayments] = useState(initialPayments);
   const [filter, setFilter] = useState<PaymentStatus | "all">("open");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [receiptRef, setReceiptRef] = useState("");
+  const [receiptDate, setReceiptDate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -54,7 +58,16 @@ export function PaymentsAdminPanel({
     setSelectedId(highlightPaymentId);
     setNote(row.admin_note ?? "");
     setReceiptRef(row.receipt_reference ?? "");
+    setReceiptDate("");
   }, [highlightPaymentId, payments]);
+
+  const receiptAffectsBalance = useMemo(() => {
+    if (!receiptDate.trim()) return null;
+    return membershipFeeCountsInAccountingBalance({
+      entryDate: receiptDate.trim(),
+      accountingStartDate,
+    });
+  }, [receiptDate, accountingStartDate]);
 
   function reload(status: PaymentStatus | "all" = filter) {
     startTransition(async () => {
@@ -72,21 +85,28 @@ export function PaymentsAdminPanel({
     setSelectedId(p.id);
     setNote(p.admin_note ?? "");
     setReceiptRef(p.receipt_reference ?? "");
+    setReceiptDate("");
     setSuccess(null);
   }
 
   function confirm() {
     if (!selected) return;
+    if (!receiptDate.trim()) {
+      setError("Bitte Zahlungseingang am eintragen.");
+      return;
+    }
     const confirmed = selected;
     startTransition(async () => {
       try {
         const result = await confirmPaymentAction({
           paymentId: confirmed.id,
+          receiptDate: receiptDate.trim(),
           note,
           receiptReference: receiptRef,
         });
         reload();
         setSelectedId(null);
+        setReceiptDate("");
         setError(null);
         if (result.admissionError) {
           setSuccess(
@@ -313,6 +333,27 @@ export function PaymentsAdminPanel({
                 />
               </label>
               <label className="grid gap-1">
+                <span className="text-xs font-medium text-slate-600">
+                  Zahlungseingang am <span className="text-rose-600">*</span>
+                </span>
+                <input
+                  type="date"
+                  required
+                  value={receiptDate}
+                  onChange={(e) => {
+                    setReceiptDate(e.target.value);
+                    setError(null);
+                  }}
+                  className="h-9 rounded-lg border px-2 text-sm"
+                />
+                <span className="text-[11px] text-slate-500">
+                  Tatsächliches Datum des Geldeingangs auf dem Vereinskonto (Buchungsdatum).
+                  {selected.membership_start_date
+                    ? ` Beitritt laut Antrag: ${selected.membership_start_date.split("-").reverse().join(".")}.`
+                    : ""}
+                </span>
+              </label>
+              <label className="grid gap-1">
                 <span className="text-xs font-medium text-slate-600">Beleg / Referenz</span>
                 <input
                   value={receiptRef}
@@ -321,14 +362,20 @@ export function PaymentsAdminPanel({
                 />
               </label>
 
-              {selected.payment_type === "membership_fee" &&
-              selected.membership_start_date &&
-              !selected.fee_affects_balance ? (
+              {receiptDate.trim() && receiptAffectsBalance === false ? (
                 <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                  Beitritt ({selected.membership_start_date.split("-").reverse().join(".")}) liegt vor
-                  dem Buchhaltungs-Start. Bestätigung markiert den Beitrag als bezahlt und nimmt das
-                  Mitglied auf — der Kontostand ändert sich nicht (Betrag steckt schon im
-                  Anfangsbestand).
+                  Zahlungseingang ({receiptDate.split("-").reverse().join(".")}) liegt vor dem
+                  Buchhaltungs-Start
+                  {accountingStartDate
+                    ? ` (${accountingStartDate.split("-").reverse().join(".")})`
+                    : ""}
+                  . Bestätigung markiert den Beitrag als bezahlt — der Kontostand ändert sich nicht
+                  (Betrag steckt vermutlich schon im Anfangsbestand).
+                </p>
+              ) : receiptDate.trim() && receiptAffectsBalance === true && accountingStartDate ? (
+                <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+                  Zahlungseingang ab Buchhaltungs-Start — bestätigter Betrag erhöht den Kontostand in
+                  der Buchhaltung.
                 </p>
               ) : null}
 
@@ -336,7 +383,7 @@ export function PaymentsAdminPanel({
                 {selected.payment_status !== "paid" && selected.payment_status !== "cancelled" ? (
                   <button
                     type="button"
-                    disabled={pending}
+                    disabled={pending || !receiptDate.trim()}
                     onClick={confirm}
                     className="inline-flex h-9 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white"
                   >

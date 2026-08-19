@@ -3,10 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
 import { activatePendingMembershipAfterFeePaid } from "@/lib/membership/activate-application";
 import { createOpenAccountingEntry, confirmAccountingEntry, cancelAccountingEntry } from "@/lib/payments/accounting-service";
-import {
-  entryDateForConfirmedMembershipFee,
-  getAccountingSettings,
-} from "@/lib/club/accounting-settings";
+import { parseIsoDateOnly } from "@/lib/club/accounting-settings";
 import { prepareBankTransferCheckout } from "@/lib/payments/bank-transfer-service";
 import { prepareWalletCheckout } from "@/lib/payments/wallet-service";
 import { nextInternalReference } from "@/lib/payments/reference";
@@ -42,31 +39,6 @@ async function logPaymentAudit(
 function initialStatusForMethod(method: PaymentMethod): PaymentStatus {
   if (method === "bank_transfer") return "open";
   return "simulated";
-}
-
-async function membershipStartDateForPayment(
-  admin: SupabaseClient,
-  payment: { user_id: string; application_id?: string | null },
-): Promise<string | null> {
-  const applicationId = payment.application_id?.trim();
-  if (applicationId) {
-    const { data: app } = await admin
-      .from("membership_applications")
-      .select("membership_start_date")
-      .eq("id", applicationId)
-      .maybeSingle();
-    if (app?.membership_start_date?.trim()) return app.membership_start_date.trim();
-  }
-
-  const { data: membership } = await admin
-    .from("memberships")
-    .select("start_date")
-    .eq("user_id", payment.user_id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  return membership?.start_date?.trim() || null;
 }
 
 export async function createPaymentWithAccounting(input: {
@@ -162,9 +134,11 @@ export async function createPaymentWithAccounting(input: {
 export async function confirmPaymentManually(input: {
   paymentId: string;
   adminUserId: string;
+  receiptDate: string;
   note?: string;
   receiptReference?: string;
 }) {
+  const receiptDate = parseIsoDateOnly(input.receiptDate);
   const admin = createSupabaseAdminClient();
   const { data: payment, error } = await admin
     .from("payments")
@@ -207,11 +181,12 @@ export async function confirmPaymentManually(input: {
   }
 
   const now = new Date().toISOString();
+  const paidAt = `${receiptDate}T12:00:00.000Z`;
   const { error: upErr } = await admin
     .from("payments")
     .update({
       payment_status: "paid",
-      paid_at: now,
+      paid_at: paidAt,
       manually_confirmed_by: input.adminUserId,
       manually_confirmed_at: now,
       admin_note: input.note?.trim() || payment.admin_note,
@@ -220,26 +195,11 @@ export async function confirmPaymentManually(input: {
     .eq("id", input.paymentId);
   if (upErr) throw new Error(upErr.message);
 
-  let ledgerEntryDate: string | undefined;
-  if (payment.payment_type === "membership_fee") {
-    const [accountingSettings, membershipStartDate] = await Promise.all([
-      getAccountingSettings(),
-      membershipStartDateForPayment(admin, {
-        user_id: payment.user_id,
-        application_id: (payment as { application_id?: string | null }).application_id ?? null,
-      }),
-    ]);
-    ledgerEntryDate = entryDateForConfirmedMembershipFee({
-      membershipStartDate,
-      accountingStartDate: accountingSettings.startDate,
-    });
-  }
-
   await confirmAccountingEntry({
     admin,
     paymentId: input.paymentId,
     confirmedBy: input.adminUserId,
-    entryDate: ledgerEntryDate,
+    entryDate: receiptDate,
   });
 
   if (payment.payment_type === "membership_fee") {

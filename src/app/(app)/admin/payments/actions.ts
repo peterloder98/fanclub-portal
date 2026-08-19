@@ -15,7 +15,7 @@ import {
   PAYMENT_STATUS_LABELS,
   PAYMENT_TYPE_LABELS,
 } from "@/lib/payments/labels";
-import { getAccountingSettings, membershipFeeCountsInAccountingBalance } from "@/lib/club/accounting-settings";
+import { parseIsoDateOnly } from "@/lib/club/accounting-settings";
 import type { PaymentMethod, PaymentStatus } from "@/lib/payments/types";
 
 export type AdminPaymentRow = {
@@ -39,8 +39,6 @@ export type AdminPaymentRow = {
   created_at: string;
   paid_at: string | null;
   membership_start_date: string | null;
-  /** true wenn Bestätigung den Kontostand erhöht (Beitritt ab Buchhaltungs-Start). */
-  fee_affects_balance: boolean;
 };
 
 export async function listAdminPaymentsAction(filter?: {
@@ -67,7 +65,7 @@ export async function listAdminPaymentsAction(filter?: {
   }
 
   const userIds = [...new Set((data ?? []).map((p) => p.user_id))];
-  const [profilesRes, membershipsRes, appsRes, accountingSettings] = await Promise.all([
+  const [profilesRes, membershipsRes, appsRes] = await Promise.all([
     userIds.length
       ? admin.from("profiles").select("id,first_name,last_name").in("id", userIds)
       : Promise.resolve({ data: [] as { id: string; first_name: string | null; last_name: string | null }[] }),
@@ -78,7 +76,6 @@ export async function listAdminPaymentsAction(filter?: {
       .from("membership_applications")
       .select("id,membership_start_date")
       .not("membership_start_date", "is", null),
-    getAccountingSettings(),
   ]);
   const profiles = profilesRes.data ?? [];
   const nameById = new Map(
@@ -108,12 +105,6 @@ export async function listAdminPaymentsAction(filter?: {
       (applicationId ? startByApp.get(applicationId) : null) ??
       startByUser.get(p.user_id) ??
       null;
-    const feeAffectsBalance =
-      p.payment_type !== "membership_fee" ||
-      membershipFeeCountsInAccountingBalance({
-        entryDate: membershipStartDate ?? new Date().toISOString().slice(0, 10),
-        accountingStartDate: accountingSettings.startDate,
-      });
 
     return {
     id: p.id,
@@ -138,22 +129,29 @@ export async function listAdminPaymentsAction(filter?: {
     created_at: p.created_at,
     paid_at: p.paid_at,
     membership_start_date: membershipStartDate,
-    fee_affects_balance: feeAffectsBalance,
   };
   });
 }
+
+const receiptDateSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Zahlungseingang-Datum fehlt oder ist ungültig.");
 
 const methodSchema = z.enum(["bank_transfer", "paypal", "stripe", "apple_pay", "amazon_pay"]);
 
 export async function confirmPaymentAction(input: {
   paymentId: string;
+  receiptDate: string;
   note?: string;
   receiptReference?: string;
 }) {
   const { user } = await requireAdminAction();
+  const receiptDate = parseIsoDateOnly(receiptDateSchema.parse(input.receiptDate));
   const result = await confirmPaymentManually({
     paymentId: input.paymentId,
     adminUserId: user.id,
+    receiptDate,
     note: input.note,
     receiptReference: input.receiptReference,
   });

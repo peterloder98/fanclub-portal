@@ -48,10 +48,9 @@ export async function confirmAccountingEntry(input: {
   admin: SupabaseClient;
   paymentId: string;
   confirmedBy: string;
-  entryDate?: string;
+  entryDate: string;
 }) {
-  const { admin, paymentId, confirmedBy } = input;
-  const entryDate = input.entryDate ?? new Date().toISOString().slice(0, 10);
+  const { admin, paymentId, confirmedBy, entryDate } = input;
   const { error } = await admin
     .from("club_ledger_entries")
     .update({

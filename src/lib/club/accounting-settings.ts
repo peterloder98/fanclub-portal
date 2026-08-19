@@ -40,18 +40,18 @@ export function includeInAccountingForCategory(_category: ClubLedgerRow["categor
   return true;
 }
 
-/** Buchungsdatum bei Bestätigung eines Vor-App-Beitrags (bereits im Anfangsbestand). */
-export function entryDateForConfirmedMembershipFee(input: {
-  membershipStartDate: string | null | undefined;
-  accountingStartDate: string | null | undefined;
-  confirmDate?: string;
-}): string {
-  const today = input.confirmDate ?? new Date().toISOString().slice(0, 10);
-  const start = input.membershipStartDate?.trim();
-  const accountingStart = input.accountingStartDate?.trim();
-  if (!start || !accountingStart) return today;
-  if (start < accountingStart) return start;
-  return today;
+/** Validiert YYYY-MM-DD und gibt das normalisierte Datum zurück. */
+export function parseIsoDateOnly(value: string): string {
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    throw new Error("Ungültiges Datum (Format: TT.MM.JJJJ bzw. YYYY-MM-DD).");
+  }
+  const [y, m, d] = trimmed.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) {
+    throw new Error("Ungültiges Datum.");
+  }
+  return trimmed;
 }
 
 export function membershipFeeCountsInAccountingBalance(input: {
