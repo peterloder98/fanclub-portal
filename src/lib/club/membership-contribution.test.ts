@@ -6,6 +6,7 @@ import {
   deriveContributionStatus,
   dueDateForContributionYear,
   formatMembershipPaymentReference,
+  membershipLedgerRowCountsAsPaid,
   resolveMemberPaymentReference,
   paymentBelongsToCalendarYear,
   paymentDeadlineForContributionYear,
@@ -83,6 +84,22 @@ describe("calendar year contributions", () => {
     const primary = pickPrimaryContribution([y2027, y2026]);
     expect(primary?.calendarYear).toBe(2026);
     expect(primary?.status).toBe("overdue");
+  });
+
+  it("counts open ledger rows when linked payment is paid", () => {
+    const paidIds = new Set(["pay-1"]);
+    expect(
+      membershipLedgerRowCountsAsPaid({ bookkeeping_status: "open", payment_id: "pay-1" }, paidIds),
+    ).toBe(true);
+    expect(
+      membershipLedgerRowCountsAsPaid({ bookkeeping_status: "open", payment_id: "pay-2" }, paidIds),
+    ).toBe(false);
+    expect(membershipLedgerRowCountsAsPaid({ bookkeeping_status: "paid", payment_id: null }, paidIds)).toBe(
+      true,
+    );
+    expect(
+      membershipLedgerRowCountsAsPaid({ bookkeeping_status: "cancelled", payment_id: null }, paidIds),
+    ).toBe(false);
   });
 
   it("builds open contributions block", () => {

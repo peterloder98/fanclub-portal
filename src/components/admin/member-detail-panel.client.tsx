@@ -33,10 +33,12 @@ import { genderDisplayLabel } from "@/lib/person/gender";
 import {
   formatEur,
   formatLedgerEntryNumber,
+  isConfirmedLedgerIncome,
   LEDGER_CATEGORY_LABELS,
   type ClubLedgerRow,
   type LedgerCategory,
 } from "@/lib/club/ledger";
+import { BOOKKEEPING_STATUS_LABELS } from "@/lib/payments/labels";
 import type { MailSignatureOption } from "@/lib/email/signatures";
 import type { MemberContributionInfo } from "@/lib/club/membership-contribution";
 import { ContributionStatusBadge } from "@/components/admin/contribution-status-badge";
@@ -1183,7 +1185,9 @@ export function MemberDetailPanel({
                           <span
                             className={
                               e.entry_type === "income"
-                                ? "font-semibold text-emerald-700"
+                                ? isConfirmedLedgerIncome(e)
+                                  ? "font-semibold text-emerald-700"
+                                  : "font-semibold text-amber-700"
                                 : "font-semibold text-rose-700"
                             }
                           >
@@ -1194,6 +1198,16 @@ export function MemberDetailPanel({
                           <span className="ml-2 text-xs text-slate-500">
                             {LEDGER_CATEGORY_LABELS[e.category]} · {formatDE(e.entry_date)}
                             {e.created_by_name ? ` · Angelegt: ${e.created_by_name}` : ""}
+                            {e.entry_type === "income" && !isConfirmedLedgerIncome(e) ? (
+                              <>
+                                {" · "}
+                                <span className="font-medium text-amber-800">
+                                  {e.payment_id
+                                    ? BOOKKEEPING_STATUS_LABELS.open
+                                    : "Noch nicht bestätigt"}
+                                </span>
+                              </>
+                            ) : null}
                           </span>
                           <span className="ml-2 inline-flex items-center gap-2">
                             {e.receipt_storage_path ? (

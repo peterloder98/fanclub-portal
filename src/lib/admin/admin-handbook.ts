@@ -154,6 +154,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
               "„Zahlungserinnerung senden“ (bei bestehenden Mitgliedern) bzw. „Zahlungsinfo senden“ (bei Status „Mitgliedschaft beantragt“): Mail mit Betrag, Kontodaten und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ (z. B. Mitgliedsbeitrag / Max Mustermann). Bei Papier-/Manuell-Anträgen lautet die Vorlage „Antrag eingegangen“ plus Zahlungsaufforderung — Betreff und Text sind vor dem Versand editierbar; Schließen ohne Senden ist möglich. Die interne Buchungsnummer MITGLIED-… ist nur für den Abgleich unter Zahlungen gedacht und steht nicht als Verwendungszweck in der Mail.",
               "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Der Beitrag gilt in der Mitgliederverwaltung als bezahlt und erhöht den Kontostand in der Buchhaltung (ab Buchhaltungs-Start). Nicht zusätzlich in der Historie oder Buchhaltung manuell buchen.",
+              "Solange eine Zahlung noch nicht bestätigt ist, steht bei der Person „Beitrag offen“ — auch wenn schon eine gelbe Vor-Buchung in der Historie sichtbar ist. Erst nach Bestätigung unter Zahlungen zählt der Beitrag als bezahlt (grüne Buchung).",
             ],
           },
           {

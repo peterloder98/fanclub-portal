@@ -1,15 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeMemberCountryCode } from "@/lib/members/country";
-
-function baseUsername(first: string, last: string) {
-  const slug = `${first}.${last}`
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/\.+/g, ".")
-    .replace(/^\./, "")
-    .replace(/\.$/, "");
-  return slug || "member";
-}
+import { slugifyMemberUsername } from "@/lib/members/username";
 
 function endOfCalendarYear(dateStr: string) {
   const y = dateStr.slice(0, 4);
@@ -21,7 +12,7 @@ async function uniqueUsername(
   first: string,
   last: string,
 ) {
-  const base = baseUsername(first, last);
+  const base = slugifyMemberUsername(first, last);
   for (let i = 0; i < 50; i++) {
     const candidate = i === 0 ? base : `${base}${i + 1}`;
     const { data: existing } = await admin

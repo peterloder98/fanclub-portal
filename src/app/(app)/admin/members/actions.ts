@@ -16,6 +16,7 @@ import {
   isAssignedMembershipNumber,
 } from "@/lib/membership/numbers";
 import { normalizeMemberCountryCode } from "@/lib/members/country";
+import { slugifyMemberUsername } from "@/lib/members/username";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 import { ensureOpenMembershipFeePayment } from "@/lib/payments/membership-fee-payment";
 import { deleteMemberCompletely } from "@/lib/membership/delete-member";
@@ -125,13 +126,7 @@ const updateSchema = z.object({
 });
 
 function baseUsername(first: string, last: string) {
-  const slug = `${first}.${last}`
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/\.+/g, ".")
-    .replace(/^\./, "")
-    .replace(/\.$/, "");
-  return slug || "member";
+  return slugifyMemberUsername(first, last);
 }
 
 function addYear(dateStr: string) {

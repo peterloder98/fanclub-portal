@@ -4,6 +4,7 @@ import {
   computeMemberContributionYears,
   formatDueDateDe,
   formatMembershipPaymentReference,
+  membershipLedgerRowCountsAsPaid,
   paymentDeadlineForContributionYear,
 } from "@/lib/club/membership-contribution";
 import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
@@ -111,20 +112,71 @@ export async function runNewYearContributionEmails(
     .eq("channel", "email");
   const alreadySent = new Set((sentRows ?? []).map((r) => r.member_id));
 
+  const { data: paidPaymentRows } = await admin
+    .from("payments")
+    .select("id,user_id,amount_cents,paid_at,created_at")
+    .in("user_id", userIds)
+    .eq("payment_type", "membership_fee")
+    .eq("payment_status", "paid");
+  const paidPaymentIds = new Set((paidPaymentRows ?? []).map((p) => p.id));
+  const paidPaymentsByUser = new Map<
+    string,
+    { amount_cents: number; entry_date: string; payment_id: string }[]
+  >();
+  for (const row of paidPaymentRows ?? []) {
+    if (!row.user_id) continue;
+    const entryDate = (row.paid_at ?? row.created_at ?? "").slice(0, 10);
+    if (!paidPaymentsByUser.has(row.user_id)) paidPaymentsByUser.set(row.user_id, []);
+    paidPaymentsByUser.get(row.user_id)!.push({
+      payment_id: row.id,
+      amount_cents: row.amount_cents ?? 0,
+      entry_date: entryDate,
+    });
+  }
+
   const { data: ledgerRows } = await admin
     .from("club_ledger_entries")
-    .select("member_id,amount_cents,entry_date,bookkeeping_status")
+    .select("member_id,amount_cents,entry_date,bookkeeping_status,payment_id")
     .in("member_id", userIds)
     .eq("entry_type", "income")
     .eq("category", "membership");
 
   const paymentsByMember = new Map<string, { member_id: string; amount_cents: number; entry_date: string }[]>();
+  const countedPaymentIdsByMember = new Map<string, Set<string>>();
   for (const row of ledgerRows ?? []) {
     if (!row.member_id) continue;
-    const status = (row as { bookkeeping_status?: string | null }).bookkeeping_status;
-    if (status === "open" || status === "cancelled") continue;
+    const ledgerRow = row as {
+      member_id: string;
+      amount_cents: number;
+      entry_date: string;
+      bookkeeping_status?: string | null;
+      payment_id?: string | null;
+    };
+    if (!membershipLedgerRowCountsAsPaid(ledgerRow, paidPaymentIds)) continue;
     if (!paymentsByMember.has(row.member_id)) paymentsByMember.set(row.member_id, []);
-    paymentsByMember.get(row.member_id)!.push(row as { member_id: string; amount_cents: number; entry_date: string });
+    paymentsByMember.get(row.member_id)!.push({
+      member_id: row.member_id,
+      amount_cents: row.amount_cents ?? 0,
+      entry_date: row.entry_date,
+    });
+    if (ledgerRow.payment_id) {
+      if (!countedPaymentIdsByMember.has(row.member_id)) {
+        countedPaymentIdsByMember.set(row.member_id, new Set());
+      }
+      countedPaymentIdsByMember.get(row.member_id)!.add(ledgerRow.payment_id);
+    }
+  }
+  for (const [userId, payments] of paidPaymentsByUser) {
+    const counted = countedPaymentIdsByMember.get(userId) ?? new Set<string>();
+    for (const payment of payments) {
+      if (counted.has(payment.payment_id)) continue;
+      if (!paymentsByMember.has(userId)) paymentsByMember.set(userId, []);
+      paymentsByMember.get(userId)!.push({
+        member_id: userId,
+        amount_cents: payment.amount_cents,
+        entry_date: payment.entry_date,
+      });
+    }
   }
 
   let sent = 0;

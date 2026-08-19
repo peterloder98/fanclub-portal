@@ -35,6 +35,19 @@ export type ContributionStatusBrief = {
 
 type MembershipPaymentRow = { member_id: string; amount_cents: number; entry_date: string };
 
+/** Zählt eine Mitgliedsbeitrags-Buchung für den Beitragsstatus (nicht für Kontostand). */
+export function membershipLedgerRowCountsAsPaid(
+  row: { bookkeeping_status?: string | null; payment_id?: string | null },
+  paidPaymentIds: ReadonlySet<string>,
+): boolean {
+  const status = row.bookkeeping_status ?? null;
+  if (status === "cancelled") return false;
+  if (status === "open") {
+    return Boolean(row.payment_id && paidPaymentIds.has(row.payment_id));
+  }
+  return true;
+}
+
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -169,6 +182,56 @@ function paidCentsForCalendarYear(payments: MembershipPaymentRow[], year: number
     .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
 }
 
+type PaidMembershipPaymentRow = {
+  payment_id: string;
+  user_id: string;
+  amount_cents: number;
+  entry_date: string;
+};
+
+async function loadPaidMembershipPaymentsForUsers(
+  admin: ReturnType<typeof createSupabaseAdminClient>,
+  userIds: string[],
+): Promise<{
+  paidPaymentIds: Set<string>;
+  paidPaymentsByUser: Map<string, PaidMembershipPaymentRow[]>;
+}> {
+  const paidPaymentIds = new Set<string>();
+  const paidPaymentsByUser = new Map<string, PaidMembershipPaymentRow[]>();
+  if (!userIds.length) return { paidPaymentIds, paidPaymentsByUser };
+
+  const CHUNK = 200;
+  for (let i = 0; i < userIds.length; i += CHUNK) {
+    const chunk = userIds.slice(i, i + CHUNK);
+    const { data, error } = await admin
+      .from("payments")
+      .select("id,user_id,amount_cents,paid_at,created_at")
+      .in("user_id", chunk)
+      .eq("payment_type", "membership_fee")
+      .eq("payment_status", "paid");
+    if (error) {
+      if (/payments|does not exist/i.test(error.message)) {
+        return { paidPaymentIds, paidPaymentsByUser };
+      }
+      throw new Error(error.message);
+    }
+    for (const row of data ?? []) {
+      if (!row.user_id) continue;
+      paidPaymentIds.add(row.id);
+      const entryDate =
+        (row.paid_at ?? row.created_at ?? "").slice(0, 10) || isoDate(new Date());
+      if (!paidPaymentsByUser.has(row.user_id)) paidPaymentsByUser.set(row.user_id, []);
+      paidPaymentsByUser.get(row.user_id)!.push({
+        payment_id: row.id,
+        user_id: row.user_id,
+        amount_cents: row.amount_cents ?? 0,
+        entry_date: entryDate,
+      });
+    }
+  }
+  return { paidPaymentIds, paidPaymentsByUser };
+}
+
 async function loadMembershipPaymentsForUsers(
   admin: ReturnType<typeof createSupabaseAdminClient>,
   userIds: string[],
@@ -176,12 +239,18 @@ async function loadMembershipPaymentsForUsers(
   const map = new Map<string, MembershipPaymentRow[]>();
   if (!userIds.length) return map;
 
+  const { paidPaymentIds, paidPaymentsByUser } = await loadPaidMembershipPaymentsForUsers(
+    admin,
+    userIds,
+  );
+  const countedPaymentIdsByMember = new Map<string, Set<string>>();
+
   const CHUNK = 200;
   for (let i = 0; i < userIds.length; i += CHUNK) {
     const chunk = userIds.slice(i, i + CHUNK);
     const { data, error } = await admin
       .from("club_ledger_entries")
-      .select("member_id,amount_cents,entry_date,bookkeeping_status")
+      .select("member_id,amount_cents,entry_date,bookkeeping_status,payment_id")
       .in("member_id", chunk)
       .eq("entry_type", "income")
       .eq("category", "membership");
@@ -191,12 +260,43 @@ async function loadMembershipPaymentsForUsers(
     }
     for (const row of data ?? []) {
       if (!row.member_id) continue;
-      const status = (row as { bookkeeping_status?: string | null }).bookkeeping_status;
-      if (status === "open" || status === "cancelled") continue;
+      const ledgerRow = row as MembershipPaymentRow & {
+        bookkeeping_status?: string | null;
+        payment_id?: string | null;
+      };
+      if (
+        !membershipLedgerRowCountsAsPaid(ledgerRow, paidPaymentIds)
+      ) {
+        continue;
+      }
       if (!map.has(row.member_id)) map.set(row.member_id, []);
-      map.get(row.member_id)!.push(row as MembershipPaymentRow);
+      map.get(row.member_id)!.push({
+        member_id: row.member_id,
+        amount_cents: row.amount_cents ?? 0,
+        entry_date: row.entry_date,
+      });
+      if (ledgerRow.payment_id) {
+        if (!countedPaymentIdsByMember.has(row.member_id)) {
+          countedPaymentIdsByMember.set(row.member_id, new Set());
+        }
+        countedPaymentIdsByMember.get(row.member_id)!.add(ledgerRow.payment_id);
+      }
     }
   }
+
+  for (const [userId, payments] of paidPaymentsByUser) {
+    const counted = countedPaymentIdsByMember.get(userId) ?? new Set<string>();
+    for (const payment of payments) {
+      if (counted.has(payment.payment_id)) continue;
+      if (!map.has(userId)) map.set(userId, []);
+      map.get(userId)!.push({
+        member_id: userId,
+        amount_cents: payment.amount_cents,
+        entry_date: payment.entry_date,
+      });
+    }
+  }
+
   return map;
 }
 

@@ -884,6 +884,10 @@ export async function addClubLedgerEntry(input: {
       created_by: user.id,
       receipt_storage_path: input.receiptStoragePath ?? null,
       include_in_accounting: includeInAccountingForCategory(parsed.category),
+      bookkeeping_status:
+        parsed.entryType === "income" && parsed.category === "membership"
+          ? ("paid" as const)
+          : undefined,
     })
     .select("id,entry_number")
     .single();
