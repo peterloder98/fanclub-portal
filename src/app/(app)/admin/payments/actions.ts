@@ -138,20 +138,25 @@ const receiptDateSchema = z
   .trim()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Zahlungseingang-Datum fehlt oder ist ungültig.");
 
+const amountCentsSchema = z.number().int().positive();
+
 const methodSchema = z.enum(["bank_transfer", "paypal", "stripe", "apple_pay", "amazon_pay"]);
 
 export async function confirmPaymentAction(input: {
   paymentId: string;
   receiptDate: string;
+  amountCents: number;
   note?: string;
   receiptReference?: string;
 }) {
   const { user } = await requireAdminAction();
   const receiptDate = parseIsoDateOnly(receiptDateSchema.parse(input.receiptDate));
+  const amountCents = amountCentsSchema.parse(input.amountCents);
   const result = await confirmPaymentManually({
     paymentId: input.paymentId,
     adminUserId: user.id,
     receiptDate,
+    amountCents,
     note: input.note,
     receiptReference: input.receiptReference,
   });
@@ -167,6 +172,8 @@ export async function confirmPaymentAction(input: {
       activated: result.activated,
       assigned_number: result.assignedNumber,
       invite_email_ok: result.inviteEmailOk,
+      amount_cents: result.amountCents,
+      years_covered: result.yearsCovered,
     },
   });
   revalidatePath("/admin/payments");

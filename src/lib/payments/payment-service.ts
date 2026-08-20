@@ -8,6 +8,11 @@ import { prepareBankTransferCheckout } from "@/lib/payments/bank-transfer-servic
 import { prepareWalletCheckout } from "@/lib/payments/wallet-service";
 import { nextInternalReference } from "@/lib/payments/reference";
 import { listEnabledPaymentMethods } from "@/lib/payments/config";
+import {
+  membershipEndDateAfterYearsPaid,
+  resolveAnnualFeeCents,
+  yearsCoveredByFeePayment,
+} from "@/lib/payments/membership-fee-coverage";
 import type {
   PaymentCheckoutResult,
   PaymentMethod,
@@ -131,10 +136,42 @@ export async function createPaymentWithAccounting(input: {
   };
 }
 
+async function applyMembershipFeeCoverage(
+  admin: SupabaseClient,
+  input: {
+    userId: string;
+    amountCents: number;
+    receiptDate: string;
+  },
+) {
+  const { data: membership } = await admin
+    .from("memberships")
+    .select("id,start_date,fee_cents,status")
+    .eq("user_id", input.userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!membership?.id) return;
+
+  const annualFeeCents = resolveAnnualFeeCents(membership.fee_cents, input.amountCents);
+  const yearsPaid = yearsCoveredByFeePayment(input.amountCents, annualFeeCents);
+  const startDate =
+    membership.start_date?.trim() || input.receiptDate.slice(0, 10);
+  const patch: { fee_cents: number; end_date?: string } = {
+    fee_cents: annualFeeCents,
+  };
+  if (yearsPaid >= 2) {
+    patch.end_date = membershipEndDateAfterYearsPaid(startDate, yearsPaid);
+  }
+  const { error } = await admin.from("memberships").update(patch).eq("id", membership.id);
+  if (error) throw new Error(error.message);
+}
+
 export async function confirmPaymentManually(input: {
   paymentId: string;
   adminUserId: string;
   receiptDate: string;
+  amountCents?: number;
   note?: string;
   receiptReference?: string;
 }) {
@@ -163,6 +200,8 @@ export async function confirmPaymentManually(input: {
             assignedNumber: admission.assignedNumber ?? null,
             inviteEmailOk: admission.inviteEmailOk ?? null,
             admissionError: null as string | null,
+            amountCents: payment.amount_cents as number,
+            yearsCovered: null as number | null,
           };
         }
       } catch (e) {
@@ -174,10 +213,20 @@ export async function confirmPaymentManually(input: {
           inviteEmailOk: null,
           admissionError:
             e instanceof Error ? e.message : "Aufnahme als Mitglied ist fehlgeschlagen.",
+          amountCents: payment.amount_cents as number,
+          yearsCovered: null as number | null,
         };
       }
     }
     throw new Error("Zahlung ist bereits als bezahlt markiert.");
+  }
+
+  const amountCents =
+    typeof input.amountCents === "number" && Number.isFinite(input.amountCents)
+      ? Math.round(input.amountCents)
+      : (payment.amount_cents as number);
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    throw new Error("Betrag muss größer als 0 sein.");
   }
 
   const now = new Date().toISOString();
@@ -185,6 +234,7 @@ export async function confirmPaymentManually(input: {
   const { error: upErr } = await admin
     .from("payments")
     .update({
+      amount_cents: amountCents,
       payment_status: "paid",
       paid_at: paidAt,
       manually_confirmed_by: input.adminUserId,
@@ -200,9 +250,28 @@ export async function confirmPaymentManually(input: {
     paymentId: input.paymentId,
     confirmedBy: input.adminUserId,
     entryDate: receiptDate,
+    amountCents,
   });
 
+  let yearsCovered: number | null = null;
   if (payment.payment_type === "membership_fee") {
+    const { data: membershipForFee } = await admin
+      .from("memberships")
+      .select("fee_cents")
+      .eq("user_id", payment.user_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const annualFeeCents = resolveAnnualFeeCents(
+      membershipForFee?.fee_cents,
+      amountCents,
+    );
+    yearsCovered = yearsCoveredByFeePayment(amountCents, annualFeeCents);
+    await applyMembershipFeeCoverage(admin, {
+      userId: payment.user_id,
+      amountCents,
+      receiptDate,
+    });
     await syncMemberContributionDate(admin, payment.user_id);
     try {
       const admission = await activatePendingMembershipAfterFeePaid(admin, {
@@ -224,6 +293,8 @@ export async function confirmPaymentManually(input: {
         assignedNumber: admission.assignedNumber ?? null,
         inviteEmailOk: admission.inviteEmailOk ?? null,
         admissionError: null as string | null,
+        amountCents,
+        yearsCovered,
       };
     } catch (e) {
       console.error("[payments] Automatische Aufnahme nach Zahlung fehlgeschlagen:", e);
@@ -242,6 +313,8 @@ export async function confirmPaymentManually(input: {
         inviteEmailOk: null,
         admissionError:
           e instanceof Error ? e.message : "Aufnahme als Mitglied ist fehlgeschlagen.",
+        amountCents,
+        yearsCovered,
       };
     }
   }
@@ -255,7 +328,15 @@ export async function confirmPaymentManually(input: {
     changedBy: input.adminUserId,
   });
 
-  return { ok: true as const, activated: false, assignedNumber: null, inviteEmailOk: null, admissionError: null };
+  return {
+    ok: true as const,
+    activated: false,
+    assignedNumber: null,
+    inviteEmailOk: null,
+    admissionError: null,
+    amountCents,
+    yearsCovered: null,
+  };
 }
 
 export async function cancelPaymentManually(input: {

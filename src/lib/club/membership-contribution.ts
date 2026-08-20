@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
+import { resolveAnnualFeeCents } from "@/lib/payments/membership-fee-coverage";
 
 export type ContributionStatus = "paid" | "open" | "overdue";
 
@@ -182,6 +183,52 @@ function paidCentsForCalendarYear(payments: MembershipPaymentRow[], year: number
     .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
 }
 
+/**
+ * Verteilt Beitragszahlungen chronologisch auf Kalenderjahre (FIFO):
+ * Überzahlung in einem Jahr deckt das nächste (z. B. 30 € → 2026 + 2027).
+ */
+export function allocatePaymentsAcrossYears(
+  payments: MembershipPaymentRow[],
+  years: number[],
+  feeCents: number,
+): Map<number, number> {
+  const paidByYear = new Map<number, number>();
+  for (const y of years) paidByYear.set(y, 0);
+  if (!years.length || feeCents <= 0) return paidByYear;
+
+  const sorted = [...payments].sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+  for (const payment of sorted) {
+    let remaining = Math.max(0, payment.amount_cents ?? 0);
+    for (const year of years) {
+      if (remaining <= 0) break;
+      const current = paidByYear.get(year) ?? 0;
+      const need = Math.max(0, feeCents - current);
+      if (need <= 0) continue;
+      const take = Math.min(need, remaining);
+      paidByYear.set(year, current + take);
+      remaining -= take;
+    }
+  }
+  return paidByYear;
+}
+
+function yearsNeededForPrepaidCoverage(
+  membershipStart: string,
+  payments: MembershipPaymentRow[],
+  feeCents: number,
+  baseYears: number[],
+): number[] {
+  if (feeCents <= 0) return baseYears;
+  const joinYear = parseInt(membershipStart.slice(0, 4), 10);
+  if (Number.isNaN(joinYear)) return baseYears;
+  const totalPaid = payments.reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+  const covered = Math.floor(totalPaid / feeCents);
+  if (covered <= 0) return baseYears;
+  const years = new Set(baseYears);
+  for (let i = 0; i < covered; i++) years.add(joinYear + i);
+  return [...years].sort((a, b) => a - b);
+}
+
 type PaidMembershipPaymentRow = {
   payment_id: string;
   user_id: string;
@@ -312,9 +359,13 @@ export function computeYearContribution(
   year: number,
   payments: MembershipPaymentRow[],
   ref = new Date(),
+  paidCentsOverride?: number,
 ): MemberContributionInfo {
   const period = calendarYearPeriod(year);
-  const paidCents = paidCentsForCalendarYear(payments, year);
+  const paidCents =
+    typeof paidCentsOverride === "number"
+      ? paidCentsOverride
+      : paidCentsForCalendarYear(payments, year);
   const openCents = Math.max(0, feeCents - paidCents);
   const dueDate = dueDateForContributionYear(year, membershipStart);
   const status = deriveContributionStatus(feeCents, paidCents, dueDate, ref);
@@ -377,13 +428,23 @@ export function computeMemberContributionYears(
   ref = new Date(),
   includeNextYear = false,
 ): MemberContributionInfo[] {
-  const years = contributionYearsForMember(membershipStart, ref);
+  let years = contributionYearsForMember(membershipStart, ref);
   if (includeNextYear) {
     const next = ref.getFullYear() + 1;
-    if (!years.includes(next)) years.push(next);
+    if (!years.includes(next)) years = [...years, next];
   }
+  years = yearsNeededForPrepaidCoverage(membershipStart, payments, feeCents, years);
+  const paidByYear = allocatePaymentsAcrossYears(payments, years, feeCents);
   return years.map((year) =>
-    computeYearContribution(profile, membershipStart, feeCents, year, payments, ref),
+    computeYearContribution(
+      profile,
+      membershipStart,
+      feeCents,
+      year,
+      payments,
+      ref,
+      paidByYear.get(year) ?? 0,
+    ),
   );
 }
 
@@ -437,10 +498,12 @@ export async function getMemberContributionYears(
   const startDate = membership.start_date?.trim() || isoDate(new Date());
   const paymentsByMember = await loadMembershipPaymentsForUsers(admin, [userId]);
   const payments = paymentsByMember.get(userId) ?? [];
+  const totalPaid = payments.reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+  const feeCents = resolveAnnualFeeCents(membership.fee_cents, totalPaid || membership.fee_cents || 1500);
   return computeMemberContributionYears(
     profile,
     startDate,
-    membership.fee_cents ?? 1500,
+    feeCents,
     payments,
     new Date(),
     options?.includeNextYear,
@@ -485,12 +548,15 @@ export async function batchMemberContributionStatus(
     const startDate = m.start_date?.trim() || isoDate(now);
     const profile = profileById.get(m.user_id);
     if (!profile) continue;
+    const payments = paymentsByMember.get(m.user_id) ?? [];
+    const totalPaid = payments.reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+    const feeCents = resolveAnnualFeeCents(m.fee_cents, totalPaid || m.fee_cents || 1500);
     map.set(
       m.user_id,
       computeContributionFromPayments(
         m.user_id,
         startDate,
-        m.fee_cents ?? 1500,
+        feeCents,
         paymentsByMember,
         profile,
         now,
@@ -526,8 +592,9 @@ export async function listOpenContributions(): Promise<MemberContributionInfo[]>
   for (const m of memberships ?? []) {
     const p = profileById.get(m.user_id);
     if (!p || !m.start_date) continue;
-    const feeCents = m.fee_cents ?? 1500;
     const payments = paymentsByMember.get(m.user_id) ?? [];
+    const totalPaid = payments.reduce((s, pmt) => s + (pmt.amount_cents ?? 0), 0);
+    const feeCents = resolveAnnualFeeCents(m.fee_cents, totalPaid || m.fee_cents || 1500);
     const years = computeMemberContributionYears(p, m.start_date, feeCents, payments, now);
     for (const y of years) {
       if (y.status !== "paid") results.push(y);

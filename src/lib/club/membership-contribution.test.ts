@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  allocatePaymentsAcrossYears,
   buildOpenContributionsBlock,
+  computeMemberContributionYears,
   computeYearContribution,
   contributionYearsForMember,
   deriveContributionStatus,
@@ -102,10 +104,25 @@ describe("calendar year contributions", () => {
     ).toBe(false);
   });
 
-  it("builds open contributions block", () => {
-    const y2026 = computeYearContribution(profile, "2026-11-01", 1500, 2026, [], new Date("2026-12-27"));
-    const block = buildOpenContributionsBlock([y2026]);
-    expect(block).toContain("2026");
-    expect(block).toContain("Mitgliedsbeitrag / Sabine Müller");
+  it("allocates a double fee across two calendar years", () => {
+    const paid = allocatePaymentsAcrossYears(
+      [{ member_id: "u1", amount_cents: 3000, entry_date: "2026-08-18" }],
+      [2026, 2027],
+      1500,
+    );
+    expect(paid.get(2026)).toBe(1500);
+    expect(paid.get(2027)).toBe(1500);
+  });
+
+  it("marks both years paid when 30 € was transferred for a 2026 join", () => {
+    const years = computeMemberContributionYears(
+      profile,
+      "2026-08-16",
+      1500,
+      [{ member_id: "u1", amount_cents: 3000, entry_date: "2026-08-18" }],
+      new Date("2026-08-20T12:00:00"),
+    );
+    expect(years.map((y) => y.calendarYear)).toEqual([2026, 2027]);
+    expect(years.every((y) => y.status === "paid")).toBe(true);
   });
 });

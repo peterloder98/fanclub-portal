@@ -49,16 +49,27 @@ export async function confirmAccountingEntry(input: {
   paymentId: string;
   confirmedBy: string;
   entryDate: string;
+  amountCents?: number;
 }) {
-  const { admin, paymentId, confirmedBy, entryDate } = input;
+  const { admin, paymentId, confirmedBy, entryDate, amountCents } = input;
+  const patch: {
+    bookkeeping_status: BookkeepingStatus;
+    entry_date: string;
+    created_by: string;
+    include_in_accounting: boolean;
+    amount_cents?: number;
+  } = {
+    bookkeeping_status: "paid",
+    entry_date: entryDate,
+    created_by: confirmedBy,
+    include_in_accounting: true,
+  };
+  if (typeof amountCents === "number" && amountCents > 0) {
+    patch.amount_cents = amountCents;
+  }
   const { error } = await admin
     .from("club_ledger_entries")
-    .update({
-      bookkeeping_status: "paid" satisfies BookkeepingStatus,
-      entry_date: entryDate,
-      created_by: confirmedBy,
-      include_in_accounting: true,
-    })
+    .update(patch)
     .eq("payment_id", paymentId)
     .or("bookkeeping_status.is.null,bookkeeping_status.eq.open,bookkeeping_status.eq.paid");
 

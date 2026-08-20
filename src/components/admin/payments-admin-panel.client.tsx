@@ -24,6 +24,18 @@ const FILTERS: Array<{ id: PaymentStatus | "all"; label: string }> = [
   { id: "cancelled", label: "Storniert" },
 ];
 
+function centsToEurInput(cents: number) {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+
+function parseEurToCents(raw: string): number | null {
+  const normalized = raw.trim().replace(/\s/g, "").replace(",", ".");
+  if (!normalized) return null;
+  const value = Number(normalized);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return Math.round(value * 100);
+}
+
 export function PaymentsAdminPanel({
   initialPayments,
   highlightPaymentId = null,
@@ -39,6 +51,7 @@ export function PaymentsAdminPanel({
   const [note, setNote] = useState("");
   const [receiptRef, setReceiptRef] = useState("");
   const [receiptDate, setReceiptDate] = useState("");
+  const [amountEur, setAmountEur] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -59,6 +72,7 @@ export function PaymentsAdminPanel({
     setNote(row.admin_note ?? "");
     setReceiptRef(row.receipt_reference ?? "");
     setReceiptDate("");
+    setAmountEur(centsToEurInput(row.amount_cents));
   }, [highlightPaymentId, payments]);
 
   const receiptAffectsBalance = useMemo(() => {
@@ -86,6 +100,7 @@ export function PaymentsAdminPanel({
     setNote(p.admin_note ?? "");
     setReceiptRef(p.receipt_reference ?? "");
     setReceiptDate("");
+    setAmountEur(centsToEurInput(p.amount_cents));
     setSuccess(null);
   }
 
@@ -95,22 +110,34 @@ export function PaymentsAdminPanel({
       setError("Bitte Zahlungseingang am eintragen.");
       return;
     }
+    const amountCents = parseEurToCents(amountEur);
+    if (amountCents == null) {
+      setError("Bitte den tatsächlichen Betrag in Euro eintragen.");
+      return;
+    }
     const confirmed = selected;
     startTransition(async () => {
       try {
         const result = await confirmPaymentAction({
           paymentId: confirmed.id,
           receiptDate: receiptDate.trim(),
+          amountCents,
           note,
           receiptReference: receiptRef,
         });
         reload();
         setSelectedId(null);
         setReceiptDate("");
+        setAmountEur("");
         setError(null);
+        const amountLabel = formatEur(result.amountCents ?? amountCents);
+        const yearsHint =
+          result.yearsCovered && result.yearsCovered >= 2
+            ? ` (${result.yearsCovered} Jahre Beitrag)`
+            : "";
         if (result.admissionError) {
           setSuccess(
-            `${formatEur(confirmed.amount_cents)} als bezahlt markiert. Aufnahme als Mitglied fehlgeschlagen: ${result.admissionError}`,
+            `${amountLabel} als bezahlt markiert${yearsHint}. Aufnahme als Mitglied fehlgeschlagen: ${result.admissionError}`,
           );
         } else if (result.activated) {
           const nr = result.assignedNumber ? ` Mitgliedsnummer ${result.assignedNumber}.` : "";
@@ -121,11 +148,11 @@ export function PaymentsAdminPanel({
                 ? " Willkommens-E-Mail mit App-Zugang ist raus."
                 : "";
           setSuccess(
-            `${formatEur(confirmed.amount_cents)} bestätigt — Mitglied aufgenommen.${nr}${mail}`,
+            `${amountLabel} bestätigt${yearsHint} — Mitglied aufgenommen.${nr}${mail}`,
           );
         } else {
           setSuccess(
-            `${formatEur(confirmed.amount_cents)} als bezahlt markiert (${confirmed.payment_method_label}, ${confirmed.payment_type_label}).`,
+            `${amountLabel} als bezahlt markiert${yearsHint} (${confirmed.payment_method_label}, ${confirmed.payment_type_label}).`,
           );
         }
       } catch (e) {
@@ -289,7 +316,7 @@ export function PaymentsAdminPanel({
                   </div>
                 ) : null}
                 <div>
-                  <dt className="text-xs text-slate-500">Betrag</dt>
+                  <dt className="text-xs text-slate-500">Betrag (Vorschlag)</dt>
                   <dd className="font-semibold">{formatEur(selected.amount_cents)}</dd>
                 </div>
                 <div>
@@ -331,6 +358,27 @@ export function PaymentsAdminPanel({
                   rows={2}
                   className="rounded-lg border px-2 py-1.5 text-sm"
                 />
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-slate-600">
+                  Betrag (€) <span className="text-rose-600">*</span>
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  value={amountEur}
+                  onChange={(e) => {
+                    setAmountEur(e.target.value);
+                    setError(null);
+                  }}
+                  placeholder="15,00"
+                  className="h-9 rounded-lg border px-2 text-sm"
+                />
+                <span className="text-[11px] text-slate-500">
+                  Tatsächlich eingegangener Betrag laut Kontoauszug. Bei 30 € (zwei Jahresbeiträge)
+                  werden beide Jahre als bezahlt geführt.
+                </span>
               </label>
               <label className="grid gap-1">
                 <span className="text-xs font-medium text-slate-600">
@@ -383,7 +431,7 @@ export function PaymentsAdminPanel({
                 {selected.payment_status !== "paid" && selected.payment_status !== "cancelled" ? (
                   <button
                     type="button"
-                    disabled={pending || !receiptDate.trim()}
+                    disabled={pending || !receiptDate.trim() || !amountEur.trim()}
                     onClick={confirm}
                     className="inline-flex h-9 items-center gap-1 rounded-lg bg-emerald-600 px-3 text-xs font-bold text-white"
                   >

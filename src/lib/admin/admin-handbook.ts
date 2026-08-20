@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-19";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-20";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -109,7 +109,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Offenen Antrag antippen und Daten sowie Unterschrift prüfen.",
               "Mit dem Antrag wird automatisch eine offene Zahlung per Banküberweisung angelegt. Der Beitrag (15 € für das laufende Kalenderjahr) muss auf dem Vereinskonto eingegangen sein. Antragsteller/innen sehen als Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ (z. B. Mitgliedsbeitrag / Franz Müller). Intern bleibt zusätzlich die Buchungsnummer MITGLIED-… für den Abgleich.",
               "Die Bestätigungs-E-Mail enthält Betrag, Empfänger, IBAN, BIC und denselben namensbasierten Verwendungszweck zum Abtippen.",
-              "Unter Admin → Zahlungen den Eingang als bezahlt bestätigen. Für neu beantragte Mitglieder passiert dann automatisch: Status wird aktiv, die nächste freie Mitgliedsnummer wird vergeben, und die Willkommens-E-Mail mit App-Zugang geht raus. Den manuellen Begrüßungspost (Brief/Post) vermerkt ihr im Mitgliedsdatensatz unter „Begrüßungspost“ mit Datum — oder lasst ihn auf „Offen“.",
+              "Unter Admin → Zahlungen den Eingang als bezahlt bestätigen: Pflichtfelder sind der tatsächlich eingegangene Betrag und „Zahlungseingang am“ mit dem Datum vom Kontoauszug. Für neu beantragte Mitglieder passiert dann automatisch: Status wird aktiv, die nächste freie Mitgliedsnummer wird vergeben, und die Willkommens-E-Mail mit App-Zugang geht raus. Den manuellen Begrüßungspost (Brief/Post) vermerkt ihr im Mitgliedsdatensatz unter „Begrüßungspost“ mit Datum — oder lasst ihn auf „Offen“.",
               "Fehlt bei einem bestehenden Mitglied die Login-E-Mail (z. B. nach Import): Mitglied öffnen → „Bearbeiten“ → bei E-Mail „Ändern“ (mit Bestätigung) → Adresse eintragen und speichern. Die Adresse muss eindeutig sein und ist zugleich der Login.",
               "Wird eine bereits vorhandene Login-E-Mail später geändert, erhält das Mitglied automatisch eine Info-Mail an die neue und die bisherige Adresse: neue Login-Adresse, Passwort bleibt gleich.",
               "Jemand kommt ohne digitalen Antrag (z. B. per Zettel, Mail oder WhatsApp): unter Mitglieder „+ Person manuell anlegen“. Beitrittsdatum leer lassen und Status „Mitgliedschaft beantragt“ — die Person ist dann noch kein Mitglied. Nach dem Speichern öffnet sich die Mail „Antrag eingegangen / bitte zahlen“ (Betreff und Text editierbar, Versand optional). Inhalt: Antragseingang, Betrag, IBAN und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ — derselbe wie beim Online-Antrag. Kein App-Zugangslink in dieser Mail. Unter Zahlungen erscheint eine offene Überweisung. Sobald ihr den Eingang bestätigt, wird die Person automatisch aufgenommen (aktive Mitgliedschaft + nächste Mitgliedsnummer). Schlägt das Speichern beim Anlegen fehl, bleibt ihr angemeldet und seht die Fehlermeldung direkt am Formular (z. B. E-Mail schon vergeben).",
@@ -118,7 +118,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Zahlungsbestätigung unter Admin → Zahlungen nimmt neu beantragte Mitglieder automatisch auf (aktiv + nächste Mitgliedsnummer). War der Beitrag schon bestätigt, bevor die Aufnahme gelaufen ist, am Mitglied „Jetzt aufnehmen“ tippen. Am Antrag bleibt „Mitgliedschaft aktiv freischalten“ als weitere Reserve. Wichtig: Den Beitrag nicht zusätzlich in der Historie als „Beitrag eingegangen“ oder manuell in der Buchhaltung buchen — sonst entstehen Doppelbuchungen. Bestätigen reicht.",
+            text: "Zahlungsbestätigung nur unter Admin → Zahlungen: Betrag und Datum vom Kontoauszug eintragen und bestätigen. Das nimmt neu beantragte Mitglieder automatisch auf (aktiv + nächste Mitgliedsnummer). War der Beitrag schon bestätigt, bevor die Aufnahme gelaufen ist, am Mitglied „Jetzt aufnehmen“ tippen. Am Antrag bleibt „Mitgliedschaft aktiv freischalten“ als weitere Reserve. Wichtig: Den Beitrag nicht zusätzlich in der Historie als „Beitrag eingegangen“ und nicht manuell in der Buchhaltung buchen — sonst entstehen Doppelbuchungen. Bestätigen unter Zahlungen reicht.",
           },
           {
             type: "link",
@@ -153,7 +153,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Mitglied oder offenen Antrag in der Liste öffnen (auch ohne Beitrittsdatum, Status „Mitgliedschaft beantragt“).",
               "Unter den Beiträgen seht ihr offene Jahre (überfällig = 14 Tage nach Fälligkeit).",
               "„Zahlungserinnerung senden“ (bei bestehenden Mitgliedern) bzw. „Zahlungsinfo senden“ (bei Status „Mitgliedschaft beantragt“): Mail mit Betrag, Kontodaten und Verwendungszweck „Mitgliedsbeitrag / Vorname Nachname“ (z. B. Mitgliedsbeitrag / Max Mustermann). Bei Papier-/Manuell-Anträgen lautet die Vorlage „Antrag eingegangen“ plus Zahlungsaufforderung — Betreff und Text sind vor dem Versand editierbar; Schließen ohne Senden ist möglich. Die interne Buchungsnummer MITGLIED-… ist nur für den Abgleich unter Zahlungen gedacht und steht nicht als Verwendungszweck in der Mail.",
-              "Wenn das Geld da ist: unter Zahlungen die Überweisung bestätigen. Dabei das Feld „Zahlungseingang am“ mit dem tatsächlichen Datum des Geldeingangs auf dem Vereinskonto ausfüllen (Pflichtfeld — nicht einfach das heutige Datum). Der Beitrag gilt in der Mitgliederverwaltung als bezahlt und erhöht den Kontostand in der Buchhaltung, wenn der Zahlungseingang ab dem Buchhaltungs-Start liegt. Nicht zusätzlich in der Historie oder Buchhaltung manuell buchen.",
+              "Wenn das Geld da ist: immer nur unter Admin → Zahlungen bestätigen — nicht in der Mitglieder-Historie und nicht manuell in der Buchhaltung. Pflichtfelder: „Betrag (€)“ mit dem tatsächlich eingegangenen Betrag und „Zahlungseingang am“ mit dem Datum vom Kontoauszug (nicht einfach das heutige Datum). Der Standardvorschlag ist 15 €; bei Überweisung von 30 € (zwei Jahresbeiträge) den Betrag auf 30,00 ändern — dann gelten zwei Kalenderjahre als bezahlt und die Mitgliedschaft wird entsprechend verlängert.",
               "Liegt der Zahlungseingang vor dem Buchhaltungs-Start und der Betrag steckt schon im Anfangsbestand: trotzdem unter Zahlungen bestätigen (Mitgliedschaft aktivieren) und als Buchungsdatum den tatsächlichen Eingang eintragen — der Kontostand steigt dann nicht noch einmal. Wer erst jetzt zahlt (Eingang ab Buchhaltungs-Start), erhöht den Kontostand normal.",
               "Solange eine Zahlung noch nicht bestätigt ist, steht bei der Person „Beitrag offen“ — auch wenn schon eine gelbe Vor-Buchung in der Historie sichtbar ist. Erst nach Bestätigung unter Zahlungen zählt der Beitrag als bezahlt (grüne Buchung).",
             ],
@@ -166,10 +166,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Admin → Buchhaltung öffnen.",
-              "Unter „Buchhaltungs-Start“ das Datum eintragen, ab dem ihr die Kasse in der App führt, und den Kontostand eures Vereinskontos an diesem Tag.",
+              "Unter „Buchhaltungs-Start“ das Datum eintragen, ab dem ihr die Kasse in der App führt.",
+              "Als Anfangsbestand den Kontostand eures Vereinskontos an genau diesem Startdatum eintragen — ohne Buchungen ab dem Startdatum (die kommen danach über die App).",
               "Alles vor diesem Datum bucht ihr nicht einzeln nach — der Anfangsbestand ersetzt die Historie.",
-              "Ab dem Startdatum zählen bestätigte Einnahmen und Ausgaben mit, auch Mitgliedsbeiträge. Offene (noch nicht bestätigte) Zahlungen erscheinen nicht im Kontostand. Steht der Bankstand schon inklusive dieser Beiträge, den Anfangsbestand so lassen — sonst würde derselbe Betrag doppelt zählen.",
-              "Weitere Einnahmen und Ausgaben (Events, Merch-Einkauf, Allgemeines) ab Startdatum normal erfassen.",
+              "Ab dem Startdatum zählen bestätigte Einnahmen und Ausgaben mit, auch Mitgliedsbeiträge (nur nach Bestätigung unter Zahlungen). Offene (noch nicht bestätigte) Zahlungen erscheinen nicht im Kontostand.",
+              "Weitere Einnahmen und Ausgaben (Events, Merch-Einkauf, Allgemeines) ab Startdatum normal erfassen. Mitgliedsbeiträge nie doppelt hier oder in der Historie nachbuchen.",
             ],
           },
           {
