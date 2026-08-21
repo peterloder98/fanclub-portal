@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runEventParticipationReminders } from "@/lib/notifications/event-reminders";
+import { runLiveSessionCleanup } from "@/lib/live/cleanup";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ export async function GET(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const result = await runEventParticipationReminders(admin);
-  return NextResponse.json({ ok: true, ...result });
+  const [result, cleanup] = await Promise.all([
+    runEventParticipationReminders(admin),
+    runLiveSessionCleanup(admin),
+  ]);
+  return NextResponse.json({ ok: true, ...result, liveCleanup: cleanup });
 }

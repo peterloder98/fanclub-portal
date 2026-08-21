@@ -5,7 +5,8 @@ import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-/** Alle 5 Min.: abgelaufene Lives → Grace, Grace vorbei → löschen (+ LiveKit-Raum). */
+/** Täglich 04:20 (+ Piggyback in anderen Tages-Crons): Grace starten / löschen (+ LiveKit-Raum).
+ *  Hinweis: Vercel Hobby erlaubt keine Minuten-Crons — Live-Ende/Grace laufen zusätzlich on-request und per Member-Polling. */
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

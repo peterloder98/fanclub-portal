@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { runClubMeetingReminders } from "@/lib/notifications/meeting-reminders";
+import { runLiveSessionCleanup } from "@/lib/live/cleanup";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,9 @@ export async function GET(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const result = await runClubMeetingReminders(admin);
-  return NextResponse.json({ ok: true, ...result });
+  const [result, cleanup] = await Promise.all([
+    runClubMeetingReminders(admin),
+    runLiveSessionCleanup(admin),
+  ]);
+  return NextResponse.json({ ok: true, ...result, liveCleanup: cleanup });
 }
