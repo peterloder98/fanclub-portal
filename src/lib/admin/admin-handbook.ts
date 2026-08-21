@@ -1070,7 +1070,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Jeden Morgen prüft die App automatisch, wer Geburtstag hat (aktive Mitglieder mit hinterlegtem Geburtsdatum). Für jede Person erscheint ein Glückwunsch-Beitrag im Feed (Dashboard) — für alle Mitglieder sichtbar und kommentierbar, mit Fanclub-Absender. Das Geburtstagskind erhält zusätzlich eine In-App-Benachrichtigung.",
+            text: "Jeden Morgen prüft die App automatisch, wer Geburtstag hat (aktive Mitglieder mit hinterlegtem Geburtsdatum, Kalendertag Europe/Berlin). Für jede Person erscheint ein Glückwunsch-Beitrag im Feed (Dashboard) — für alle Mitglieder sichtbar und kommentierbar, mit Fanclub-Absender. Das Geburtstagskind erhält zusätzlich eine In-App-Benachrichtigung.",
           },
           {
             type: "ol",
@@ -1081,6 +1081,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Platzhalter nutzen, z. B. {{first_name}}, {{salutation}}, {{mention}} — die Vorschau zeigt ein Beispiel.",
               "Nur aktive Vorlagen kommen zum Zug; bei mehreren aktiven wählt die App abwechselnd.",
             ],
+          },
+          {
+            type: "note",
+            text: "Automatik läuft mehrfach am Tag absichtlich redundant (ca. 09:00 und 13:00 Berlin im Sommer, plus ein Backup mit den Treffen-Erinnerungen). Fehlt ein Beitrag trotzdem, könnt ihr unter Admin nichts „starten“ müssen — meldet es der Technik. Doppelte Posts verhindert die App: pro Person und Tag gibt es höchstens einen Geburtstags-Beitrag.",
           },
           {
             type: "note",

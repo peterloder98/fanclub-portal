@@ -156,12 +156,14 @@ export function BirthdayTemplatesPanel() {
         </CardHeader>
         <CardContent className="space-y-1 text-sm text-slate-700">
           <p>
-            Täglich um <strong>08:00 (Berlin)</strong> wird pro Geburtstagskind ein Post erstellt.
-            Die Vorlage wird per Hash aus Mitglied-ID und Datum gewählt — gleiches Kind, gleicher Tag =
-            immer dieselbe Vorlage. Alle Mitglieder sehen den Beitrag im Feed und dürfen kommentieren.
+            Täglich (Kalendertag <strong>Europe/Berlin</strong>) wird pro Geburtstagskind ein Post
+            erstellt — primär morgens, mit zweitem Lauf mittags und einem Backup über einen anderen
+            Tages-Cron. Die Prüfung ist idempotent: kein Doppel-Post.
           </p>
           <p>
-            Angeheftet bis <strong>23:59</strong>. Cron:{" "}
+            Die Vorlage wird per Hash aus Mitglied-ID und Datum gewählt — gleiches Kind, gleicher Tag =
+            immer dieselbe Vorlage. Alle Mitglieder sehen den Beitrag im Feed und dürfen kommentieren.
+            Angeheftet bis <strong>23:59</strong>. Endpoint:{" "}
             <code className="rounded bg-slate-100 px-1 text-xs">/api/cron/birthday-posts</code>
           </p>
         </CardContent>
