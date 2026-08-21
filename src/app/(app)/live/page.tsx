@@ -1,17 +1,21 @@
-import Link from "next/link";
 import { Topbar } from "@/components/app-shell/topbar";
+import { LiveMemberSessionView } from "@/components/live/live-member-session-view";
+import { LiveSessionListCard } from "@/components/live/live-session-list-card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isSessionDiscoverable, type LiveSessionRow } from "@/lib/live/types";
 import {
-  canMembersJoinSession,
-  isInLiveGracePeriod,
-  isSessionDiscoverable,
-  type LiveSessionRow,
-} from "@/lib/live/types";
-import { deleteGraceExpiredLiveSessions, endExpiredLiveSessions } from "@/lib/live/cleanup";
-import { formatBerlinDateTime } from "@/lib/datetime/berlin";
+  deleteGraceExpiredLiveSessions,
+  endExpiredLiveSessions,
+  syncLiveSessionLifecycle,
+  LIVE_SESSION_SELECT,
+} from "@/lib/live/cleanup";
+import { loadLiveMemberRsvp } from "@/lib/live/load-member-rsvp";
 
 export const dynamic = "force-dynamic";
+
+const SESSION_COLS =
+  "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at";
 
 export default async function LiveIndexPage() {
   const admin = createSupabaseAdminClient();
@@ -19,13 +23,14 @@ export default async function LiveIndexPage() {
   await deleteGraceExpiredLiveSessions(admin);
 
   const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const now = new Date().toISOString();
 
   let { data, error } = await supabase
     .from("live_sessions")
-    .select(
-      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at",
-    )
+    .select(SESSION_COLS)
     .or(
       `and(status.in.(scheduled,live),ends_at.gte.${now}),and(status.eq.ended,grace_ends_at.gt.${now})`,
     )
@@ -50,62 +55,78 @@ export default async function LiveIndexPage() {
     console.error("[live] index", error.message);
   }
 
-  const sessions = ((data ?? []) as LiveSessionRow[]).filter((s) => isSessionDiscoverable(s));
+  let sessions = ((data ?? []) as LiveSessionRow[]).filter((s) => isSessionDiscoverable(s));
+
+  // Nächste Session: Lifecycle sync (Grace/Ende), ggf. aus der Liste nehmen
+  if (sessions.length > 0) {
+    const primary = sessions[0]!;
+    const phase = await syncLiveSessionLifecycle(admin, primary);
+    if (phase === "gone") {
+      sessions = sessions.filter((s) => s.id !== primary.id);
+    } else {
+      const refreshed = await admin
+        .from("live_sessions")
+        .select(LIVE_SESSION_SELECT)
+        .eq("id", primary.id)
+        .maybeSingle();
+      if (refreshed.data) {
+        sessions = [
+          refreshed.data as LiveSessionRow,
+          ...sessions.filter((s) => s.id !== primary.id),
+        ];
+      }
+    }
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="min-h-screen">
+        <Topbar title="Live" subtitle="Live-Sessions mit Anni" />
+        <main className="mx-auto max-w-2xl px-4 py-6 lg:px-8">
+          <div className="rounded-2xl border border-fc-navy/15 bg-white px-5 py-7 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
+              Live mit Anni
+            </p>
+            <p className="mt-2 text-lg font-semibold text-fc-navy">Aktuell kein Termin</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+              Gerade steht noch kein neuer Live-Chat-Termin fest. Sobald es soweit ist, siehst du
+              hier die Einladung mit Datum, Countdown und Raum — und wir informieren die Mitglieder
+              per E-Mail.
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const [featured, ...others] = sessions;
+  const rsvpStatus =
+    user && featured ? await loadLiveMemberRsvp(supabase, featured, user.id) : null;
 
   return (
     <div className="min-h-screen">
-      <Topbar title="Live" subtitle="Live-Sessions mit Anni" />
-      <main className="mx-auto max-w-2xl px-4 py-6 lg:px-8">
-        {sessions.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-700 shadow-sm">
-            <p className="font-medium text-fc-navy">Aktuell kein Termin</p>
-            <p className="mt-2 leading-relaxed">
-              Aktuell steht noch kein neuer Live-Chat-Termin mit Anni fest. Sobald es soweit ist,
-              werden die Mitglieder so schnell wie möglich informiert.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {sessions.map((s) => {
-              const open = canMembersJoinSession(s);
-              const grace = isInLiveGracePeriod(s);
-              return (
+      <Topbar
+        title={featured!.title}
+        subtitle={others.length > 0 ? "Nächster Live-Termin" : "Live mit Anni"}
+      />
+      <main className="pb-8">
+        <LiveMemberSessionView
+          session={featured!}
+          rsvpStatus={rsvpStatus}
+          variant="embedded"
+        />
+        {others.length > 0 ? (
+          <section className="mx-auto mt-2 max-w-2xl px-3 sm:px-4">
+            <h2 className="mb-3 text-sm font-semibold text-fc-navy">Weitere Termine</h2>
+            <ul className="space-y-3">
+              {others.map((s) => (
                 <li key={s.id}>
-                  <Link
-                    href={`/live/${s.slug}`}
-                    className="block rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm transition hover:border-fc-navy/30"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-fc-navy">{s.title}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {formatBerlinDateTime(s.starts_at)}
-                        </p>
-                      </div>
-                      <span
-                        className={
-                          grace
-                            ? "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-900"
-                            : s.status === "live" || open
-                              ? "rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800"
-                              : "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
-                        }
-                      >
-                        {grace
-                          ? "Nachlauf"
-                          : s.status === "live"
-                            ? "Jetzt live"
-                            : open
-                              ? "Raum offen"
-                              : "Geplant"}
-                      </span>
-                    </div>
-                  </Link>
+                  <LiveSessionListCard session={s} />
                 </li>
-              );
-            })}
-          </ul>
-        )}
+              ))}
+            </ul>
+          </section>
+        ) : null}
       </main>
     </div>
   );
