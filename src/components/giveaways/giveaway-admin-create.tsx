@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createGiveaway } from "@/app/(app)/giveaways/actions";
+import { berlinWallClockNowPlus } from "@/lib/datetime/berlin";
 
 type QuizQ = {
   text: string;
@@ -79,10 +80,7 @@ export function GiveawayAdminCreate({
     }
   }
 
-  const defaultEnd = new Date(Date.now() + 14 * 86400000);
-  const endLocal = new Date(defaultEnd.getTime() - defaultEnd.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  const endLocal = berlinWallClockNowPlus(14 * 86400000);
 
   return (
     <Card className="max-w-2xl">

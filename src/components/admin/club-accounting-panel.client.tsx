@@ -32,6 +32,7 @@ import {
   uploadClubDocument,
 } from "@/components/ui/document-upload-field";
 import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 import { EmptyState } from "@/components/ui/empty-state";
 import { exportClubLedgerCsvAction } from "@/app/(app)/admin/members/detail-actions";
 import { summarizeLedgerByMonth } from "@/lib/club/ledger-export";
@@ -531,12 +532,7 @@ export function ClubAccountingPanel({
                       <span className="ml-1 font-semibold text-rose-700">· überfällig</span>
                     ) : c.paymentDueAt ? (
                       <span className="ml-1">
-                        · bis{" "}
-                        {new Date(c.paymentDueAt).toLocaleDateString("de-DE", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
+                        · bis {formatBerlinDate(c.paymentDueAt)}
                       </span>
                     ) : null}
                   </p>

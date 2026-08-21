@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCountdownVerbose } from "@/lib/countdown/format-countdown";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 
 export function EventsCountdown({
   nextStartAt,
@@ -31,11 +32,7 @@ export function EventsCountdown({
 
   const dateLabel =
     nextStartAt && !Number.isNaN(new Date(nextStartAt).getTime())
-      ? new Date(nextStartAt).toLocaleString("de-DE", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        })
+      ? formatBerlinDate(nextStartAt)
       : null;
 
   if (compact) {

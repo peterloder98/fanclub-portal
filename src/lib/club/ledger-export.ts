@@ -9,6 +9,7 @@ import {
   type LedgerPeriodMode,
 } from "@/lib/club/ledger";
 import { BOOKKEEPING_STATUS_LABELS } from "@/lib/payments/labels";
+import { formatBerlinMonthName } from "@/lib/datetime/berlin";
 
 function csvEscape(value: string) {
   if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
@@ -93,9 +94,7 @@ export function summarizeLedgerByMonth(
     .map(([key, list]) => {
       const { incomeCents, expenseCents } = sumLedgerRows(list);
       const [, m] = key.split("-");
-      const monthLabel = new Date(year, Number(m) - 1, 1).toLocaleDateString("de-DE", {
-        month: "long",
-      });
+      const monthLabel = formatBerlinMonthName(`${year}-${String(m).padStart(2, "0")}-01T12:00:00Z`);
       return {
         label: `${monthLabel} ${year}`,
         incomeCents,

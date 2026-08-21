@@ -4,6 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { formatEventCity } from "@/lib/events/format";
+import {
+  formatBerlinDateLong,
+  formatBerlinMeetingCard,
+} from "@/lib/datetime/berlin";
 import { formatEur } from "@/lib/club/ledger";
 import type { ClubMeetingListItem } from "@/lib/meetings/types";
 
@@ -57,11 +61,7 @@ export function MeetingsArchiveSection({
                   <Badge variant="neutral">Archiv</Badge>
                 </div>
                 <p className="mt-1 text-sm text-[color:var(--muted)]">
-                  {new Date(m.starts_at).toLocaleDateString("de-DE", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  })}
+                  {formatBerlinDateLong(m.starts_at)}
                 </p>
               </Link>
               {reports.length ? (
@@ -84,14 +84,7 @@ export function MeetingsArchiveSection({
 }
 
 function MeetingCard({ meeting: m }: { meeting: ClubMeetingListItem }) {
-  const when = new Date(m.starts_at).toLocaleString("de-DE", {
-    weekday: "short",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const when = formatBerlinMeetingCard(m.starts_at);
   const location = [m.venue, formatEventCity({ city: m.city, country: m.country })]
     .filter(Boolean)
     .join(" · ");

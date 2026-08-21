@@ -1,13 +1,77 @@
+/**
+ * Europe/Berlin — einzige erlaubte Zeitzone für Nutzer-/Admin-Anzeige und
+ * Admin-Wanduhr-Eingaben (datetime-local). Speicherung bleibt UTC-Instant.
+ *
+ * Prefer helpers from this module over raw toLocaleString / Intl without
+ * timeZone Europe/Berlin. Server (Vercel) runs in UTC — local formatters lie.
+ */
+
 export const BERLIN_TZ = "Europe/Berlin";
+
+function toValidDate(value: string | Date | null | undefined): Date | null {
+  if (value == null || value === "") return null;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
+/** Nur Datum, z. B. „24.08.2026“. */
+export function formatBerlinDate(value: string | Date | null | undefined): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleDateString("de-DE", {
+    timeZone: BERLIN_TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+/** Langes Datum ohne Uhrzeit, z. B. „24. August 2026“. */
+export function formatBerlinDateLong(value: string | Date | null | undefined): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleDateString("de-DE", {
+    timeZone: BERLIN_TZ,
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/** Kurzdatum + Uhrzeit (dateStyle/timeStyle short), z. B. „24.08.26, 21:00“. */
+export function formatBerlinDateTimeShort(
+  value: string | Date | null | undefined,
+): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleString("de-DE", {
+    timeZone: BERLIN_TZ,
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+/** Medium-Datum + kurze Uhrzeit, z. B. „24.08.2026, 21:00“. */
+export function formatBerlinDateTimeMedium(
+  value: string | Date | null | undefined,
+): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleString("de-DE", {
+    timeZone: BERLIN_TZ,
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
 
 /** Anzeige für Admins & Termine — immer deutsche Lokalzeit. */
 export function formatBerlinDateTime(
   value: string | Date | null | undefined,
   opts?: { withSeconds?: boolean },
 ): string {
-  if (!value) return "—";
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  const d = toValidDate(value);
+  if (!d) return "—";
   return d.toLocaleString("de-DE", {
     timeZone: BERLIN_TZ,
     day: "2-digit",
@@ -19,11 +83,10 @@ export function formatBerlinDateTime(
   });
 }
 
-/** Lange Live-/Einladungs-Anzeige: „Montag, 21. August 2026 um 21:00“. */
+/** Lange Live-/Einladungs-Anzeige: „Montag, 24. August 2026 um 21:00“. */
 export function formatBerlinDateTimeLong(value: string | Date | null | undefined): string {
-  if (!value) return "—";
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  const d = toValidDate(value);
+  if (!d) return "—";
   return d.toLocaleString("de-DE", {
     timeZone: BERLIN_TZ,
     weekday: "long",
@@ -37,15 +100,104 @@ export function formatBerlinDateTimeLong(value: string | Date | null | undefined
 
 /** Nur Uhrzeit in Europe/Berlin, z. B. „21:00“. */
 export function formatBerlinTime(value: string | Date | null | undefined): string {
-  if (!value) return "—";
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  const d = toValidDate(value);
+  if (!d) return "—";
   return d.toLocaleTimeString("de-DE", {
     timeZone: BERLIN_TZ,
     hour: "2-digit",
     minute: "2-digit",
   });
 }
+
+/** Chat-Zeile: Tag + Uhrzeit, z. B. „24.08., 21:00“. */
+export function formatBerlinChatTime(value: string | Date | null | undefined): string {
+  const d = toValidDate(value);
+  if (!d) return "";
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone: BERLIN_TZ,
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
+}
+
+/** Monat + Jahr, z. B. „August 2026“ (für Instant oder YYYY-MM-Monatsanfang). */
+export function formatBerlinMonthYear(value: string | Date | null | undefined): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleDateString("de-DE", {
+    timeZone: BERLIN_TZ,
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/** Monatsname allein (Europe/Berlin), z. B. für Ledger-Labels. */
+export function formatBerlinMonthName(value: string | Date | null | undefined): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleDateString("de-DE", {
+    timeZone: BERLIN_TZ,
+    month: "long",
+  });
+}
+
+/** Kurz: Wochentag + Datum ohne Uhr, z. B. „Mo., 24. Aug.“. */
+export function formatBerlinWeekdayDateShort(
+  value: string | Date | null | undefined,
+): string {
+  const d = toValidDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString("de-DE", {
+    timeZone: BERLIN_TZ,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+/** Treffen-Karten: kurzer Wochentag + langes Datum + Uhrzeit. */
+export function formatBerlinMeetingCard(value: string | Date | null | undefined): string {
+  const d = toValidDate(value);
+  if (!d) return "—";
+  return d.toLocaleString("de-DE", {
+    timeZone: BERLIN_TZ,
+    weekday: "short",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Benachrichtigung: „am 24.08.2026 um 21:00 Uhr“. */
+export function formatBerlinNotificationDateTime(
+  value: string | Date | null | undefined,
+): string {
+  const d = toValidDate(value);
+  if (!d) return "";
+  const date = d.toLocaleDateString("de-DE", {
+    timeZone: BERLIN_TZ,
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const time = d.toLocaleTimeString("de-DE", {
+    timeZone: BERLIN_TZ,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `am ${date} um ${time} Uhr`;
+}
+
+// --- Kurze Aliase (Produkt-API) ---
+
+export const formatDate = formatBerlinDate;
+export const formatTime = formatBerlinTime;
+export const formatDateTime = formatBerlinDateTime;
+export const formatDateTimeLong = formatBerlinDateTimeLong;
 
 /**
  * Wandelt eine Berlin-Wanduhr (`YYYY-MM-DDTHH:mm` oder mit Sekunden) in einen UTC-Instant (ISO).
@@ -102,8 +254,30 @@ export function berlinWallClockToUtcIso(localValue: string): string {
   return new Date(guess).toISOString();
 }
 
+/** Alias: Admin-/Form-Wanduhr → UTC-ISO. */
+export const parseWallClockToUtc = berlinWallClockToUtcIso;
+
 /**
- * ISO-Instant → `YYYY-MM-DDTHH:mm` in Europe/Berlin (für Admin-Formulare).
+ * Admin-Eingabe = Europe/Berlin-Wanduhr (`YYYY-MM-DDTHH:mm`) oder bereits ISO mit Offset/Z.
+ * Speichert immer als UTC-Instant.
+ */
+export function parseAdminWallClockToUtcIso(raw: string, label = "Datum"): string {
+  const trimmed = raw.trim();
+  if (!trimmed) throw new Error(`${label}: ungültiges Datum.`);
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+    try {
+      return berlinWallClockToUtcIso(trimmed);
+    } catch {
+      throw new Error(`${label}: ungültiges Datum.`);
+    }
+  }
+  const d = new Date(trimmed);
+  if (Number.isNaN(d.getTime())) throw new Error(`${label}: ungültiges Datum.`);
+  return d.toISOString();
+}
+
+/**
+ * ISO-Instant → `YYYY-MM-DDTHH:mm` in Europe/Berlin (für Admin-Formulare / datetime-local).
  */
 export function utcIsoToBerlinWallClock(iso: string): string {
   const d = new Date(iso);
@@ -121,4 +295,9 @@ export function utcIsoToBerlinWallClock(iso: string): string {
     parts.find((p) => p.type === type)?.value ?? "";
   const hour = get("hour") === "24" ? "00" : get("hour");
   return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
+}
+
+/** Jetzt + deltaMs als Berlin-Wanduhr für datetime-local Defaults. */
+export function berlinWallClockNowPlus(deltaMs = 0): string {
+  return utcIsoToBerlinWallClock(new Date(Date.now() + deltaMs).toISOString());
 }

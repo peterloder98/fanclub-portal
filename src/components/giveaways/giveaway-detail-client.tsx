@@ -24,6 +24,7 @@ import { CommentWarningButton } from "@/components/admin/comment-warning-button"
 import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
+import { formatBerlinDateTimeShort } from "@/lib/datetime/berlin";
 import {
   drawGiveawayWinners,
   participateQuiz,
@@ -342,10 +343,7 @@ export function GiveawayDetailClient({
         authorId: userId,
         authorName: "Du",
         authorAvatarUrl: myAvatarUrl,
-        createdAtLabel: new Date(data.created_at).toLocaleString("de-DE", {
-          dateStyle: "short",
-          timeStyle: "short",
-        }),
+        createdAtLabel: formatBerlinDateTimeShort(data.created_at),
       },
       ...c,
     ]);

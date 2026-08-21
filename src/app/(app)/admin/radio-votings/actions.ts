@@ -42,10 +42,10 @@ function parseSteps(raw: string) {
     .filter(Boolean);
 }
 
+import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
+
 function parseEndsAt(raw: string) {
-  const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) throw new Error("Ungültiges Enddatum.");
-  return d.toISOString();
+  return parseAdminWallClockToUtcIso(raw, "Enddatum");
 }
 
 export async function saveRadioVotingCampaign(formData: FormData) {

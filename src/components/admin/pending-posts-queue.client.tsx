@@ -10,6 +10,7 @@ import {
 } from "@/app/(app)/admin/posts/actions";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { PostMediaGallery } from "@/components/feed/post-media-gallery";
+import { formatBerlinDateTimeShort } from "@/lib/datetime/berlin";
 
 export type PendingPostRow = {
   id: string;
@@ -50,10 +51,7 @@ export function PendingPostsQueue({ posts }: { posts: PendingPostRow[] }) {
                     {p.authorName}
                   </div>
                   <div className="text-xs text-slate-500">
-                    {new Date(p.created_at).toLocaleString("de-DE", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
+                    {formatBerlinDateTimeShort(p.created_at)}
                   </div>
                 </div>
               </HoverEnlargeAvatar>

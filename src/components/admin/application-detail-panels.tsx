@@ -12,6 +12,7 @@ import { PAYMENT_STATUS_LABELS } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
 import { genderDisplayLabel } from "@/lib/person/gender";
 import { formatMemberMobile, formatWhatsAppDisplay } from "@/lib/person/contact-display";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -19,8 +20,7 @@ function formatDE(date: string | null) {
     const [y, m, d] = date.split("-");
     return `${d}.${m}.${y}`;
   }
-  const x = new Date(date);
-  return Number.isNaN(x.getTime()) ? date : x.toLocaleDateString("de-DE");
+  return formatBerlinDate(date);
 }
 
 export type ApplicationDetailData = {

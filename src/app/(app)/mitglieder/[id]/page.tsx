@@ -36,6 +36,7 @@ import { loadUserAchievementsForDisplay } from "@/lib/badges/evaluate-user-badge
 import { MemberStarsRankBadge } from "@/components/members/member-stars-rank-badge";
 import { ExpandableClampedText } from "@/components/ui/expandable-clamped-text";
 import { isProfileHidden } from "@/lib/members/hidden";
+import { formatBerlinMonthYear } from "@/lib/datetime/berlin";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,8 @@ type JoinedMeeting = {
 
 function formatMemberSince(iso: string | null | undefined) {
   if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  const label = formatBerlinMonthYear(iso);
+  return label === "—" ? null : label;
 }
 
 const INTRO_ANSWER_ICONS: Record<MemberIntroKey, typeof Sparkles> = {

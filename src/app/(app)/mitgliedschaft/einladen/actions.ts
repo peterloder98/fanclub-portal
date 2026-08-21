@@ -13,6 +13,7 @@ import {
 } from "@/lib/email/member-referral-reminder-template";
 import { getMembershipApplicationFormUrlForReferrer } from "@/lib/membership/referral-link";
 import { assertReferralSendAllowed } from "@/lib/membership/referral-limits";
+import { formatBerlinDateLong } from "@/lib/datetime/berlin";
 import { evaluateAndMaybeFlagReferrer } from "@/lib/membership/referral-abuse";
 import {
   awardMembershipReferralPoints,
@@ -200,11 +201,7 @@ export async function sendMemberReferralReminderAction(sendId: string) {
     }
     throw new Error(
       eligibility.nextAt
-        ? `Erinnerung ist erst ab ${new Date(eligibility.nextAt).toLocaleDateString("de-DE", {
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          })} wieder möglich.`
+        ? `Erinnerung ist erst ab ${formatBerlinDateLong(eligibility.nextAt)} wieder möglich.`
         : "Erinnerung ist gerade nicht möglich.",
     );
   }

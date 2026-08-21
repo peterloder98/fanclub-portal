@@ -7,6 +7,7 @@ import {
   ADMIN_HANDBOOK_UPDATED,
   type AdminHandbookBlock,
 } from "@/lib/admin/admin-handbook";
+import { formatBerlinDateLong } from "@/lib/datetime/berlin";
 
 function HandbookBlock({ block }: { block: AdminHandbookBlock }) {
   if (block.type === "p") {
@@ -66,11 +67,7 @@ export function AdminHandbookPanel() {
             <p className="mt-1 text-sm leading-relaxed text-slate-600">{ADMIN_HANDBOOK_INTRO}</p>
             <p className="mt-2 text-xs text-slate-500">
               Stand:{" "}
-              {new Date(`${ADMIN_HANDBOOK_UPDATED}T12:00:00`).toLocaleDateString("de-DE", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {formatBerlinDateLong(`${ADMIN_HANDBOOK_UPDATED}T12:00:00Z`)}
             </p>
           </div>
         </div>

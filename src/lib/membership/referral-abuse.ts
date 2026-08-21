@@ -3,6 +3,7 @@ import { notifyAllAdmins } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { notifyAdminsReferralAbuse } from "@/lib/email/referral-abuse-notify";
 import { profileDisplayName } from "@/lib/profiles/display";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 const GRACE_DAYS = 14;
 const STALE_FAIL_MIN = 5;
@@ -241,10 +242,7 @@ export async function evaluateAndMaybeFlagReferrer(
 
   const sendLines = rows.slice(0, 25).map((s) => {
     const name = [s.recipient_first_name, s.recipient_last_name].filter(Boolean).join(" ") || "—";
-    const when = new Date(s.created_at).toLocaleString("de-DE", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
+    const when = formatBerlinDateTimeMedium(s.created_at);
     let status = "offen";
     if (isConverted(s)) status = "Anmeldung/Freigabe";
     else if (s.link_opened_at) status = "Link geöffnet";

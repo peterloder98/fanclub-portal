@@ -7,6 +7,7 @@ import {
   clawbackReferralReviewPointsAction,
   releaseReferralReviewPointsAction,
 } from "@/app/(app)/admin/referrals/actions";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 type SendRow = {
   id: string;
@@ -46,7 +47,7 @@ function nameOf(p: { first_name: string | null; last_name: string | null } | nul
 }
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  return formatBerlinDateTimeMedium(iso);
 }
 
 function sendStatus(s: SendRow) {

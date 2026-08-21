@@ -8,14 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { formatEur } from "@/lib/club/ledger";
 import type { MeetingParticipantRow } from "@/lib/meetings/types";
 import { cn } from "@/lib/cn";
+import {
+  formatBerlinDate,
+  formatBerlinDateTimeMedium,
+} from "@/lib/datetime/berlin";
 
 function formatDue(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("de-DE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+  return formatBerlinDate(iso);
 }
 
 function isOverdue(dueAt: string | null, status: string) {
@@ -58,10 +58,7 @@ export function MeetingAdminParticipants({
                 <p className="font-medium text-fc-navy">{p.name}</p>
                 <p className="text-xs text-[color:var(--muted)]">
                   Angemeldet{" "}
-                  {new Date(p.joinedAt).toLocaleString("de-DE", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })}
+                  {formatBerlinDateTimeMedium(p.joinedAt)}
                   {p.membershipNumber ? ` · Nr. ${p.membershipNumber}` : ""}
                 </p>
                 <div className="mt-1 flex flex-wrap gap-1.5">

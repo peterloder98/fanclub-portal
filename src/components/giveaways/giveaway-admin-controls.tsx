@@ -8,6 +8,7 @@ import {
   resumeGiveaway,
   updateGiveawayFull,
 } from "@/app/(app)/giveaways/actions";
+import { utcIsoToBerlinWallClock } from "@/lib/datetime/berlin";
 
 type QuizQ = {
   id?: string;
@@ -80,10 +81,7 @@ export function GiveawayAdminControls({
         ],
   );
 
-  const endLocal = new Date(giveaway.ends_at);
-  const endInput = new Date(endLocal.getTime() - endLocal.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  const endInput = utcIsoToBerlinWallClock(giveaway.ends_at);
 
   async function onEndEarly() {
     if (

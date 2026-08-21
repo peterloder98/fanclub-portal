@@ -3,6 +3,7 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isHiddenProfileId, SYSTEM_HIDDEN_PROFILE_IDS } from "@/lib/members/hidden";
+import { formatBerlinMonthYear } from "@/lib/datetime/berlin";
 
 export type AppStatsDayPoint = {
   date: string; // YYYY-MM-DD
@@ -39,8 +40,7 @@ export type AppStatsSnapshot = {
 
 function monthLabel(ym: string) {
   const [y, m] = ym.split("-").map(Number);
-  const d = new Date(y, m - 1, 1);
-  return d.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+  return formatBerlinMonthYear(`${y}-${String(m).padStart(2, "0")}-01T12:00:00Z`);
 }
 
 function shiftMonth(ym: string, delta: number) {

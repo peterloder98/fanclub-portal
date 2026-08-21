@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { formatEur } from "@/lib/club/ledger";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 import { membershipFeeCountsInAccountingBalance } from "@/lib/club/accounting-settings";
 import { paymentStatusBadgeClass } from "@/lib/payments/labels";
 import type { PaymentStatus } from "@/lib/payments/types";
@@ -259,7 +260,7 @@ export function PaymentsAdminPanel({
                     )}
                   >
                     <td className="px-3 py-2 whitespace-nowrap text-xs text-slate-600">
-                      {new Date(p.created_at).toLocaleDateString("de-DE")}
+                      {formatBerlinDate(p.created_at)}
                     </td>
                     <td className="px-3 py-2">{p.member_name}</td>
                     <td className="px-3 py-2 text-xs">

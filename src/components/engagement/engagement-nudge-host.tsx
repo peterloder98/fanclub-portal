@@ -7,6 +7,7 @@ import { Calendar, Gift, Vote, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { giveawayPhase } from "@/lib/giveaways/status-label";
+import { formatBerlinWeekdayDateShort } from "@/lib/datetime/berlin";
 
 const STORAGE_KEY = "fc_nudge_dismissed_v1";
 const SESSION_KEY = "fc_nudge_session_v1";
@@ -236,13 +237,7 @@ export function EngagementNudgeHost() {
         for (const e of events) {
           const nid = `event:${e.id}`;
           if (joined.has(e.id) || dismissed.has(nid)) continue;
-          const when = e.start_at
-            ? new Date(e.start_at).toLocaleDateString("de-DE", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-              })
-            : "";
+          const when = e.start_at ? formatBerlinWeekdayDateShort(e.start_at) : "";
           const place = e.city ? ` in ${e.city}` : "";
           items.push({
             id: nid,

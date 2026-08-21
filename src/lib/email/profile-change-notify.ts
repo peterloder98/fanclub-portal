@@ -6,6 +6,7 @@ import {
   notifyAllAdmins,
 } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -27,16 +28,7 @@ export async function notifyAdminsProfileChangeRequest(input: {
     : `/admin/members/profile-changes?focus=${input.requestId}`;
 
   const nr = input.membershipNumber?.trim() || "—";
-  const when = (() => {
-    try {
-      return new Intl.DateTimeFormat("de-DE", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(input.createdAt));
-    } catch {
-      return input.createdAt;
-    }
-  })();
+  const when = formatBerlinDateTimeMedium(input.createdAt) || input.createdAt;
 
   const title = "Stammdaten-Änderung zur Freigabe";
   const body = `Mitgliedsnr. ${nr}, ${input.memberName} · ${when}`;

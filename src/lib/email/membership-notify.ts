@@ -7,6 +7,7 @@ import { clubBankEmailVars } from "@/lib/email/club-bank-vars";
 import { formatApplicationPaymentReference } from "@/lib/payments/club-bank";
 import { rotateAccountSetupToken } from "@/lib/auth/account-setup-token";
 import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
@@ -16,9 +17,8 @@ function appBaseUrl() {
 }
 
 function formatSubmittedAt(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  const formatted = formatBerlinDateTimeMedium(iso);
+  return formatted === "—" ? iso : formatted;
 }
 
 export async function notifyAdminsNewMembershipApplication(input: {

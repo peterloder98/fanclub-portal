@@ -4,20 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { ClubMeetingListItem } from "@/lib/meetings/types";
 import { formatEventCity } from "@/lib/events/format";
+import { formatBerlinDateTimeLong } from "@/lib/datetime/berlin";
 
 export function DashboardMeetingHighlight({
   meeting,
 }: {
   meeting: ClubMeetingListItem;
 }) {
-  const when = new Date(meeting.starts_at).toLocaleString("de-DE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const when = formatBerlinDateTimeLong(meeting.starts_at);
   const location = [meeting.venue, formatEventCity({ city: meeting.city, country: meeting.country })]
     .filter(Boolean)
     .join(" · ");

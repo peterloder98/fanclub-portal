@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 
 export async function PollsMini() {
   const supabase = await createSupabaseServerClient();
@@ -48,11 +49,7 @@ export async function PollsMini() {
               </div>
               <div className="mt-1 text-xs text-slate-500">
                 Ende:{" "}
-                {new Date(p.ends_at).toLocaleDateString("de-DE", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })}
+                {formatBerlinDate(p.ends_at)}
               </div>
             </Link>
           ))

@@ -16,6 +16,7 @@ import {
   appRegistrationBadgeClass,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 
 const PAGE_SIZE = 50;
 
@@ -146,9 +147,7 @@ function formatDE(date: string | null) {
     const [y, m, d] = date.split("-");
     return `${d}.${m}.${y}`;
   }
-  const dt = new Date(date);
-  if (Number.isNaN(dt.getTime())) return "—";
-  return dt.toLocaleDateString("de-DE");
+  return formatBerlinDate(date);
 }
 
 function compareStr(a: string, b: string) {

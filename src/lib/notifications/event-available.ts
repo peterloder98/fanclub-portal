@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { formatEventCity, formatTvBroadcaster } from "@/lib/events/format";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 import { sendMemberActivityBroadcast } from "@/lib/email/member-activity-broadcast";
 import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
@@ -72,11 +73,7 @@ export async function sendEventAvailableNotices(
   );
 
   for (const notice of pending) {
-    const dateLabel = new Date(notice.startAt).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    const dateLabel = formatBerlinDate(notice.startAt);
     const location =
       notice.kind === "tv"
         ? formatTvBroadcaster(notice.broadcaster)

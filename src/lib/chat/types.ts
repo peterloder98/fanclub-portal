@@ -1,3 +1,5 @@
+import { formatBerlinChatTime } from "@/lib/datetime/berlin";
+
 export type ChatAuthor = {
   id: string;
   name: string;
@@ -20,14 +22,5 @@ export function chatDisplayName(p: {
 }
 
 export function formatChatTime(iso: string) {
-  try {
-    return new Intl.DateTimeFormat("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
-  } catch {
-    return "";
-  }
+  return formatBerlinChatTime(iso);
 }

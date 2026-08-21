@@ -19,6 +19,7 @@ import {
 import { after } from "next/server";
 import { notifyMembersNewGiveaway } from "@/lib/email/member-activity-broadcast";
 import { requireMemberWriteAccess } from "@/lib/portal-launch-server";
+import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
 
 async function requireUser() {
   const supabase = await createSupabaseServerClient();
@@ -156,8 +157,7 @@ export async function createGiveaway(formData: FormData): Promise<{ ok: true; id
     }
   }
 
-  const endsAt = new Date(input.ends_at);
-  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum.");
+  const endsAtIso = parseAdminWallClockToUtcIso(input.ends_at, "Enddatum");
 
   const { data: row, error: gErr } = await admin
     .from("giveaways")
@@ -166,7 +166,7 @@ export async function createGiveaway(formData: FormData): Promise<{ ok: true; id
       title: input.title,
       description: input.description || null,
       entry_mode: input.entry_mode,
-      ends_at: endsAt.toISOString(),
+      ends_at: endsAtIso,
       status: "active",
       is_active: true,
     })
@@ -683,8 +683,7 @@ export async function updateGiveawayBasics(formData: FormData) {
   const endsAtRaw = String(formData.get("ends_at") ?? "");
   if (!id || title.length < 3) throw new Error("Titel zu kurz.");
 
-  const endsAt = new Date(endsAtRaw);
-  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum.");
+  const endsAtIso = parseAdminWallClockToUtcIso(endsAtRaw, "Enddatum");
 
   const { data: g } = await admin
     .from("giveaways")
@@ -712,7 +711,7 @@ export async function updateGiveawayBasics(formData: FormData) {
     .update({
       title,
       description: description || null,
-      ends_at: endsAt.toISOString(),
+      ends_at: endsAtIso,
     })
     .eq("id", id);
   revalidatePath("/giveaways");
@@ -746,8 +745,8 @@ export async function updateGiveawayFull(formData: FormData) {
 
   if (!id || title.length < 3) throw new Error("Titel zu kurz.");
   if (!prizes.length) throw new Error("Mindestens ein Preis.");
-  const endsAt = new Date(endsAtRaw);
-  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum.");
+  const endsAtIso = parseAdminWallClockToUtcIso(endsAtRaw, "Enddatum");
+  const endsAtMs = new Date(endsAtIso).getTime();
 
   const { data: g } = await admin
     .from("giveaways")
@@ -781,9 +780,9 @@ export async function updateGiveawayFull(formData: FormData) {
     .update({
       title,
       description: description || null,
-      ends_at: endsAt.toISOString(),
+      ends_at: endsAtIso,
       entry_mode: entryMode,
-      status: endsAt.getTime() > Date.now() ? "active" : g.status,
+      status: endsAtMs > Date.now() ? "active" : g.status,
     })
     .eq("id", id);
 

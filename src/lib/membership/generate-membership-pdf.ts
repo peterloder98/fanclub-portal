@@ -8,6 +8,7 @@ import {
 } from "@/lib/membership/membershipPdfCoordinates";
 import { MEMBERSHIP_NUMBER_PENDING_LABEL } from "@/lib/membership/numbers";
 import { CLUB_BANK, formatApplicationPaymentReference, formatClubIbanDisplay } from "@/lib/payments/club-bank";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 
 export type MembershipApplicationPdfData = {
   id: string;
@@ -36,15 +37,12 @@ export type MembershipApplicationPdfData = {
 };
 
 function formatDE(dateStr: string) {
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) {
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      const [y, m, day] = dateStr.split("-");
-      return `${day}.${m}.${y}`;
-    }
-    return dateStr;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const [y, m, day] = dateStr.split("-");
+    return `${day}.${m}.${y}`;
   }
-  return d.toLocaleDateString("de-DE");
+  const label = formatBerlinDate(dateStr);
+  return label === "—" ? dateStr : label;
 }
 
 function formatMobile(data: MembershipApplicationPdfData) {

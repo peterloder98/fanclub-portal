@@ -14,6 +14,7 @@ import {
   logMemberActivity,
   MEMBER_ACTIVITY_TYPES,
 } from "@/lib/membership/activity-log";
+import { formatBerlinDateLong } from "@/lib/datetime/berlin";
 import {
   formatEur,
   LEDGER_CATEGORY_LABELS,
@@ -642,11 +643,7 @@ export async function setMemberGreetingPostSentAt(
       `${adminProfile.first_name ?? ""} ${adminProfile.last_name ?? ""}`.trim() || "Admin";
 
     if (value) {
-      const label = new Date(`${value}T12:00:00`).toLocaleDateString("de-DE", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
+      const label = formatBerlinDateLong(`${value}T12:00:00`);
       await logMemberActivity({
         userId,
         eventType: MEMBER_ACTIVITY_TYPES.greetingPostSent,

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -49,8 +50,7 @@ export async function createVoting(formData: FormData) {
     options,
   });
 
-  const endsAt = new Date(input.ends_at);
-  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum");
+  const endsAtIso = parseAdminWallClockToUtcIso(input.ends_at, "Enddatum");
 
   const { data: voting, error: vErr } = await admin
     .from("votings")
@@ -58,7 +58,7 @@ export async function createVoting(formData: FormData) {
       author_id: userId,
       question: input.question,
       allow_multiple: input.allow_multiple,
-      ends_at: endsAt.toISOString(),
+      ends_at: endsAtIso,
       is_active: true,
     })
     .select("id")

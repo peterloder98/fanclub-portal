@@ -9,6 +9,10 @@ import { MEMBERSHIP_REFERRAL_POINTS } from "@/lib/points/award-membership-referr
 import { MEMBERSHIP_REFERRAL_COMPLETION_POINTS } from "@/lib/points/award-membership-referral-completed";
 import { sendMemberReferralReminderAction } from "@/app/(app)/mitgliedschaft/einladen/actions";
 import { referralReminderEligibility } from "@/lib/email/member-referral-reminder-template";
+import {
+  formatBerlinDateLong,
+  formatBerlinDateTimeMedium,
+} from "@/lib/datetime/berlin";
 
 export type MemberReferralSendRow = {
   id: string;
@@ -24,15 +28,11 @@ export type MemberReferralSendRow = {
 };
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  return formatBerlinDateTimeMedium(iso);
 }
 
 function formatDay(iso: string) {
-  return new Date(iso).toLocaleDateString("de-DE", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return formatBerlinDateLong(iso);
 }
 
 function recipientName(s: MemberReferralSendRow) {

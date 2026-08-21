@@ -45,6 +45,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         summary: "Wo ihr die Verwaltung findet",
         blocks: [
           {
+            type: "note",
+            text: "Alle Datum- und Uhrzeit-Angaben in der App gelten als deutsche Zeit (Europe/Berlin) — für Mitglieder, E-Mails, Benachrichtigungen und Admin-Eingaben. Gespeichert wird intern in UTC, angezeigt immer Berliner Zeit.",
+          },
+          {
             type: "ol",
             items: [
               "Wie gewohnt in der App anmelden.",

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 type VotingRow = {
   id: string;
@@ -182,10 +183,7 @@ export function VotingBoard({
               </div>
               <div className="text-xs text-slate-500">
                 Ende:{" "}
-                {new Date(v.ends_at).toLocaleString("de-DE", {
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })}{" "}
+                {formatBerlinDateTimeMedium(v.ends_at)}{" "}
                 · {total} Stimme(n)
               </div>
             </CardHeader>

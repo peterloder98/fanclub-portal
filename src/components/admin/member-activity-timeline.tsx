@@ -11,12 +11,10 @@ import {
   addMemberActivityNote,
   fetchMemberActivity,
 } from "@/app/(app)/admin/members/applications/actions";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return formatBerlinDateTimeMedium(iso);
 }
 
 function rowClassName(eventType: string) {

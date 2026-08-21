@@ -10,6 +10,7 @@ import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { createMembershipDownloadToken } from "@/lib/membership/download-token";
 import { cacheApplicationPdf } from "@/lib/membership/application-pdf-service";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 import { provisionMembershipApplicant } from "@/lib/membership/provision-applicant";
 import {
   isValidPostalCode,
@@ -103,9 +104,8 @@ function formatApiError(error: unknown) {
 }
 
 function formatSubmittedAtDe(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  const formatted = formatBerlinDateTimeMedium(iso);
+  return formatted === "—" ? iso : formatted;
 }
 
 export async function POST(request: Request) {

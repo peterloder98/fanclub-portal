@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Pencil, Trash2 } from "lucide-react";
 import { AdminIconButton } from "@/components/admin/admin-icon-button";
 import { formatEur } from "@/lib/club/ledger";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 import { cn } from "@/lib/cn";
 import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
 import {
@@ -295,10 +296,7 @@ export function MerchandiseProductDetail({ product }: { product: MerchandiseProd
                   {r.note ? <span className="text-slate-600"> — {r.note}</span> : null}
                 </span>
                 <span className="text-xs text-slate-500">
-                  {new Date(r.created_at).toLocaleString("de-DE", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
+                  {formatBerlinDateTimeMedium(r.created_at)}
                 </span>
               </li>
             ))}

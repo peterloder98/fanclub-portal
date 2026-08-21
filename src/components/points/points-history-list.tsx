@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { pointsReasonLabel } from "@/lib/points/reason-labels";
 import { currentBerlinYearStartIso } from "@/lib/points/year-bounds";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 type TxRow = {
   id: string;
@@ -13,14 +14,6 @@ type TxRow = {
   reason: string;
   created_at: string;
 };
-
-const dateFmt = new Intl.DateTimeFormat("de-DE", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
 export function PointsHistoryList({ userId }: { userId: string | null }) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
@@ -112,7 +105,7 @@ export function PointsHistoryList({ userId }: { userId: string | null }) {
                       {pointsReasonLabel(r.reason)}
                     </div>
                     <div className="text-xs text-slate-500">
-                      {dateFmt.format(new Date(r.created_at))}
+                      {formatBerlinDateTime(r.created_at)}
                     </div>
                   </div>
                   <span

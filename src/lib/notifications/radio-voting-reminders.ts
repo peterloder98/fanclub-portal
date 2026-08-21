@@ -4,6 +4,8 @@ import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { isCampaignActive } from "@/lib/votings/radio-campaign-types";
 
+import { formatBerlinTime } from "@/lib/datetime/berlin";
+
 const BERLIN = "Europe/Berlin";
 
 function berlinDateKey(d: Date) {
@@ -75,11 +77,7 @@ export async function runRadioVotingLastChanceReminders(admin: SupabaseClient) {
       .eq("cycle_key", campaign.cycle_key);
 
     const participated = new Set((parts ?? []).map((p) => p.user_id));
-    const endTime = new Date(campaign.ends_at).toLocaleString("de-DE", {
-      timeZone: BERLIN,
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const endTime = formatBerlinTime(campaign.ends_at);
 
     for (const userId of memberIds) {
       if (participated.has(userId)) continue;

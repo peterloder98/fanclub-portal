@@ -54,6 +54,10 @@ import {
   PROFILE_CHANGE_FIELD_LABELS,
   type ProfileChangeField,
 } from "@/lib/profile/change-requests";
+import {
+  formatBerlinDate,
+  formatBerlinDateTimeMedium,
+} from "@/lib/datetime/berlin";
 
 function formatDE(date: string | null) {
   if (!date) return "—";
@@ -61,16 +65,11 @@ function formatDE(date: string | null) {
     const [y, m, d] = date.split("-");
     return `${d}.${m}.${y}`;
   }
-  const dt = new Date(date);
-  if (Number.isNaN(dt.getTime())) return "—";
-  return dt.toLocaleDateString("de-DE");
+  return formatBerlinDate(date);
 }
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return formatBerlinDateTimeMedium(iso);
 }
 
 function contextKindLabel(kind: string) {
@@ -625,10 +624,7 @@ export function ProfilePageClient() {
                   <p className="font-semibold">Änderung wartet auf Freigabe</p>
                   <p className="mt-0.5 text-amber-900/90">
                     Eingereicht am{" "}
-                    {new Date(pendingProfileChange.created_at).toLocaleString("de-DE", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    })}
+                    {formatBerlinDateTimeMedium(pendingProfileChange.created_at)}
                     . Bis zur Entscheidung bleiben die bisherigen Stammdaten aktiv.
                   </p>
                   <ul className="mt-2 space-y-1 text-xs">

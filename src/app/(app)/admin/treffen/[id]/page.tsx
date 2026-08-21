@@ -9,6 +9,7 @@ import { loadMeetingParticipants } from "@/lib/meetings/load";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatEur } from "@/lib/club/ledger";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export default async function AdminTreffenDetailPage({
   params,
@@ -57,7 +58,7 @@ export default async function AdminTreffenDetailPage({
           <CardHeader>
             <CardTitle>{meeting.title}</CardTitle>
             <p className="text-sm text-[color:var(--muted)]">
-              {new Date(meeting.starts_at).toLocaleString("de-DE")}
+              {formatBerlinDateTime(meeting.starts_at)}
               {meeting.city ? ` · ${meeting.city}` : ""}
             </p>
             <div className="flex flex-wrap gap-2 pt-1">

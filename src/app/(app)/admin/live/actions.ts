@@ -16,25 +16,10 @@ import {
   sendAnniHostLinkEmail,
   sendLiveSessionInviteEmails,
 } from "@/lib/live/invites";
-import { berlinWallClockToUtcIso } from "@/lib/datetime/berlin";
+import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
 
-/**
- * Admin-Eingabe = Europe/Berlin-Wanduhr (`YYYY-MM-DDTHH:mm`) oder bereits ISO mit Offset/Z.
- * Speichert immer als UTC-Instant.
- */
 function parseAdminDateTime(label: string, raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) throw new Error(`${label}: ungültiges Datum.`);
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
-    try {
-      return berlinWallClockToUtcIso(trimmed);
-    } catch {
-      throw new Error(`${label}: ungültiges Datum.`);
-    }
-  }
-  const d = new Date(trimmed);
-  if (Number.isNaN(d.getTime())) throw new Error(`${label}: ungültiges Datum.`);
-  return d.toISOString();
+  return parseAdminWallClockToUtcIso(raw, label);
 }
 
 export async function createLiveSessionAction(input: {

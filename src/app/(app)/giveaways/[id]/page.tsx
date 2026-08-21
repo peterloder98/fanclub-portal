@@ -10,6 +10,7 @@ import { loadQuestionAnswerForUser } from "@/lib/giveaways/load-question-answer"
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getTopMembersForYear } from "@/lib/giveaways/year-end-lottery";
 import { YearEndGiveawayAdmin } from "@/components/giveaways/year-end-giveaway-admin";
+import { formatBerlinDateTimeShort } from "@/lib/datetime/berlin";
 
 export default async function GiveawayDetailPage({
   params,
@@ -202,10 +203,7 @@ export default async function GiveawayDetailPage({
     authorId: c.author_id,
     authorName: cMap.get(c.author_id)?.name ?? "Mitglied",
     authorAvatarUrl: cMap.get(c.author_id)?.avatarUrl ?? null,
-    createdAtLabel: new Date(c.created_at).toLocaleString("de-DE", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }),
+    createdAtLabel: formatBerlinDateTimeShort(c.created_at),
   }));
 
   let signatures: Awaited<ReturnType<typeof listMailSignatureOptions>> = [];

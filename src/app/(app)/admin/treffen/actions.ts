@@ -7,6 +7,10 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { notifyAllActiveMembers, createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { logMemberActivity, MEMBER_ACTIVITY_TYPES } from "@/lib/membership/activity-log";
+import {
+  formatBerlinDate,
+  parseAdminWallClockToUtcIso,
+} from "@/lib/datetime/berlin";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -63,7 +67,7 @@ export async function createClubMeeting(formData: FormData) {
       summary: String(formData.get("summary") ?? "").trim() || null,
       body: String(formData.get("body") ?? "").trim() || null,
       schedule: String(formData.get("schedule") ?? "").trim() || null,
-      starts_at: new Date(startsAtRaw).toISOString(),
+      starts_at: parseAdminWallClockToUtcIso(startsAtRaw, "Beginn"),
       venue: String(formData.get("venue") ?? "").trim() || null,
       address: String(formData.get("address") ?? "").trim() || null,
       postal_code: String(formData.get("postal_code") ?? "").trim() || null,
@@ -82,11 +86,7 @@ export async function createClubMeeting(formData: FormData) {
   if (error) throw new Error(error.message);
 
   if (publish && data) {
-    const dateLabel = new Date(data.starts_at).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
+    const dateLabel = formatBerlinDate(data.starts_at);
     const base = (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(
       /\/$/,
       "",

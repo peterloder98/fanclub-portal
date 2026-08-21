@@ -2,6 +2,7 @@ import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { Topbar } from "@/components/app-shell/topbar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export default async function AdminAuditPage() {
   const supabase = await createSupabaseServerClient();
@@ -37,14 +38,6 @@ export default async function AdminAuditPage() {
     ]),
   );
 
-  const dateFmt = new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   return (
     <div className="min-h-screen">
       <Topbar title="Admin-Audit" subtitle="Wer hat was im Vorstand-Bereich geändert?" />
@@ -71,7 +64,7 @@ export default async function AdminAuditPage() {
                 (rows ?? []).map((r) => (
                   <tr key={r.id} className="border-t border-slate-100">
                     <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                      {dateFmt.format(new Date(r.created_at))}
+                      {formatBerlinDateTime(r.created_at)}
                     </td>
                     <td className="px-4 py-3">
                       {r.actor_id ? actorName.get(r.actor_id) ?? "—" : "—"}

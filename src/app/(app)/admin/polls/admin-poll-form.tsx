@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 import { createPoll } from "@/app/(app)/admin/polls/actions";
+import { berlinWallClockNowPlus } from "@/lib/datetime/berlin";
 
 export function AdminPollForm() {
   const router = useRouter();
@@ -14,12 +15,7 @@ export function AdminPollForm() {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const defaultEnds = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 14);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
+  const defaultEnds = () => berlinWallClockNowPlus(14 * 24 * 60 * 60 * 1000);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

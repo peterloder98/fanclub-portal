@@ -11,6 +11,10 @@ import { cn } from "@/lib/cn";
 import { MentionInputWithEmoji } from "@/components/feed/mention-input-with-emoji";
 import { MentionText } from "@/components/feed/mention-text";
 import { notifyMentionsFromText } from "@/app/(app)/posts/mention-actions";
+import {
+  formatBerlinDateTimeMedium,
+  formatBerlinDateTimeShort,
+} from "@/lib/datetime/berlin";
 
 type Voting = {
   id: string;
@@ -243,10 +247,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
           </div>
           <div className="text-xs text-slate-500">
             Ende:{" "}
-            {new Date(voting.ends_at).toLocaleString("de-DE", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
+            {formatBerlinDateTimeMedium(voting.ends_at)}
             {voting.allow_multiple ? " · Mehrfachauswahl" : " · Eine Antwort"}
           </div>
         </CardHeader>
@@ -347,10 +348,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
                   <span className="font-semibold text-slate-700">{c.authorName}</span>
                   <span>·</span>
                   <span>
-                    {new Date(c.created_at).toLocaleString("de-DE", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
+                    {formatBerlinDateTimeShort(c.created_at)}
                   </span>
                 </div>
                 <MentionText text={c.body} className="mt-1 block text-sm text-slate-800" />

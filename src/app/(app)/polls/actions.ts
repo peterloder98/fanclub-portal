@@ -7,6 +7,7 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { logAdminAction } from "@/lib/admin/audit-log";
+import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
 
 async function requireAdmin() {
   const supabase = await createSupabaseServerClient();
@@ -91,8 +92,7 @@ export async function updatePoll(formData: FormData) {
     options,
   });
 
-  const endsAt = new Date(input.ends_at);
-  if (Number.isNaN(endsAt.getTime())) throw new Error("Ungültiges Enddatum.");
+  const endsAtIso = parseAdminWallClockToUtcIso(input.ends_at, "Enddatum");
 
   const { data: currentPoll, error: curErr } = await admin
     .from("polls")
@@ -105,7 +105,7 @@ export async function updatePoll(formData: FormData) {
     .from("polls")
     .update({
       question: input.question,
-      ends_at: endsAt.toISOString(),
+      ends_at: endsAtIso,
       allow_multiple: input.allow_multiple,
     })
     .eq("id", input.poll_id);

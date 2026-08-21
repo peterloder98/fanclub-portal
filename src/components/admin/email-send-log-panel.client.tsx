@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { resendEmailLogEntryAction } from "@/app/(app)/admin/settings/email-log/actions";
 import type { EmailLogRow } from "@/lib/email/send-log";
+import { formatBerlinDateTimeShort } from "@/lib/datetime/berlin";
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", { dateStyle: "short", timeStyle: "short" });
+  return formatBerlinDateTimeShort(iso);
 }
 
 function statusLabel(status: EmailLogRow["status"]) {

@@ -8,6 +8,7 @@ import { createUserNotification } from "@/lib/notifications/create";
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
+import { formatBerlinDateTimeLong } from "@/lib/datetime/berlin";
 
 function daysUntil(startAt: string, ref = new Date()) {
   const start = new Date(startAt);
@@ -58,14 +59,7 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
       .in("id", userIds);
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
 
-    const dateLabel = new Date(meeting.starts_at).toLocaleString("de-DE", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const dateLabel = formatBerlinDateTimeLong(meeting.starts_at);
     const location = [meeting.venue, meeting.city].filter(Boolean).join(" · ");
     const meetingUrl = base ? `${base}/treffen/${meeting.id}` : `/treffen/${meeting.id}`;
 

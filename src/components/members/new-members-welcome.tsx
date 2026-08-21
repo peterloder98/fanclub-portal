@@ -2,16 +2,13 @@ import { CalendarDays, MapPin, Sparkles } from "lucide-react";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import type { RecentMemberWelcome } from "@/lib/members/recent-members";
 import { memberProfileHref } from "@/lib/members/hidden";
+import { formatBerlinDateLong } from "@/lib/datetime/berlin";
 
 function formatJoinDate(iso: string | null) {
   if (!iso) return null;
-  const d = new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("de-DE", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const value = iso.includes("T") ? iso : `${iso}T12:00:00`;
+  const label = formatBerlinDateLong(value);
+  return label === "—" ? null : label;
 }
 
 export function NewMembersWelcome({ members }: { members: RecentMemberWelcome[] }) {

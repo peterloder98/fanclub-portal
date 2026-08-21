@@ -10,12 +10,13 @@ import {
   startNewRadioVotingCycle,
   toggleRadioVotingCampaign,
 } from "@/app/(app)/admin/radio-votings/actions";
+import {
+  formatBerlinDateTimeMedium,
+  utcIsoToBerlinWallClock,
+} from "@/lib/datetime/berlin";
 
 function toDatetimeLocal(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return utcIsoToBerlinWallClock(iso);
 }
 
 function emptyForm(): Partial<RadioVotingCampaignRow> & { stepsText: string } {
@@ -217,10 +218,7 @@ export function RadioVotingsAdmin({ campaigns }: { campaigns: RadioVotingCampaig
                 <p className="mt-1 text-sm text-slate-600">{c.song_title}</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Ende:{" "}
-                  {new Date(c.ends_at).toLocaleString("de-DE", {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}{" "}
+                  {formatBerlinDateTimeMedium(c.ends_at)}{" "}
                   · Runde: {c.cycle_key}
                 </p>
               </div>

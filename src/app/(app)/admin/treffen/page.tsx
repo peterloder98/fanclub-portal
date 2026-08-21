@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export default async function AdminTreffenPage() {
   const supabase = await createSupabaseServerClient();
@@ -60,7 +61,7 @@ export default async function AdminTreffenPage() {
                       <div>
                         <p className="font-medium text-fc-navy">{m.title}</p>
                         <p className="text-xs text-[color:var(--muted)]">
-                          {new Date(m.starts_at).toLocaleString("de-DE")} · {m.city ?? "—"}
+                          {formatBerlinDateTime(m.starts_at)} · {m.city ?? "—"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

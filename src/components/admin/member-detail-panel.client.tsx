@@ -27,6 +27,10 @@ import {
   saveMemberBoardNote,
   admitPendingMemberAfterFeePaid,
 } from "@/app/(app)/admin/members/detail-actions";
+import {
+  formatBerlinDate,
+  formatBerlinDateTimeMedium,
+} from "@/lib/datetime/berlin";
 import { replaceTrailingSignature } from "@/lib/email/signature-body";
 import { membershipStatusLabel } from "@/lib/membership/provision-applicant";
 import { genderDisplayLabel } from "@/lib/person/gender";
@@ -116,16 +120,11 @@ function formatDE(date: string | null) {
     const [y, m, d] = date.split("-");
     return `${d}.${m}.${y}`;
   }
-  const dt = new Date(date);
-  if (Number.isNaN(dt.getTime())) return "—";
-  return dt.toLocaleDateString("de-DE");
+  return formatBerlinDate(date);
 }
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return formatBerlinDateTimeMedium(iso);
 }
 
 function todayIsoDate() {

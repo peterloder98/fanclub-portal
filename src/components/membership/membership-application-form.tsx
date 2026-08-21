@@ -32,6 +32,7 @@ import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 import { MEMBERSHIP_FEE_EUR } from "@/lib/membership/constants";
 import { formatEur } from "@/lib/club/ledger";
+import { formatBerlinDate } from "@/lib/datetime/berlin";
 
 const SATZUNG_PDF = "/documents/satzung.pdf";
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -704,7 +705,7 @@ export function MembershipApplicationForm() {
             <div className="grid gap-1">
               <span className="text-sm font-medium text-slate-700">Datum</span>
               <div className="flex h-11 items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700">
-                {new Date(form.signed_at_date || todayIso()).toLocaleDateString("de-DE")}
+                {formatBerlinDate(`${form.signed_at_date || todayIso()}T12:00:00`)}
               </div>
               <span className="text-xs text-slate-500">Wird automatisch auf heute gesetzt.</span>
             </div>

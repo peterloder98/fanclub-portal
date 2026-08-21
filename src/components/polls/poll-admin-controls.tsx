@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { endPollEarly, deletePoll, updatePoll } from "@/app/(app)/polls/actions";
+import { utcIsoToBerlinWallClock } from "@/lib/datetime/berlin";
 
 type PollOption = { id: string; label: string };
 
@@ -32,10 +33,7 @@ export function PollAdminControls({
     initialOptions.map((o) => ({ id: o.id, label: o.label })),
   );
 
-  const endLocal = new Date(poll.ends_at);
-  const endInput = new Date(endLocal.getTime() - endLocal.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  const endInput = utcIsoToBerlinWallClock(poll.ends_at);
 
   function optionVotes(optionId: string) {
     if (!optionId) return 0;

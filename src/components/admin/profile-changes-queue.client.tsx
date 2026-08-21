@@ -16,6 +16,7 @@ import {
   type ProfileChangeField,
   type ProfileChangeValues,
 } from "@/lib/profile/change-requests";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 export type PendingProfileChangeRow = {
   id: string;
@@ -83,10 +84,7 @@ export function ProfileChangesQueue({ rows }: { rows: PendingProfileChangeRow[] 
                       ) : null}
                     </div>
                     <div className="text-xs text-slate-500">
-                      {new Date(r.created_at).toLocaleString("de-DE", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
+                      {formatBerlinDateTimeMedium(r.created_at)}
                     </div>
                   </div>
                 </HoverEnlargeAvatar>

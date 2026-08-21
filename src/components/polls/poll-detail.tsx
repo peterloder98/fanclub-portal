@@ -13,6 +13,7 @@ import { PollHeaderMeta } from "@/components/polls/poll-header-meta";
 import { pollOptionButtonClass } from "@/components/polls/poll-option-styles";
 import { PollOptionProgress, pollPercent } from "@/components/polls/poll-option-progress";
 import { PollVoteStats } from "@/components/polls/poll-vote-stats";
+import { formatBerlinDateTimeShort } from "@/lib/datetime/berlin";
 import { PollAdminControls } from "@/components/polls/poll-admin-controls";
 import { HoverEnlargeAvatar } from "@/components/ui/hover-enlarge-avatar";
 import { CommentWarningButton } from "@/components/admin/comment-warning-button";
@@ -473,10 +474,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
                   </HoverEnlargeAvatar>
                   <span>·</span>
                   <span>
-                    {new Date(c.created_at).toLocaleString("de-DE", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
+                    {formatBerlinDateTimeShort(c.created_at)}
                   </span>
                   {canDelete || canWarn ? (
                     <div className="ml-auto flex shrink-0 items-center gap-0.5">

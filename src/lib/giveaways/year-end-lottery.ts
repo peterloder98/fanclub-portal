@@ -12,6 +12,7 @@ import {
   defaultPointsYearForYearEndRun,
   yearBoundsBerlin,
 } from "@/lib/points/year-bounds";
+import { berlinWallClockToUtcIso } from "@/lib/datetime/berlin";
 import {
   freezePointsYear,
   liveYearTotalsPaged,
@@ -197,7 +198,7 @@ export async function createYearEndGiveaway(
     );
   }
 
-  const endsAt = new Date(pointsYear + 1, 11, 31, 23, 59, 59);
+  const endsAtIso = berlinWallClockToUtcIso(`${pointsYear + 1}-12-31T23:59:59`);
 
   const title = `Sonderverlosung Top-${YEAR_END_LOTTERY_TOP_N} Statuspunkte ${pointsYear}`;
   const description =
@@ -215,7 +216,7 @@ export async function createYearEndGiveaway(
       title,
       description,
       entry_mode: "simple",
-      ends_at: endsAt.toISOString(),
+      ends_at: endsAtIso,
       status: "active",
       is_active: true,
       is_paused: false,

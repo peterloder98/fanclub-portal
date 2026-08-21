@@ -8,6 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { formatEventCity } from "@/lib/events/format";
 import type { EventTravelInfo } from "@/lib/events/travel-info";
 import { loadMeetingById } from "@/lib/meetings/load";
+import {
+  formatBerlinDateLong,
+  formatBerlinDateTimeLong,
+} from "@/lib/datetime/berlin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 
@@ -40,14 +44,7 @@ export default async function TreffenDetailPage({
   const paymentDueAt = meeting.paymentDueAt ?? null;
   const paymentDeadlineDays = meeting.payment_deadline_days ?? 14;
 
-  const when = new Date(meeting.starts_at).toLocaleString("de-DE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const when = formatBerlinDateTimeLong(meeting.starts_at);
   const locationLine = [
     meeting.venue,
     meeting.address,
@@ -107,11 +104,7 @@ export default async function TreffenDetailPage({
                     <strong>{formatCost(chargeCents, null)}</strong> — bitte bis{" "}
                     <strong>
                       {paymentDueAt
-                        ? new Date(paymentDueAt).toLocaleDateString("de-DE", {
-                            day: "2-digit",
-                            month: "long",
-                            year: "numeric",
-                          })
+                        ? formatBerlinDateLong(paymentDueAt)
                         : `${paymentDeadlineDays} Tagen nach Anmeldung`}
                     </strong>{" "}
                     an den Fanclub überweisen. Ohne Zahlung kann die Anmeldung zurückgenommen

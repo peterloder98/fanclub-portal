@@ -17,6 +17,7 @@ import { createUserNotification } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { deleteNotificationsByMetadata } from "@/lib/notifications/cleanup";
 import { communityRulesUrl } from "@/lib/community/rules";
+import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
 
 export type CommentWarningInput = {
   commentType: "post" | "poll" | "giveaway" | "chat" | "live_chat" | "live_question";
@@ -26,9 +27,8 @@ export type CommentWarningInput = {
 };
 
 function formatDE(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" });
+  const formatted = formatBerlinDateTimeMedium(iso);
+  return formatted === "—" ? iso : formatted;
 }
 
 export async function issueCommentWarning(input: CommentWarningInput) {

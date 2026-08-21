@@ -12,6 +12,7 @@ import {
   publishFeedPostAction,
 } from "@/app/(app)/admin/posts/actions";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { formatBerlinDateTimeShort } from "@/lib/datetime/berlin";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
 import { optimizePostImage } from "@/lib/posts/optimize-image";
@@ -748,10 +749,7 @@ function PostFeedInner({
             author: author?.name ?? "Mitglied",
             authorAvatarUrl: author?.avatarUrl ?? null,
             createdAt: c.created_at,
-            createdAtLabel: new Date(c.created_at).toLocaleString("de-DE", {
-              dateStyle: "short",
-              timeStyle: "short",
-            }),
+            createdAtLabel: formatBerlinDateTimeShort(c.created_at),
             text: c.body,
             parentCommentId: (c.parent_comment_id as string | null) ?? null,
             replyToUserId: (c.reply_to_user_id as string | null) ?? null,
@@ -798,10 +796,7 @@ function PostFeedInner({
               authorAvatarUrl: isBirthday
                 ? FANCLUB_AUTHOR_LOGO
                 : postAuthorMap.get(p.author_id)?.avatarUrl ?? null,
-              createdAtLabel: new Date(p.created_at).toLocaleString("de-DE", {
-                dateStyle: "short",
-                timeStyle: "short",
-              }),
+              createdAtLabel: formatBerlinDateTimeShort(p.created_at),
               title: "",
               body: p.body,
               status: (p as any).status ?? "approved",
@@ -920,10 +915,7 @@ function PostFeedInner({
                 authorId: p.author_id,
                 authorName: author?.name ?? "Admin",
                 authorAvatarUrl: author?.avatarUrl ?? null,
-                createdAtLabel: new Date(p.created_at).toLocaleString("de-DE", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }),
+                createdAtLabel: formatBerlinDateTimeShort(p.created_at),
               };
             }),
           );
@@ -1190,10 +1182,7 @@ function PostFeedInner({
     const flyRect = flyFrom?.getBoundingClientRect() ?? null;
     setDraftByPostId((d) => ({ ...d, [postId]: "" }));
     setReplyingTo((r) => (r?.postId === postId ? null : r));
-    const nowLabel = new Date().toLocaleString("de-DE", {
-      dateStyle: "short",
-      timeStyle: "short",
-    });
+    const nowLabel = formatBerlinDateTimeShort(new Date());
     const tempId = crypto.randomUUID();
     const isBirthday = Boolean(post?.isBirthday);
 
@@ -1713,10 +1702,7 @@ function PostFeedInner({
           authorName: me.name,
           authorRole: me.role,
           authorAvatarUrl: me.avatarUrl,
-          createdAtLabel: new Date(postRow.created_at).toLocaleString("de-DE", {
-            dateStyle: "short",
-            timeStyle: "short",
-          }),
+          createdAtLabel: formatBerlinDateTimeShort(postRow.created_at),
           title: postRow.title,
           body: postRow.body,
           status: status === "pending" ? "pending" : ("approved" as const),
