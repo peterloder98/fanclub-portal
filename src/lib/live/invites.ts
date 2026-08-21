@@ -16,27 +16,19 @@ import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { resolveLiveAnniEmail } from "@/lib/live/anni-recipient";
 import { liveSessionCalendarUrl, liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
 import { appBaseUrl, liveMemberUrl, type LiveSessionRow } from "@/lib/live/types";
+import { formatBerlinDateTimeLong, formatBerlinTime } from "@/lib/datetime/berlin";
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Einladungs-/Erinnerungsdatum — immer Europe/Berlin (nicht Server-UTC). */
 export function formatLiveSessionDateLabel(iso: string): string {
-  return new Date(iso).toLocaleString("de-DE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatBerlinDateTimeLong(iso);
 }
 
 export function formatLiveSessionTimeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString("de-DE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatBerlinTime(iso);
 }
 
 /** Minuten vor Start, ab denen der Raum für Mitglieder offen ist (Default 10). */

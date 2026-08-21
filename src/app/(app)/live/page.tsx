@@ -9,6 +9,7 @@ import {
   type LiveSessionRow,
 } from "@/lib/live/types";
 import { deleteGraceExpiredLiveSessions, endExpiredLiveSessions } from "@/lib/live/cleanup";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +79,7 @@ export default async function LiveIndexPage() {
                       <div>
                         <p className="font-semibold text-fc-navy">{s.title}</p>
                         <p className="mt-1 text-xs text-slate-500">
-                          {new Date(s.starts_at).toLocaleString("de-DE")}
+                          {formatBerlinDateTime(s.starts_at)}
                         </p>
                       </div>
                       <span

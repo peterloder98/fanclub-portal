@@ -10,6 +10,7 @@ import { LiveSessionCountdown } from "@/components/live/live-session-countdown.c
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { emitPointsGain } from "@/lib/points/events";
 import { cn } from "@/lib/cn";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 const LiveKitStage = dynamic(
   () =>
@@ -275,7 +276,7 @@ export function LiveMemberRoom({
             {title}
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            Start {new Date(startsAt).toLocaleString("de-DE")}
+            Start {formatBerlinDateTime(startsAt)}
           </p>
           {inGrace && graceDeadline ? (
             <LiveSessionCountdown
@@ -295,7 +296,7 @@ export function LiveMemberRoom({
       ) : (
         <div className="mb-4">
           <p className="text-sm text-slate-600">
-            Start {new Date(startsAt).toLocaleString("de-DE")}
+            Start {formatBerlinDateTime(startsAt)}
             {roomClosed
               ? " · Beendet"
               : inGrace

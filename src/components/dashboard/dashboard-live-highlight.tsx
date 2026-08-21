@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Video } from "lucide-react";
+import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export function DashboardLiveHighlight({
   session,
@@ -21,7 +22,7 @@ export function DashboardLiveHighlight({
         </p>
         <p className="truncate font-semibold text-fc-navy">{session.title}</p>
         <p className="text-xs text-slate-500">
-          Start {new Date(session.startsAt).toLocaleString("de-DE")} — antippen zum Mitmachen
+          Start {formatBerlinDateTime(session.startsAt)} — antippen zum Mitmachen
         </p>
       </div>
     </Link>

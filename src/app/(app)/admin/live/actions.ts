@@ -16,9 +16,23 @@ import {
   sendAnniHostLinkEmail,
   sendLiveSessionInviteEmails,
 } from "@/lib/live/invites";
+import { berlinWallClockToUtcIso } from "@/lib/datetime/berlin";
 
-function parseIso(label: string, raw: string): string {
-  const d = new Date(raw);
+/**
+ * Admin-Eingabe = Europe/Berlin-Wanduhr (`YYYY-MM-DDTHH:mm`) oder bereits ISO mit Offset/Z.
+ * Speichert immer als UTC-Instant.
+ */
+function parseAdminDateTime(label: string, raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) throw new Error(`${label}: ungültiges Datum.`);
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+    try {
+      return berlinWallClockToUtcIso(trimmed);
+    } catch {
+      throw new Error(`${label}: ungültiges Datum.`);
+    }
+  }
+  const d = new Date(trimmed);
   if (Number.isNaN(d.getTime())) throw new Error(`${label}: ungültiges Datum.`);
   return d.toISOString();
 }
@@ -48,14 +62,14 @@ export async function createLiveSessionAction(input: {
       return { ok: false, error: "Titel: 2–120 Zeichen." };
     }
 
-    const starts_at = parseIso("Start", input.startsAt);
+    const starts_at = parseAdminDateTime("Start", input.startsAt);
     let ends_at: string;
     try {
       ends_at = endsAtFromDuration(starts_at, input.durationMinutes);
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
     }
-    const join_opens_at = parseIso("Beitritt ab", input.joinOpensAt);
+    const join_opens_at = parseAdminDateTime("Beitritt ab", input.joinOpensAt);
     if (new Date(join_opens_at) > new Date(starts_at)) {
       return { ok: false, error: "Beitritt muss vor oder zum Start liegen." };
     }
@@ -243,14 +257,14 @@ export async function updateLiveSessionAction(input: {
     if (title.length < 2 || title.length > 120) {
       return { ok: false, error: "Titel: 2–120 Zeichen." };
     }
-    const starts_at = parseIso("Start", input.startsAt);
+    const starts_at = parseAdminDateTime("Start", input.startsAt);
     let ends_at: string;
     try {
       ends_at = endsAtFromDuration(starts_at, input.durationMinutes);
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Ungültige Dauer." };
     }
-    const join_opens_at = parseIso("Beitritt ab", input.joinOpensAt);
+    const join_opens_at = parseAdminDateTime("Beitritt ab", input.joinOpensAt);
     if (new Date(join_opens_at) > new Date(starts_at)) {
       return { ok: false, error: "Beitritt muss vor oder zum Start liegen." };
     }

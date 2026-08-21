@@ -3,16 +3,10 @@
 import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
+import { formatBerlinDateTimeLong } from "@/lib/datetime/berlin";
 
 function formatWhen(iso: string) {
-  return new Date(iso).toLocaleString("de-DE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatBerlinDateTimeLong(iso);
 }
 
 function formatDuration(startsAt: string, endsAt: string) {

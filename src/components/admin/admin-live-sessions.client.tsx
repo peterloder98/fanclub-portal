@@ -16,25 +16,28 @@ import {
 } from "@/lib/live/types";
 import { AppDateTimeInput } from "@/components/ui/birthdate-segment-input";
 import { cn } from "@/lib/cn";
-
-function toLocalInputValue(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+import {
+  berlinWallClockToUtcIso,
+  formatBerlinDateTime,
+  utcIsoToBerlinWallClock,
+} from "@/lib/datetime/berlin";
 
 function defaultStarts(): string {
   const d = new Date();
   d.setMinutes(0, 0, 0);
   d.setHours(d.getHours() + 2);
-  return toLocalInputValue(d.toISOString());
+  return utcIsoToBerlinWallClock(d.toISOString());
 }
 
 function defaultJoin(startsLocal: string): string {
-  const d = new Date(startsLocal);
-  d.setMinutes(d.getMinutes() - 10);
-  return toLocalInputValue(d.toISOString());
+  try {
+    const startUtc = berlinWallClockToUtcIso(startsLocal);
+    const d = new Date(startUtc);
+    d.setMinutes(d.getMinutes() - 10);
+    return utcIsoToBerlinWallClock(d.toISOString());
+  } catch {
+    return startsLocal;
+  }
 }
 
 const STATUS_LABEL: Record<LiveSessionStatus, string> = {
@@ -83,9 +86,10 @@ export function AdminLiveSessionsPanel({
     startTransition(async () => {
       const result = await createLiveSessionAction({
         title,
-        startsAt: new Date(startsAt).toISOString(),
+        // Wanduhr Europe/Berlin — Server rechnet nach UTC um (nicht Browser-TZ).
+        startsAt,
         durationMinutes,
-        joinOpensAt: new Date(joinOpensAt).toISOString(),
+        joinOpensAt,
         sendInvites,
       });
       if (!result.ok) {
@@ -268,11 +272,11 @@ export function AdminLiveSessionsPanel({
                   <div>
                     <h3 className="font-semibold text-fc-navy">{s.title}</h3>
                     <p className="mt-1 text-xs text-slate-500">
-                      Start {new Date(s.starts_at).toLocaleString("de-DE")}
+                      Start {formatBerlinDateTime(s.starts_at)}
                       {duration > 0 ? ` · ${duration} Min.` : null}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      Beitritt ab {new Date(s.join_opens_at).toLocaleString("de-DE")} · Slug{" "}
+                      Beitritt ab {formatBerlinDateTime(s.join_opens_at)} · Slug{" "}
                       <code className="rounded bg-slate-100 px-1">{s.slug}</code>
                     </p>
                   </div>

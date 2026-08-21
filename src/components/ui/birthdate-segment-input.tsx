@@ -228,7 +228,7 @@ function splitLocalDateTime(localValue: string): { date: string; time: string } 
  * Datum + Uhrzeit als getrennte Felder (Browser-Date/Time-Picker).
  * Ein unsichtbares `datetime-local` lässt auf Safari/Chrome oft nur das Datum zu —
  * deshalb explizit Datum und Uhrzeit.
- * Wert bleibt `YYYY-MM-DDTHH:mm` (lokal, wie datetime-local).
+ * Wert bleibt `YYYY-MM-DDTHH:mm` als Europe/Berlin-Wanduhr (Server rechnet nach UTC um).
  */
 export function AppDateTimeInput({
   label,
