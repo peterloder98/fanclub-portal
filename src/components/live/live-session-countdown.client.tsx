@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { formatBerlinTime } from "@/lib/datetime/berlin";
 
 function formatRemain(ms: number): string {
   const totalSec = Math.max(0, Math.ceil(ms / 1000));
@@ -57,10 +58,7 @@ export function LiveSessionCountdown({
   const urgent = !ended && remain <= 60_000;
   const warn = !ended && remain <= 5 * 60_000;
 
-  const endLabel = new Date(endsAt).toLocaleTimeString("de-DE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const endLabel = formatBerlinTime(endsAt);
   const targetWord =
     until === "start" ? "Start" : until === "grace" ? "Schließung" : "Ende";
 

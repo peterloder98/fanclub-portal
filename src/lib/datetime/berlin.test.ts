@@ -27,4 +27,8 @@ describe("formatBerlin*", () => {
     expect(formatBerlinTime(iso)).toMatch(/21:00/);
     expect(formatBerlinDateTime(iso)).toMatch(/21:00/);
   });
+
+  it("shows 20:50 for join_opens 18:50Z", () => {
+    expect(formatBerlinTime("2026-08-24T18:50:00.000Z")).toMatch(/20:50/);
+  });
 });
