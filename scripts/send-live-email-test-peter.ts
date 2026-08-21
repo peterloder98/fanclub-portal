@@ -38,11 +38,12 @@ const inviteHtml = `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">wir laden dich herzlich zu einer Live-Session mit Anni in der Fanclub-App ein!</p>
 <p style="margin:0 0 0.35em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">{{session_title}}</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">{{session_date}}</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf), kannst zusagen oder absagen und optional schon eine Frage an Anni einreichen (nur eine Vorab-Frage).</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf) und kannst zusagen oder absagen.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Schon vor dem Live-Termin kannst du auf der Live-Seite eine Vorab-Frage an Anni einreichen — jede und jeder ist willkommen, früh eine Frage zu stellen (pro Person eine Vorab-Frage).</p>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
   <a href="{{session_url}}" style="${EMAIL_BUTTON_STYLE}">Zur Live-Einladung</a>
 </p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">Das Live-Video und der Chat öffnen sich erst am Tag des Live-Chat mit Anni, sobald der Raum freigegeben ist.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Am Live-Tag öffnet sich der Raum <strong>{{join_opens_minutes}} Minuten</strong> vor Start für alle Mitglieder zum Chatten. Das Video beginnt erst, wenn Anni dazukommt — bitte sei deshalb rechtzeitig dabei.</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">Wer zusagt, erhält einen Tag vorher nochmals eine Erinnerung, dass es stattfindet.</p>
 <p style="margin:0 0 0.5em;font-size:15px;line-height:1.55;color:#1e293b">Termin im Kalender speichern:</p>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
@@ -57,12 +58,15 @@ wir laden dich herzlich zu einer Live-Session mit Anni in der Fanclub-App ein!
 {{session_title}}
 {{session_date}}
 
-Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf), kannst zusagen oder absagen und optional schon eine Frage an Anni einreichen (nur eine Vorab-Frage).
+Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf) und kannst zusagen oder absagen.
+
+Schon vor dem Live-Termin kannst du auf der Live-Seite eine Vorab-Frage an Anni einreichen — jede und jeder ist willkommen, früh eine Frage zu stellen (pro Person eine Vorab-Frage).
 
 Zur Live-Einladung:
 {{session_url}}
 
-Das Live-Video und der Chat öffnen sich erst am Tag des Live-Chat mit Anni, sobald der Raum freigegeben ist.
+Am Live-Tag öffnet sich der Raum {{join_opens_minutes}} Minuten vor Start für alle Mitglieder zum Chatten. Das Video beginnt erst, wenn Anni dazukommt — bitte sei deshalb rechtzeitig dabei.
+
 Wer zusagt, erhält einen Tag vorher nochmals eine Erinnerung, dass es stattfindet.
 
 Termin im Kalender speichern:
@@ -118,7 +122,8 @@ async function upsertHtmlTemplates() {
       subject: "Einladung: {{session_title}} am {{session_date}}",
       body_text: inviteText,
       body_html: inviteHtml,
-      description: "Einladung mit RSVP, Vorab-Frage und Kalender-Button. Login Pflicht.",
+      description:
+        "Einladung mit RSVP, Vorab-Frage (schon vor dem Termin), Raum öffnet join_opens_minutes vor Start zum Chatten, Video erst wenn Anni da ist. Kalender-Button. Login Pflicht.",
       updated_at: new Date().toISOString(),
     },
     { onConflict: "key" },
@@ -204,6 +209,7 @@ async function main() {
   const sessionDate = formatLiveSessionDateLabel(session.starts_at);
   const sessionTime = formatLiveSessionTimeLabel(session.starts_at);
   const title = "Live-Chat mit Anni (Test)";
+  const joinOpensMinutes = "10";
 
   console.log(`Fiktiver Termin: ${sessionDate}`);
   console.log(`Kalender-URL: ${calendarUrl}`);
@@ -218,6 +224,7 @@ async function main() {
       session_date: sessionDate,
       session_url: sessionUrl,
       calendar_url: calendarUrl,
+      join_opens_minutes: joinOpensMinutes,
     },
     session,
   );

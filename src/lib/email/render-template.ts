@@ -454,6 +454,48 @@ Viel Spaß beim Live!`,
 <p style="${EMAIL_PARAGRAPH_STYLE}"><a href="{{calendar_url}}">Termin im Kalender speichern</a></p>`,
 };
 
+const LIVE_SESSION_INVITE_FALLBACK = {
+  subject: "Einladung: {{session_title}} am {{session_date}}",
+  body_text: `{{salutation}},
+
+wir laden dich herzlich zu einer Live-Session mit Anni in der Fanclub-App ein!
+
+{{session_title}}
+{{session_date}}
+
+Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf) und kannst zusagen oder absagen.
+
+Schon vor dem Live-Termin kannst du auf der Live-Seite eine Vorab-Frage an Anni einreichen — jede und jeder ist willkommen, früh eine Frage zu stellen (pro Person eine Vorab-Frage).
+
+Zur Live-Einladung:
+{{session_url}}
+
+Am Live-Tag öffnet sich der Raum {{join_opens_minutes}} Minuten vor Start für alle Mitglieder zum Chatten. Das Video beginnt erst, wenn Anni dazukommt — bitte sei deshalb rechtzeitig dabei.
+
+Wer zusagt, erhält einen Tag vorher nochmals eine Erinnerung, dass es stattfindet.
+
+Termin im Kalender speichern:
+{{calendar_url}}
+
+Wir freuen uns auf dich!`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">wir laden dich herzlich zu einer Live-Session mit Anni in der Fanclub-App ein!</p>
+<p style="margin:0 0 0.35em;font-size:17px;line-height:1.35;color:#0b1f3a;font-weight:700">{{session_title}}</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">{{session_date}}</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Bitte melde dich zuerst mit deinen Mitgliedsdaten an. Über den Button siehst du alle Infos (Wann, Dauer, Ablauf) und kannst zusagen oder absagen.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Schon vor dem Live-Termin kannst du auf der Live-Seite eine Vorab-Frage an Anni einreichen — jede und jeder ist willkommen, früh eine Frage zu stellen (pro Person eine Vorab-Frage).</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{session_url}}" style="${EMAIL_BUTTON_STYLE}">Zur Live-Einladung</a>
+</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Am Live-Tag öffnet sich der Raum <strong>{{join_opens_minutes}} Minuten</strong> vor Start für alle Mitglieder zum Chatten. Das Video beginnt erst, wenn Anni dazukommt — bitte sei deshalb rechtzeitig dabei.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Wer zusagt, erhält einen Tag vorher nochmals eine Erinnerung, dass es stattfindet.</p>
+<p style="margin:0 0 0.5em;font-size:15px;line-height:1.55;color:#1e293b">Termin im Kalender speichern:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{calendar_url}}" style="${EMAIL_BUTTON_STYLE}">In den Kalender eintragen</a>
+</p>
+<p style="margin:0;font-size:15px;line-height:1.55;color:#1e293b">Wir freuen uns auf dich!</p>`,
+};
+
 export async function renderEmailFromTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string>,
@@ -560,6 +602,16 @@ export async function renderEmailFromTemplate(
       subject: LIVE_SESSION_HOST_INVITE_FALLBACK.subject,
       body_text: LIVE_SESSION_HOST_INVITE_FALLBACK.body_text,
       body_html: LIVE_SESSION_HOST_INVITE_FALLBACK.body_html,
+      description: null,
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.liveSessionInvite) {
+    row = {
+      key,
+      name: "Live mit Anni — Einladung",
+      subject: LIVE_SESSION_INVITE_FALLBACK.subject,
+      body_text: LIVE_SESSION_INVITE_FALLBACK.body_text,
+      body_html: LIVE_SESSION_INVITE_FALLBACK.body_html,
       description: null,
     };
   }

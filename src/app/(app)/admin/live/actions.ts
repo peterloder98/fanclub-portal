@@ -81,7 +81,7 @@ export async function createLiveSessionAction(input: {
     if (error) return { ok: false, error: error.message };
 
     const hostUrl = liveHostUrl(token);
-    const sessionMail = { id, slug, title, starts_at, ends_at };
+    const sessionMail = { id, slug, title, starts_at, ends_at, join_opens_at };
     const queueInvites = input.sendInvites !== false;
 
     after(async () => {
@@ -135,7 +135,7 @@ export async function resendLiveSessionInvitesAction(
     const admin = createSupabaseAdminClient();
     const { data, error } = await admin
       .from("live_sessions")
-      .select("id,slug,title,starts_at,ends_at,status")
+      .select("id,slug,title,starts_at,ends_at,join_opens_at,status")
       .eq("id", sessionId)
       .maybeSingle();
     if (error || !data) return { ok: false, error: "Session nicht gefunden." };

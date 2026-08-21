@@ -661,7 +661,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
               "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Dauer in Minuten eintragen (höchstens 60). Nach der Dauer endet Annis Video automatisch.",
-              "Haken „Einladen“ lassen — Mitglieder-Einladungen und der Host-Link an Anni werden im Hintergrund per E-Mail versendet (App-Benachrichtigung an Mitglieder ebenfalls). Bei Zusage gibt es am Tag zuvor eine Erinnerung.",
+              "Haken „Einladen“ lassen — Mitglieder-Einladungen und der Host-Link an Anni werden im Hintergrund per E-Mail versendet (App-Benachrichtigung an Mitglieder ebenfalls). Die Einladung weist darauf hin, dass schon vor dem Termin eine Vorab-Frage möglich ist und der Raum typischerweise einige Minuten vor Start zum Chatten öffnet (Video erst, wenn Anni da ist). Bei Zusage gibt es am Tag zuvor eine Erinnerung.",
               "„Live-Chat erstellen“ tippen. Sofort erscheint der Host-Link zum Kopieren. Anni erhält denselben Link zusätzlich per E-Mail (nicht den Mitglieder-Link). Der Link bleibt gültig, bis ihr ihn bewusst erneuert — bei Verbindungsabbruch denselben Link erneut öffnen oder „Erneut verbinden“ tippen.",
               "Mitglieder öffnen nach Login die Live-Seite: zuerst Infoseite (Wann, Ablauf, Zusage/Absage, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist.",
               "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Vorzeitig beenden: Button „Live beenden“ — Mitglieder wechseln automatisch in den Chat-Nachlauf (kein Neuladen nötig).",

@@ -39,10 +39,23 @@ export function formatLiveSessionTimeLabel(iso: string): string {
   });
 }
 
+/** Minuten vor Start, ab denen der Raum für Mitglieder offen ist (Default 10). */
+export function liveJoinOpensMinutesBefore(
+  startsAt: string,
+  joinOpensAt?: string | null,
+): number {
+  if (!joinOpensAt) return 10;
+  const ms = new Date(startsAt).getTime() - new Date(joinOpensAt).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return 10;
+  return Math.max(0, Math.round(ms / 60_000));
+}
+
 type SessionMailFields = Pick<
   LiveSessionRow,
   "id" | "slug" | "title" | "starts_at" | "ends_at"
->;
+> & {
+  join_opens_at?: string | null;
+};
 
 function mailAttachments(
   session: SessionMailFields,
@@ -99,6 +112,9 @@ export async function sendLiveSessionInviteEmails(
 
   const sessionUrl = liveMemberUrl(session.slug);
   const sessionDate = formatLiveSessionDateLabel(session.starts_at);
+  const joinOpensMinutes = String(
+    liveJoinOpensMinutesBefore(session.starts_at, session.join_opens_at),
+  );
   let emails = 0;
   let errors = 0;
 
@@ -120,6 +136,7 @@ export async function sendLiveSessionInviteEmails(
           session_date: sessionDate,
           session_url: sessionUrl,
           calendar_url: liveSessionCalendarUrl(session),
+          join_opens_minutes: joinOpensMinutes,
         },
         session,
       });
