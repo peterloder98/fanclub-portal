@@ -14,6 +14,7 @@ import {
   type MerchandiseProductRow,
   type MerchandiseVariantInput,
 } from "@/app/(app)/admin/merchandise/actions";
+import { decimalInputProps, integerInputProps, sanitizeDecimalInput, sanitizeDigitsInput } from "@/lib/input/decimal-input";
 
 const SIZE_PRESETS = ["S", "M", "L", "XL", "XXL"];
 
@@ -158,10 +159,9 @@ export function MerchandiseProductForm({
               <span className="text-sm font-medium">Verkaufspreis (€)</span>
               <input
                 value={salePrice}
-                onChange={(e) => setSalePrice(e.target.value)}
-                type="number"
-                step="0.01"
+                onChange={(e) => setSalePrice(sanitizeDecimalInput(e.target.value))}
                 className="h-11 rounded-xl border px-3 text-sm"
+                {...decimalInputProps()}
               />
               <span className="text-xs text-slate-500">0 € = Geschenkartikel (nicht im Shop)</span>
             </label>
@@ -169,10 +169,9 @@ export function MerchandiseProductForm({
               <span className="text-sm font-medium">Einkauf gesamt (€, optional)</span>
               <input
                 value={purchaseTotal}
-                onChange={(e) => setPurchaseTotal(e.target.value)}
-                type="number"
-                step="0.01"
+                onChange={(e) => setPurchaseTotal(sanitizeDecimalInput(e.target.value))}
                 className="h-11 rounded-xl border px-3 text-sm"
+                {...decimalInputProps()}
               />
             </label>
           </div>
@@ -302,15 +301,17 @@ export function MerchandiseProductForm({
                                 : "Geschenkt"}
                           </span>
                           <input
-                            type="number"
-                            min={0}
-                            value={v[field] || ""}
+                            value={v[field] ? String(v[field]) : ""}
                             onChange={(e) => {
                               const next = [...variants];
-                              next[i] = { ...v, [field]: Number(e.target.value) || 0 };
+                              next[i] = {
+                                ...v,
+                                [field]: Number(sanitizeDigitsInput(e.target.value)) || 0,
+                              };
                               setVariants(next);
                             }}
                             className="h-11 rounded-lg border px-2 text-sm"
+                            {...integerInputProps()}
                           />
                         </label>
                       ))}
@@ -363,15 +364,17 @@ export function MerchandiseProductForm({
                         {(["qty_purchased", "qty_sold", "qty_gifted"] as const).map((field) => (
                           <td key={field} className="px-4 py-2">
                             <input
-                              type="number"
-                              min={0}
-                              value={v[field] || ""}
+                              value={v[field] ? String(v[field]) : ""}
                               onChange={(e) => {
                                 const next = [...variants];
-                                next[i] = { ...v, [field]: Number(e.target.value) || 0 };
+                                next[i] = {
+                                  ...v,
+                                  [field]: Number(sanitizeDigitsInput(e.target.value)) || 0,
+                                };
                                 setVariants(next);
                               }}
                               className="h-10 w-20 rounded-lg border px-2"
+                              {...integerInputProps()}
                             />
                           </td>
                         ))}

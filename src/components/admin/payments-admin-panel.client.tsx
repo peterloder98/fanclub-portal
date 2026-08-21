@@ -15,6 +15,7 @@ import {
   updatePaymentFieldsAction,
   type AdminPaymentRow,
 } from "@/app/(app)/admin/payments/actions";
+import { decimalInputProps, sanitizeDecimalInput } from "@/lib/input/decimal-input";
 
 const FILTERS: Array<{ id: PaymentStatus | "all"; label: string }> = [
   { id: "all", label: "Alle" },
@@ -366,15 +367,15 @@ export function PaymentsAdminPanel({
                 </span>
                 <input
                   type="text"
-                  inputMode="decimal"
                   required
                   value={amountEur}
                   onChange={(e) => {
-                    setAmountEur(e.target.value);
+                    setAmountEur(sanitizeDecimalInput(e.target.value));
                     setError(null);
                   }}
                   placeholder="15,00"
                   className="h-9 rounded-lg border px-2 text-sm"
+                  {...decimalInputProps()}
                 />
                 <span className="text-[11px] text-slate-500">
                   Tatsächlich eingegangener Betrag laut Kontoauszug. Bei 30 € (zwei Jahresbeiträge)

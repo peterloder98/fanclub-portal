@@ -719,16 +719,20 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Treffen verwaltet ihr nicht im Admin-Hub, sondern im normalen Mitglieder-Bereich:",
+            text: "Treffen verwaltet ihr nicht im Admin-Hub, sondern im normalen Mitglieder-Bereich (oder unter Admin → Fanclub Treffen):",
           },
           {
             type: "ol",
             items: [
-              "Im Menü „Mitglieder“ öffnen.",
-              "Oben den Tab „Fanclub Treffen“ wählen.",
-              "Als Vorstand erscheint dort das Formular „Neues Treffen anlegen“ — Titel, Zeit, Ort, ggf. Kosten und Anreise ausfüllen.",
-              "Speichern. Mitglieder sehen den Termin in demselben Tab und können teilnehmen — im Profil erscheint das unter „Hier bin ich dabei“.",
+              "Im Menü „Mitglieder“ öffnen und den Tab „Fanclub Treffen“ wählen (oder Admin → Fanclub Treffen).",
+              "Formular „Neues Treffen anlegen“: Titel, Beginn (Datum und Uhrzeit getrennt, deutsche Zeit), Ort und optional Ende ausfüllen.",
+              "Nur wenn es Kosten gibt: Haken „Kosten für das Fantreffen“ setzen — dann Betrag, Hinweis und Zahlungsfrist eintragen. Ohne Haken bleibt das Treffen kostenlos.",
+              "Anreise & Unterkunft bei Bedarf ergänzen und speichern. Mit „Sofort veröffentlichen“ erscheint der Termin für alle Mitglieder.",
             ],
+          },
+          {
+            type: "note",
+            text: "Beim Veröffentlichen bekommen alle aktiven Mitglieder eine In-App-Benachrichtigung (Glocke). Es geht keine Massen-E-Mail an alle Mitglieder. Erinnerungs-E-Mails gehen später nur an angemeldete Teilnehmer (ca. 7 und 2 Tage vorher), sofern die Person Treffen-Erinnerungen nicht abgeschaltet hat.",
           },
           {
             type: "p",
@@ -744,7 +748,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "p",
-            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“. Vergangene Treffen findet ihr im Tab „Treffen-Archiv“.",
+            text: "Mitglieder sehen das auf der Treffen-Seite unter „Anreise & Unterkunft“. Vergangene Treffen findet ihr im Tab „Treffen-Archiv“. Teilnahme erscheint im Profil unter „Hier bin ich dabei“.",
           },
           {
             type: "link",

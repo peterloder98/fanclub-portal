@@ -392,7 +392,7 @@ export function ClubAccountingPanel({
               <label className="grid gap-1 text-sm">
                 <span className="font-medium text-slate-700">Kontostand an diesem Tag (€)</span>
                 <input
-                  {...decimalInputProps}
+                  {...decimalInputProps()}
                   value={setupBalance}
                   onChange={(e) => setSetupBalance(sanitizeDecimalInput(e.target.value))}
                   placeholder="z. B. 1.234,56"
