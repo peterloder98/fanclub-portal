@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { redirect } from "next/navigation";
 import { GiveawayBoard } from "@/components/giveaways/giveaway-board";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
@@ -13,10 +13,7 @@ import {
 import { YearEndSetupBanner } from "@/components/giveaways/year-end-setup-banner";
 
 export default async function GiveawaysPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const { data: me } = await supabase

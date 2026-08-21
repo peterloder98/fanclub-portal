@@ -3,15 +3,12 @@ import { redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { CommunityRulesContent } from "@/components/community/community-rules-content";
 import { Card, CardContent } from "@/components/ui/card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function CommunityRulesPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase

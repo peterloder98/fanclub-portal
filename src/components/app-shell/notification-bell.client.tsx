@@ -95,7 +95,10 @@ export function NotificationBell({ onOpenChange, onRegisterClose }: Notification
 
   useEffect(() => {
     void load();
-    const id = window.setInterval(() => void load(), 30_000);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void load();
+    }, 60_000);
     const onVisible = () => {
       if (document.visibilityState === "visible") void load();
     };

@@ -10,7 +10,7 @@ import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-givea
 import { DashboardMeetingHighlight } from "@/components/meetings/dashboard-meeting-highlight";
 import { DashboardLiveHighlight } from "@/components/dashboard/dashboard-live-highlight";
 import { loadPublishedMeetings, pickNextMeeting } from "@/lib/meetings/load";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -20,10 +20,7 @@ import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 export default async function DashboardPage() {
   after(() => maybeSyncArtistflowIfStale());
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   let { data: events } = await supabase

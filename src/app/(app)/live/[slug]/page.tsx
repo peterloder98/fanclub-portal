@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { LiveMemberSessionView } from "@/components/live/live-member-session-view";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { type LiveSessionRow } from "@/lib/live/types";
 import { syncLiveSessionLifecycle, LIVE_SESSION_SELECT } from "@/lib/live/cleanup";
@@ -21,10 +21,7 @@ export default async function LiveMemberSlugPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
 
   if (!user) {
     redirect(`/login?next=${encodeURIComponent(`/live/${slug}`)}`);

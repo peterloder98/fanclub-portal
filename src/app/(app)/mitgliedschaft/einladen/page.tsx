@@ -1,13 +1,10 @@
 import { redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { ReferMembershipClient } from "@/components/membership/refer-membership.client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 
 export default async function MitgliedschaftEinladenPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   type SendRow = {

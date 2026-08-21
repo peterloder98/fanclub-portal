@@ -7,7 +7,7 @@ import { MeetingAdminForm } from "@/components/meetings/meeting-admin-form.clien
 import { MitgliederTabs } from "@/components/mitglieder/mitglieder-tabs.client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { loadPublishedMeetings } from "@/lib/meetings/load";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { memberCountryLabel } from "@/lib/members/country";
 import type { MemberMapPoint } from "@/lib/members/cluster-map";
@@ -23,10 +23,7 @@ import { scheduleMissingProfileGeocode } from "@/lib/members/maybe-geocode-missi
 export default async function MitgliederPage() {
   scheduleMissingProfileGeocode();
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();

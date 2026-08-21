@@ -12,7 +12,7 @@ import {
   formatBerlinDateLong,
   formatBerlinDateTimeLong,
 } from "@/lib/datetime/berlin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { notFound, redirect } from "next/navigation";
 
 function formatCost(costCents: number | null, costLabel: string | null) {
@@ -31,10 +31,7 @@ export default async function TreffenDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const meeting = await loadMeetingById(supabase, id, user.id);

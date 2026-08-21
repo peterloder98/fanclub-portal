@@ -1,5 +1,5 @@
 import { Topbar } from "@/components/app-shell/topbar";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { redirect, notFound } from "next/navigation";
 import { GiveawayDetailClient } from "@/components/giveaways/giveaway-detail-client";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
@@ -22,10 +22,7 @@ export default async function GiveawayDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const celebrateDraw = sp.ausgelost === "1";
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const { data: me } = await supabase

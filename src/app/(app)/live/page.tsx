@@ -1,7 +1,7 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { LiveMemberSessionView } from "@/components/live/live-member-session-view";
 import { LiveSessionListCard } from "@/components/live/live-session-list-card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { isSessionDiscoverable, type LiveSessionRow } from "@/lib/live/types";
 import {
@@ -22,10 +22,7 @@ export default async function LiveIndexPage() {
   await endExpiredLiveSessions(admin);
   await deleteGraceExpiredLiveSessions(admin);
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   const now = new Date().toISOString();
 
   let { data, error } = await supabase

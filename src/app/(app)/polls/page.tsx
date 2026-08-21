@@ -1,15 +1,12 @@
 import { Suspense } from "react";
 import { Topbar } from "@/components/app-shell/topbar";
 import { PollBoard } from "@/components/polls/poll-board";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { redirect } from "next/navigation";
 import { AdminPollForm } from "../admin/polls/admin-poll-form";
 
 export default async function PollsPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
   const { data: me } = await supabase
     .from("profiles")

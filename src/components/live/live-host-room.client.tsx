@@ -131,7 +131,10 @@ export function LiveHostRoom({ token }: { token: string }) {
   useEffect(() => {
     if ((!lkToken && !streamEnded) || (streamEnded && !graceEndsAt)) return;
     void refreshFeed();
-    const id = window.setInterval(() => void refreshFeed(), 2500);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void refreshFeed();
+    }, 5_000);
     return () => window.clearInterval(id);
   }, [lkToken, refreshFeed, streamEnded, graceEndsAt]);
 

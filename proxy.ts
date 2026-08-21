@@ -61,6 +61,14 @@ function isServerActionRequest(request: NextRequest) {
   return request.headers.has("next-action") || request.headers.has("Next-Action");
 }
 
+/** Supabase Auth-Cookies — ohne sie ist getUser() nur unnötige Edge-CPU. */
+function hasSupabaseAuthCookie(request: NextRequest) {
+  return request.cookies.getAll().some((c) => {
+    const n = c.name;
+    return n.startsWith("sb-") && n.includes("auth-token");
+  });
+}
+
 function redirectPreservingCookies(
   request: NextRequest,
   sessionResponse: NextResponse,
@@ -83,22 +91,34 @@ function redirectPreservingCookies(
 }
 
 export async function proxy(request: NextRequest) {
-  const { supabase, getResponse } = createProxySupabase(request);
   const pathname = request.nextUrl.pathname;
 
+  // Speichern/Server Actions: Session ggf. refreshen, keine Membership-Redirects
+  // (sonst fliegt die Session nach abgelaufenem Access-Token weg).
+  if (isServerActionRequest(request)) {
+    if (!hasSupabaseAuthCookie(request)) {
+      return NextResponse.next({ request });
+    }
+    const { supabase, getResponse } = createProxySupabase(request);
+    await supabase.auth.getUser();
+    return getResponse();
+  }
+
+  // Öffentliche Pfade: ohne Session-Cookie kein Auth-Netzwerkaufruf
+  // (Bots/Crawler/Login-Landing verbrauchen sonst unnötig Fluid CPU).
+  if (isPublicPath(pathname)) {
+    if (!hasSupabaseAuthCookie(request)) {
+      return NextResponse.next({ request });
+    }
+    const { supabase, getResponse } = createProxySupabase(request);
+    await supabase.auth.getUser();
+    return getResponse();
+  }
+
+  const { supabase, getResponse } = createProxySupabase(request);
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  // Speichern/Server Actions nicht auf Login umleiten — sonst fliegt die Session
-  // nach einem abgelaufenen Access-Token weg, obwohl der Refresh gerade lief.
-  if (isServerActionRequest(request)) {
-    return getResponse();
-  }
-
-  if (isPublicPath(pathname)) {
-    return getResponse();
-  }
 
   if (!user) {
     return redirectPreservingCookies(request, getResponse(), "/login", { next: pathname });
@@ -144,5 +164,10 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
+  matcher: [
+    /*
+     * Auth/Gate nur für App-Routen — keine Static Assets, Manifest, Robots.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$).*)",
+  ],
 };

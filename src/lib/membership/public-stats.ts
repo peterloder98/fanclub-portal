@@ -1,6 +1,7 @@
+import { unstable_cache } from "next/cache";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export async function getPublicActiveMemberCount(): Promise<number | null> {
+async function fetchPublicActiveMemberCount(): Promise<number | null> {
   try {
     const admin = createSupabaseAdminClient();
     const { count, error } = await admin
@@ -13,6 +14,16 @@ export async function getPublicActiveMemberCount(): Promise<number | null> {
     return null;
   }
 }
+
+/**
+ * Öffentliche Marketing-Zahl („über 120“) — darf einige Minuten alt sein.
+ * Keine personenbezogenen Daten; kein Cross-User-Leak.
+ */
+export const getPublicActiveMemberCount = unstable_cache(
+  fetchPublicActiveMemberCount,
+  ["public-active-member-count"],
+  { revalidate: 600 },
+);
 
 /** Rounds down to nearest 10 for friendlier marketing copy, e.g. 127 → „über 120“. */
 export function formatMemberCountLabel(count: number | null): string {

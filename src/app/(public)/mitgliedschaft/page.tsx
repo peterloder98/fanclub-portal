@@ -11,6 +11,9 @@ export const metadata = {
     "Werde Teil des offiziellen Anni Perka Fanclubs — digital anmelden, Community erleben, exklusive Vorteile genießen.",
 };
 
+/** Marketing-Seite: Mitgliederzahl ist gecacht (siehe public-stats), ISR ok. */
+export const revalidate = 600;
+
 export default async function MitgliedschaftPage() {
   const memberCount = await getPublicActiveMemberCount();
   const memberCountLabel = formatMemberCountLabel(memberCount);

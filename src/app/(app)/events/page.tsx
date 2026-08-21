@@ -3,7 +3,7 @@ import {
   EventsInteractivePanel,
   type EventParticipationMeta,
 } from "@/components/events/events-interactive-panel.client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { parseTravelInfo, type EventTravelNoteRow } from "@/lib/events/travel-info";
 import { excludeHiddenProfiles } from "@/lib/members/hidden";
@@ -23,10 +23,7 @@ export default async function EventsPage({
 
   const { focus: focusEventId } = await searchParams;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase

@@ -3,10 +3,9 @@ import { AppShellClient } from "@/components/app-shell/app-shell-client";
 import { SkipToContent } from "@/components/app-shell/skip-to-content";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import type { SidebarUser } from "@/components/app-shell/sidebar";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { rankFromPoints } from "@/lib/points/rank";
 import { avatarPublicUrl } from "@/lib/avatars/public";
-import { sumUserPointsForBerlinYear } from "@/lib/points/sum-transactions";
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -16,15 +15,13 @@ function initialsFromName(name: string) {
 }
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
 
   let sidebarUser: SidebarUser = {
     name: "Unbekannt",
     initials: "U",
     role: "member",
+    // Punkte/Rang kommen aus dem Client-Topbar (Realtime) — hier ungenutzt, kein RPC.
     points: 0,
     rank: rankFromPoints(0),
   };
@@ -57,14 +54,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         ? `${safeProfile.first_name} ${safeProfile.last_name}`
         : user.email ?? "Mitglied";
 
-    const points = await sumUserPointsForBerlinYear(supabase, user.id);
-
     sidebarUser = {
       name,
       initials: initialsFromName(name),
       role: (safeProfile?.role ?? "member") as SidebarUser["role"],
-      points,
-      rank: rankFromPoints(points),
+      points: 0,
+      rank: rankFromPoints(0),
       avatarUrl: safeProfile?.avatar_path
         ? `${avatarPublicUrl(safeProfile.avatar_path)}?v=${encodeURIComponent(safeProfile.updated_at ?? "")}`
         : null,

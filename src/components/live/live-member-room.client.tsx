@@ -241,7 +241,10 @@ export function LiveMemberRoom({
       }
     }
     void ping();
-    const id = window.setInterval(() => void ping(), 20_000);
+    const id = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void ping();
+    }, 30_000);
     return () => {
       cancelled = true;
       window.clearInterval(id);

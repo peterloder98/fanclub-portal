@@ -13,6 +13,15 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["ffmpeg-static"],
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/dashboard",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

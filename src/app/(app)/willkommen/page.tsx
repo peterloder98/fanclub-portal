@@ -1,14 +1,11 @@
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { WelcomeOnboardingClient } from "@/components/members/welcome-onboarding.client";
 
 export const dynamic = "force-dynamic";
 
 export default async function WillkommenPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase

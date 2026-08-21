@@ -1,15 +1,12 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { ANNI_STARS_LABEL } from "@/lib/anni-stars/terminology";
 import { PunktePageClient } from "@/components/points/punkte-page.client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getRequestAuth } from "@/lib/auth/request-auth";
 import { loadYearLeaderboard } from "@/lib/points/year-leaderboard";
 import { evaluateUserBadges } from "@/lib/badges/evaluate-user-badges";
 
 export default async function PunktePage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { supabase, user } = await getRequestAuth();
   const leaderboard = await loadYearLeaderboard(supabase, user?.id ?? null, 10);
   const achievements = user ? await evaluateUserBadges(user.id).catch(() => []) : [];
 

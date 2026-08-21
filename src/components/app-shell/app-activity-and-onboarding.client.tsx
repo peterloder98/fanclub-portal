@@ -19,8 +19,8 @@ export function AppActivityAndOnboarding({
 
   useEffect(() => {
     const now = Date.now();
-    // Mindestens alle 30s bei Navigation erneut zählen
-    if (now - lastPingAt.current < 30_000) return;
+    // Heartbeat für „heute aktiv“ — 2 Min reichen; spart Server Actions
+    if (now - lastPingAt.current < 120_000) return;
     lastPingAt.current = now;
     void pingAppActivity();
   }, [pathname]);

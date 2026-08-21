@@ -16,8 +16,8 @@ import { GroupChatPanel } from "@/components/chat/group-chat-panel.client";
 import { useChatUnread } from "@/components/chat/chat-unread-context";
 
 const STORAGE_KEY = "fc-group-chat-open";
-/** Andere Geräte: Lesestatus regelmäßig nachziehen. */
-const LAST_SEEN_POLL_MS = 20_000;
+/** Andere Geräte: Lesestatus nachziehen — selten genug für Fluid-CPU, oft genug für Multi-Device. */
+const LAST_SEEN_POLL_MS = 90_000;
 
 export function GroupChatWidget() {
   const pathname = usePathname();
@@ -63,6 +63,7 @@ export function GroupChatWidget() {
     if (!hydrated || open) return;
     let cancelled = false;
     const tick = async () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       const synced = await syncChatLastSeenFromServer();
       if (cancelled || !synced) return;
       setLastSeenAt((prev) => {
