@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-20";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-21";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -661,16 +661,32 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
               "Titel, Beitritt ab (z. B. 10 Minuten vor Start), Start und Dauer in Minuten eintragen (höchstens 60). Nach der Dauer endet Annis Video automatisch.",
-              "Haken „Einladen“ lassen — alle Fanclub-Mitglieder und Anni werden per E-Mail und App-Benachrichtigung informiert und eingeladen. Bei Zusage gibt es am Tag zuvor eine Erinnerung.",
-              "„Live-Chat erstellen“ tippen. Den Host-Link einmalig kopieren und Anni rechtzeitig schicken. Wenn die Verbindung abbricht, denselben Link erneut öffnen.",
-              "Mitglieder öffnen den Link nach Login: zuerst Infoseite (Wann, Ablauf, Zusage/Absage mit sichtbarer Teilnehmerliste, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist (am Live-Tag).",
-              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Vorzeitig beenden: Button „Live beenden“ (Verabschiedung).",
-              "Wenn Anni fertig ist (Zeit abgelaufen oder „Live beenden“): Video aus. Der Chat bleibt noch 10 Minuten offen — Countdown „Live-Chat Session endet in …“. Danach schließt sich die Session sofort und unter Live steht wieder „kein Termin“.",
+              "Haken „Einladen“ lassen — Mitglieder-Einladungen und der Host-Link an Anni werden im Hintergrund per E-Mail versendet (App-Benachrichtigung an Mitglieder ebenfalls). Bei Zusage gibt es am Tag zuvor eine Erinnerung.",
+              "„Live-Chat erstellen“ tippen. Sofort erscheint der Host-Link zum Kopieren. Anni erhält denselben Link zusätzlich per E-Mail (nicht den Mitglieder-Link). Der Link bleibt gültig, bis ihr ihn bewusst erneuert — bei Verbindungsabbruch denselben Link erneut öffnen oder „Erneut verbinden“ tippen.",
+              "Mitglieder öffnen nach Login die Live-Seite: zuerst Infoseite (Wann, Ablauf, Zusage/Absage, optional eine Vorab-Frage). Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist.",
+              "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Vorzeitig beenden: Button „Live beenden“ — Mitglieder wechseln automatisch in den Chat-Nachlauf (kein Neuladen nötig).",
+              "Wenn Anni fertig ist (Zeit abgelaufen oder „Live beenden“): Video aus. Der Chat bleibt noch 10 Minuten offen — Countdown „Live-Chat Session endet in …“. Danach schließt sich die Session automatisch.",
+            ],
+          },
+          {
+            type: "p",
+            text: "Checkliste für einen Live am Montag 21:00 (30 Minuten):",
+          },
+          {
+            type: "ol",
+            items: [
+              "Vormittag oder Nachmittag: Session anlegen — Start 21:00, Dauer 30 Minuten, Beitritt z. B. ab 20:50.",
+              "Prüfen: Host-Link ist kopierbar und Anni hat die Host-Mail erhalten (oder Link manuell nachreichen).",
+              "Einladungen: In der Admin-Liste ggf. „Erneut einladen“, falls jemand die Mail vermisst. Zusagen unter Live / Teilnehmerliste im Blick behalten.",
+              "Kurz vor 21:00: Beitrittsfenster ist offen — Mitglieder können schon im Raum warten. Anni öffnet den Host-Link, Kamera/Mikro freigeben.",
+              "Währenddessen: Fragen in der Host-Ansicht abhaken; Chat nur mitlesen.",
+              "Ende: Entweder nach 30 Minuten automatisch oder früher mit „Live beenden“. 10 Minuten Chat-Nachlauf, dann ist der Termin weg.",
+              "Host-Link erneuern nur bei Bedarf (Link verloren / Sicherheit): Alter Link stirbt, Anni bekommt den neuen per Mail.",
             ],
           },
           {
             type: "note",
-            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine Vorab-Frage (danach Hinweis: weitere Fragen im Live-Chat). Während des Live weiterhin max. eine offene Frage. Zugang nur nach Login als aktives Mitglied. Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
+            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine Vorab-Frage (danach: weitere Fragen im Live-Chat). Während des Live weiterhin max. eine offene Frage. Zugang nur nach Login als aktives Mitglied. Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
           },
           {
             type: "link",

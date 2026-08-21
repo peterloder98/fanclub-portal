@@ -19,6 +19,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   referralAbuseAdminNotify: "referral_abuse_admin_notify",
   liveSessionInvite: "live_session_invite",
   liveSessionReminder: "live_session_reminder",
+  liveSessionHostInvite: "live_session_host_invite",
   memberLoginEmailChanged: "member_login_email_changed",
 } as const;
 
@@ -166,6 +167,14 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "session_date", label: "Datum & Uhrzeit" },
     { key: "session_time", label: "Uhrzeit (kurz)" },
     { key: "session_url", label: "Link zur Live-Seite" },
+    { key: "calendar_url", label: "Link Kalender (.ics)" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.liveSessionHostInvite]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "session_title", label: "Titel der Live-Session" },
+    { key: "session_date", label: "Datum & Uhrzeit" },
+    { key: "host_url", label: "Host-Link (Kamera/Mikro)" },
     { key: "calendar_url", label: "Link Kalender (.ics)" },
   ],
   [EMAIL_TEMPLATE_KEYS.memberLoginEmailChanged]: [

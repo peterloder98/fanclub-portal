@@ -103,6 +103,9 @@ export async function sendLiveSessionInviteEmails(
   let errors = 0;
 
   for (const r of recipients) {
+    if (r.email.trim().toLowerCase() === resolveLiveAnniEmail().toLowerCase()) {
+      continue; // Anni erhält den Host-Link separat
+    }
     try {
       const person = emailPersonVars({
         firstName: r.firstName,
@@ -128,32 +131,7 @@ export async function sendLiveSessionInviteEmails(
     await sleep(200);
   }
 
-  // Anni immer einladen (eigene Adresse; Mitglieder-Prefs gelten nicht für Anni)
-  const anniEmail = resolveLiveAnniEmail();
-  const alreadyEmailedAnni = recipients.some(
-    (r) => r.email.trim().toLowerCase() === anniEmail.toLowerCase(),
-  );
-  if (!alreadyEmailedAnni) {
-    try {
-      const person = emailPersonVars({ firstName: "Anni", gender: "female" });
-      const ok = await sendOneLiveEmail({
-        to: anniEmail,
-        templateKey: EMAIL_TEMPLATE_KEYS.liveSessionInvite,
-        vars: {
-          ...person,
-          session_title: session.title,
-          session_date: sessionDate,
-          session_url: sessionUrl,
-          calendar_url: liveSessionCalendarUrl(session),
-        },
-        session,
-      });
-      if (ok) emails += 1;
-      else errors += 1;
-    } catch {
-      errors += 1;
-    }
-  }
+  // Anni bekommt separat den Host-Link (sendAnniHostLinkEmail) — nicht den Mitglieder-Link.
 
   const { data: sessionRow } = await admin
     .from("live_sessions")
@@ -184,6 +162,38 @@ export async function sendLiveSessionInviteEmails(
     .eq("id", session.id);
 
   return { emails, notifications, errors };
+}
+
+/** Host-Link nur an Anni — mehrfach nutzbar bis Token neu generiert wird. */
+export async function sendAnniHostLinkEmail(input: {
+  session: SessionMailFields;
+  hostUrl: string;
+}): Promise<{ ok: boolean }> {
+  const anniEmail = resolveLiveAnniEmail();
+  const sessionDate = formatLiveSessionDateLabel(input.session.starts_at);
+  const person = emailPersonVars({ firstName: "Anni", gender: "female" });
+
+  try {
+    const ok = await sendOneLiveEmail({
+      to: anniEmail,
+      templateKey: EMAIL_TEMPLATE_KEYS.liveSessionHostInvite,
+      vars: {
+        ...person,
+        session_title: input.session.title,
+        session_date: sessionDate,
+        host_url: input.hostUrl,
+        calendar_url: liveSessionCalendarUrl(input.session),
+      },
+      session: input.session,
+    });
+    if (!ok) {
+      console.error("[live] Anni host-link email failed (smtp)");
+    }
+    return { ok };
+  } catch (e) {
+    console.error("[live] Anni host-link email failed", e);
+    return { ok: false };
+  }
 }
 
 async function sendAnniReminderEmail(

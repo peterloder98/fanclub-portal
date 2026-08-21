@@ -34,6 +34,8 @@ export function LiveKitStage({
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [connecting, setConnecting] = useState(true);
+  const [needsReconnect, setNeedsReconnect] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,13 +44,18 @@ export function LiveKitStage({
       dynacast: true,
     });
     roomRef.current = room;
+    setConnecting(true);
+    setConnected(false);
+    setNeedsReconnect(false);
+    setHasRemoteVideo(false);
+    setError(null);
 
     room.on(RoomEvent.MediaDevicesError, (e: Error) => {
       console.warn("[livekit] MediaDevicesError", e);
       if (mode === "host") {
         setError(
           e.message ||
-            "Kamera/Mikrofon nicht verfügbar. Bitte Berechtigung erteilen und Seite neu laden.",
+            "Kamera/Mikrofon nicht verfügbar. Bitte Berechtigung erteilen und erneut verbinden.",
         );
       }
     });
@@ -88,8 +95,11 @@ export function LiveKitStage({
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
     room.on(RoomEvent.Disconnected, () => {
+      if (cancelled) return;
       setConnected(false);
       setHasRemoteVideo(false);
+      setConnecting(false);
+      setNeedsReconnect(true);
     });
 
     void (async () => {
@@ -101,6 +111,7 @@ export function LiveKitStage({
         }
         setConnected(true);
         setConnecting(false);
+        setNeedsReconnect(false);
 
         if (mode === "host") {
           await room.localParticipant.setCameraEnabled(true);
@@ -124,6 +135,7 @@ export function LiveKitStage({
       } catch (e) {
         if (!cancelled) {
           setConnecting(false);
+          setNeedsReconnect(true);
           setError(e instanceof Error ? e.message : "Verbindung fehlgeschlagen.");
         }
       }
@@ -135,7 +147,7 @@ export function LiveKitStage({
       void room.disconnect();
       roomRef.current = null;
     };
-  }, [token, serverUrl, mode]);
+  }, [token, serverUrl, mode, attempt]);
 
   async function toggleCam() {
     const room = roomRef.current;
@@ -162,6 +174,14 @@ export function LiveKitStage({
     setMicOn(next);
   }
 
+  function reconnect() {
+    setError(null);
+    setNeedsReconnect(false);
+    setAttempt((n) => n + 1);
+  }
+
+  const showReconnect = needsReconnect && !connecting;
+
   return (
     <div className={cn("relative overflow-hidden rounded-2xl bg-slate-900", className)}>
       <video
@@ -187,6 +207,17 @@ export function LiveKitStage({
                 </p>
               </div>
             )
+          ) : showReconnect ? (
+            <div className="max-w-sm">
+              <p className="text-sm text-white/90">Verbindung unterbrochen.</p>
+              <button
+                type="button"
+                onClick={reconnect}
+                className="mt-3 h-10 rounded-xl bg-white px-4 text-sm font-semibold text-fc-navy hover:bg-fc-ice"
+              >
+                Erneut verbinden
+              </button>
+            </div>
           ) : (
             <p className="text-sm text-white/90">Nicht verbunden</p>
           )}
@@ -194,7 +225,16 @@ export function LiveKitStage({
       ) : null}
       {error ? (
         <div className="absolute inset-0 grid place-items-center bg-rose-950/90 px-4 text-center">
-          <p className="text-sm text-rose-100">{error}</p>
+          <div>
+            <p className="text-sm text-rose-100">{error}</p>
+            <button
+              type="button"
+              onClick={reconnect}
+              className="mt-3 h-10 rounded-xl bg-white px-4 text-sm font-semibold text-fc-navy hover:bg-fc-ice"
+            >
+              Erneut verbinden
+            </button>
+          </div>
         </div>
       ) : null}
       {mode === "host" && connected ? (

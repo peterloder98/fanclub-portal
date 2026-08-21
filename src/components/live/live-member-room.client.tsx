@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client";
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
 import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { emitPointsGain } from "@/lib/points/events";
 import { cn } from "@/lib/cn";
 
@@ -70,6 +71,7 @@ export function LiveMemberRoom({
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("chat");
   const [videoReady, setVideoReady] = useState(false);
+  const [tokenNonce, setTokenNonce] = useState(0);
 
   const endsAtMs = new Date(endsAt).getTime();
   const [streamEnded, setStreamEnded] = useState(
@@ -87,6 +89,23 @@ export function LiveMemberRoom({
   const videoOpen = joinOpen && !streamEnded && !roomClosed;
   const chatOpen = (joinOpen && !roomClosed) || inGrace;
 
+  const applyEnded = useCallback((graceIso: string | null | undefined) => {
+    setStreamEnded(true);
+    setToken(null);
+    setUrl(null);
+    setGraceDeadline(
+      (prev) => graceIso ?? prev ?? new Date(Date.now() + 10 * 60_000).toISOString(),
+    );
+  }, []);
+
+  const onGraceEnded = useCallback(() => {
+    setRoomClosed(true);
+    setToken(null);
+    setUrl(null);
+    router.replace("/live");
+    router.refresh();
+  }, [router]);
+
   useEffect(() => {
     if (graceEndsAt) setGraceDeadline(graceEndsAt);
   }, [graceEndsAt]);
@@ -94,6 +113,78 @@ export function LiveMemberRoom({
   useEffect(() => {
     if (status === "ended") setStreamEnded(true);
   }, [status]);
+
+  /** Frühzeitiges Host-Ende / Löschen: Realtime + kurzes Polling. */
+  useEffect(() => {
+    if (roomClosed || !sessionId) return;
+    const supabase = createSupabaseBrowserClient();
+    let cancelled = false;
+
+    async function syncStatus() {
+      const { data, error: qErr } = await supabase
+        .from("live_sessions")
+        .select("status,grace_ends_at")
+        .eq("id", sessionId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (qErr) return;
+      if (!data) {
+        onGraceEnded();
+        return;
+      }
+      if (data.status === "cancelled") {
+        onGraceEnded();
+        return;
+      }
+      if (data.status === "ended") {
+        applyEnded(data.grace_ends_at);
+      }
+    }
+
+    void syncStatus();
+    const pollId = window.setInterval(() => void syncStatus(), 3_000);
+
+    const channel = supabase
+      .channel(`live-session-lifecycle-${sessionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "live_sessions",
+          filter: `id=eq.${sessionId}`,
+        },
+        (payload) => {
+          const row = payload.new as { status?: string; grace_ends_at?: string | null };
+          if (row.status === "cancelled") {
+            onGraceEnded();
+            return;
+          }
+          if (row.status === "ended") {
+            applyEnded(row.grace_ends_at);
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "live_sessions",
+          filter: `id=eq.${sessionId}`,
+        },
+        () => {
+          onGraceEnded();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(pollId);
+      void supabase.removeChannel(channel);
+    };
+  }, [sessionId, roomClosed, applyEnded, onGraceEnded]);
 
   useEffect(() => {
     if (!videoOpen) return;
@@ -115,8 +206,11 @@ export function LiveMemberRoom({
         if (cancelled) return;
         if (!res.ok || !data.token || !data.url) {
           setError(data.error ?? "Video-Zugang fehlgeschlagen.");
+          setToken(null);
+          setUrl(null);
           return;
         }
+        setError(null);
         setToken(data.token);
         setUrl(data.url);
       } catch {
@@ -126,7 +220,7 @@ export function LiveMemberRoom({
     return () => {
       cancelled = true;
     };
-  }, [slug, videoOpen, videoReady]);
+  }, [slug, videoOpen, videoReady, tokenNonce]);
 
   useEffect(() => {
     if (!videoOpen || !sessionId) return;
@@ -154,18 +248,14 @@ export function LiveMemberRoom({
   }, [videoOpen, sessionId]);
 
   function onStreamEnded() {
-    setStreamEnded(true);
-    setToken(null);
-    setUrl(null);
-    setGraceDeadline((prev) => prev ?? new Date(Date.now() + 10 * 60_000).toISOString());
+    applyEnded(null);
   }
 
-  function onGraceEnded() {
-    setRoomClosed(true);
+  function retryVideoToken() {
+    setError(null);
     setToken(null);
     setUrl(null);
-    router.replace("/live");
-    router.refresh();
+    setTokenNonce((n) => n + 1);
   }
 
   return (
@@ -260,7 +350,14 @@ export function LiveMemberRoom({
               <div className="min-w-0 space-y-4">
                 {inGrace ? null : error ? (
                   <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
-                    {error}
+                    <p>{error}</p>
+                    <button
+                      type="button"
+                      onClick={retryVideoToken}
+                      className="mt-3 h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
+                    >
+                      Erneut verbinden
+                    </button>
                   </div>
                 ) : token && url ? (
                   <LiveKitStage token={token} serverUrl={url} mode="viewer" />
@@ -281,7 +378,14 @@ export function LiveMemberRoom({
                 <div className="min-w-0">
                   {error ? (
                     <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
-                      {error}
+                      <p>{error}</p>
+                      <button
+                        type="button"
+                        onClick={retryVideoToken}
+                        className="mt-3 h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
+                      >
+                        Erneut verbinden
+                      </button>
                     </div>
                   ) : token && url ? (
                     <LiveKitStage token={token} serverUrl={url} mode="viewer" />

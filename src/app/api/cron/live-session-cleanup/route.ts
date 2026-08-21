@@ -5,7 +5,7 @@ import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 
-/** Täglich: abgelaufene Lives beenden, beendete von gestern+ löschen. */
+/** Alle 5 Min.: abgelaufene Lives → Grace, Grace vorbei → löschen (+ LiveKit-Raum). */
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

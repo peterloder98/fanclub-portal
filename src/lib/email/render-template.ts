@@ -425,6 +425,35 @@ Falls du diese Anfrage nicht gestellt hast, kannst du die Mail ignorieren. Dein 
 <p style="${EMAIL_PARAGRAPH_STYLE}">Falls du diese Anfrage nicht gestellt hast, kannst du die Mail ignorieren. Dein bisheriges Passwort bleibt dann unverändert.</p>`,
 };
 
+const LIVE_SESSION_HOST_INVITE_FALLBACK = {
+  subject: "Dein Host-Link: {{session_title}} am {{session_date}}",
+  body_text: `{{salutation}},
+
+hier ist dein persönlicher Host-Link für die Live-Session mit dem Fanclub:
+
+{{session_title}}
+{{session_date}}
+
+Host-Link (Kamera und Mikrofon im Browser freigeben):
+{{host_url}}
+
+Du kannst denselben Link mehrfach öffnen — z. B. wenn die Verbindung abbricht. Ein neuer Versand vom Vorstand ersetzt den alten Link.
+
+Kalender-Eintrag:
+{{calendar_url}}
+
+Viel Spaß beim Live!`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">hier ist dein persönlicher Host-Link für die Live-Session mit dem Fanclub:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}"><strong>{{session_title}}</strong><br>{{session_date}}</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Öffne zur Startzeit diesen Link und gib Kamera sowie Mikrofon im Browser frei:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{host_url}}" style="${EMAIL_BUTTON_STYLE}">Als Host beitreten</a>
+</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Du kannst denselben Link mehrfach öffnen — z. B. wenn die Verbindung abbricht. Ein neuer Versand vom Vorstand ersetzt den alten Link.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}"><a href="{{calendar_url}}">Termin im Kalender speichern</a></p>`,
+};
+
 export async function renderEmailFromTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string>,
@@ -522,6 +551,16 @@ export async function renderEmailFromTemplate(
       body_html: PASSWORD_RESET_FALLBACK.body_html,
       description:
         "Für bereits registrierte Mitglieder nach „Passwort vergessen“ — nur neues Passwort, keine Ersteinrichtung.",
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.liveSessionHostInvite) {
+    row = {
+      key,
+      name: "Live mit Anni — Host-Link",
+      subject: LIVE_SESSION_HOST_INVITE_FALLBACK.subject,
+      body_text: LIVE_SESSION_HOST_INVITE_FALLBACK.body_text,
+      body_html: LIVE_SESSION_HOST_INVITE_FALLBACK.body_html,
+      description: null,
     };
   }
   if (!row) {

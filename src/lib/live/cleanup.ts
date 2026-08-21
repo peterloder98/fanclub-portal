@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { deleteLiveKitRoom } from "@/lib/live/livekit";
 import {
   graceEndsAtIso,
   isInLiveGracePeriod,
@@ -34,6 +35,13 @@ export async function beginLiveSessionGrace(
 ): Promise<string> {
   const nowIso = now.toISOString();
   const grace = graceEndsAtIso(now);
+
+  const { data: before } = await admin
+    .from("live_sessions")
+    .select("livekit_room_name")
+    .eq("id", sessionId)
+    .maybeSingle();
+
   const { error } = await admin
     .from("live_sessions")
     .update({
@@ -53,6 +61,11 @@ export async function beginLiveSessionGrace(
       .update({ status: "ended", updated_at: nowIso })
       .eq("id", sessionId)
       .in("status", ["scheduled", "live"]);
+  }
+
+  // Video sofort stoppen für alle Teilnehmer
+  if (before?.livekit_room_name) {
+    void deleteLiveKitRoom(before.livekit_room_name);
   }
   return grace;
 }
@@ -104,7 +117,7 @@ export async function deleteGraceExpiredLiveSessions(
     .in("status", ["ended", "cancelled"])
     .not("grace_ends_at", "is", null)
     .lt("grace_ends_at", nowIso)
-    .select("id");
+    .select("id,livekit_room_name");
 
   if (withGrace.error) {
     if (/live_sessions|does not exist|grace_ends_at/i.test(withGrace.error.message)) {
@@ -120,11 +133,19 @@ export async function deleteGraceExpiredLiveSessions(
     .delete()
     .in("status", ["ended", "cancelled"])
     .is("grace_ends_at", null)
-    .select("id");
+    .select("id,livekit_room_name");
 
   if (withoutGrace.error && !/live_sessions|does not exist|grace_ends_at/i.test(withoutGrace.error.message)) {
     throw new Error(withoutGrace.error.message);
   }
+
+  const rooms = [
+    ...(withGrace.data ?? []),
+    ...(withoutGrace.data ?? []),
+  ]
+    .map((r) => r.livekit_room_name)
+    .filter((n): n is string => Boolean(n));
+  await Promise.all(rooms.map((name) => deleteLiveKitRoom(name)));
 
   return (withGrace.data?.length ?? 0) + (withoutGrace.data?.length ?? 0);
 }
@@ -154,13 +175,25 @@ export async function syncLiveSessionLifecycle(
   >,
 ): Promise<"active" | "grace" | "gone"> {
   if (session.status === "cancelled") {
+    const { data: row } = await admin
+      .from("live_sessions")
+      .select("livekit_room_name")
+      .eq("id", session.id)
+      .maybeSingle();
     await admin.from("live_sessions").delete().eq("id", session.id);
+    if (row?.livekit_room_name) void deleteLiveKitRoom(row.livekit_room_name);
     return "gone";
   }
 
   if (session.status === "ended") {
     if (isInLiveGracePeriod(session)) return "grace";
+    const { data: row } = await admin
+      .from("live_sessions")
+      .select("livekit_room_name")
+      .eq("id", session.id)
+      .maybeSingle();
     await admin.from("live_sessions").delete().eq("id", session.id);
+    if (row?.livekit_room_name) void deleteLiveKitRoom(row.livekit_room_name);
     return "gone";
   }
 

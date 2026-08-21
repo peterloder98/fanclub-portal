@@ -207,7 +207,7 @@ export function LiveHostRoom({ token }: { token: string }) {
             <p className="text-sm text-white/85">
               {streamEnded
                 ? "Du bist offline. Der Mitglieder-Chat läuft noch kurz weiter."
-                : "Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum. Falls die Verbindung abbricht: denselben Host-Link einfach erneut öffnen."}
+                : "Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum. Bei Abbruch: „Erneut verbinden“ oder denselben Host-Link erneut öffnen."}
             </p>
             {streamEnded && graceEndsAt ? (
               <LiveSessionCountdown

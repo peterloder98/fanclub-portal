@@ -94,11 +94,13 @@ export function AdminLiveSessionsPanel({
       }
       setFreshHostUrl(result.hostUrl);
       setHostById((prev) => ({ ...prev, [result.id]: result.hostUrl }));
-      if (sendInvites) {
+      if (result.invitesQueued) {
         setInviteInfo(
-          `Einladungen: ${result.inviteEmails ?? 0} E-Mails gesendet` +
-            (result.inviteErrors ? ` (${result.inviteErrors} Fehler)` : "") +
-            ", plus In-App-Benachrichtigung.",
+          "Host-Link an Anni und Mitglieder-Einladungen werden im Hintergrund versendet. Den Host-Link kannst du zusätzlich kopieren.",
+        );
+      } else {
+        setInviteInfo(
+          "Host-Link an Anni wird im Hintergrund versendet. Mitglieder-Einladungen wurden nicht angefordert.",
         );
       }
     });
@@ -121,6 +123,9 @@ export function AdminLiveSessionsPanel({
       }
       setHostById((prev) => ({ ...prev, [sessionId]: result.hostUrl }));
       setFreshHostUrl(result.hostUrl);
+      setInviteInfo(
+        "Neuer Host-Link erzeugt und an Anni gemailt. Der alte Link funktioniert nicht mehr.",
+      );
     });
   }
 

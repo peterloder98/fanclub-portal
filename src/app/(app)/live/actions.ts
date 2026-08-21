@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   canMembersJoinSession,
   canMembersUseLiveChat,
+  LIVE_SESSION_CHAT_COOLDOWN_MS,
   LIVE_SESSION_CHAT_MAX_LEN,
   LIVE_SESSION_QUESTION_MAX_LEN,
   type LiveSessionRow,
@@ -97,12 +98,32 @@ async function requireQuestionableSession(sessionId: string) {
 export async function sendLiveSessionMessage(
   sessionId: string,
   body: string,
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string; retryAfterMs?: number }> {
   const gate = await requireChatSession(sessionId);
   if (!gate.ok) return gate;
 
   const text = body.trim().slice(0, LIVE_SESSION_CHAT_MAX_LEN);
   if (!text) return { ok: false, error: "Nachricht leer." };
+
+  const { data: last } = await gate.supabase
+    .from("live_session_messages")
+    .select("created_at")
+    .eq("session_id", sessionId)
+    .eq("author_id", gate.user.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (last?.created_at) {
+    const elapsed = Date.now() - new Date(last.created_at).getTime();
+    if (elapsed < LIVE_SESSION_CHAT_COOLDOWN_MS) {
+      return {
+        ok: false,
+        error: "Bitte kurz warten, bevor du erneut schreibst.",
+        retryAfterMs: LIVE_SESSION_CHAT_COOLDOWN_MS - elapsed,
+      };
+    }
+  }
 
   const { error } = await gate.supabase.from("live_session_messages").insert({
     session_id: sessionId,

@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireAdminAction } from "@/lib/admin/require-admin-action";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -11,7 +12,10 @@ import {
   slugifyLiveTitle,
   type LiveSessionStatus,
 } from "@/lib/live/types";
-import { sendLiveSessionInviteEmails } from "@/lib/live/invites";
+import {
+  sendAnniHostLinkEmail,
+  sendLiveSessionInviteEmails,
+} from "@/lib/live/invites";
 
 function parseIso(label: string, raw: string): string {
   const d = new Date(raw);
@@ -32,8 +36,8 @@ export async function createLiveSessionAction(input: {
       id: string;
       slug: string;
       hostUrl: string;
-      inviteEmails?: number;
-      inviteErrors?: number;
+      /** Einladungen laufen im Hintergrund — Zähler erst nach Versand bekannt. */
+      invitesQueued: boolean;
     }
   | { ok: false; error: string }
 > {
@@ -76,24 +80,34 @@ export async function createLiveSessionAction(input: {
     });
     if (error) return { ok: false, error: error.message };
 
-    let inviteEmails = 0;
-    let inviteErrors = 0;
-    if (input.sendInvites !== false) {
+    const hostUrl = liveHostUrl(token);
+    const sessionMail = { id, slug, title, starts_at, ends_at };
+    const queueInvites = input.sendInvites !== false;
+
+    after(async () => {
       try {
-        const inv = await sendLiveSessionInviteEmails({
-          id,
-          slug,
-          title,
-          starts_at,
-          ends_at,
-        });
-        inviteEmails = inv.emails;
-        inviteErrors = inv.errors;
+        const hostMail = await sendAnniHostLinkEmail({ session: sessionMail, hostUrl });
+        if (!hostMail.ok) {
+          console.error("[live] Anni host email not delivered", id);
+        }
       } catch (e) {
-        console.error("[live] invite send failed", e);
-        inviteErrors = 1;
+        console.error("[live] Anni host email failed", e);
       }
-    }
+      if (queueInvites) {
+        try {
+          const inv = await sendLiveSessionInviteEmails(sessionMail);
+          if (inv.errors > 0) {
+            console.error("[live] invite send partial errors", {
+              id,
+              emails: inv.emails,
+              errors: inv.errors,
+            });
+          }
+        } catch (e) {
+          console.error("[live] invite send failed", e);
+        }
+      }
+    });
 
     revalidatePath("/admin/live");
     revalidatePath("/live");
@@ -102,9 +116,8 @@ export async function createLiveSessionAction(input: {
       ok: true,
       id,
       slug,
-      hostUrl: liveHostUrl(token),
-      inviteEmails,
-      inviteErrors,
+      hostUrl,
+      invitesQueued: queueInvites,
     };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
@@ -144,13 +157,36 @@ export async function regenerateLiveHostTokenAction(
     await requireAdminAction();
     const { token, hash } = generateLiveHostToken();
     const admin = createSupabaseAdminClient();
+    const { data: session, error: fetchErr } = await admin
+      .from("live_sessions")
+      .select("id,slug,title,starts_at,ends_at,status")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (fetchErr || !session) return { ok: false, error: "Session nicht gefunden." };
+    if (session.status === "ended" || session.status === "cancelled") {
+      return { ok: false, error: "Beendete Sessions: Host-Link kann nicht erneuert werden." };
+    }
+
     const { error } = await admin
       .from("live_sessions")
       .update({ host_token_hash: hash, updated_at: new Date().toISOString() })
       .eq("id", sessionId);
     if (error) return { ok: false, error: error.message };
+
+    const hostUrl = liveHostUrl(token);
+    after(async () => {
+      try {
+        const hostMail = await sendAnniHostLinkEmail({ session, hostUrl });
+        if (!hostMail.ok) {
+          console.error("[live] Anni host email (regen) not delivered", sessionId);
+        }
+      } catch (e) {
+        console.error("[live] Anni host email (regen) failed", e);
+      }
+    });
+
     revalidatePath("/admin/live");
-    return { ok: true, hostUrl: liveHostUrl(token) };
+    return { ok: true, hostUrl };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
   }
@@ -167,8 +203,17 @@ export async function setLiveSessionStatusAction(
       const { beginLiveSessionGrace } = await import("@/lib/live/cleanup");
       await beginLiveSessionGrace(admin, sessionId);
     } else if (status === "cancelled") {
+      const { data: row } = await admin
+        .from("live_sessions")
+        .select("livekit_room_name")
+        .eq("id", sessionId)
+        .maybeSingle();
       const { error } = await admin.from("live_sessions").delete().eq("id", sessionId);
       if (error) return { ok: false, error: error.message };
+      if (row?.livekit_room_name) {
+        const { deleteLiveKitRoom } = await import("@/lib/live/livekit");
+        void deleteLiveKitRoom(row.livekit_room_name);
+      }
     } else {
       const { error } = await admin
         .from("live_sessions")

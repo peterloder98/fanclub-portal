@@ -1,9 +1,32 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { canMembersJoinSession, type LiveSessionRow } from "@/lib/live/types";
 
-/** Offene Sessions für Nav/Dashboard (auth optional via cookies when called from app). */
+/** Offene Sessions für Nav/Dashboard — nur angemeldete Mitglieder/Admins. */
 export async function GET() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
+  }
+
+  const [{ data: membership }, { data: profile }] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle(),
+    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+  ]);
+  if (!membership && profile?.role !== "admin") {
+    return NextResponse.json({ error: "Nur aktive Mitglieder." }, { status: 403 });
+  }
+
   const admin = createSupabaseAdminClient();
   const now = new Date().toISOString();
   const { data } = await admin

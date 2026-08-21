@@ -1,4 +1,4 @@
-import { AccessToken } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 
 export function getLiveKitConfig(): {
   url: string;
@@ -10,6 +10,21 @@ export function getLiveKitConfig(): {
   const apiSecret = (process.env.LIVEKIT_API_SECRET ?? "").trim();
   if (!url || !apiKey || !apiSecret) return null;
   return { url, apiKey, apiSecret };
+}
+
+/** Hard cleanup / Host-Ende: Raum schließen → alle Teilnehmer disconnecten. */
+export async function deleteLiveKitRoom(roomName: string): Promise<void> {
+  const name = roomName.trim();
+  if (!name) return;
+  const cfg = getLiveKitConfig();
+  if (!cfg) return;
+  try {
+    const client = new RoomServiceClient(cfg.url, cfg.apiKey, cfg.apiSecret);
+    await client.deleteRoom(name);
+  } catch (e) {
+    // Raum existiert ggf. nicht mehr — kein harter Fehler
+    console.warn("[livekit] deleteRoom failed", name, e);
+  }
 }
 
 export async function mintLiveKitToken(input: {

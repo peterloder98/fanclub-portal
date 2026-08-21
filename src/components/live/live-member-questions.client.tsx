@@ -252,7 +252,7 @@ export function LiveMemberQuestions({
         </p>
         <p className="text-[11px] text-white/80">
           {mode === "advance"
-            ? "Optional — pro Person nur eine Vorab-Frage."
+            ? "Optional — eine Frage vor dem Live. Weitere Fragen später im Chat."
             : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
         </p>
       </header>
