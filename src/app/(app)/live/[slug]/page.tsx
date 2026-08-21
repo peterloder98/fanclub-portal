@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { Topbar } from "@/components/app-shell/topbar";
 import { LiveMemberSessionView } from "@/components/live/live-member-session-view";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -12,12 +13,9 @@ const SESSION_COLS =
   "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at";
 
 /**
- * Mitglieder-Live außerhalb der App-Shell (Deep-Link aus E-Mail/ICS).
- * Vor dem Beitritt: Infos + RSVP + eine Vorab-Frage.
- * Ab Beitrittsfenster: Video + Chat.
- * Nach Ende: 10-Min-Chat-Nachlauf, dann Session weg.
+ * Deep-Link `/live/[slug]` (E-Mail, ICS, Benachrichtigung) — innerhalb der App-Shell.
  */
-export default async function LiveMemberPage({
+export default async function LiveMemberSlugPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
@@ -92,5 +90,12 @@ export default async function LiveMemberPage({
 
   const rsvpStatus = await loadLiveMemberRsvp(supabase, row, user.id);
 
-  return <LiveMemberSessionView session={row} rsvpStatus={rsvpStatus} variant="standalone" />;
+  return (
+    <div className="min-h-screen">
+      <Topbar title={row.title} subtitle="Live mit Anni" />
+      <main className="pb-8">
+        <LiveMemberSessionView session={row} rsvpStatus={rsvpStatus} variant="embedded" />
+      </main>
+    </div>
+  );
 }

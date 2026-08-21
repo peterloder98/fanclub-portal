@@ -12,7 +12,7 @@ export type LiveRsvpStatus = "accepted" | "declined" | null;
 
 /**
  * Mitglieder-Ansicht einer Live-Session: Lobby (vor Beitritt) oder Raum.
- * Wird auf `/live` (eingebettet) und `/live/[slug]` (standalone) wiederverwendet.
+ * Eingebettet in die App-Shell (`/live`, `/live/[slug]`).
  */
 export function LiveMemberSessionView({
   session,
@@ -21,7 +21,7 @@ export function LiveMemberSessionView({
 }: {
   session: LiveSessionRow;
   rsvpStatus: LiveRsvpStatus;
-  /** standalone = eigene Kopfzeile (Deep-Link); embedded = in App-Shell unter /live */
+  /** @deprecated standalone nur noch Fallback; Deep-Links nutzen die App-Shell */
   variant?: "standalone" | "embedded";
 }) {
   const joinOpen = canMembersJoinSession(session);

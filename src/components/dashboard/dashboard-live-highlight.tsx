@@ -10,7 +10,7 @@ export function DashboardLiveHighlight({
   const live = session.status === "live";
   return (
     <Link
-      href={`/live/${session.slug}`}
+      href="/live"
       className="mb-4 flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 to-white px-4 py-3 shadow-sm transition hover:border-rose-300"
     >
       <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-rose-600 text-white">

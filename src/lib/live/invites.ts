@@ -154,7 +154,7 @@ export async function sendLiveSessionInviteEmails(
       kind: NOTIFICATION_KINDS.liveSessionInvite,
       title: "Live mit Anni — Einladung",
       body: `${session.title} · ${sessionDate}. Bitte zusagen oder absagen.`,
-      linkUrl: `/live/${session.slug}`,
+      linkUrl: "/live",
       linkLabel: "Zur Live-Session",
       metadata: {
         session_id: session.id,
@@ -348,7 +348,7 @@ async function runRemindersForSessions(
         kind: NOTIFICATION_KINDS.liveSessionReminder1d,
         title: "Erinnerung: Live mit Anni morgen",
         body: `${session.title} · ${sessionDate}`,
-        linkUrl: `/live/${session.slug}`,
+        linkUrl: "/live",
         linkLabel: "Zum Live-Raum",
         metadata: {
           session_id: session.id,
