@@ -218,13 +218,18 @@ export function AppDateInput({
   );
 }
 
-function formatDeDateTime(localValue: string) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(localValue);
-  if (!m) return "";
-  return `${m[3]}.${m[2]}.${m[1]}, ${m[4]}:${m[5]}`;
+function splitLocalDateTime(localValue: string): { date: string; time: string } {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/.exec(localValue);
+  if (!m) return { date: "", time: "" };
+  return { date: m[1], time: m[2] };
 }
 
-/** Datum + Uhrzeit — gleiche Optik wie AppDateInput (TT.MM.JJJJ, HH:MM + Kalender). */
+/**
+ * Datum + Uhrzeit als getrennte Felder (Browser-Date/Time-Picker).
+ * Ein unsichtbares `datetime-local` lässt auf Safari/Chrome oft nur das Datum zu —
+ * deshalb explizit Datum und Uhrzeit.
+ * Wert bleibt `YYYY-MM-DDTHH:mm` (lokal, wie datetime-local).
+ */
 export function AppDateTimeInput({
   label,
   value,
@@ -239,31 +244,54 @@ export function AppDateTimeInput({
   required?: boolean;
   className?: string;
 }) {
-  const id = useId();
-  const display = formatDeDateTime(value);
+  const dateId = useId();
+  const timeId = useId();
+  const { date, time } = splitLocalDateTime(value);
+
+  function emit(nextDate: string, nextTime: string) {
+    if (!nextDate) {
+      onChange("");
+      return;
+    }
+    onChange(`${nextDate}T${nextTime || "00:00"}`);
+  }
 
   return (
-    <label className={cn("grid gap-1.5", className)}>
+    <div className={cn("grid gap-1.5", className)}>
       <span className="text-sm font-medium text-slate-700">
         {label}
         {required ? " *" : ""}
       </span>
-      <div className="relative">
-        <div className="pointer-events-none flex h-11 items-center rounded-xl border bg-white px-3 text-sm text-slate-800">
-          <span className={display ? "tabular-nums" : "text-slate-400"}>
-            {display || "TT.MM.JJJJ, HH:MM"}
-          </span>
-          <Calendar className="ml-auto h-4 w-4 text-fc-blue" aria-hidden />
-        </div>
-        <input
-          id={id}
-          type="datetime-local"
-          required={required}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 cursor-pointer opacity-0"
-        />
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <label className="relative min-w-0" htmlFor={dateId}>
+          <span className="sr-only">{label} Datum</span>
+          <div className="pointer-events-none flex h-11 items-center rounded-xl border bg-white px-3 text-sm text-slate-800">
+            <span className={date ? "tabular-nums" : "text-slate-400"}>
+              {date ? formatDe(date) : "TT.MM.JJJJ"}
+            </span>
+            <Calendar className="ml-auto h-4 w-4 shrink-0 text-fc-blue" aria-hidden />
+          </div>
+          <input
+            id={dateId}
+            type="date"
+            required={required}
+            value={date}
+            onChange={(e) => emit(e.target.value, time || "21:00")}
+            className="absolute inset-0 cursor-pointer opacity-0"
+          />
+        </label>
+        <label className="w-[7.25rem]" htmlFor={timeId}>
+          <span className="sr-only">{label} Uhrzeit</span>
+          <input
+            id={timeId}
+            type="time"
+            required={required}
+            value={time}
+            onChange={(e) => emit(date, e.target.value)}
+            className="h-11 w-full rounded-xl border bg-white px-2 text-center text-sm tabular-nums outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+          />
+        </label>
       </div>
-    </label>
+    </div>
   );
 }

@@ -172,7 +172,7 @@ export function AdminLiveSessionsPanel({
             maxLength={120}
           />
         </label>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <AppDateTimeInput
             label="Beitritt ab"
             value={joinOpensAt}
@@ -180,26 +180,26 @@ export function AdminLiveSessionsPanel({
             required
           />
           <AppDateTimeInput label="Start" value={startsAt} onChange={onStartsChange} required />
-          <label className="grid gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Dauer</span>
-            <div className="relative">
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                value={durationMinutes > 0 ? String(durationMinutes) : ""}
-                onChange={(e) => onDurationChange(e.target.value)}
-                placeholder="z. B. 45"
-                className="h-11 w-full rounded-xl border bg-white py-0 pl-3 pr-12 text-sm tabular-nums outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-                required
-                aria-describedby="live-duration-hint"
-              />
-              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-slate-500">
-                Min.
-              </span>
-            </div>
-          </label>
         </div>
+        <label className="grid max-w-xs gap-1.5">
+          <span className="text-sm font-medium text-slate-700">Dauer</span>
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={durationMinutes > 0 ? String(durationMinutes) : ""}
+              onChange={(e) => onDurationChange(e.target.value)}
+              placeholder="z. B. 45"
+              className="h-11 w-full rounded-xl border bg-white py-0 pl-3 pr-12 text-sm tabular-nums outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+              required
+              aria-describedby="live-duration-hint"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm font-medium text-slate-500">
+              Min.
+            </span>
+          </div>
+        </label>
         <p id="live-duration-hint" className="text-xs text-slate-500">
           Maximal {LIVE_SESSION_MAX_DURATION_MINUTES} Minuten. Nach der Dauer endet der Live-Chat
           automatisch. Beitritt am besten ca. 10 Minuten vor Start.
