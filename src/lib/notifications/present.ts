@@ -136,6 +136,7 @@ export function resolveNotificationHref(n: UserNotificationRow): string | null {
         : "/mitglieder?tab=treffen";
     case NOTIFICATION_KINDS.liveSessionInvite:
     case NOTIFICATION_KINDS.liveSessionReminder1d:
+    case NOTIFICATION_KINDS.liveSessionReminder1dNoRsvp:
       // Immer die Portal-Live-Seite (App-Shell) — nicht die alte Standalone-Ansicht.
       return "/live";
     case NOTIFICATION_KINDS.eventAvailable:
@@ -205,6 +206,7 @@ function iconForKind(kind: string): { icon: LucideIcon; iconClass: string } {
       return { icon: Users, iconClass: "bg-emerald-50 text-emerald-700" };
     case NOTIFICATION_KINDS.liveSessionInvite:
     case NOTIFICATION_KINDS.liveSessionReminder1d:
+    case NOTIFICATION_KINDS.liveSessionReminder1dNoRsvp:
       return { icon: Video, iconClass: "bg-rose-50 text-rose-700" };
     case NOTIFICATION_KINDS.eventAvailable:
     case NOTIFICATION_KINDS.eventReminder7d:

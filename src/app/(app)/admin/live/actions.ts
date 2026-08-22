@@ -141,7 +141,7 @@ export async function resendLiveSessionInvitesAction(
     if (data.status === "ended" || data.status === "cancelled") {
       return { ok: false, error: "Beendete Sessions können nicht erneut eingeladen werden." };
     }
-    const inv = await sendLiveSessionInviteEmails(data);
+    const inv = await sendLiveSessionInviteEmails(data, { resend: true });
     revalidatePath("/admin/live");
     return { ok: true, emails: inv.emails, errors: inv.errors };
   } catch (e) {

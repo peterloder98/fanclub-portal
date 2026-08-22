@@ -3,7 +3,8 @@ import { formatEur } from "@/lib/club/ledger";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
-import { sendEmailViaAccount } from "@/lib/smtp/send-via-account";
+import { sendEmailWithLog } from "@/lib/email/send-log";
+import { paceBulkOutboundEmail, isSmtpAuthFailure } from "@/lib/smtp/outbound-throttle";
 import { createUserNotification } from "@/lib/notifications/create";
 import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
@@ -102,6 +103,7 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
         if (!(await userAllowsMemberEmail(part.user_id, "meeting_reminders"))) {
           continue;
         }
+        if (emails > 0) await paceBulkOutboundEmail(emails);
         const rendered = await renderEmailFromTemplate(
           EMAIL_TEMPLATE_KEYS.clubMeetingReminder,
           {
@@ -114,11 +116,13 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
             cost_hint: costHint,
           },
         );
-        const result = await sendEmailViaAccount({
+        const result = await sendEmailWithLog({
           to: profile.email,
           subject: rendered.subject,
           text: rendered.text,
           html: rendered.html,
+          templateKey: EMAIL_TEMPLATE_KEYS.clubMeetingReminder,
+          context: { meeting_id: meeting.id, user_id: part.user_id },
         });
         if (result.ok) emails += 1;
         else {
@@ -127,6 +131,9 @@ export async function runClubMeetingReminders(admin: SupabaseClient) {
             profile.email,
             result.skipped ? result.reason : result.error,
           );
+          if ("error" in result && result.error && isSmtpAuthFailure(result.error)) {
+            break;
+          }
         }
       } catch (e) {
         console.error("[meeting-reminder] email:", e);

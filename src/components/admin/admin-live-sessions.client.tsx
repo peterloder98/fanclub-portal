@@ -100,7 +100,7 @@ export function AdminLiveSessionsPanel({
       setHostById((prev) => ({ ...prev, [result.id]: result.hostUrl }));
       if (result.invitesQueued) {
         setInviteInfo(
-          "Host-Link an Anni und Mitglieder-Einladungen werden im Hintergrund versendet. Den Host-Link kannst du zusätzlich kopieren.",
+          "Host-Link an Anni und Mitglieder-Einladungen werden in die E-Mail-Warteschlange gelegt (gedrosselter Versand, ca. alle 3 Minuten). Den Host-Link kannst du zusätzlich kopieren.",
         );
       } else {
         setInviteInfo(
@@ -143,8 +143,9 @@ export function AdminLiveSessionsPanel({
         return;
       }
       setInviteInfo(
-        `Erneut eingeladen: ${result.emails} E-Mails` +
-          (result.errors ? ` (${result.errors} Fehler)` : ""),
+        `In Warteschlange: ${result.emails} E-Mails` +
+          (result.errors ? ` (${result.errors} Fehler)` : "") +
+          " — Versand gedrosselt alle ~3 Minuten.",
       );
     });
   }

@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
+import { paceBulkOutboundEmail, isSmtpAuthFailure } from "@/lib/smtp/outbound-throttle";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { userAllowsMemberEmail } from "@/lib/email/member-email-prefs";
 import { getAccountAccessFlowForUser } from "@/lib/auth/account-access-flow";
@@ -125,9 +126,12 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
   let signupSent = 0;
   let inactiveSent = 0;
   let skipped = 0;
+  let bulkSentInRun = 0;
+  let abortedAuth = false;
   const now = new Date();
 
   for (const profile of profileRows) {
+    if (abortedAuth) break;
     if (!receivesCommunityEmails(profile)) {
       skipped += 1;
       continue;
@@ -170,6 +174,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
       });
 
       try {
+        if (bulkSentInRun > 0) await paceBulkOutboundEmail(bulkSentInRun);
         const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.appSignupReminder, {
           ...person,
           setup_url: setupUrl,
@@ -195,9 +200,14 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
             profile.id,
             result.skipped ? result.reason : result.error,
           );
+          if ("error" in result && result.error && isSmtpAuthFailure(result.error)) {
+            abortedAuth = true;
+          }
           skipped += 1;
           continue;
         }
+
+        bulkSentInRun += 1;
 
         await admin
           .from("profiles")
@@ -239,6 +249,7 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
     const appUrl = `${base}/dashboard`;
 
     try {
+      if (bulkSentInRun > 0) await paceBulkOutboundEmail(bulkSentInRun);
       const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.appInactiveReminder, {
         ...person,
         app_url: appUrl,
@@ -264,9 +275,14 @@ export async function runAppActivityReminders(admin: SupabaseClient) {
           profile.id,
           result.skipped ? result.reason : result.error,
         );
+        if ("error" in result && result.error && isSmtpAuthFailure(result.error)) {
+          abortedAuth = true;
+        }
         skipped += 1;
         continue;
       }
+
+      bulkSentInRun += 1;
 
       await admin
         .from("profiles")

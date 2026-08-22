@@ -38,6 +38,7 @@ export const NOTIFICATION_KINDS = {
   referralAbuseReview: "referral_abuse_review",
   liveSessionInvite: "live_session_invite",
   liveSessionReminder1d: "live_session_reminder_1d",
+  liveSessionReminder1dNoRsvp: "live_session_reminder_1d_no_rsvp",
 } as const;
 
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[keyof typeof NOTIFICATION_KINDS];

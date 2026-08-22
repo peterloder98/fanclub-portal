@@ -18,6 +18,7 @@ import { notifyAllActiveMembers } from "@/lib/notifications/create";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { isSmtpReady } from "@/lib/smtp/send-via-account";
+import { paceBulkOutboundEmail, isSmtpAuthFailure } from "@/lib/smtp/outbound-throttle";
 
 export type MemberBroadcastKind = "giveaway" | "poll" | "event";
 
@@ -28,13 +29,7 @@ export type EventBroadcastMeta = {
   tv: boolean;
 };
 
-const BATCH_SIZE = 5;
-const DELAY_BETWEEN_BATCHES_MS = 1500;
 const MAX_RECIPIENTS = 500;
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function appBaseUrl() {
   return (process.env.APP_BASE_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
@@ -197,55 +192,52 @@ export async function sendMemberActivityBroadcast(input: {
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  let abortedAuth = false;
 
-  for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-    const batch = recipients.slice(i, i + BATCH_SIZE);
-    await Promise.all(
-      batch.map(async (recipient) => {
-        try {
-          const msg = buildMessageForRecipient(
-            recipient,
-            input.kind,
-            entityPath,
-            sig,
-            input.eventMeta,
-          );
-          const result = await sendEmailWithLog({
-            to: recipient.email,
-            subject: msg.subject,
-            text: msg.text,
-            html: msg.html,
-            attachments: msg.attachments,
-            templateKey: `member_broadcast_${input.kind}`,
-            context: {
-              entity_id: input.entityId,
-              user_id: recipient.userId,
-              kind: input.kind,
-            },
-          });
-          if (result.ok) {
-            sent += 1;
-          } else if ("skipped" in result && result.skipped) {
-            skipped += 1;
-          } else {
-            failed += 1;
-            console.error(
-              `[member-broadcast] Fehler an ${recipient.email}:`,
-              "error" in result ? result.error : "unknown",
-            );
-          }
-        } catch (e) {
-          failed += 1;
-          console.error(
-            `[member-broadcast] Fehler an ${recipient.email}:`,
-            e instanceof Error ? e.message : e,
-          );
+  for (let i = 0; i < recipients.length; i++) {
+    if (abortedAuth) break;
+    const recipient = recipients[i]!;
+    if (sent > 0) await paceBulkOutboundEmail(sent);
+
+    try {
+      const msg = buildMessageForRecipient(
+        recipient,
+        input.kind,
+        entityPath,
+        sig,
+        input.eventMeta,
+      );
+      const result = await sendEmailWithLog({
+        to: recipient.email,
+        subject: msg.subject,
+        text: msg.text,
+        html: msg.html,
+        attachments: msg.attachments,
+        templateKey: `member_broadcast_${input.kind}`,
+        context: {
+          entity_id: input.entityId,
+          user_id: recipient.userId,
+          kind: input.kind,
+        },
+      });
+      if (result.ok) {
+        sent += 1;
+      } else if ("skipped" in result && result.skipped) {
+        skipped += 1;
+      } else {
+        failed += 1;
+        const errMsg = "error" in result ? result.error : "unknown";
+        console.error(`[member-broadcast] Fehler an ${recipient.email}:`, errMsg);
+        if (errMsg && isSmtpAuthFailure(String(errMsg))) {
+          abortedAuth = true;
         }
-      }),
-    );
-
-    if (i + BATCH_SIZE < recipients.length) {
-      await sleep(DELAY_BETWEEN_BATCHES_MS);
+      }
+    } catch (e) {
+      failed += 1;
+      console.error(
+        `[member-broadcast] Fehler an ${recipient.email}:`,
+        e instanceof Error ? e.message : e,
+      );
     }
   }
 

@@ -113,6 +113,12 @@ export function LiveSessionRsvpCard({
     };
   }, [sessionId, refreshCount]);
 
+  useEffect(() => {
+    if (acceptedCount > 0 && !listLoaded && !loadingList) {
+      void ensureAttendees();
+    }
+  }, [acceptedCount, listLoaded, loadingList, ensureAttendees]);
+
   function choose(next: "accepted" | "declined") {
     setError(null);
     startTransition(async () => {
