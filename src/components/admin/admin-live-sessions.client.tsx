@@ -267,6 +267,7 @@ export function AdminLiveSessionsPanel({
           sessions.map((s) => {
             const hostUrl = hostById[s.id];
             const duration = liveSessionDurationMinutes(s.starts_at, s.ends_at);
+            const openQuestions = openQuestionCountBySessionId[s.id] ?? 0;
             return (
               <article
                 key={s.id}
@@ -284,18 +285,35 @@ export function AdminLiveSessionsPanel({
                       <code className="rounded bg-slate-100 px-1">{s.slug}</code>
                     </p>
                   </div>
-                  <span
-                    className={cn(
-                      "rounded-full px-2.5 py-1 text-xs font-semibold",
-                      s.status === "live" && "bg-rose-100 text-rose-800",
-                      s.status === "scheduled" && "bg-amber-100 text-amber-900",
-                      s.status === "ended" && "bg-slate-100 text-slate-600",
-                      s.status === "cancelled" && "bg-slate-100 text-slate-500",
-                    )}
-                  >
-                    {STATUS_LABEL[s.status]}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {openQuestions > 0 ? (
+                      <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-800">
+                        {openQuestions} Frage{openQuestions === 1 ? "" : "n"} offen
+                      </span>
+                    ) : null}
+                    <span
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-xs font-semibold",
+                        s.status === "live" && "bg-rose-100 text-rose-800",
+                        s.status === "scheduled" && "bg-amber-100 text-amber-900",
+                        s.status === "ended" && "bg-slate-100 text-slate-600",
+                        s.status === "cancelled" && "bg-slate-100 text-slate-500",
+                      )}
+                    >
+                      {STATUS_LABEL[s.status]}
+                    </span>
+                  </div>
                 </div>
+
+                {s.status !== "cancelled" ? (
+                  <div className="mt-4">
+                    <AdminLiveSessionQuestions
+                      sessionId={s.id}
+                      initialCount={openQuestions}
+                    />
+                  </div>
+                ) : null}
+
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link
                     href={`/live/${s.slug}`}
@@ -372,11 +390,6 @@ export function AdminLiveSessionsPanel({
                     </button>
                   </div>
                 ) : null}
-                <AdminLiveSessionQuestions
-                  sessionId={s.id}
-                  initialCount={openQuestionCountBySessionId[s.id] ?? 0}
-                  disabled={s.status === "cancelled"}
-                />
               </article>
             );
           })

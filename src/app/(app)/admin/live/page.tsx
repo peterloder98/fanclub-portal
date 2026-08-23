@@ -38,7 +38,7 @@ export default async function AdminLivePage() {
     <div className="min-h-screen">
       <Topbar
         title="Live mit Anni"
-        subtitle="Sessions anlegen, Host-Link für Anni erzeugen und beenden."
+        subtitle="Sessions anlegen, Fan-Fragen moderieren, Host-Link für Anni."
       />
       <main className="px-4 py-6 lg:px-8">
         <div className="mb-4">

@@ -75,7 +75,7 @@ export function AdminLiveSessionQuestions({
   initialCount: number;
   disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initialCount > 0);
   const [questions, setQuestions] = useState<AdminLiveQuestionRow[]>([]);
   const [count, setCount] = useState(initialCount);
   const [loaded, setLoaded] = useState(false);
@@ -95,13 +95,14 @@ export function AdminLiveSessionQuestions({
   }, [sessionId]);
 
   useEffect(() => {
+    setCount(initialCount);
+    if (initialCount > 0) setOpen(true);
+  }, [initialCount]);
+
+  useEffect(() => {
     if (!open || loaded) return;
     void load();
   }, [open, loaded, load]);
-
-  useEffect(() => {
-    setCount(initialCount);
-  }, [initialCount]);
 
   function toggle() {
     if (disabled) return;
@@ -134,22 +135,36 @@ export function AdminLiveSessionQuestions({
   }
 
   return (
-    <div className="mt-3 rounded-xl border border-fc-navy/10 bg-slate-50/80">
+    <div className="rounded-xl border-2 border-fc-navy/20 bg-gradient-to-br from-fc-ice/80 to-white shadow-sm">
       <button
         type="button"
         disabled={disabled}
         onClick={toggle}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm font-medium text-fc-navy hover:bg-white/60 disabled:opacity-50"
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left disabled:opacity-50"
       >
         <span>
-          Offene Fragen{" "}
-          <span className="tabular-nums text-slate-500">({count})</span>
+          <span className="block text-sm font-semibold text-fc-navy">Fan-Fragen moderieren</span>
+          <span className="mt-0.5 block text-xs text-slate-600">
+            {count === 0
+              ? "Noch keine offenen Fragen — hier tippen zum Prüfen"
+              : `${count} offene Frage${count === 1 ? "" : "n"} — Vorab- und Live-Fragen`}
+          </span>
         </span>
-        {open ? (
-          <ChevronUp className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-        ) : (
-          <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
-        )}
+        <span className="inline-flex shrink-0 items-center gap-1.5">
+          <span
+            className={cn(
+              "grid h-8 min-w-8 place-items-center rounded-full px-2 text-xs font-bold tabular-nums",
+              count > 0 ? "bg-rose-100 text-rose-800" : "bg-slate-100 text-slate-600",
+            )}
+          >
+            {count}
+          </span>
+          {open ? (
+            <ChevronUp className="h-4 w-4 text-slate-500" aria-hidden />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden />
+          )}
+        </span>
       </button>
 
       {open ? (

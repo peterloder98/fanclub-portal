@@ -321,7 +321,7 @@ export function LiveMemberQuestions({
           </div>
         ) : null}
 
-        {isAdmin && mode === "live" ? (
+        {isAdmin ? (
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Offene Fragen (Admin) · älteste zuerst
