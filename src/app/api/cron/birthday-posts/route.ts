@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { runOutboundEmailDrainSidecar } from "@/lib/email/outbound-drain-sidecar";
 import { runBirthdayPosts } from "@/lib/birthday/run-birthday-posts";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
@@ -22,6 +23,9 @@ export async function GET(request: Request) {
     (request.headers.get("x-vercel-cron") === "1" ? "vercel-cron" : "manual");
 
   const admin = createSupabaseAdminClient();
-  const result = await runBirthdayPosts(admin, { trigger });
-  return NextResponse.json({ ok: true, ...result });
+  const [result, outbound] = await Promise.all([
+    runBirthdayPosts(admin, { trigger }),
+    runOutboundEmailDrainSidecar(admin),
+  ]);
+  return NextResponse.json({ ok: true, ...result, outboundEmail: outbound });
 }

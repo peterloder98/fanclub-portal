@@ -6,7 +6,7 @@ import { authorizeCronRequest } from "@/lib/security/cron-auth";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-/** Alle 3 Minuten: bis zu N Mails aus der Warteschlange (gedrosselt). */
+/** Manuell oder extern (z. B. cron-job.org): bis zu N Mails aus der Warteschlange. Tages-Crons rufen den Sidecar mit auf. */
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

@@ -16,10 +16,6 @@
   },
   "crons": [
     {
-      "path": "/api/cron/email-outbound",
-      "schedule": "*/3 * * * *"
-    },
-    {
       "path": "/api/cron/artistflow-sync",
       "schedule": "0 6 * * *"
     },

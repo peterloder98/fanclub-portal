@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { runOutboundEmailDrainSidecar } from "@/lib/email/outbound-drain-sidecar";
 import { runEventParticipationReminders } from "@/lib/notifications/event-reminders";
 import { runLiveSessionCleanup } from "@/lib/live/cleanup";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
@@ -13,9 +14,10 @@ export async function GET(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const [result, cleanup] = await Promise.all([
+  const [result, cleanup, outbound] = await Promise.all([
     runEventParticipationReminders(admin),
     runLiveSessionCleanup(admin),
+    runOutboundEmailDrainSidecar(admin),
   ]);
-  return NextResponse.json({ ok: true, ...result, liveCleanup: cleanup });
+  return NextResponse.json({ ok: true, ...result, liveCleanup: cleanup, outboundEmail: outbound });
 }

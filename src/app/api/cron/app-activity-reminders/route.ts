@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { runOutboundEmailDrainSidecar } from "@/lib/email/outbound-drain-sidecar";
 import { runAppActivityReminders } from "@/lib/email/app-activity-reminders";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
@@ -12,9 +13,12 @@ export async function GET(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const result = await runAppActivityReminders(admin);
+  const [result, outbound] = await Promise.all([
+    runAppActivityReminders(admin),
+    runOutboundEmailDrainSidecar(admin),
+  ]);
   if (result.error) {
-    return NextResponse.json({ ok: false, ...result }, { status: 500 });
+    return NextResponse.json({ ok: false, ...result, outboundEmail: outbound }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, ...result });
+  return NextResponse.json({ ok: true, ...result, outboundEmail: outbound });
 }
