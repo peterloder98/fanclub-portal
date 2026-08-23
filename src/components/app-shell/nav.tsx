@@ -59,6 +59,7 @@ function NavLink({
   const link = (
     <Link
       href={item.href}
+      prefetch={false}
       className={cn(
         "flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium transition lg:min-h-0 lg:py-2",
         "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fc-blue",

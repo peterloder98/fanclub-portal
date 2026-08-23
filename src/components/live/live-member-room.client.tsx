@@ -143,7 +143,14 @@ export function LiveMemberRoom({
     }
 
     void syncStatus();
-    const pollId = window.setInterval(() => void syncStatus(), 3_000);
+    const pollId = window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      void syncStatus();
+    }, 3_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void syncStatus();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
     const channel = supabase
       .channel(`live-session-lifecycle-${sessionId}`)
@@ -183,6 +190,7 @@ export function LiveMemberRoom({
     return () => {
       cancelled = true;
       window.clearInterval(pollId);
+      document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);
     };
   }, [sessionId, roomClosed, applyEnded, onGraceEnded]);
@@ -245,9 +253,14 @@ export function LiveMemberRoom({
       if (document.visibilityState === "hidden") return;
       void ping();
     }, 30_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void ping();
+    };
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [videoOpen, sessionId]);
 

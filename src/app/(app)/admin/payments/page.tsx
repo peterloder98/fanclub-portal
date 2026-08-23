@@ -1,9 +1,8 @@
-import { redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AdminMembersNav } from "@/components/admin/admin-members-nav";
 import { PaymentsAdminPanel } from "@/components/admin/payments-admin-panel.client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/admin/require-admin";
 import { getAccountingSettings } from "@/lib/club/accounting-settings";
 import { listAdminPaymentsAction } from "@/app/(app)/admin/payments/actions";
 
@@ -15,17 +14,7 @@ export default async function AdminPaymentsPage({
   searchParams: Promise<{ payment?: string }>;
 }) {
   const { payment: highlightPaymentId } = await searchParams;
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  await requireAdmin();
 
   let payments: Awaited<ReturnType<typeof listAdminPaymentsAction>> = [];
   let accountingStartDate: string | null = null;

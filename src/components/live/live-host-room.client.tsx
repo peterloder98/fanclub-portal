@@ -135,7 +135,14 @@ export function LiveHostRoom({ token }: { token: string }) {
       if (document.visibilityState === "hidden") return;
       void refreshFeed();
     }, 5_000);
-    return () => window.clearInterval(id);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshFeed();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [lkToken, refreshFeed, streamEnded, graceEndsAt]);
 
   async function dismiss(questionId: string) {

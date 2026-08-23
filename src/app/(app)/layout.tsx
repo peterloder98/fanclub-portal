@@ -3,7 +3,7 @@ import { AppShellClient } from "@/components/app-shell/app-shell-client";
 import { SkipToContent } from "@/components/app-shell/skip-to-content";
 import { Sidebar } from "@/components/app-shell/sidebar";
 import type { SidebarUser } from "@/components/app-shell/sidebar";
-import { getRequestAuth } from "@/lib/auth/request-auth";
+import { getRequestMeProfile } from "@/lib/auth/request-auth";
 import { rankFromPoints } from "@/lib/points/rank";
 import { avatarPublicUrl } from "@/lib/avatars/public";
 
@@ -15,7 +15,7 @@ function initialsFromName(name: string) {
 }
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const { supabase, user } = await getRequestAuth();
+  const { user, profile: safeProfile } = await getRequestMeProfile();
 
   let sidebarUser: SidebarUser = {
     name: "Unbekannt",
@@ -28,27 +28,6 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   let needsWelcomeOnboarding = false;
 
   if (user) {
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select(
-        "first_name,last_name,role,avatar_path,updated_at,intro_onboarding_dismissed_at,community_rules_accepted_at",
-      )
-      .eq("id", user.id)
-      .maybeSingle();
-
-    // Spalte fehlt ggf. vor Migration → ohne Intro-Feld erneut laden
-    const safeProfile =
-      profile ??
-      (profileError
-        ? (
-            await supabase
-              .from("profiles")
-              .select("first_name,last_name,role,avatar_path,updated_at")
-              .eq("id", user.id)
-              .maybeSingle()
-          ).data
-        : null);
-
     const name =
       safeProfile?.first_name && safeProfile?.last_name
         ? `${safeProfile.first_name} ${safeProfile.last_name}`
@@ -65,18 +44,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         : null,
     };
 
-    const rulesAccepted =
-      safeProfile != null &&
-      "community_rules_accepted_at" in safeProfile &&
-      (safeProfile as { community_rules_accepted_at?: string | null }).community_rules_accepted_at !=
-        null;
-
-    const introPending =
-      safeProfile != null &&
-      "intro_onboarding_dismissed_at" in safeProfile &&
-      (safeProfile as { intro_onboarding_dismissed_at?: string | null }).intro_onboarding_dismissed_at ==
-        null;
-
+    const rulesAccepted = safeProfile?.community_rules_accepted_at != null;
+    const introPending = safeProfile?.intro_onboarding_dismissed_at == null;
     needsWelcomeOnboarding = !rulesAccepted || introPending;
   }
 

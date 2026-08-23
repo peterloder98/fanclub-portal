@@ -48,8 +48,19 @@ export function EventsSyncPanel({
 
   useEffect(() => {
     if (!pending && !isRunning) return;
-    const id = window.setInterval(poll, 1500);
-    return () => window.clearInterval(id);
+    const tick = () => {
+      if (document.visibilityState === "hidden") return;
+      poll();
+    };
+    const id = window.setInterval(tick, 1500);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") poll();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [pending, isRunning, poll]);
 
   function runSync() {

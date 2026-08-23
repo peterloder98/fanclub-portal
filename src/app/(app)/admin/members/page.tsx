@@ -2,14 +2,12 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AdminMembersNav } from "@/components/admin/admin-members-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CreateMemberSection } from "@/components/admin/create-member-section";
 import {
   AdminMembersWorkspace,
   type AdminApplicationRow,
   type AdminMemberRow,
 } from "@/components/admin/admin-members-workspace.client";
-import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { batchMemberContributionStatus } from "@/lib/club/membership-contribution";
 import { loadMemberBoardNotesMap } from "@/lib/members/board-notes";
@@ -18,6 +16,7 @@ import {
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
 import { adminVisibleEmail } from "@/lib/members/no-app-access";
+import { requireAdmin } from "@/lib/admin/require-admin";
 
 export const dynamic = "force-dynamic";
 
@@ -27,17 +26,7 @@ export default async function AdminMembersPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  const { supabase } = await requireAdmin();
 
   const inviteParam = sp.invite;
   const invite =

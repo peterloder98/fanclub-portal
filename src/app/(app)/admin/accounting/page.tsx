@@ -2,27 +2,16 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AdminMembersNav } from "@/components/admin/admin-members-nav";
 import { ClubAccountingPanel } from "@/components/admin/club-accounting-panel.client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { listClubLedger } from "@/lib/club/ledger";
 import { listOpenContributions } from "@/lib/club/membership-contribution";
 import { listOpenMeetingCharges } from "@/lib/club/meeting-charges";
 import { getAccountingSettings } from "@/lib/club/accounting-settings";
-import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/admin/require-admin";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAccountingPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  await requireAdmin();
 
   let entries: Awaited<ReturnType<typeof listClubLedger>> = [];
   let openContributions: Awaited<ReturnType<typeof listOpenContributions>> = [];

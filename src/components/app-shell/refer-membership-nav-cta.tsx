@@ -15,6 +15,7 @@ export function ReferMembershipNavCta() {
   return (
     <Link
       href="/mitgliedschaft/einladen"
+      prefetch={false}
       className={cn(
         "group block overflow-hidden rounded-2xl border transition",
         active

@@ -115,6 +115,17 @@ export async function proxy(request: NextRequest) {
     return getResponse();
   }
 
+  // API-Routen: nur Session-Refresh. Auth/Berechtigung prüft der Handler selbst.
+  // Spart Profile- + Membership-Queries bei Polling (Attendance, Host-Feed, …).
+  if (pathname.startsWith("/api/")) {
+    if (!hasSupabaseAuthCookie(request)) {
+      return NextResponse.next({ request });
+    }
+    const { supabase, getResponse } = createProxySupabase(request);
+    await supabase.auth.getUser();
+    return getResponse();
+  }
+
   const { supabase, getResponse } = createProxySupabase(request);
   const {
     data: { user },
@@ -141,14 +152,14 @@ export async function proxy(request: NextRequest) {
 
     if (membership?.status === "applied") {
       const pendingPath = "/mitgliedschaft/ausstehend";
-      if (pathname !== pendingPath && !pathname.startsWith("/api/")) {
+      if (pathname !== pendingPath) {
         return redirectPreservingCookies(request, getResponse(), pendingPath);
       }
     }
 
     if (membership?.status === "suspended") {
       const allowedWhenSuspended = pathname === "/gesperrt";
-      if (!allowedWhenSuspended && !pathname.startsWith("/api/")) {
+      if (!allowedWhenSuspended) {
         return redirectPreservingCookies(request, getResponse(), "/gesperrt");
       }
     }

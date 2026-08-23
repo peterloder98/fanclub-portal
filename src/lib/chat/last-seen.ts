@@ -1,7 +1,7 @@
 import {
-  fetchGroupChatLastSeen,
   markGroupChatLastSeen,
 } from "@/app/(app)/chat/actions";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const SEEN_KEY = "fc-group-chat-last-seen";
 
@@ -49,12 +49,37 @@ export async function markChatSeenFromMessages(
 
 /**
  * Lesestatus von allen Geräten laden (DB + localStorage).
+ * Direkt über Browser→Supabase — kein Vercel Server Action / Active CPU.
  * Falls die DB-Spalte noch fehlt: nur localStorage.
  */
 export async function syncChatLastSeenFromServer(): Promise<string | null> {
   const local = readChatLastSeen();
-  const remote = await fetchGroupChatLastSeen().catch(() => null);
-  const merged = maxIso(local, remote);
-  if (merged) writeChatLastSeen(merged);
-  return merged;
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return local;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("group_chat_last_seen_at")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (error) {
+      if (/group_chat_last_seen_at|does not exist/i.test(error.message)) return local;
+      console.error("[chat] fetch last seen:", error.message);
+      return local;
+    }
+
+    const remote =
+      (data as { group_chat_last_seen_at?: string | null } | null)?.group_chat_last_seen_at ??
+      null;
+    const merged = maxIso(local, remote);
+    if (merged) writeChatLastSeen(merged);
+    return merged;
+  } catch {
+    return local;
+  }
 }
