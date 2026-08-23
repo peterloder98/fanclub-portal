@@ -17,6 +17,7 @@ import {
   sendLiveSessionInviteEmails,
 } from "@/lib/live/invites";
 import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
+import { profileDisplayName } from "@/lib/profiles/display";
 
 function parseAdminDateTime(label: string, raw: string): string {
   return parseAdminWallClockToUtcIso(raw, label);
@@ -267,6 +268,110 @@ export async function updateLiveSessionAction(input: {
       .eq("id", input.id);
     if (error) return { ok: false, error: error.message };
     revalidatePath("/admin/live");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+  }
+}
+
+export type AdminLiveQuestionRow = {
+  id: string;
+  body: string;
+  createdAt: string;
+  authorId: string;
+  authorName: string;
+};
+
+/** Offene Fragen einer Session (Vorab + Live) für den Vorstand. */
+export async function listLiveSessionQuestionsAction(
+  sessionId: string,
+): Promise<
+  { ok: true; questions: AdminLiveQuestionRow[] } | { ok: false; error: string }
+> {
+  try {
+    await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const { data: questions, error } = await admin
+      .from("live_session_questions")
+      .select("id,body,created_at,author_id")
+      .eq("session_id", sessionId)
+      .is("dismissed_at", null)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (error) return { ok: false, error: error.message };
+
+    const authorIds = [...new Set((questions ?? []).map((q) => q.author_id))];
+    const { data: profiles } = authorIds.length
+      ? await admin
+          .from("profiles")
+          .select("id,first_name,last_name,email")
+          .in("id", authorIds)
+      : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null; email: string | null }> };
+
+    const nameById = new Map(
+      (profiles ?? []).map((p) => [
+        p.id,
+        profileDisplayName({
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          email: p.email,
+        }),
+      ]),
+    );
+
+    return {
+      ok: true,
+      questions: (questions ?? []).map((q) => ({
+        id: q.id,
+        body: q.body,
+        createdAt: q.created_at,
+        authorId: q.author_id,
+        authorName: nameById.get(q.author_id) ?? "Mitglied",
+      })),
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+  }
+}
+
+/** Frage entfernen (Admin) — verschwindet auch bei Anni. */
+export async function removeLiveSessionQuestionAdminAction(
+  questionId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const { error } = await admin.from("live_session_questions").delete().eq("id", questionId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/admin/live");
+    revalidatePath("/live");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+  }
+}
+
+/** Frage abhaken wie bei Anni (bleibt in DB, nicht mehr sichtbar). */
+export async function dismissLiveSessionQuestionAdminAction(
+  sessionId: string,
+  questionId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const { user } = await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const { error } = await admin
+      .from("live_session_questions")
+      .update({
+        dismissed_at: new Date().toISOString(),
+        dismissed_by: user.id,
+      })
+      .eq("id", questionId)
+      .eq("session_id", sessionId)
+      .is("dismissed_at", null);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/admin/live");
+    revalidatePath("/live");
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Fehler." };

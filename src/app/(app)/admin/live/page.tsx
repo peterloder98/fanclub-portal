@@ -19,6 +19,20 @@ export default async function AdminLivePage() {
     .limit(50);
 
   const sessions = (data ?? []) as LiveSessionRow[];
+  const sessionIds = sessions.map((s) => s.id);
+
+  const openQuestionCountBySessionId: Record<string, number> = {};
+  if (sessionIds.length) {
+    const { data: openQuestions } = await admin
+      .from("live_session_questions")
+      .select("session_id")
+      .in("session_id", sessionIds)
+      .is("dismissed_at", null);
+    for (const row of openQuestions ?? []) {
+      openQuestionCountBySessionId[row.session_id] =
+        (openQuestionCountBySessionId[row.session_id] ?? 0) + 1;
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -30,7 +44,10 @@ export default async function AdminLivePage() {
         <div className="mb-4">
           <AdminBackLink />
         </div>
-        <AdminLiveSessionsPanel sessions={sessions} />
+        <AdminLiveSessionsPanel
+          sessions={sessions}
+          openQuestionCountBySessionId={openQuestionCountBySessionId}
+        />
       </main>
     </div>
   );

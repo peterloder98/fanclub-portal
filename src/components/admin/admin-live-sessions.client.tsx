@@ -15,6 +15,7 @@ import {
   liveSessionDurationMinutes,
 } from "@/lib/live/types";
 import { AppDateTimeInput } from "@/components/ui/birthdate-segment-input";
+import { AdminLiveSessionQuestions } from "@/components/admin/admin-live-session-questions.client";
 import { cn } from "@/lib/cn";
 import {
   berlinWallClockToUtcIso,
@@ -49,8 +50,10 @@ const STATUS_LABEL: Record<LiveSessionStatus, string> = {
 
 export function AdminLiveSessionsPanel({
   sessions,
+  openQuestionCountBySessionId,
 }: {
   sessions: LiveSessionRow[];
+  openQuestionCountBySessionId: Record<string, number>;
 }) {
   const [pending, startTransition] = useTransition();
   const [title, setTitle] = useState("Live mit Anni");
@@ -369,6 +372,11 @@ export function AdminLiveSessionsPanel({
                     </button>
                   </div>
                 ) : null}
+                <AdminLiveSessionQuestions
+                  sessionId={s.id}
+                  initialCount={openQuestionCountBySessionId[s.id] ?? 0}
+                  disabled={s.status === "cancelled"}
+                />
               </article>
             );
           })
