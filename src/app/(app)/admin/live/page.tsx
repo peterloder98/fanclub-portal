@@ -1,7 +1,9 @@
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { AdminLiveQuestionsPanel } from "@/components/admin/admin-live-questions-panel";
 import { AdminLiveSessionsPanel } from "@/components/admin/admin-live-sessions.client";
 import { requireAdmin } from "@/lib/admin/require-admin";
+import { loadOpenLiveQuestionsBySession } from "@/lib/live/admin-questions";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { LiveSessionRow } from "@/lib/live/types";
 
@@ -19,19 +21,25 @@ export default async function AdminLivePage() {
     .limit(50);
 
   const sessions = (data ?? []) as LiveSessionRow[];
-  const sessionIds = sessions.map((s) => s.id);
+  const activeSessionIds = sessions.filter((s) => s.status !== "cancelled").map((s) => s.id);
+
+  let questionsBySessionId: Record<string, Awaited<
+    ReturnType<typeof loadOpenLiveQuestionsBySession>
+  >[string]> = {};
+  let questionsPanelError: string | null = null;
+
+  if (activeSessionIds.length) {
+    try {
+      questionsBySessionId = await loadOpenLiveQuestionsBySession(admin, activeSessionIds);
+    } catch (e) {
+      questionsPanelError =
+        e instanceof Error ? e.message : "Fragen konnten nicht geladen werden.";
+    }
+  }
 
   const openQuestionCountBySessionId: Record<string, number> = {};
-  if (sessionIds.length) {
-    const { data: openQuestions } = await admin
-      .from("live_session_questions")
-      .select("session_id")
-      .in("session_id", sessionIds)
-      .is("dismissed_at", null);
-    for (const row of openQuestions ?? []) {
-      openQuestionCountBySessionId[row.session_id] =
-        (openQuestionCountBySessionId[row.session_id] ?? 0) + 1;
-    }
+  for (const [sessionId, rows] of Object.entries(questionsBySessionId)) {
+    openQuestionCountBySessionId[sessionId] = rows.length;
   }
 
   return (
@@ -44,6 +52,18 @@ export default async function AdminLivePage() {
         <div className="mb-4">
           <AdminBackLink />
         </div>
+
+        {questionsPanelError ? (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            Fan-Fragen: {questionsPanelError}
+          </div>
+        ) : (
+          <AdminLiveQuestionsPanel
+            sessions={sessions}
+            questionsBySessionId={questionsBySessionId}
+          />
+        )}
+
         <AdminLiveSessionsPanel
           sessions={sessions}
           openQuestionCountBySessionId={openQuestionCountBySessionId}
