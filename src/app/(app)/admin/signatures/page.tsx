@@ -2,21 +2,10 @@ import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { AdminSignatureSettings } from "@/components/admin/admin-signature-settings";
 import { ClubSignatureSettings } from "@/components/admin/club-signature-settings";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/admin/require-admin";
 
 export default async function AdminSignaturesPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  await requireAdmin();
 
   return (
     <div className="min-h-screen">

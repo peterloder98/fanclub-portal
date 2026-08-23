@@ -1,23 +1,15 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Topbar } from "@/components/app-shell/topbar";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MeetingAdminForm } from "@/components/meetings/meeting-admin-form.client";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export default async function AdminTreffenPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: me } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  await requireAdmin();
 
   const admin = createSupabaseAdminClient();
   const { data: meetings, error } = await admin

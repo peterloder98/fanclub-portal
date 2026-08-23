@@ -1,22 +1,10 @@
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { Topbar } from "@/components/app-shell/topbar";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { requireAdmin } from "@/lib/admin/require-admin";
 import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
 export default async function AdminAuditPage() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (profile?.role !== "admin") redirect("/dashboard");
+  const { supabase } = await requireAdmin();
 
   const { data: rows } = await supabase
     .from("admin_audit_log")

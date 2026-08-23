@@ -4,7 +4,7 @@ import {
   type MemberDetailData,
   type MemberWarningRow,
 } from "@/components/admin/member-detail-panel.client";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { listClubLedger } from "@/lib/club/ledger";
 import { getMemberContributionYears } from "@/lib/club/membership-contribution";
@@ -91,17 +91,7 @@ export default async function AdminMemberDetailPage({
   const { id } = await params;
   const { remind, paperMail } = await searchParams;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  await requireAdmin();
 
   const admin = createSupabaseAdminClient();
   let profile: Record<string, unknown> | null = null;

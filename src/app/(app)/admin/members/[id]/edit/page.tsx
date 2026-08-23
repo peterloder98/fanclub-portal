@@ -3,10 +3,9 @@ import { MembershipPdfPanel } from "@/components/admin/membership-pdf-panel";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GenderSelect } from "@/components/ui/gender-select";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MembershipNumberEditField } from "@/components/admin/membership-number-edit-field.client";
 import { MemberAppAccessFields } from "@/components/admin/member-app-access-fields.client";
@@ -34,17 +33,7 @@ export default async function AdminMemberEditPage({
   const { id } = await params;
   const { error: errorParam } = await searchParams;
 
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-  const { data: me } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .maybeSingle();
-  if (me?.role !== "admin") redirect("/dashboard");
+  await requireAdmin();
 
   const admin = createSupabaseAdminClient();
   const full = await admin
