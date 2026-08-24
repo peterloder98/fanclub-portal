@@ -8,6 +8,7 @@ import { LiveSessionChatPanel } from "@/components/live/live-session-chat.client
 import { LiveMemberQuestions } from "@/components/live/live-member-questions.client";
 import { LiveSessionRsvpCard } from "@/components/live/live-session-rsvp.client";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
+import { LiveSessionAudience } from "@/components/live/live-session-audience.client";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { emitPointsGain } from "@/lib/points/events";
 import { cn } from "@/lib/cn";
@@ -76,6 +77,7 @@ export function LiveMemberRoom({
   const [tab, setTab] = useState<Tab>("chat");
   const [videoReady, setVideoReady] = useState(false);
   const [tokenNonce, setTokenNonce] = useState(0);
+  const [audienceRefreshNonce, setAudienceRefreshNonce] = useState(0);
 
   const endsAtMs = new Date(endsAt).getTime();
   const [streamEnded, setStreamEnded] = useState(
@@ -247,6 +249,7 @@ export function LiveMemberRoom({
         if (!res.ok || cancelled) return;
         const data = (await res.json()) as { awarded?: boolean; points?: number };
         if (data.awarded && data.points) emitPointsGain(data.points);
+        setAudienceRefreshNonce((n) => n + 1);
       } catch {
         /* ignore transient */
       }
@@ -421,7 +424,16 @@ export function LiveMemberRoom({
                 Start {formatBerlinDateTime(startsAt)}
               </p>
             </div>
-            <div className="shrink-0 md:pt-6">{renderCountdown()}</div>
+            <div className="flex shrink-0 flex-col items-start gap-2 md:items-end md:pt-6">
+              {renderCountdown()}
+              {!roomClosed ? (
+                <LiveSessionAudience
+                  sessionId={sessionId}
+                  enabled={chatOpen}
+                  refreshNonce={audienceRefreshNonce}
+                />
+              ) : null}
+            </div>
           </div>
         </header>
       ) : (
@@ -436,7 +448,16 @@ export function LiveMemberRoom({
                   ? " · Live"
                   : null}
           </p>
-          <div className="shrink-0">{renderCountdown()}</div>
+          <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+            {renderCountdown()}
+            {!roomClosed ? (
+              <LiveSessionAudience
+                sessionId={sessionId}
+                enabled={chatOpen}
+                refreshNonce={audienceRefreshNonce}
+              />
+            ) : null}
+          </div>
         </div>
       )}
 
