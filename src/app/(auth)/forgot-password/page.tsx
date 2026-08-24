@@ -35,7 +35,8 @@ export default function ForgotPasswordPage() {
         <p className="mt-2 text-sm text-slate-600">
           Du erhältst einen Link per E-Mail. Wenn du schon registriert bist, setzt du nur ein
           neues Passwort — ohne erneute Anmeldung mit Geburtsdatum. Der Link bleibt gültig, bis
-          du das Passwort gespeichert hast (auch auf anderen Geräten). Nutze die neueste Mail.
+          du das Passwort gespeichert hast (auch auf anderen Geräten). Nutze die neueste Mail und
+          gib genau die E-Mail-Adresse ein, die beim Fanclub hinterlegt ist.
         </p>
       </CardHeader>
       <CardContent>

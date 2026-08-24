@@ -20,6 +20,7 @@ export function LiveKitStage({
   mode,
   className,
   onViewerCountChange,
+  fillContainer = false,
 }: {
   token: string;
   serverUrl: string;
@@ -27,6 +28,8 @@ export function LiveKitStage({
   className?: string;
   /** Host: Anzahl verbundener Zuschauer (LiveKit-Raum). */
   onViewerCountChange?: (count: number) => void;
+  /** Vollbild/Theater: Video füllt die Höhe statt 16:9. */
+  fillContainer?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -202,10 +205,19 @@ export function LiveKitStage({
   const showReconnect = needsReconnect && !connecting;
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl bg-slate-900", className)}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-2xl bg-slate-900",
+        fillContainer && "flex h-full min-h-0 flex-col",
+        className,
+      )}
+    >
       <video
         ref={videoRef}
-        className="aspect-video w-full bg-black object-cover"
+        className={cn(
+          "w-full bg-black object-cover",
+          fillContainer ? "min-h-0 flex-1" : "aspect-video",
+        )}
         playsInline
         autoPlay
         muted={mode === "host"}

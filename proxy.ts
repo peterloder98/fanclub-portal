@@ -19,6 +19,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/api/live/host-token",
   "/api/live/host-feed",
   "/api/live/host-dismiss-question",
+  "/api/live/host-end",
 ];
 
 function isPublicPath(pathname: string) {

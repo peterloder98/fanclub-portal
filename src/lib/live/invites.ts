@@ -17,7 +17,7 @@ import { hasNotificationDedupe } from "@/lib/notifications/dedup";
 import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { resolveLiveAnniEmail } from "@/lib/live/anni-recipient";
 import { liveSessionCalendarUrl, liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
-import { appBaseUrl, liveMemberUrl, type LiveSessionRow } from "@/lib/live/types";
+import { appBaseUrl, generateLiveHostToken, liveHostUrl, liveMemberUrl, type LiveSessionRow } from "@/lib/live/types";
 import { formatBerlinDateTimeLong, formatBerlinTime } from "@/lib/datetime/berlin";
 
 
@@ -213,47 +213,35 @@ export async function sendAnniHostLinkEmail(input: {
   }
 }
 
+/** Erinnerung an Anni: Host-Link (kein Mitglieder-Login), Token wird für den Versand rotiert. */
 async function sendAnniReminderEmail(
   admin: SupabaseClient,
   session: SessionMailFields & { anni_reminder_sent_at?: string | null },
 ): Promise<boolean> {
   if (session.anni_reminder_sent_at) return false;
 
-  const anniEmail = resolveLiveAnniEmail();
-  const sessionDate = formatLiveSessionDateLabel(session.starts_at);
-  const sessionTime = formatLiveSessionTimeLabel(session.starts_at);
-  const base = appBaseUrl();
-  const sessionUrl = base ? `${base}/live/${session.slug}` : `/live/${session.slug}`;
-  const person = emailPersonVars({ firstName: "Anni", gender: "female" });
-
-  try {
-    const ok = await sendOneLiveEmail({
-      to: anniEmail,
-      templateKey: EMAIL_TEMPLATE_KEYS.liveSessionReminder,
-      vars: {
-        ...person,
-        session_title: session.title,
-        session_date: sessionDate,
-        session_time: sessionTime,
-        session_url: sessionUrl,
-        calendar_url: liveSessionCalendarUrl(session),
-      },
-      session,
-    });
-    if (ok) {
-      await admin
-        .from("live_sessions")
-        .update({
-          anni_reminder_sent_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", session.id);
-    }
-    return ok;
-  } catch (e) {
-    console.error("[live-reminder] Anni email failed", e);
+  const { token, hash } = generateLiveHostToken();
+  const { error: updErr } = await admin
+    .from("live_sessions")
+    .update({ host_token_hash: hash, updated_at: new Date().toISOString() })
+    .eq("id", session.id);
+  if (updErr) {
+    console.error("[live-reminder] Anni host token rotate failed:", updErr.message);
     return false;
   }
+
+  const hostUrl = liveHostUrl(token);
+  const result = await sendAnniHostLinkEmail({ session, hostUrl });
+  if (result.ok) {
+    await admin
+      .from("live_sessions")
+      .update({
+        anni_reminder_sent_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", session.id);
+  }
+  return result.ok;
 }
 
 export async function runLiveSessionReminders(admin: SupabaseClient) {
@@ -384,7 +372,18 @@ async function runRemindersForSessions(
 
       try {
         const isAnni = profile.email.trim().toLowerCase() === anniEmail;
-        if (!isAnni && !(await userAllowsMemberEmail(profile.id, "live"))) {
+        if (isAnni) {
+          if (!anniReminderDone) {
+            const anniOk = await sendAnniReminderEmail(admin, {
+              ...sessionMail,
+              anni_reminder_sent_at: session.anni_reminder_sent_at ?? null,
+            });
+            if (anniOk) emails += 1;
+            anniReminderDone = true;
+          }
+          continue;
+        }
+        if (!(await userAllowsMemberEmail(profile.id, "live"))) {
           continue;
         }
         const person = emailPersonVars({
@@ -407,16 +406,6 @@ async function runRemindersForSessions(
         });
         emailSendIndex += 1;
         if (ok) emails += 1;
-        if (ok && isAnni) {
-          anniReminderDone = true;
-          await admin
-            .from("live_sessions")
-            .update({
-              anni_reminder_sent_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", session.id);
-        }
       } catch (e) {
         console.error("[live-reminder] email failed", profile.id, e);
       }
