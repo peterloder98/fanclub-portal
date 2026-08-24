@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { Check, MessageCircle } from "lucide-react";
+import { Check, MessageCircle, Users } from "lucide-react";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
 import { formatChatTime } from "@/lib/chat/types";
 import { cn } from "@/lib/cn";
@@ -46,6 +46,7 @@ export function LiveHostRoom({ token }: { token: string }) {
   const [dismissing, setDismissing] = useState<string | null>(null);
   const [streamEnded, setStreamEnded] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [viewerCount, setViewerCount] = useState(0);
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -233,16 +234,24 @@ export function LiveHostRoom({ token }: { token: string }) {
               />
             ) : null}
           </div>
-          {!streamEnded ? (
-            <button
-              type="button"
-              disabled={ending}
-              onClick={() => void endEarly()}
-              className="shrink-0 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-60"
-            >
-              {ending ? "Beende…" : "Live beenden"}
-            </button>
-          ) : null}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {!streamEnded && lkToken ? (
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold tabular-nums text-white">
+                <Users className="h-4 w-4 shrink-0" aria-hidden />
+                {viewerCount === 1 ? "1 Zuschauer" : `${viewerCount} Zuschauer`}
+              </span>
+            ) : null}
+            {!streamEnded ? (
+              <button
+                type="button"
+                disabled={ending}
+                onClick={() => void endEarly()}
+                className="rounded-xl bg-white/15 px-3 py-2 text-sm font-semibold text-white hover:bg-white/25 disabled:opacity-60"
+              >
+                {ending ? "Beende…" : "Live beenden"}
+              </button>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -261,7 +270,12 @@ export function LiveHostRoom({ token }: { token: string }) {
                     sich die Session automatisch.
                   </div>
                 ) : lkToken && url ? (
-                  <LiveKitStage token={lkToken} serverUrl={url} mode="host" />
+                  <LiveKitStage
+                    token={lkToken}
+                    serverUrl={url}
+                    mode="host"
+                    onViewerCountChange={setViewerCount}
+                  />
                 ) : (
                   <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
                     Verbinde…

@@ -19,11 +19,14 @@ export function LiveKitStage({
   serverUrl,
   mode,
   className,
+  onViewerCountChange,
 }: {
   token: string;
   serverUrl: string;
   mode: Mode;
   className?: string;
+  /** Host: Anzahl verbundener Zuschauer (LiveKit-Raum). */
+  onViewerCountChange?: (count: number) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -36,6 +39,12 @@ export function LiveKitStage({
   const [connecting, setConnecting] = useState(true);
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [viewerCount, setViewerCount] = useState(0);
+
+  useEffect(() => {
+    if (mode !== "host") return;
+    onViewerCountChange?.(viewerCount);
+  }, [mode, viewerCount, onViewerCountChange]);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +58,12 @@ export function LiveKitStage({
     setNeedsReconnect(false);
     setHasRemoteVideo(false);
     setError(null);
+    setViewerCount(0);
+
+    function syncViewerCount() {
+      if (mode !== "host") return;
+      setViewerCount(room.remoteParticipants.size);
+    }
 
     room.on(RoomEvent.MediaDevicesError, (e: Error) => {
       console.warn("[livekit] MediaDevicesError", e);
@@ -94,10 +109,13 @@ export function LiveKitStage({
 
     room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
     room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+    room.on(RoomEvent.ParticipantConnected, syncViewerCount);
+    room.on(RoomEvent.ParticipantDisconnected, syncViewerCount);
     room.on(RoomEvent.Disconnected, () => {
       if (cancelled) return;
       setConnected(false);
       setHasRemoteVideo(false);
+      setViewerCount(0);
       setConnecting(false);
       setNeedsReconnect(true);
     });
@@ -125,6 +143,7 @@ export function LiveKitStage({
           }
           setCamOn(true);
           setMicOn(true);
+          syncViewerCount();
         } else {
           room.remoteParticipants.forEach((p) => {
             p.trackPublications.forEach((pub) => {
@@ -235,6 +254,14 @@ export function LiveKitStage({
               Erneut verbinden
             </button>
           </div>
+        </div>
+      ) : null}
+      {mode === "host" && connected ? (
+        <div
+          className="absolute right-3 top-3 rounded-full bg-black/55 px-3 py-1.5 text-xs font-semibold tabular-nums text-white backdrop-blur-sm"
+          aria-live="polite"
+        >
+          {viewerCount === 1 ? "1 Zuschauer" : `${viewerCount} Zuschauer`}
         </div>
       ) : null}
       {mode === "host" && connected ? (
