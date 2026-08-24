@@ -36,6 +36,10 @@
       "schedule": "10 8 * * *"
     },
     {
+      "path": "/api/cron/board-video-reminders",
+      "schedule": "12 8 * * *"
+    },
+    {
       "path": "/api/cron/live-session-cleanup",
       "schedule": "20 4 * * *"
     },

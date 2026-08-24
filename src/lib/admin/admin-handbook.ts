@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-08-23";
+export const ADMIN_HANDBOOK_UPDATED = "2026-08-24";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -701,6 +701,35 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/admin/settings/email-templates",
             label: "E-Mail-Vorlagen",
+          },
+        ],
+      },
+      {
+        id: "board-video-anni",
+        number: "3.8",
+        title: "Videobesprechung mit Anni",
+        summary: "Interner Video-Call Vorstand + Anni, Agenda, max. 1 Stunde",
+        blocks: [
+          {
+            type: "p",
+            text: "Getrennt vom Fan-Live: Ihr plant interne Besprechungen mit Anni und ausgewählten Vorständen. Alle sehen sich per Video, Agenda-Punkte tragt ihr vorab gemeinsam ein. Anni braucht keinen Login — sie erhält einen persönlichen Link per E-Mail.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Admin → Community → „Videobesprechung mit Anni“.",
+              "Titel und Start (Berlin-Zeit) eintragen, Vorstände ankreuzen (Anni ist immer dabei). Du musst dich nicht selbst auswählen, wenn du nicht teilnimmst.",
+              "„Anlegen & einladen“: Vorstände bekommen den Raum-Link (Login nötig), Anni ihren Gast-Link ohne Login.",
+              "Ab 5 Minuten vor Start: Raum offen — nur Agenda, noch kein Video. Jeder darf Punkte eintragen und bearbeiten (Name wird gespeichert).",
+              "Ab Start: Video max. 1 Stunde. Ab 10 Minuten vor Ende roter Countdown, danach automatisches Ende. Vorstände können jederzeit „Besprechung beenden“.",
+              "Während des Calls: Agenda-Punkte abhaken, Kamera/Mikro an/aus, Name im Video wählbar, Sprecher im Fokus (Pin möglich), ein Bildschirm teilen gleichzeitig.",
+              "Erinnerung: 1 Tag vorher E-Mail an die eingeladenen Vorstände.",
+            ],
+          },
+          {
+            type: "link",
+            href: "/admin/besprechung",
+            label: "Videobesprechung planen",
           },
         ],
       },

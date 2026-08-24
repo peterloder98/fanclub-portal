@@ -21,6 +21,9 @@ export const EMAIL_TEMPLATE_KEYS = {
   liveSessionReminder: "live_session_reminder",
   liveSessionReminderNoRsvp: "live_session_reminder_no_rsvp",
   liveSessionHostInvite: "live_session_host_invite",
+  boardVideoMeetingInvite: "board_video_meeting_invite",
+  boardVideoMeetingReminder: "board_video_meeting_reminder",
+  boardVideoMeetingAnniInvite: "board_video_meeting_anni_invite",
   memberLoginEmailChanged: "member_login_email_changed",
 } as const;
 
@@ -193,6 +196,33 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "session_date", label: "Datum & Uhrzeit" },
     { key: "host_url", label: "Host-Link (Kamera/Mikro)" },
     { key: "calendar_url", label: "Link Kalender (.ics)" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.boardVideoMeetingInvite]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "meeting_title", label: "Titel" },
+    { key: "meeting_date", label: "Datum & Uhrzeit" },
+    { key: "meeting_time", label: "Start-Uhrzeit" },
+    { key: "join_opens_time", label: "Raum öffnet (Uhrzeit)" },
+    { key: "meeting_url", label: "Link zur Besprechung" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.boardVideoMeetingReminder]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "meeting_title", label: "Titel" },
+    { key: "meeting_date", label: "Datum & Uhrzeit" },
+    { key: "meeting_time", label: "Start-Uhrzeit" },
+    { key: "join_opens_time", label: "Raum öffnet (Uhrzeit)" },
+    { key: "meeting_url", label: "Link zur Besprechung" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.boardVideoMeetingAnniInvite]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "meeting_title", label: "Titel" },
+    { key: "meeting_date", label: "Datum & Uhrzeit" },
+    { key: "meeting_time", label: "Start-Uhrzeit" },
+    { key: "join_opens_time", label: "Raum öffnet (Uhrzeit)" },
+    { key: "meeting_url", label: "Persönlicher Gast-Link" },
   ],
   [EMAIL_TEMPLATE_KEYS.memberLoginEmailChanged]: [
     ...personFacingSalutation,

@@ -1,4 +1,4 @@
-import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient, TrackSource } from "livekit-server-sdk";
 
 export function getLiveKitConfig(): {
   url: string;
@@ -32,6 +32,9 @@ export async function mintLiveKitToken(input: {
   identity: string;
   name: string;
   canPublish: boolean;
+  /** Multi-Video / Bildschirm teilen */
+  canPublishSources?: TrackSource[];
+  ttl?: string;
 }): Promise<{ token: string; url: string }> {
   const cfg = getLiveKitConfig();
   if (!cfg) {
@@ -43,7 +46,7 @@ export async function mintLiveKitToken(input: {
   const at = new AccessToken(cfg.apiKey, cfg.apiSecret, {
     identity: input.identity,
     name: input.name,
-    ttl: "4h",
+    ttl: input.ttl ?? "4h",
   });
   at.addGrant({
     roomJoin: true,
@@ -51,7 +54,33 @@ export async function mintLiveKitToken(input: {
     canPublish: input.canPublish,
     canSubscribe: true,
     canPublishData: false,
+    ...(input.canPublishSources?.length
+      ? { canPublishSources: input.canPublishSources }
+      : {}),
   });
 
   return { token: await at.toJwt(), url: cfg.url };
+}
+
+export async function mintBoardMeetingLiveKitToken(input: {
+  roomName: string;
+  identity: string;
+  name: string;
+  ttlSeconds: number;
+}): Promise<{ token: string; url: string }> {
+  const ttlSec = Math.max(60, Math.min(input.ttlSeconds, 4 * 3600));
+  const ttlMin = Math.ceil(ttlSec / 60);
+  return mintLiveKitToken({
+    roomName: input.roomName,
+    identity: input.identity,
+    name: input.name,
+    canPublish: true,
+    canPublishSources: [
+      TrackSource.CAMERA,
+      TrackSource.MICROPHONE,
+      TrackSource.SCREEN_SHARE,
+      TrackSource.SCREEN_SHARE_AUDIO,
+    ],
+    ttl: `${ttlMin}m`,
+  });
 }

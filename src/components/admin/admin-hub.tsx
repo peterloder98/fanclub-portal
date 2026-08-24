@@ -144,6 +144,12 @@ const SECTIONS: AdminHubSection[] = [
     subtitle: "Beiträge und Engagement",
     items: [
       {
+        href: "/admin/besprechung",
+        title: "Videobesprechung mit Anni",
+        description: "Interne Video-Calls planen, Agenda, Multi-Video",
+        icon: Video,
+      },
+      {
         href: "/admin/live",
         title: "Live mit Anni",
         description: "Session anlegen, Host-Link für Anni, beenden",
