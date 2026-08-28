@@ -6,6 +6,7 @@ import type { SidebarUser } from "@/components/app-shell/sidebar";
 import { getRequestMeProfile } from "@/lib/auth/request-auth";
 import { rankFromPoints } from "@/lib/points/rank";
 import { avatarPublicUrl } from "@/lib/avatars/public";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -46,7 +47,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
     const rulesAccepted = safeProfile?.community_rules_accepted_at != null;
     const introPending = safeProfile?.intro_onboarding_dismissed_at == null;
-    needsWelcomeOnboarding = !rulesAccepted || introPending;
+    needsWelcomeOnboarding =
+      !isBrowseOnlyProfileId(user.id) && (!rulesAccepted || introPending);
   }
 
   return (
@@ -56,6 +58,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <AppShellClient
         needsIntroOnboarding={needsWelcomeOnboarding}
         role={sidebarUser.role}
+        userId={user?.id ?? null}
       >
         {children}
       </AppShellClient>

@@ -10,6 +10,7 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { excludeHiddenProfiles } from "@/lib/members/hidden";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { cn } from "@/lib/cn";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 function personenZugesagt(n: number) {
   if (n === 1) return "1 Person hat zugesagt";
@@ -23,6 +24,7 @@ export function LiveSessionRsvpCard({
   sessionId: string;
   initialStatus: "accepted" | "declined" | null;
 }) {
+  const softLaunch = useSoftLaunch();
   const [status, setStatus] = useState(initialStatus);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -146,6 +148,8 @@ export function LiveSessionRsvpCard({
         Sag kurz zu oder ab. Bei Zusage erinnern wir dich einen Tag vorher per E-Mail.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
+        {softLaunch.canWrite ? (
+          <>
         <button
           type="button"
           disabled={pending}
@@ -174,6 +178,10 @@ export function LiveSessionRsvpCard({
           <X className="h-4 w-4" aria-hidden />
           Absagen
         </button>
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">{softLaunch.writeBlockedMessage}</p>
+        )}
       </div>
       {status === "accepted" ? (
         <p className="mt-2 text-sm text-emerald-700">Du hast zugesagt — danke!</p>

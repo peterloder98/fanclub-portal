@@ -309,6 +309,10 @@ export function PollDetail({ pollId }: { pollId: string }) {
   async function addComment() {
     const text = commentDraft.trim();
     if (!text || !userId) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     const supabase = createSupabaseBrowserClient();
     const { error: insErr } = await supabase.from("poll_comments").insert({
       poll_id: pollId,
@@ -396,7 +400,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
               <button
                 key={o.id}
                 type="button"
-                disabled={ended || busyOptionId === o.id}
+                disabled={ended || busyOptionId === o.id || !softLaunch.canWrite}
                 onClick={(e) => void toggleVote(o.id, e.currentTarget)}
                 onMouseEnter={() => void ensureVoters(o.id)}
                 className={pollOptionButtonClass(picked, ended)}
@@ -437,6 +441,7 @@ export function PollDetail({ pollId }: { pollId: string }) {
           <CardTitle className="text-base">Kommentare</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
+          {softLaunch.canWrite ? (
           <div className="flex items-center gap-1.5">
             <MentionInputWithEmoji
               multiline={false}
@@ -457,6 +462,9 @@ export function PollDetail({ pollId }: { pollId: string }) {
               <SendHorizontal className="h-4 w-4" />
             </button>
           </div>
+          ) : (
+            <p className="text-sm text-slate-500">{softLaunch.writeBlockedMessage}</p>
+          )}
           <div className="grid gap-2">
             {comments.map((c) => {
               const canDelete = Boolean(isAdmin || c.author_id === userId);

@@ -35,9 +35,9 @@ export async function pingLiveSessionAttendance(sessionId: string): Promise<
     return { ok: false, error: "Nur aktive Mitglieder." };
   }
   try {
-    assertMemberCanWrite(profile?.role ?? "member");
-  } catch {
-    return { ok: false, error: BROWSE_ONLY_WRITE_BLOCKED_MESSAGE };
+    assertMemberCanWrite(profile?.role ?? "member", Date.now(), user.id);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : BROWSE_ONLY_WRITE_BLOCKED_MESSAGE };
   }
 
   const { data: session } = await supabase

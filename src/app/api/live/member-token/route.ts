@@ -40,9 +40,12 @@ export async function POST(request: Request) {
       );
     }
     try {
-      assertMemberCanWrite(profile?.role ?? "member");
-    } catch {
-      return NextResponse.json({ error: BROWSE_ONLY_WRITE_BLOCKED_MESSAGE }, { status: 403 });
+      assertMemberCanWrite(profile?.role ?? "member", Date.now(), user.id);
+    } catch (e) {
+      return NextResponse.json(
+        { error: e instanceof Error ? e.message : BROWSE_ONLY_WRITE_BLOCKED_MESSAGE },
+        { status: 403 },
+      );
     }
 
     const admin = createSupabaseAdminClient();

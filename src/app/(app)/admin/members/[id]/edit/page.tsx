@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { GenderSelect } from "@/components/ui/gender-select";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import { MembershipNumberEditField } from "@/components/admin/membership-number-edit-field.client";
 import { MemberAppAccessFields } from "@/components/admin/member-app-access-fields.client";
 import { MEMBER_COUNTRY_OPTIONS } from "@/lib/members/country";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
 import { AlertTriangle } from "lucide-react";
 import { updateMember } from "../../actions";
 
@@ -34,6 +35,7 @@ export default async function AdminMemberEditPage({
   const { error: errorParam } = await searchParams;
 
   await requireAdmin();
+  if (isBrowseOnlyProfileId(id)) notFound();
 
   const admin = createSupabaseAdminClient();
   const full = await admin

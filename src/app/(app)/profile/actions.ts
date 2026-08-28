@@ -27,6 +27,8 @@ import {
   type ProfileChangeValues,
 } from "@/lib/profile/change-requests";
 import { notifyAdminsProfileChangeRequest } from "@/lib/email/profile-change-notify";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
+import { SPECTATOR_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 
 export type MyWarningRow = {
   id: string;
@@ -220,6 +222,9 @@ export async function loadMyProfileBundle(): Promise<MyProfileBundle> {
 
 export async function updateMyProfile(formData: FormData) {
   const { supabase, user } = await requireAuthenticatedUser();
+  if (isBrowseOnlyProfileId(user.id)) {
+    throw new Error(SPECTATOR_WRITE_BLOCKED_MESSAGE);
+  }
   const input = updateSchema.parse(Object.fromEntries(formData.entries()));
   const country = normalizeMemberCountryCode(input.country);
 

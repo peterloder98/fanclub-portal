@@ -11,6 +11,8 @@ import {
 } from "@/lib/members/intro-questions";
 import { introProgressFromAnswers } from "@/lib/members/intro-progress";
 import { tryAwardSteckbriefBonus } from "@/lib/members/award-intro-bonus";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
+import { SPECTATOR_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 
 export async function saveMyIntroAnswers(
   input: MemberIntroAnswers & { dismissOnboarding?: boolean },
@@ -23,6 +25,9 @@ export async function saveMyIntroAnswers(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nicht angemeldet." };
+  if (isBrowseOnlyProfileId(user.id)) {
+    return { ok: false, error: SPECTATOR_WRITE_BLOCKED_MESSAGE };
+  }
 
   const patch: Record<string, string | null> = {};
   for (const q of MEMBER_INTRO_QUESTIONS) {
@@ -64,6 +69,9 @@ export async function ensureSteckbriefBonusAction(): Promise<
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nicht angemeldet." };
+  if (isBrowseOnlyProfileId(user.id)) {
+    return { ok: false, error: SPECTATOR_WRITE_BLOCKED_MESSAGE };
+  }
   const bonusAwarded = await tryAwardSteckbriefBonus(user.id);
   return { ok: true, bonusAwarded };
 }
@@ -79,6 +87,8 @@ export async function pingAppActivity(): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
+
+  if (isBrowseOnlyProfileId(user.id)) return;
 
   const today = new Date().toISOString().slice(0, 10);
   const now = new Date().toISOString();

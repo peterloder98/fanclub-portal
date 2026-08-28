@@ -145,7 +145,7 @@ export async function publishFeedPostAction(input: {
     .eq("id", user.id)
     .maybeSingle();
   const role = (profile?.role ?? "member") as "admin" | "anni" | "member";
-  assertMemberCanWrite(role);
+  assertMemberCanWrite(role, Date.now(), user.id);
 
   const status = role === "member" ? "pending" : "approved";
   const now = new Date().toISOString();

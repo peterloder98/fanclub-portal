@@ -1,6 +1,11 @@
 /** Versteckte Profile („Geist“): nicht in Mitglieder-UI / Ranglisten / Mentions; kein Profil-Link. */
 
-export type HiddenFlag = { id?: string; is_hidden?: boolean | null; no_app_access?: boolean | null };
+export type HiddenFlag = {
+  id?: string;
+  is_hidden?: boolean | null;
+  no_app_access?: boolean | null;
+  browse_only?: boolean | null;
+};
 
 /**
  * Explizit freigegebene System-Accounts (zusätzlich zu profiles.is_hidden).
@@ -10,14 +15,28 @@ export const SYSTEM_HIDDEN_PROFILE_IDS = new Set<string>([
   "1b70d88f-e28d-48f3-b3cb-646eaf06f19a", // Peter Loder
 ]);
 
+/**
+ * Stille Vorschau-Konten: unsichtbar für Mitglieder UND Vorstand, nur lesen.
+ * Keine Kommentare/Likes/Chat/Präsenz — nicht im Admin-Mitgliederbereich.
+ */
+export const BROWSE_ONLY_PROFILE_IDS = new Set<string>([
+  "9f3c2e18-7a64-4d1b-b8e0-2c5a9f17d6e4",
+]);
+
+export function isBrowseOnlyProfileId(userId: string | null | undefined): boolean {
+  return Boolean(userId && BROWSE_ONLY_PROFILE_IDS.has(userId));
+}
+
 export function isHiddenProfileId(userId: string | null | undefined): boolean {
-  return Boolean(userId && SYSTEM_HIDDEN_PROFILE_IDS.has(userId));
+  return Boolean(
+    userId && (SYSTEM_HIDDEN_PROFILE_IDS.has(userId) || BROWSE_ONLY_PROFILE_IDS.has(userId)),
+  );
 }
 
 export function isProfileHidden(row: HiddenFlag | null | undefined): boolean {
   if (!row) return false;
-  if (row.id && SYSTEM_HIDDEN_PROFILE_IDS.has(row.id)) return true;
-  return Boolean(row.is_hidden || row.no_app_access);
+  if (row.id && isHiddenProfileId(row.id)) return true;
+  return Boolean(row.is_hidden || row.no_app_access || row.browse_only);
 }
 
 /**

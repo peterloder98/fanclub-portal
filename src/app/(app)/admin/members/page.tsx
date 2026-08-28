@@ -16,6 +16,7 @@ import {
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
 import { adminVisibleEmail } from "@/lib/members/no-app-access";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
 import { requireAdmin } from "@/lib/admin/require-admin";
 
 export const dynamic = "force-dynamic";
@@ -143,7 +144,9 @@ export default async function AdminMembersPage({
         }
       });
 
-      const baseMembers = profileRows.map((p) => {
+      const visibleProfileRows = profileRows.filter((p) => !isBrowseOnlyProfileId(p.id));
+
+      const baseMembers = visibleProfileRows.map((p) => {
         const app_registration_status: AppRegistrationStatus = resolveAppRegistrationStatus({
           status: p.app_registration_status,
           registeredAt: p.app_registered_at,

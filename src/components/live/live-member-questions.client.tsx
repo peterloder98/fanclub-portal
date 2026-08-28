@@ -13,6 +13,7 @@ import { formatChatTime } from "@/lib/chat/types";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { cn } from "@/lib/cn";
 import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 type QItem = {
   id: string;
@@ -94,6 +95,7 @@ export function LiveMemberQuestions({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [okMsg, setOkMsg] = useState<string | null>(null);
+  const softLaunch = useSoftLaunch();
 
   async function reload(uid: string, admin: boolean) {
     const supabase = createSupabaseBrowserClient();
@@ -241,7 +243,7 @@ export function LiveMemberQuestions({
   if (!enabled) return null;
 
   const hasOpenQuestion = mine.length > 0;
-  const canSubmit = !hasOpenQuestion;
+  const canSubmit = !hasOpenQuestion && softLaunch.canWrite;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
@@ -281,6 +283,8 @@ export function LiveMemberQuestions({
               </button>
             </div>
           </form>
+        ) : !softLaunch.canWrite ? (
+          <p className="text-sm text-slate-500">{softLaunch.writeBlockedMessage}</p>
         ) : (
           <div className="rounded-xl border border-fc-navy/10 bg-fc-ice/60 px-3 py-3 text-sm text-slate-700">
             {mode === "advance" ? (

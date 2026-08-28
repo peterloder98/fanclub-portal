@@ -484,8 +484,8 @@ function PostFeedInner({
 
   const canEngagePost = (post: FeedPost | undefined) => {
     if (!me || !post || !isApprovedPost(post)) return false;
-    if (canMemberWrite(me.role)) return true;
-    return Boolean(post.isBirthday) && canMemberEngageBirthdayPost(me.role);
+    if (canMemberWrite(me.role, Date.now(), me.id)) return true;
+    return Boolean(post.isBirthday) && canMemberEngageBirthdayPost(me.role, Date.now(), me.id);
   };
 
   const canEditPost = (post: FeedPost) => Boolean(canManagePost(post) && isApprovedPost(post));
@@ -1666,7 +1666,7 @@ function PostFeedInner({
 
   async function submitNewPost() {
     if (!me) return;
-    if (!canMemberWrite(me.role)) {
+    if (!canMemberWrite(me.role, Date.now(), me.id)) {
       setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
       return;
     }
@@ -1741,7 +1741,7 @@ function PostFeedInner({
 
   async function togglePollVote(pollId: string, optionId: string, fromEl: HTMLElement) {
     if (!me) return;
-    if (!canMemberWrite(me.role)) {
+    if (!canMemberWrite(me.role, Date.now(), me.id)) {
       setLoadError(softLaunch.writeBlockedMessage || BROWSE_ONLY_WRITE_BLOCKED_MESSAGE);
       return;
     }
@@ -1983,6 +1983,7 @@ function PostFeedInner({
 
   return (
     <div className="grid w-full min-w-0 max-w-full gap-3 overflow-hidden">
+      {me && canMemberWrite(me.role, Date.now(), me.id) ? (
       <Card className="overflow-hidden border-blue-100/90 bg-gradient-to-br from-sky-50/80 via-white to-rose-50/50 shadow-sm shadow-blue-900/5">
         <CardContent ref={composerRef} className="pt-4">
           <div className="flex items-start gap-3">
@@ -2175,6 +2176,7 @@ function PostFeedInner({
           </div>
         </CardContent>
       </Card>
+      ) : null}
 
       {embedPollsInFeed ? (
         <DashboardFeedFilterChips value={feedFilter} onChange={setFeedFilter} />

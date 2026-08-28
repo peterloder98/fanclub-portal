@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Calendar, Gift, Vote, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
 import { giveawayPhase } from "@/lib/giveaways/status-label";
 import { formatBerlinWeekdayDateShort } from "@/lib/datetime/berlin";
 
@@ -149,6 +150,7 @@ export function EngagementNudgeHost() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user || cancelled) return;
+      if (isBrowseOnlyProfileId(user.id)) return;
 
       const dismissed = loadDismissed();
       const now = Date.now();

@@ -33,11 +33,11 @@ async function requireActiveMember() {
   if (!membership && profile?.role !== "admin") {
     return { ok: false as const, error: "Nur aktive Mitglieder." };
   }
-  try {
-    assertMemberCanWrite(profile?.role ?? "member");
-  } catch (e) {
-    return { ok: false as const, error: e instanceof Error ? e.message : "Nicht erlaubt." };
-  }
+    try {
+      assertMemberCanWrite(profile?.role ?? "member", Date.now(), user.id);
+    } catch (e) {
+      return { ok: false as const, error: e instanceof Error ? e.message : "Nicht erlaubt." };
+    }
   return { ok: true as const, user, supabase, isAdmin: profile?.role === "admin" };
 }
 

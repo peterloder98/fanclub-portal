@@ -2,7 +2,7 @@
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isHiddenProfileId, SYSTEM_HIDDEN_PROFILE_IDS } from "@/lib/members/hidden";
+import { isHiddenProfileId, SYSTEM_HIDDEN_PROFILE_IDS, BROWSE_ONLY_PROFILE_IDS } from "@/lib/members/hidden";
 import { formatBerlinMonthYear } from "@/lib/datetime/berlin";
 
 export type AppStatsDayPoint = {
@@ -77,7 +77,7 @@ async function requireAdmin() {
 async function loadGhostUserIds(
   admin: ReturnType<typeof createSupabaseAdminClient>,
 ): Promise<Set<string>> {
-  const ids = new Set<string>(SYSTEM_HIDDEN_PROFILE_IDS);
+  const ids = new Set<string>([...SYSTEM_HIDDEN_PROFILE_IDS, ...BROWSE_ONLY_PROFILE_IDS]);
   const { data, error } = await admin
     .from("profiles")
     .select("id,is_hidden")

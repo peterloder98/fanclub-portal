@@ -15,6 +15,7 @@ import {
   formatBerlinDateTimeMedium,
   formatBerlinDateTimeShort,
 } from "@/lib/datetime/berlin";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 type Voting = {
   id: string;
@@ -34,6 +35,7 @@ type Comment = {
 };
 
 export function VotingDetail({ votingId }: { votingId: string }) {
+  const softLaunch = useSoftLaunch();
   const [voting, setVoting] = useState<Voting | null>(null);
   const [options, setOptions] = useState<Option[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
@@ -170,6 +172,10 @@ export function VotingDetail({ votingId }: { votingId: string }) {
 
   async function submitVote() {
     if (!voting || !userId || ended || myOptionIds.size > 0) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     if (!selected.size) return;
     setSubmitting(true);
     setError(null);
@@ -200,6 +206,10 @@ export function VotingDetail({ votingId }: { votingId: string }) {
   async function addComment() {
     const text = commentDraft.trim();
     if (!text || !userId) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     const supabase = createSupabaseBrowserClient();
     const { error: insErr } = await supabase.from("voting_comments").insert({
       voting_id: votingId,
@@ -287,7 +297,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
             );
           })}
 
-          {!hasVoted && !ended ? (
+          {!hasVoted && !ended && softLaunch.canWrite ? (
             <button
               type="button"
               disabled={submitting || selected.size === 0}
@@ -311,6 +321,7 @@ export function VotingDetail({ votingId }: { votingId: string }) {
           <CardTitle className="text-base">Kommentare</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
+          {softLaunch.canWrite ? (
           <div className="flex items-center gap-1.5">
             <MentionInputWithEmoji
               multiline={false}
@@ -331,6 +342,9 @@ export function VotingDetail({ votingId }: { votingId: string }) {
               <SendHorizontal className="h-4 w-4" />
             </button>
           </div>
+          ) : (
+            <p className="text-sm text-slate-500">{softLaunch.writeBlockedMessage}</p>
+          )}
           <div className="grid gap-2">
             {comments.map((c) => (
               <div key={c.id} className="rounded-xl border bg-slate-50 px-3 py-2">

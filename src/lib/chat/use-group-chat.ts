@@ -21,7 +21,8 @@ import {
   type OnlineMember,
 } from "@/lib/chat/types";
 import { installChatAudioUnlock, isChatMuted, playChatBling, setChatMuted, unlockChatAudio } from "@/lib/chat/sound";
-import { isHiddenProfileId } from "@/lib/members/hidden";
+import { isBrowseOnlyProfileId, isHiddenProfileId } from "@/lib/members/hidden";
+import { SPECTATOR_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 
 export type ChatMessage = GroupChatMessageRow & { author: ChatAuthor };
 
@@ -168,6 +169,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
     const me = meProfileRef.current;
     const uid = userIdRef.current;
     if (!channel || !me || !uid) return;
+    if (isBrowseOnlyProfileId(uid)) return;
     try {
       await channel.send({
         type: "broadcast",
@@ -505,6 +507,7 @@ export function useGroupChat({ enabled = true }: Options = {}) {
         if (status === "SUBSCRIBED") {
           const me = meProfileRef.current;
           if (!me) return;
+          if (isBrowseOnlyProfileId(myId)) return;
           // Presence nur einmal tracken — Tippen läuft über Broadcast (kein Leave/Join-Flackern)
           await presenceChannel.track({
             user_id: myId,
@@ -555,6 +558,10 @@ export function useGroupChat({ enabled = true }: Options = {}) {
   async function onSend() {
     const text = draft.trim();
     if (!text || sending || cooldownActive) {
+      return;
+    }
+    if (isBrowseOnlyProfileId(userId)) {
+      setError(SPECTATOR_WRITE_BLOCKED_MESSAGE);
       return;
     }
     void unlockChatAudio();

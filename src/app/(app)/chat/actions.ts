@@ -10,6 +10,8 @@ import {
   GROUP_CHAT_MAX_LEN,
   type GroupChatMessageRow,
 } from "@/lib/chat/constants";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
+import { SPECTATOR_WRITE_BLOCKED_MESSAGE } from "@/lib/portal-launch";
 // Soft-Launch: Gruppenchat ist vor Go-Live freigeschaltet (siehe canMemberChat in portal-launch).
 
 async function notifyChatMentions(text: string, messageId: string) {
@@ -62,6 +64,9 @@ export async function sendGroupChatMessage(bodyRaw: string): Promise<{
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nicht angemeldet." };
+  if (isBrowseOnlyProfileId(user.id)) {
+    return { ok: false, error: SPECTATOR_WRITE_BLOCKED_MESSAGE };
+  }
 
   const { data: last } = await supabase
     .from("group_chat_messages")

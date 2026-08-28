@@ -24,6 +24,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 import { isHiddenProfileId } from "@/lib/members/hidden";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 export function OnlineMembersControl({
   onlineCount,
@@ -198,6 +199,7 @@ export function GroupChatPanel({
   onClose,
   className,
 }: PanelProps) {
+  const { canChat, writeBlockedMessage } = useSoftLaunch();
   const fullscreen = mode === "fullscreen";
   const [composerFocused, setComposerFocused] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
@@ -430,6 +432,9 @@ export function GroupChatPanel({
             {error}
           </p>
         ) : null}
+        {!canChat ? (
+          <p className="text-center text-xs text-slate-500">{writeBlockedMessage}</p>
+        ) : (
         <div className="flex items-center gap-1.5">
           <MentionInput
             ref={mentionRef}
@@ -471,6 +476,7 @@ export function GroupChatPanel({
             <SendHorizontal className="h-4 w-4" />
           </button>
         </div>
+        )}
       </footer>
     </div>
   );

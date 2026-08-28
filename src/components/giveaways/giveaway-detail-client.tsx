@@ -37,6 +37,7 @@ import type { QuestionAnswerReview } from "@/lib/giveaways/load-question-answer"
 import { CLUB_SIGNATURE_ID, type MailSignatureOption } from "@/lib/email/signatures";
 import { ParticipantAvatarStack } from "@/components/ui/participant-avatar-stack";
 import type { UserListEntry } from "@/components/ui/user-list-popover";
+import { useSoftLaunch } from "@/components/app-shell/soft-launch-banner.client";
 
 type Question = {
   id: string;
@@ -144,6 +145,7 @@ export function GiveawayDetailClient({
   const [adminEditingGiveaway, setAdminEditingGiveaway] = useState(initialAdminEdit);
   const [answersExpanded, setAnswersExpanded] = useState(false);
   const [celebrate, setCelebrate] = useState(celebrateDraw);
+  const softLaunch = useSoftLaunch();
 
   const isYearEnd = Boolean(giveaway.is_year_end_lottery);
   const canDrawWinners =
@@ -161,7 +163,8 @@ export function GiveawayDetailClient({
     !giveaway.is_paused &&
     !localEntered &&
     userId &&
-    !adminEditingGiveaway;
+    !adminEditingGiveaway &&
+    softLaunch.canWrite;
   const showWinnerReveal = localStatus === "drawn" && localWinners.length > 0;
   const detailPhase = giveawayPhase(giveaway.ends_at, localStatus, giveaway.is_paused);
   const showDiscussion = detailPhase === "active" || detailPhase === "paused";
@@ -284,6 +287,10 @@ export function GiveawayDetailClient({
 
   async function toggleLike(fromEl: HTMLElement) {
     if (!userId) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     const fromRect = captureFlyRect(fromEl);
     const supabase = createSupabaseBrowserClient();
     const next = !likes.mine;
@@ -318,6 +325,10 @@ export function GiveawayDetailClient({
   async function addComment() {
     const text = commentDraft.trim();
     if (!text || !userId) return;
+    if (!softLaunch.canWrite) {
+      setError(softLaunch.writeBlockedMessage);
+      return;
+    }
     const supabase = createSupabaseBrowserClient();
     const { data, error: insErr } = await supabase
       .from("giveaway_comments")
@@ -668,6 +679,7 @@ export function GiveawayDetailClient({
           {showDiscussion ? (
             <>
               <div className="flex items-center gap-2 border-t pt-3">
+                {softLaunch.canWrite ? (
                 <button
                   type="button"
                   onClick={(e) => void toggleLike(e.currentTarget)}
@@ -681,12 +693,19 @@ export function GiveawayDetailClient({
                   />
                   {likes.count || "Like"}
                 </button>
+                ) : (
+                  <span className="inline-flex h-8 items-center gap-1 px-2 text-xs text-slate-500">
+                    <Heart className="h-3.5 w-3.5" />
+                    {likes.count || "Like"}
+                  </span>
+                )}
                 <span className="text-xs text-slate-500">
                   <MessageCircle className="mr-0.5 inline h-3.5 w-3.5" />
                   {commentList.length} Kommentare
                 </span>
               </div>
 
+              {softLaunch.canWrite ? (
               <div className="flex items-center gap-1.5">
                 <MentionInputWithEmoji
                   multiline={false}
@@ -707,6 +726,9 @@ export function GiveawayDetailClient({
                   <SendHorizontal className="h-3.5 w-3.5" />
                 </button>
               </div>
+              ) : (
+                <p className="text-xs text-slate-500">{softLaunch.writeBlockedMessage}</p>
+              )}
 
               {commentList.length ? (
                 <div className="grid gap-2">

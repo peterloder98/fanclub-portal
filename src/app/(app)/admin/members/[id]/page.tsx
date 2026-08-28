@@ -6,9 +6,10 @@ import {
 } from "@/components/admin/member-detail-panel.client";
 import { requireAdmin } from "@/lib/admin/require-admin";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
 import { listClubLedger } from "@/lib/club/ledger";
 import { getMemberContributionYears } from "@/lib/club/membership-contribution";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
 import {
   resolveAppRegistrationStatus,
@@ -92,6 +93,7 @@ export default async function AdminMemberDetailPage({
   const { remind, paperMail } = await searchParams;
 
   await requireAdmin();
+  if (isBrowseOnlyProfileId(id)) notFound();
 
   const admin = createSupabaseAdminClient();
   let profile: Record<string, unknown> | null = null;

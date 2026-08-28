@@ -18,7 +18,7 @@ export async function requireMemberWriteAccess() {
     .eq("id", user.id)
     .maybeSingle();
 
-  assertMemberCanWrite(profile?.role ?? "member");
+  assertMemberCanWrite(profile?.role ?? "member", Date.now(), user.id);
   return { user, supabase, role: profile?.role ?? "member" };
 }
 

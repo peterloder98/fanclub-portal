@@ -20,15 +20,17 @@ export function AppShellClient({
   children,
   needsIntroOnboarding = false,
   role = "member",
+  userId = null,
 }: {
   children: ReactNode;
   needsIntroOnboarding?: boolean;
   role?: string;
+  userId?: string | null;
 }) {
   const welcomeLock = useIsWelcomeLockRoute();
 
   return (
-    <SoftLaunchProvider role={role}>
+    <SoftLaunchProvider role={role} userId={userId}>
       <TopbarProvider>
         <ChatUnreadProvider>
           <div
