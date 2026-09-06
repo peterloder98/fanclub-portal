@@ -15,16 +15,21 @@ import {
   boardMeetingRoomUrl,
   generateBoardInviteToken,
   hashBoardInviteToken,
+  isBoardMeetingExtraGuest,
   liveKitRoomNameForBoardMeeting,
   slugifyBoardMeetingTitle,
   type BoardVideoAgendaItemRow,
+  type BoardVideoExtraGuestRow,
   type BoardVideoMeetingRow,
   type BoardVideoParticipantRow,
 } from "@/lib/board-video/types";
+import { parseExtraGuests } from "@/lib/board-video/guests";
 import { BOARD_VIDEO_MEETING_SELECT, syncBoardVideoMeetingLifecycle } from "@/lib/board-video/lifecycle";
-import { sendBoardMeetingInviteEmails } from "@/lib/board-video/invites";
+import { sendBoardMeetingGuestInviteEmail, sendBoardMeetingInviteEmails } from "@/lib/board-video/invites";
 
-export type AdminBoardMeetingRow = BoardVideoMeetingRow;
+export type AdminBoardMeetingRow = BoardVideoMeetingRow & {
+  extraGuests: BoardVideoExtraGuestRow[];
+};
 export type AdminOption = { id: string; label: string; email: string };
 
 function parseStartsAt(raw: string): string {
@@ -52,7 +57,7 @@ export async function loadAdminBoardMeetingOptions(): Promise<AdminOption[]> {
   }));
 }
 
-export async function loadAdminBoardMeetings(): Promise<BoardVideoMeetingRow[]> {
+export async function loadAdminBoardMeetings(): Promise<AdminBoardMeetingRow[]> {
   await requireAdminAction();
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
@@ -61,7 +66,30 @@ export async function loadAdminBoardMeetings(): Promise<BoardVideoMeetingRow[]> 
     .order("starts_at", { ascending: false })
     .limit(40);
   if (error) throw new Error(error.message);
-  return (data ?? []) as BoardVideoMeetingRow[];
+  const meetings = (data ?? []) as BoardVideoMeetingRow[];
+  const ids = meetings.map((m) => m.id);
+  const guestsByMeeting = new Map<string, BoardVideoExtraGuestRow[]>();
+  if (ids.length) {
+    const { data: parts } = await admin
+      .from("board_video_meeting_participants")
+      .select("id,meeting_id,email,video_display_name,user_id,is_anni")
+      .in("meeting_id", ids);
+    for (const p of parts ?? []) {
+      if (!isBoardMeetingExtraGuest(p)) continue;
+      const list = guestsByMeeting.get(p.meeting_id) ?? [];
+      list.push({
+        id: p.id,
+        meeting_id: p.meeting_id,
+        email: p.email,
+        name: (p.video_display_name ?? "").trim() || p.email,
+      });
+      guestsByMeeting.set(p.meeting_id, list);
+    }
+  }
+  return meetings.map((m) => ({
+    ...m,
+    extraGuests: guestsByMeeting.get(m.id) ?? [],
+  }));
 }
 
 export async function createBoardVideoMeetingAction(input: {
@@ -69,6 +97,8 @@ export async function createBoardVideoMeetingAction(input: {
   startsAt: string;
   participantUserIds: string[];
   sendInvites?: boolean;
+  agendaItems?: string[];
+  extraGuests?: Array<{ name: string; email: string }>;
 }): Promise<
   | { ok: true; id: string; slug: string; roomUrl: string; anniGuestUrl: string }
   | { ok: false; error: string }
@@ -99,10 +129,32 @@ export async function createBoardVideoMeetingAction(input: {
       return { ok: false, error: "Keine gültigen Vorstände ausgewählt." };
     }
 
+    const parsedGuests = parseExtraGuests(input.extraGuests);
+    if (!parsedGuests.ok) return parsedGuests;
+    const boardEmails = new Set(profiles.map((p) => (p.email ?? "").trim().toLowerCase()).filter(Boolean));
+    const anniEmail = resolveLiveAnniEmail().trim().toLowerCase();
+    for (const g of parsedGuests.guests) {
+      if (g.email === anniEmail || boardEmails.has(g.email)) {
+        return { ok: false, error: `${g.email} ist schon als Vorstand oder Anni eingeladen.` };
+      }
+    }
+
+    const agendaBodies = (input.agendaItems ?? [])
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0)
+      .slice(0, 40);
+    for (const body of agendaBodies) {
+      if (body.length > 500) return { ok: false, error: "Agenda-Punkt: max. 500 Zeichen." };
+    }
+
     const id = crypto.randomUUID();
     const slug = slugifyBoardMeetingTitle(title);
     const livekit_room_name = liveKitRoomNameForBoardMeeting(id);
     const { token: anniToken, hash: anniHash } = generateBoardInviteToken();
+    const extraGuestTokens = parsedGuests.guests.map((g) => ({
+      ...g,
+      ...generateBoardInviteToken(),
+    }));
 
     const { error: insErr } = await admin.from("board_video_meetings").insert({
       id,
@@ -123,12 +175,14 @@ export async function createBoardVideoMeetingAction(input: {
       email: string;
       is_anni: boolean;
       invite_token_hash: string | null;
+      video_display_name: string | null;
     }> = profiles.map((p) => ({
       meeting_id: id,
       user_id: p.id,
       email: (p.email ?? "").trim().toLowerCase(),
       is_anni: false,
       invite_token_hash: null,
+      video_display_name: null,
     }));
 
     participantRows.push({
@@ -137,10 +191,42 @@ export async function createBoardVideoMeetingAction(input: {
       email: resolveLiveAnniEmail(),
       is_anni: true,
       invite_token_hash: anniHash,
+      video_display_name: "Anni",
     });
+
+    for (const g of extraGuestTokens) {
+      participantRows.push({
+        meeting_id: id,
+        user_id: null,
+        email: g.email,
+        is_anni: false,
+        invite_token_hash: g.hash,
+        video_display_name: g.name,
+      });
+    }
 
     const { error: partErr } = await admin.from("board_video_meeting_participants").insert(participantRows);
     if (partErr) return { ok: false, error: partErr.message };
+
+    if (agendaBodies.length) {
+      const { data: creator } = await admin
+        .from("profiles")
+        .select("first_name,last_name")
+        .eq("id", user.id)
+        .maybeSingle();
+      const actorName =
+        [creator?.first_name, creator?.last_name].filter(Boolean).join(" ").trim() || "Vorstand";
+      const { error: agErr } = await admin.from("board_video_meeting_agenda_items").insert(
+        agendaBodies.map((body, i) => ({
+          meeting_id: id,
+          body,
+          sort_order: i + 1,
+          created_by: user.id,
+          created_by_name: actorName,
+        })),
+      );
+      if (agErr) return { ok: false, error: agErr.message };
+    }
 
     const roomUrl = boardMeetingRoomUrl(slug);
     const anniGuestUrl = boardMeetingGuestUrl(anniToken);
@@ -156,6 +242,11 @@ export async function createBoardVideoMeetingAction(input: {
               gender: p.gender,
             })),
             anniGuestUrl,
+            extraGuests: extraGuestTokens.map((g) => ({
+              name: g.name,
+              email: g.email,
+              guestUrl: boardMeetingGuestUrl(g.token),
+            })),
           });
           if (result.sent > 0) {
             await admin
@@ -226,6 +317,146 @@ export async function cancelBoardVideoMeetingAction(
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Absagen fehlgeschlagen." };
+  }
+}
+
+async function loadMeetingMail(admin: ReturnType<typeof createSupabaseAdminClient>, meetingId: string) {
+  const { data } = await admin
+    .from("board_video_meetings")
+    .select("id,slug,title,starts_at,ends_at,join_opens_at,status")
+    .eq("id", meetingId)
+    .maybeSingle();
+  return data;
+}
+
+export async function addBoardMeetingGuestsAction(input: {
+  meetingId: string;
+  guests: Array<{ name: string; email: string }>;
+}): Promise<{ ok: true; added: number } | { ok: false; error: string }> {
+  try {
+    await requireAdminAction();
+    const parsed = parseExtraGuests(input.guests);
+    if (!parsed.ok) return parsed;
+    if (!parsed.guests.length) return { ok: false, error: "Mindestens einen Gast mit Name und E-Mail eintragen." };
+
+    const admin = createSupabaseAdminClient();
+    const meeting = await loadMeetingMail(admin, input.meetingId);
+    if (!meeting) return { ok: false, error: "Besprechung nicht gefunden." };
+    if (meeting.status === "ended" || meeting.status === "cancelled") {
+      return { ok: false, error: "Diese Besprechung ist beendet." };
+    }
+
+    const { data: existing } = await admin
+      .from("board_video_meeting_participants")
+      .select("email")
+      .eq("meeting_id", input.meetingId);
+    const taken = new Set((existing ?? []).map((r) => r.email.trim().toLowerCase()));
+    const toAdd = parsed.guests.filter((g) => !taken.has(g.email));
+    if (!toAdd.length) return { ok: false, error: "Diese E-Mails sind schon eingeladen." };
+
+    const rows = toAdd.map((g) => {
+      const { token, hash } = generateBoardInviteToken();
+      return { guest: g, token, hash };
+    });
+
+    const { error } = await admin.from("board_video_meeting_participants").insert(
+      rows.map((r) => ({
+        meeting_id: input.meetingId,
+        user_id: null,
+        email: r.guest.email,
+        is_anni: false,
+        invite_token_hash: r.hash,
+        video_display_name: r.guest.name,
+      })),
+    );
+    if (error) return { ok: false, error: error.message };
+
+    after(async () => {
+      for (const r of rows) {
+        await sendBoardMeetingGuestInviteEmail({
+          meeting,
+          guest: r.guest,
+          guestUrl: boardMeetingGuestUrl(r.token),
+        });
+      }
+    });
+
+    revalidatePath("/admin/besprechung");
+    return { ok: true, added: rows.length };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Gäste speichern fehlgeschlagen." };
+  }
+}
+
+export async function removeBoardMeetingGuestAction(
+  meetingId: string,
+  participantId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const { data: part } = await admin
+      .from("board_video_meeting_participants")
+      .select("id,user_id,is_anni,meeting_id")
+      .eq("id", participantId)
+      .eq("meeting_id", meetingId)
+      .maybeSingle();
+    if (!part || !isBoardMeetingExtraGuest(part)) {
+      return { ok: false, error: "Gast nicht gefunden." };
+    }
+    const { error } = await admin
+      .from("board_video_meeting_participants")
+      .delete()
+      .eq("id", participantId)
+      .eq("meeting_id", meetingId);
+    if (error) return { ok: false, error: error.message };
+    revalidatePath("/admin/besprechung");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Entfernen fehlgeschlagen." };
+  }
+}
+
+export async function resendBoardMeetingGuestInviteAction(
+  meetingId: string,
+  participantId: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await requireAdminAction();
+    const admin = createSupabaseAdminClient();
+    const meeting = await loadMeetingMail(admin, meetingId);
+    if (!meeting) return { ok: false, error: "Besprechung nicht gefunden." };
+    if (meeting.status === "ended" || meeting.status === "cancelled") {
+      return { ok: false, error: "Diese Besprechung ist beendet." };
+    }
+    const { data: part } = await admin
+      .from("board_video_meeting_participants")
+      .select("id,email,video_display_name,user_id,is_anni")
+      .eq("id", participantId)
+      .eq("meeting_id", meetingId)
+      .maybeSingle();
+    if (!part || !isBoardMeetingExtraGuest(part)) {
+      return { ok: false, error: "Gast nicht gefunden." };
+    }
+    const { token, hash } = generateBoardInviteToken();
+    const { error } = await admin
+      .from("board_video_meeting_participants")
+      .update({ invite_token_hash: hash })
+      .eq("id", participantId);
+    if (error) return { ok: false, error: error.message };
+
+    const name = (part.video_display_name ?? "").trim() || part.email;
+    after(async () => {
+      await sendBoardMeetingGuestInviteEmail({
+        meeting,
+        guest: { name, email: part.email },
+        guestUrl: boardMeetingGuestUrl(token),
+      });
+    });
+    revalidatePath("/admin/besprechung");
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Erneuter Versand fehlgeschlagen." };
   }
 }
 

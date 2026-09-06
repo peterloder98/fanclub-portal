@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 import { BoardMeetingAgenda } from "@/components/board-video/board-meeting-agenda.client";
 import {
   boardMeetingAgendaOpen,
+  boardMeetingAgendaWritable,
   boardMeetingCheckoffOpen,
   boardMeetingVideoOpen,
   type BoardVideoMeetingRow,
+  type BoardVideoSeatRosterItem,
 } from "@/lib/board-video/types";
 import { formatBerlinDateTime } from "@/lib/datetime/berlin";
 
@@ -43,16 +45,27 @@ export function BoardMeetingRoom({
   const router = useRouter();
   const [displayName, setDisplayName] = useState(defaultDisplayName);
   const [nameSaved, setNameSaved] = useState(defaultDisplayName);
-  const [videoCreds, setVideoCreds] = useState<{ token: string; url: string; endsAt: string } | null>(
-    null,
-  );
+  const [videoCreds, setVideoCreds] = useState<{
+    token: string;
+    url: string;
+    endsAt: string;
+    roster: BoardVideoSeatRosterItem[];
+  } | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [ended, setEnded] = useState(meeting.status === "ended" || meeting.status === "cancelled");
   const now = Date.now();
+  const isBoardAdmin = !inviteToken;
   const agendaOpen = boardMeetingAgendaOpen(
     meeting.join_opens_at,
     meeting.ends_at,
     meeting.status,
+    now,
+  );
+  const canEditAgenda = boardMeetingAgendaWritable(
+    meeting.join_opens_at,
+    meeting.ends_at,
+    meeting.status,
+    { isBoardAdmin },
     now,
   );
   const videoOpen =
@@ -82,13 +95,19 @@ export function BoardMeetingRoom({
         token?: string;
         url?: string;
         endsAt?: string;
+        roster?: BoardVideoSeatRosterItem[];
         error?: string;
       };
       if (!res.ok || !data.token || !data.url) {
         setVideoError(data.error ?? "Video-Zugang fehlgeschlagen.");
         return;
       }
-      setVideoCreds({ token: data.token, url: data.url, endsAt: data.endsAt ?? meeting.ends_at });
+      setVideoCreds({
+        token: data.token,
+        url: data.url,
+        endsAt: data.endsAt ?? meeting.ends_at,
+        roster: data.roster ?? [],
+      });
     } catch {
       setVideoError("Netzwerkfehler beim Video.");
     }
@@ -120,33 +139,10 @@ export function BoardMeetingRoom({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-6xl gap-4 px-3 py-4 sm:px-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.85fr)] lg:px-6">
-      <div className="min-w-0 space-y-4">
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-wide text-fc-navy/70">Videobesprechung</p>
-          <h1 className="mt-1 text-xl font-semibold text-fc-navy sm:text-2xl">{meeting.title}</h1>
-          <p className="mt-1 text-sm text-slate-600">Start {formatBerlinDateTime(meeting.starts_at)}</p>
-        </header>
-
+    <div className="mx-auto grid w-full max-w-7xl gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_minmax(200px,240px)] lg:items-start lg:px-6">
+      <div className="min-w-0">
         {videoOpen ? (
           <div className="rounded-2xl border border-fc-navy/10 bg-white p-3 shadow-sm">
-            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-              <label className="grid flex-1 gap-1 text-sm">
-                <span className="font-medium text-slate-700">Dein Name im Video</span>
-                <input
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value.slice(0, 40))}
-                  className="rounded-xl border border-fc-navy/15 px-3 py-2"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => setNameSaved(displayName.trim() || defaultDisplayName)}
-                className="h-10 rounded-xl bg-fc-navy px-4 text-sm font-semibold text-white hover:bg-fc-blue"
-              >
-                Name übernehmen
-              </button>
-            </div>
             {videoError ? (
               <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
                 {videoError}
@@ -162,8 +158,12 @@ export function BoardMeetingRoom({
                 displayName={nameSaved}
                 endsAt={videoCreds.endsAt}
                 canEndMeeting={canEndMeeting}
+                roster={videoCreds.roster}
                 onEnded={() => void handleEnd()}
                 onLimitReached={() => void handleEnd()}
+                nameDraft={displayName}
+                onNameDraftChange={setDisplayName}
+                onNameCommit={() => setNameSaved(displayName.trim() || defaultDisplayName)}
               />
             ) : (
               <div className="grid min-h-[12rem] place-items-center rounded-xl bg-slate-900 text-sm text-white/80">
@@ -173,7 +173,9 @@ export function BoardMeetingRoom({
           </div>
         ) : (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
-            Video startet ab {formatBerlinDateTime(meeting.join_opens_at)} — Agenda könnt ihr schon vorbereiten.
+            Video startet ab {formatBerlinDateTime(meeting.join_opens_at)}. Agenda-Punkte könnt ihr
+            {isBoardAdmin ? " schon jetzt " : " ab 5 Minuten vor Start "}
+            eintragen.
           </div>
         )}
       </div>
@@ -183,6 +185,7 @@ export function BoardMeetingRoom({
         inviteToken={inviteToken}
         checkoffEnabled={checkoffEnabled}
         agendaOpen={agendaOpen}
+        canEdit={canEditAgenda}
       />
     </div>
   );

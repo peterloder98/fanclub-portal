@@ -717,6 +717,7 @@ export function ClubAccountingPanel({
               <div className="sm:col-span-2 lg:col-span-3">
                 <DocumentUploadField
                   label="Beleg (optional)"
+                  allowPdf
                   disabled={pending}
                   onFileSelected={async (file) => {
                     const path = await uploadClubDocument(file, "receipt");

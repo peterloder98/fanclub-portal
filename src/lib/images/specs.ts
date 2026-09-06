@@ -24,6 +24,8 @@ export const POST_MEDIA_INPUT_MAX_BYTES = 12 * 1024 * 1024;
 /** Belege & Merchandise-Fotos — lesbar, aber klein (Handy-Scan später). */
 export const DOCUMENT_MAX_SIDE_PX = 1200;
 export const RECEIPT_MAX_BYTES = 80_000;
+export const RECEIPT_PDF_MAX_BYTES = 8 * 1024 * 1024;
+export const RECEIPT_ACCEPT = "image/jpeg,image/png,image/webp,application/pdf";
 export const MERCHANDISE_IMAGE_MAX_BYTES = 90_000;
 export const DOCUMENT_INPUT_MAX_BYTES = 10 * 1024 * 1024;
 

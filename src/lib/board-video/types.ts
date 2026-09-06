@@ -29,6 +29,41 @@ export type BoardVideoParticipantRow = {
   created_at: string;
 };
 
+/** Extra-Gast ohne App-Zugang (kein Profil, nur persönlicher Call-Link). */
+export type BoardVideoExtraGuestInput = {
+  name: string;
+  email: string;
+};
+
+export type BoardVideoExtraGuestRow = {
+  id: string;
+  meeting_id: string;
+  email: string;
+  name: string;
+};
+
+export type BoardVideoSeatRosterItem = {
+  identity: string;
+  name: string;
+  isAnni: boolean;
+};
+
+export function boardMeetingLiveKitIdentity(part: {
+  id: string;
+  user_id: string | null;
+  is_anni: boolean;
+}): string {
+  if (part.user_id) return `user:${part.user_id}`;
+  return `guest:${part.id}`;
+}
+
+export function isBoardMeetingExtraGuest(part: {
+  user_id: string | null;
+  is_anni: boolean;
+}): boolean {
+  return !part.is_anni && !part.user_id;
+}
+
 export type BoardVideoAgendaItemRow = {
   id: string;
   meeting_id: string;
@@ -47,7 +82,7 @@ export type BoardVideoAgendaItemRow = {
 
 /** Festes Limit: 1 Stunde ab Start. */
 export const BOARD_VIDEO_MEETING_DURATION_MINUTES = 60;
-/** Raum (Agenda) öffnet 5 Minuten vor Start. */
+/** Video-Raum öffnet 5 Minuten vor Start. Agenda für Vorstände schon ab dem Anlegen. */
 export const BOARD_VIDEO_MEETING_JOIN_OPEN_MINUTES = 5;
 /** Roter Countdown ab 10 Minuten vor Ende. */
 export const BOARD_VIDEO_MEETING_COUNTDOWN_WARN_MINUTES = 10;
@@ -128,17 +163,43 @@ export function boardMeetingVideoOpen(
   return nowMs >= join && nowMs < end;
 }
 
-export function boardMeetingAgendaOpen(
-  joinOpensAtIso: string,
+export function boardMeetingStillActive(
   endsAtIso: string,
   status: BoardVideoMeetingStatus,
   nowMs = Date.now(),
 ): boolean {
   if (status === "ended" || status === "cancelled") return false;
-  const join = new Date(joinOpensAtIso).getTime();
   const end = new Date(endsAtIso).getTime();
-  if (Number.isNaN(join) || Number.isNaN(end)) return false;
-  return nowMs >= join && nowMs < end;
+  if (Number.isNaN(end)) return false;
+  return nowMs < end;
+}
+
+/** Agenda sichtbar, sobald der Termin existiert — nicht erst 5 Minuten vorher. */
+export function boardMeetingAgendaOpen(
+  _joinOpensAtIso: string,
+  endsAtIso: string,
+  status: BoardVideoMeetingStatus,
+  nowMs = Date.now(),
+): boolean {
+  return boardMeetingStillActive(endsAtIso, status, nowMs);
+}
+
+/**
+ * Vorstände dürfen Punkte ab der Terminerstellung ändern.
+ * Anni und Extra-Gäste (ohne Login) erst ab Raumöffnung (5 Min. vor Start).
+ */
+export function boardMeetingAgendaWritable(
+  joinOpensAtIso: string,
+  endsAtIso: string,
+  status: BoardVideoMeetingStatus,
+  actor: { isBoardAdmin: boolean },
+  nowMs = Date.now(),
+): boolean {
+  if (!boardMeetingStillActive(endsAtIso, status, nowMs)) return false;
+  if (actor.isBoardAdmin) return true;
+  const join = new Date(joinOpensAtIso).getTime();
+  if (Number.isNaN(join)) return false;
+  return nowMs >= join;
 }
 
 export function boardMeetingCheckoffOpen(

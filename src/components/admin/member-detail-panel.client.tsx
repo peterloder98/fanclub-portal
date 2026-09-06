@@ -1303,6 +1303,7 @@ export function MemberDetailPanel({
                     <div className="sm:col-span-2">
                       <DocumentUploadField
                         label="Beleg (optional)"
+                        allowPdf
                         disabled={pending}
                         onFileSelected={async (file) => {
                           const path = await uploadClubDocument(file, "receipt", member.id);

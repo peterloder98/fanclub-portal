@@ -24,6 +24,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   boardVideoMeetingInvite: "board_video_meeting_invite",
   boardVideoMeetingReminder: "board_video_meeting_reminder",
   boardVideoMeetingAnniInvite: "board_video_meeting_anni_invite",
+  boardVideoMeetingGuestInvite: "board_video_meeting_guest_invite",
   memberLoginEmailChanged: "member_login_email_changed",
 } as const;
 
@@ -218,6 +219,16 @@ export const TEMPLATE_PLACEHOLDERS: Record<
   [EMAIL_TEMPLATE_KEYS.boardVideoMeetingAnniInvite]: [
     ...personFacingSalutation,
     { key: "first_name", label: "Vorname" },
+    { key: "meeting_title", label: "Titel" },
+    { key: "meeting_date", label: "Datum & Uhrzeit" },
+    { key: "meeting_time", label: "Start-Uhrzeit" },
+    { key: "join_opens_time", label: "Raum öffnet (Uhrzeit)" },
+    { key: "meeting_url", label: "Persönlicher Gast-Link" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.boardVideoMeetingGuestInvite]: [
+    ...personFacingSalutation,
+    { key: "first_name", label: "Vorname" },
+    { key: "guest_name", label: "Name des Gastes" },
     { key: "meeting_title", label: "Titel" },
     { key: "meeting_date", label: "Datum & Uhrzeit" },
     { key: "meeting_time", label: "Start-Uhrzeit" },

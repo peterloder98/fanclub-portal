@@ -22,8 +22,8 @@ export default async function AdminBesprechungPage() {
       <Topbar title="Videobesprechung mit Anni" />
       <main className="mx-auto max-w-4xl px-3 py-4 sm:px-4 lg:px-6">
         <p className="mb-4 text-sm text-slate-600">
-          Interne Video-Calls mit Anni und ausgewählten Vorständen — getrennt vom Fan-Live. Agenda vorab,
-          Multi-Video, max. 1 Stunde.
+          Interne Video-Calls mit Anni und ausgewählten Vorständen — getrennt vom Fan-Live. Agenda schon
+          beim Anlegen, Extra-Gäste per Name und E-Mail (ohne App-Zugang), Multi-Video, max. 1 Stunde.
         </p>
         <AdminBoardVideoMeetingsPanel
           meetings={meetings}

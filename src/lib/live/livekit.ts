@@ -35,6 +35,7 @@ export async function mintLiveKitToken(input: {
   /** Multi-Video / Bildschirm teilen */
   canPublishSources?: TrackSource[];
   ttl?: string;
+  metadata?: string;
 }): Promise<{ token: string; url: string }> {
   const cfg = getLiveKitConfig();
   if (!cfg) {
@@ -47,6 +48,7 @@ export async function mintLiveKitToken(input: {
     identity: input.identity,
     name: input.name,
     ttl: input.ttl ?? "4h",
+    ...(input.metadata ? { metadata: input.metadata } : {}),
   });
   at.addGrant({
     roomJoin: true,
@@ -67,6 +69,7 @@ export async function mintBoardMeetingLiveKitToken(input: {
   identity: string;
   name: string;
   ttlSeconds: number;
+  isAnni?: boolean;
 }): Promise<{ token: string; url: string }> {
   const ttlSec = Math.max(60, Math.min(input.ttlSeconds, 4 * 3600));
   const ttlMin = Math.ceil(ttlSec / 60);
@@ -82,5 +85,6 @@ export async function mintBoardMeetingLiveKitToken(input: {
       TrackSource.SCREEN_SHARE_AUDIO,
     ],
     ttl: `${ttlMin}m`,
+    metadata: JSON.stringify({ isAnni: Boolean(input.isAnni) }),
   });
 }

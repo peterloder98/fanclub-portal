@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { FileImage } from "lucide-react";
+import { FileImage, FileText } from "lucide-react";
+
+function isPdfPath(path: string): boolean {
+  return /\.pdf(\?|$)/i.test(path);
+}
 
 export function ReceiptLink({ path, label = "Beleg" }: { path: string; label?: string }) {
   const [busy, setBusy] = useState(false);
@@ -25,8 +29,12 @@ export function ReceiptLink({ path, label = "Beleg" }: { path: string; label?: s
       onClick={() => void open()}
       className="inline-flex items-center gap-1 text-xs font-medium text-fc-blue hover:underline disabled:opacity-50"
     >
-      <FileImage className="h-3.5 w-3.5" aria-hidden />
-      {busy ? "Lädt…" : label}
+      {isPdfPath(path) ? (
+        <FileText className="h-3.5 w-3.5" aria-hidden />
+      ) : (
+        <FileImage className="h-3.5 w-3.5" aria-hidden />
+      )}
+      {busy ? "Lädt…" : isPdfPath(path) ? `${label} (PDF)` : label}
     </button>
   );
 }

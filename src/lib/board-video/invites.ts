@@ -5,6 +5,7 @@ import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { paceBulkOutboundEmail } from "@/lib/smtp/outbound-throttle";
 import { resolveLiveAnniEmail } from "@/lib/live/anni-recipient";
+import { guestFirstName } from "@/lib/board-video/guests";
 import { boardMeetingRoomUrl, type BoardVideoMeetingRow } from "@/lib/board-video/types";
 import { BOARD_VIDEO_MEETING_SELECT } from "@/lib/board-video/lifecycle";
 import { formatBerlinDateTime, formatBerlinTime } from "@/lib/datetime/berlin";
@@ -46,6 +47,25 @@ async function sendOneBoardMeetingEmail(input: {
   }
 }
 
+export async function sendBoardMeetingGuestInviteEmail(input: {
+  meeting: MeetingMail;
+  guest: { name: string; email: string };
+  guestUrl: string;
+}): Promise<boolean> {
+  const firstName = guestFirstName(input.guest.name);
+  return sendOneBoardMeetingEmail({
+    to: input.guest.email,
+    templateKey: EMAIL_TEMPLATE_KEYS.boardVideoMeetingGuestInvite,
+    vars: {
+      ...emailPersonVars({ firstName, gender: null }),
+      ...meetingMailVars(input.meeting),
+      guest_name: input.guest.name,
+      meeting_url: input.guestUrl,
+    },
+    meetingId: input.meeting.id,
+  });
+}
+
 export async function sendBoardMeetingInviteEmails(input: {
   meeting: MeetingMail;
   adminParticipants: Array<{
@@ -54,6 +74,7 @@ export async function sendBoardMeetingInviteEmails(input: {
     gender: string | null;
   }>;
   anniGuestUrl: string;
+  extraGuests?: Array<{ name: string; email: string; guestUrl: string }>;
 }): Promise<{ sent: number }> {
   const baseVars = meetingMailVars(input.meeting);
   const roomUrl = boardMeetingRoomUrl(input.meeting.slug);
@@ -87,6 +108,17 @@ export async function sendBoardMeetingInviteEmails(input: {
     meetingId: input.meeting.id,
   });
   if (anniOk) sent += 1;
+
+  for (const guest of input.extraGuests ?? []) {
+    index += 1;
+    await paceBulkOutboundEmail(index);
+    const ok = await sendBoardMeetingGuestInviteEmail({
+      meeting: input.meeting,
+      guest: { name: guest.name, email: guest.email },
+      guestUrl: guest.guestUrl,
+    });
+    if (ok) sent += 1;
+  }
 
   return { sent };
 }
@@ -127,6 +159,7 @@ export async function runBoardVideoMeetingReminders(admin: SupabaseClient): Prom
 
     for (const p of participants) {
       if (p.is_anni) continue;
+      if (!p.user_id) continue;
       const { data: profile } = p.user_id
         ? await admin
             .from("profiles")

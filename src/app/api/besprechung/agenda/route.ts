@@ -3,14 +3,14 @@ import { getRequestAuth } from "@/lib/auth/request-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { hashBoardInviteToken } from "@/lib/board-video/types";
 import { syncBoardVideoMeetingLifecycle, BOARD_VIDEO_MEETING_SELECT } from "@/lib/board-video/lifecycle";
-import { boardMeetingAgendaOpen, boardMeetingCheckoffOpen } from "@/lib/board-video/types";
+import { boardMeetingAgendaWritable, boardMeetingCheckoffOpen } from "@/lib/board-video/types";
 
 async function resolveActor(input: {
   meetingId: string;
   slug?: string;
   inviteToken?: string;
 }): Promise<
-  | { ok: true; actorName: string; actorUserId: string | null; meeting: { id: string; join_opens_at: string; ends_at: string; status: string } }
+  | { ok: true; actorName: string; actorUserId: string | null; isBoardAdmin: boolean; meeting: { id: string; join_opens_at: string; ends_at: string; status: string } }
   | { ok: false; status: number; error: string }
 > {
   const admin = createSupabaseAdminClient();
@@ -38,6 +38,7 @@ async function resolveActor(input: {
       ok: true,
       actorName: part.video_display_name?.trim() || (part.is_anni ? "Anni" : "Gast"),
       actorUserId: null,
+      isBoardAdmin: false,
       meeting,
     };
   }
@@ -61,7 +62,7 @@ async function resolveActor(input: {
     [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
     "Vorstand";
 
-  return { ok: true, actorName, actorUserId: user.id, meeting };
+  return { ok: true, actorName, actorUserId: user.id, isBoardAdmin: true, meeting };
 }
 
 export async function GET(req: Request) {
@@ -99,13 +100,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: actor.error }, { status: actor.status });
   }
 
-  const agendaOpen = boardMeetingAgendaOpen(
+  const agendaWritable = boardMeetingAgendaWritable(
     actor.meeting.join_opens_at,
     actor.meeting.ends_at,
     actor.meeting.status as "scheduled" | "live" | "ended" | "cancelled",
+    { isBoardAdmin: actor.isBoardAdmin },
   );
-  if (!agendaOpen) {
-    return NextResponse.json({ error: "Agenda ist geschlossen." }, { status: 403 });
+  if (!agendaWritable) {
+    return NextResponse.json(
+      {
+        error: actor.isBoardAdmin
+          ? "Agenda ist geschlossen."
+          : "Agenda-Punkte könnt ihr ab 5 Minuten vor Start eintragen. Der Vorstand kann sie schon vorher anlegen.",
+      },
+      { status: 403 },
+    );
   }
 
   const admin = createSupabaseAdminClient();

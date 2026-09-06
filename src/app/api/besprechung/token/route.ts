@@ -12,7 +12,9 @@ import {
 } from "@/lib/board-video/lifecycle";
 import {
   boardMeetingAgendaOpen,
+  boardMeetingLiveKitIdentity,
   boardMeetingVideoOpen,
+  type BoardVideoSeatRosterItem,
 } from "@/lib/board-video/types";
 
 export async function POST(req: Request) {
@@ -28,6 +30,7 @@ export async function POST(req: Request) {
     let meetingId: string | null = null;
     let participantId: string | null = null;
     let identity: string | null = null;
+    let isAnni = false;
     let defaultName = "Teilnehmer";
 
     if (body.inviteToken?.trim()) {
@@ -43,6 +46,7 @@ export async function POST(req: Request) {
       meetingId = part.meeting_id;
       participantId = part.id;
       identity = `guest:${part.id}`;
+      isAnni = Boolean(part.is_anni);
       defaultName = part.video_display_name?.trim() || (part.is_anni ? "Anni" : "Gast");
     } else if (body.slug?.trim() && user) {
       const { data: meeting } = await admin
@@ -126,13 +130,25 @@ export async function POST(req: Request) {
       identity: identity!,
       name: displayName,
       ttlSeconds,
+      isAnni,
     });
+
+    const { data: rosterParts } = await admin
+      .from("board_video_meeting_participants")
+      .select("id,user_id,is_anni,video_display_name")
+      .eq("meeting_id", meeting.id);
+    const roster: BoardVideoSeatRosterItem[] = (rosterParts ?? []).map((p) => ({
+      identity: boardMeetingLiveKitIdentity(p),
+      name: p.video_display_name?.trim() || (p.is_anni ? "Anni" : "Teilnehmer"),
+      isAnni: Boolean(p.is_anni),
+    }));
 
     return NextResponse.json({
       token,
       url,
       participantId,
       endsAt: meeting.ends_at,
+      roster,
       agendaOpen: boardMeetingAgendaOpen(
         meeting.join_opens_at,
         meeting.ends_at,

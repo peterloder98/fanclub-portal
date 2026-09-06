@@ -454,6 +454,34 @@ Viel Spaß beim Live!`,
 <p style="${EMAIL_PARAGRAPH_STYLE}"><a href="{{calendar_url}}">Termin im Kalender speichern</a></p>`,
 };
 
+const BOARD_VIDEO_GUEST_INVITE_FALLBACK = {
+  subject: "Einladung: {{meeting_title}} am {{meeting_date}}",
+  body_text: `{{salutation}},
+
+du bist zur Videobesprechung mit dem Vorstand und Anni eingeladen:
+
+{{meeting_title}}
+{{meeting_date}}
+
+Raum ab {{join_opens_time}} Uhr · Video ab {{meeting_time}} Uhr (max. 1 Stunde)
+
+Dein persönlicher Link (kein App-Zugang nötig):
+{{meeting_url}}
+
+Du kannst denselben Link mehrfach und auf anderen Geräten öffnen. Ein neuer Versand vom Vorstand ersetzt den alten Link.
+
+Bitte den neuesten Link aus der E-Mail nutzen. Wenn der Link nicht funktioniert, den Vorstand um einen neuen bitten.`,
+  body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">du bist zur Videobesprechung mit dem Vorstand und Anni eingeladen:</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}"><strong>{{meeting_title}}</strong><br>{{meeting_date}}</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Raum ab {{join_opens_time}} Uhr · Video ab {{meeting_time}} Uhr (max. 1 Stunde)</p>
+<p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
+  <a href="{{meeting_url}}" style="${EMAIL_BUTTON_STYLE}">Zur Videobesprechung</a>
+</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Kein App-Zugang nötig. Du kannst denselben Link mehrfach und auf anderen Geräten öffnen. Ein neuer Versand vom Vorstand ersetzt den alten Link.</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Bitte den neuesten Link aus der E-Mail nutzen. Wenn der Link nicht funktioniert, den Vorstand um einen neuen bitten.</p>`,
+};
+
 const LIVE_SESSION_INVITE_FALLBACK = {
   subject: "Einladung: {{session_title}} am {{session_date}}",
   body_text: `{{salutation}},
@@ -593,6 +621,16 @@ export async function renderEmailFromTemplate(
       body_html: PASSWORD_RESET_FALLBACK.body_html,
       description:
         "Für bereits registrierte Mitglieder nach „Passwort vergessen“ — nur neues Passwort, keine Ersteinrichtung.",
+    };
+  }
+  if (!row && key === EMAIL_TEMPLATE_KEYS.boardVideoMeetingGuestInvite) {
+    row = {
+      key,
+      name: "Videobesprechung — Extra-Gast",
+      subject: BOARD_VIDEO_GUEST_INVITE_FALLBACK.subject,
+      body_text: BOARD_VIDEO_GUEST_INVITE_FALLBACK.body_text,
+      body_html: BOARD_VIDEO_GUEST_INVITE_FALLBACK.body_html,
+      description: null,
     };
   }
   if (!row && key === EMAIL_TEMPLATE_KEYS.liveSessionHostInvite) {

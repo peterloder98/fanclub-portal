@@ -11,11 +11,13 @@ export function BoardMeetingAgenda({
   inviteToken,
   checkoffEnabled,
   agendaOpen,
+  canEdit,
 }: {
   meetingId: string;
   inviteToken?: string;
   checkoffEnabled: boolean;
   agendaOpen: boolean;
+  canEdit: boolean;
 }) {
   const [items, setItems] = useState<BoardVideoAgendaItemRow[]>([]);
   const [draft, setDraft] = useState("");
@@ -72,8 +74,8 @@ export function BoardMeetingAgenda({
 
   if (!agendaOpen) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-600">
-        Der Raum ist noch nicht geöffnet. Ab 5 Minuten vor Start könnt ihr hier Agenda-Punkte eintragen.
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-5 text-sm text-slate-600">
+        Die Besprechung ist beendet.
       </div>
     );
   }
@@ -83,33 +85,39 @@ export function BoardMeetingAgenda({
       <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
         <p className="text-sm font-semibold">Agenda</p>
         <p className="text-[11px] text-white/80">
-          Punkte eintragen und bearbeiten — mit Name. Abhaken geht während des Video-Calls.
+          {canEdit
+            ? "Punkte eintragen und bearbeiten. Abhaken geht während des Calls."
+            : "Ab 5 Minuten vor Start könnt ihr Punkte ergänzen. Abhaken geht während des Calls."}
         </p>
       </header>
-      <div className="grid gap-3 p-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!draft.trim()) return;
-            postAgenda({ action: "upsert", text: draft.trim() });
-          }}
-          className="flex gap-2"
-        >
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value.slice(0, 500))}
-            placeholder="Neuer Gesprächspunkt…"
-            className="min-w-0 flex-1 rounded-xl border border-fc-navy/15 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
-          />
-          <button
-            type="submit"
-            disabled={pending || !draft.trim()}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white hover:bg-fc-blue disabled:opacity-60"
-            aria-label="Hinzufügen"
+      <div className="grid gap-3 p-3">
+        {canEdit ? (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!draft.trim()) return;
+              postAgenda({ action: "upsert", text: draft.trim() });
+            }}
+            className="flex gap-2"
           >
-            <Plus className="h-4 w-4" />
-          </button>
-        </form>
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value.slice(0, 500))}
+              placeholder="Neuer Gesprächspunkt…"
+              className="min-w-0 flex-1 rounded-xl border border-fc-navy/15 px-2 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+            />
+            <button
+              type="submit"
+              disabled={pending || !draft.trim()}
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white hover:bg-fc-blue disabled:opacity-60"
+              aria-label="Hinzufügen"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </form>
+        ) : (
+          <p className="text-xs text-slate-500">Nur Lesen — Vorstände können Punkte schon vorher eintragen.</p>
+        )}
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
         <ul className="divide-y divide-fc-navy/5 rounded-xl border border-fc-navy/10">
           {items.length === 0 ? (
@@ -169,17 +177,19 @@ export function BoardMeetingAgenda({
                         {item.checked_by_name ? ` · erledigt von ${item.checked_by_name}` : ""}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditId(item.id);
-                        setEditDraft(item.body);
-                      }}
-                      className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-fc-ice hover:text-fc-navy"
-                      aria-label="Bearbeiten"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
+                    {canEdit ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditId(item.id);
+                          setEditDraft(item.body);
+                        }}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-fc-ice hover:text-fc-navy"
+                        aria-label="Bearbeiten"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
                   </div>
                 )}
               </li>

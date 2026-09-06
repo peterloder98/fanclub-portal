@@ -1,16 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Camera, FileImage, X } from "lucide-react";
+import { Camera, FileImage, FileText, X } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { RECEIPT_ACCEPT } from "@/lib/images/specs";
+
+function isPdfFile(file: File | null | undefined, previewUrl?: string | null): boolean {
+  if (file) {
+    return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+  }
+  return Boolean(previewUrl && /\.pdf(\?|$)/i.test(previewUrl));
+}
 
 export function DocumentUploadField({
   label = "Beleg",
-  hint = "Drag & Drop oder Button — wird automatisch komprimiert (WebP, klein).",
+  hint,
   disabled,
   previewUrl,
   onFileSelected,
   onClear,
+  allowPdf = false,
 }: {
   label?: string;
   hint?: string;
@@ -18,10 +27,12 @@ export function DocumentUploadField({
   previewUrl?: string | null;
   onFileSelected: (file: File) => void | Promise<void>;
   onClear?: () => void;
+  allowPdf?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [localFile, setLocalFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -40,10 +51,12 @@ export function DocumentUploadField({
       if (localPreview?.startsWith("blob:")) URL.revokeObjectURL(localPreview);
       blobUrl = URL.createObjectURL(file);
       setLocalPreview(blobUrl);
+      setLocalFile(file);
       await onFileSelected(file);
     } catch (e) {
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       setLocalPreview(null);
+      setLocalFile(null);
       setUploadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
     } finally {
       setBusy(false);
@@ -51,6 +64,13 @@ export function DocumentUploadField({
   }
 
   const shownPreview = localPreview ?? previewUrl ?? null;
+  const pdfPreview = isPdfFile(localFile, previewUrl ?? localFile?.name ?? shownPreview);
+
+  const resolvedHint =
+    hint ??
+    (allowPdf
+      ? "Foto (JPEG/PNG/WebP) oder PDF — Bilder werden klein komprimiert."
+      : "Drag & Drop oder Button — wird automatisch komprimiert (WebP, klein).");
 
   return (
     <div className="grid gap-2">
@@ -62,8 +82,20 @@ export function DocumentUploadField({
       ) : null}
       {shownPreview ? (
         <div className="relative overflow-hidden rounded-xl border bg-slate-50">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={shownPreview} alt="" className="max-h-40 w-full object-contain" />
+          {pdfPreview ? (
+            <div className="flex items-center gap-3 px-4 py-5">
+              <FileText className="h-8 w-8 shrink-0 text-fc-navy" aria-hidden />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-slate-800">
+                  {localFile?.name ?? "PDF-Beleg"}
+                </p>
+                <p className="text-xs text-slate-500">PDF hochgeladen — öffnen über „Beleg“.</p>
+              </div>
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={shownPreview} alt="" className="max-h-40 w-full object-contain" />
+          )}
           {onClear ? (
             <button
               type="button"
@@ -71,6 +103,7 @@ export function DocumentUploadField({
               onClick={() => {
                 if (localPreview?.startsWith("blob:")) URL.revokeObjectURL(localPreview);
                 setLocalPreview(null);
+                setLocalFile(null);
                 onClear();
               }}
               className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/90 text-slate-700 shadow"
@@ -105,7 +138,7 @@ export function DocumentUploadField({
           <div className="flex flex-col items-center text-center">
             <FileImage className="h-8 w-8 text-slate-400" aria-hidden />
             <p className="mt-2 text-sm font-semibold text-slate-800">Datei hierher ziehen</p>
-            <p className="mt-1 text-xs text-slate-500">{hint}</p>
+            <p className="mt-1 text-xs text-slate-500">{resolvedHint}</p>
             <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400">
               <Camera className="h-3 w-3" aria-hidden />
               Handy-App später: Foto/Scan direkt möglich
@@ -115,8 +148,8 @@ export function DocumentUploadField({
             <input
               ref={inputRef}
               type="file"
-              accept="image/*"
-              capture="environment"
+              accept={allowPdf ? RECEIPT_ACCEPT : "image/*"}
+              {...(allowPdf ? {} : { capture: "environment" as const })}
               disabled={disabled || busy}
               className="hidden"
               onChange={(e) => void handleFile(e.target.files?.[0])}
@@ -127,7 +160,7 @@ export function DocumentUploadField({
               onClick={() => inputRef.current?.click()}
               className="h-10 rounded-xl bg-fc-navy px-5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {busy ? "Wird verarbeitet…" : "Bild hochladen"}
+              {busy ? "Wird verarbeitet…" : allowPdf ? "Foto oder PDF" : "Bild hochladen"}
             </button>
           </div>
         </div>
