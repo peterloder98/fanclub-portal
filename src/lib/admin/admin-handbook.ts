@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-09-06";
+export const ADMIN_HANDBOOK_UPDATED = "2026-09-17";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -604,7 +604,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App an alle Vorstände (antippen öffnet die Freigabe) und zusätzlich per E-Mail an die offizielle Fanclub-Adresse.",
+            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App an alle Vorstände (antippen öffnet die Freigabe) und zusätzlich per E-Mail an die offizielle Fanclub-Adresse. Nur abgeschickte Beiträge erscheinen hier — wer nur ein Foto auswählt und nicht auf „Zur Freigabe senden“ tippt, erzeugt keinen Eintrag in der Warteschlange.",
           },
           {
             type: "ol",

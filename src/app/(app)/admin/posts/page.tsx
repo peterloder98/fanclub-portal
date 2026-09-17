@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
 import { AdminBackLink } from "@/components/admin/admin-back-link";
+import { isUnsubmittedComposerDraft } from "@/lib/posts/composer-draft";
 
 export default async function AdminPostsPage() {
   await requireAdmin();
@@ -12,12 +13,15 @@ export default async function AdminPostsPage() {
 
   const { data: pending } = await admin
     .from("posts")
-    .select("id,body,created_at,author_id")
+    .select("id,body,created_at,author_id,status,author_role")
     .eq("status", "pending")
+    .neq("body", "")
     .order("created_at", { ascending: true })
     .limit(50);
 
-  const rows = pending ?? [];
+  const rows = (pending ?? []).filter(
+    (r) => !isUnsubmittedComposerDraft(r) && r.author_role !== "admin" && r.author_role !== "anni",
+  );
   const authorIds = Array.from(
     new Set(rows.map((r) => r.author_id).filter(Boolean)),
   ) as string[];

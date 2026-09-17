@@ -58,9 +58,13 @@ export function PendingPostsQueue({ posts }: { posts: PendingPostRow[] }) {
               <Badge variant="warning">Wartend</Badge>
             </div>
 
-            <p className="whitespace-pre-wrap text-sm leading-snug text-slate-800">
-              {p.body}
-            </p>
+            {p.body.trim() ? (
+              <p className="whitespace-pre-wrap text-sm leading-snug text-slate-800">
+                {p.body}
+              </p>
+            ) : (
+              <p className="text-sm italic text-slate-500">Kein Text</p>
+            )}
 
             {p.mediaUrls.length ? (
               <PostMediaGallery

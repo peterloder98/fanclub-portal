@@ -12,6 +12,7 @@ import {
   notifyMemberPostModerationResult,
 } from "@/lib/email/post-moderation-notify";
 import { assertMemberCanWrite } from "@/lib/portal-launch";
+import { isUnsubmittedComposerDraft } from "@/lib/posts/composer-draft";
 
 const createSchema = z.object({
   author_role: z.enum(["admin", "anni"]).default("admin"),
@@ -98,6 +99,7 @@ export async function notifyPendingPostCreated(postId: string) {
   if (!post) throw new Error("Post nicht gefunden.");
   if (post.author_id !== user.id) throw new Error("Keine Berechtigung.");
   if (post.status !== "pending") return { ok: true as const, skipped: true };
+  if (isUnsubmittedComposerDraft(post)) return { ok: true as const, skipped: true };
 
   const { data: profile } = await admin
     .from("profiles")
@@ -147,12 +149,16 @@ export async function publishFeedPostAction(input: {
   const role = (profile?.role ?? "member") as "admin" | "anni" | "member";
   assertMemberCanWrite(role, Date.now(), user.id);
 
+  const title = input.title.trim();
+  const body = input.body.trim();
+  if (!body) throw new Error("Bitte Text eingeben.");
+
   const status = role === "member" ? "pending" : "approved";
   const now = new Date().toISOString();
   const admin = createSupabaseAdminClient();
   const payload = {
-    title: input.title.trim(),
-    body: input.body.trim(),
+    title: title || (body.length > 36 ? `${body.slice(0, 36)}…` : body),
+    body,
     status,
     last_activity_at: now,
     ...(status === "approved" ? { approved_at: now, approved_by: user.id } : {}),
@@ -195,6 +201,32 @@ export async function publishFeedPostAction(input: {
   revalidatePath("/dashboard");
   revalidatePath("/posts");
   return { ok: true as const, post, status: post.status };
+}
+
+/** Photo/video attach creates a pending shell; drop it if the member never submitted. */
+export async function discardUnsubmittedComposerDraftAction(postId: string) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const };
+
+  const id = postId.trim();
+  if (!id) return { ok: false as const };
+
+  const admin = createSupabaseAdminClient();
+  const { data: post, error } = await admin
+    .from("posts")
+    .select("id,author_id,body,status")
+    .eq("id", id)
+    .maybeSingle();
+  if (error || !post) return { ok: false as const };
+  if (post.author_id !== user.id) return { ok: false as const };
+  if (!isUnsubmittedComposerDraft(post)) return { ok: true as const, skipped: true };
+
+  const { error: delErr } = await admin.from("posts").delete().eq("id", id);
+  if (delErr) return { ok: false as const };
+  return { ok: true as const };
 }
 
 export async function approvePostAction(postId: string) {

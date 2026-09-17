@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  discardUnsubmittedComposerDraftAction,
   setPostPinned,
   notifyPendingPostCreated,
   publishFeedPostAction,
@@ -17,6 +18,10 @@ import { getAvatarPublicUrl } from "@/lib/avatars/url";
 import { profileToUserListEntry } from "@/lib/profiles/display";
 import { optimizePostImage } from "@/lib/posts/optimize-image";
 import { postMediaPublicUrl } from "@/lib/posts/media-url";
+import {
+  COMPOSER_DRAFT_TITLE,
+  isUnsubmittedComposerDraft,
+} from "@/lib/posts/composer-draft";
 import { captureFlyRect, flyPointsFromElement } from "@/lib/points/fly";
 import { POINT_VALUES } from "@/lib/points/values";
 import {
@@ -252,12 +257,35 @@ function PostFeedInner({
   const composerUploading = composerUploadKind !== null;
   const [submitting, setSubmitting] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const composerDraftPostIdRef = useRef<string | null>(null);
+  const composerMediaCountRef = useRef(0);
+  const newTextRef = useRef("");
+  const composerBusyRef = useRef(false);
+  composerDraftPostIdRef.current = composerDraftPostId;
+  composerMediaCountRef.current = composerMedia.length;
+  newTextRef.current = newText;
+  composerBusyRef.current = composerUploading || submitting;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const composerInputRef = useRef<HTMLDivElement>(null);
   const composerMentionRef = useRef<MentionInputHandle>(null);
   const commentInputRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
+
+  useEffect(() => {
+    const discardIfAbandoned = () => {
+      const id = composerDraftPostIdRef.current;
+      if (!id || composerBusyRef.current) return;
+      if (newTextRef.current.trim() || composerMediaCountRef.current > 0) return;
+      void discardUnsubmittedComposerDraftAction(id);
+    };
+    const onPageHide = () => discardIfAbandoned();
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      discardIfAbandoned();
+    };
+  }, []);
 
   useEffect(() => {
     if (pathname !== "/dashboard") {
@@ -812,6 +840,7 @@ function PostFeedInner({
               comments: commentsByPost.get(p.id) ?? [],
             };
           }).filter((p) => {
+            if (isUnsubmittedComposerDraft(p)) return false;
             // Public feed: only approved. Authors see own pending/rejected.
             if (p.status === "approved" || !p.status) return true;
             return p.authorId === user.id;
@@ -1418,7 +1447,7 @@ function PostFeedInner({
       .insert({
         author_id: me.id,
         author_role: me.role,
-        title: "…",
+        title: COMPOSER_DRAFT_TITLE,
         body: "",
         status: "pending",
       })
@@ -1635,9 +1664,11 @@ function PostFeedInner({
 
     setComposerExpanded(true);
     setLoadError(null);
+    let draftId: string | null = null;
     try {
       const supabase = createSupabaseBrowserClient();
       const postId = await ensureComposerDraftPost(supabase);
+      draftId = postId;
       const uploadKind =
         images.length && videos.length ? "mixed" : videos.length ? "video" : "photo";
       if (uploadKind === "photo") setComposerUploadKind("photo");
@@ -1647,6 +1678,10 @@ function PostFeedInner({
       requestAnimationFrame(() => composerInputRef.current?.focus());
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Upload fehlgeschlagen");
+      if (draftId && composerMedia.length === 0) {
+        await discardUnsubmittedComposerDraftAction(draftId);
+        setComposerDraftPostId(null);
+      }
     } finally {
       setComposerUploadKind(null);
       setVideoUploadPhase(null);
