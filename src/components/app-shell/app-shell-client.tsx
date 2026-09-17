@@ -21,15 +21,11 @@ export function AppShellClient({
   needsIntroOnboarding = false,
   role = "member",
   userId = null,
-  showAnniFinance = false,
-  hideGroupChat = false,
 }: {
   children: ReactNode;
   needsIntroOnboarding?: boolean;
   role?: string;
   userId?: string | null;
-  showAnniFinance?: boolean;
-  hideGroupChat?: boolean;
 }) {
   const welcomeLock = useIsWelcomeLockRoute();
 
@@ -42,7 +38,7 @@ export function AppShellClient({
             tabIndex={-1}
             className="flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-hidden outline-none"
           >
-            {welcomeLock ? null : <TopbarChrome showAnniFinance={showAnniFinance} />}
+            {welcomeLock ? null : <TopbarChrome />}
             {welcomeLock ? null : <SoftLaunchBanner />}
             <MainScrollRegion>{children}</MainScrollRegion>
             <AppActivityAndOnboarding needsWelcomeOnboarding={needsIntroOnboarding} />
@@ -52,11 +48,9 @@ export function AppShellClient({
                 <Suspense fallback={null}>
                   <EngagementNudgeHost />
                 </Suspense>
-                {hideGroupChat ? null : (
-                  <Suspense fallback={null}>
-                    <GroupChatWidget />
-                  </Suspense>
-                )}
+                <Suspense fallback={null}>
+                  <GroupChatWidget />
+                </Suspense>
               </>
             )}
           </div>

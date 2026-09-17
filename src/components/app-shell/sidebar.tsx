@@ -18,7 +18,6 @@ export type SidebarUser = {
   points: number;
   rank: string;
   avatarUrl?: string | null;
-  showAnniFinance?: boolean;
 };
 
 export function Sidebar({ user }: { user: SidebarUser }) {
@@ -93,7 +92,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
             </SidebarNavTooltip>
           </div>
           <div className="flex min-h-0 flex-1 flex-col items-center gap-2 overflow-visible px-2 py-3">
-            <NavList items={appNav} isAdmin={isAdmin} showAnniFinance={Boolean(user.showAnniFinance)} collapsed />
+            <NavList items={appNav} isAdmin={isAdmin} collapsed />
             <SidebarNavTooltip label="Neue Mitglieder einladen">
               <Link
                 href="/mitgliedschaft/einladen"
@@ -123,7 +122,7 @@ export function Sidebar({ user }: { user: SidebarUser }) {
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-2 pb-2">
             <div className="rounded-2xl border bg-white/70 p-2 shadow-sm shadow-slate-900/5 backdrop-blur">
-              <NavList items={appNav} isAdmin={isAdmin} showAnniFinance={Boolean(user.showAnniFinance)} />
+              <NavList items={appNav} isAdmin={isAdmin} />
             </div>
             <div>
               <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-amber-800/70">

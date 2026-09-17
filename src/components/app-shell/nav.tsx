@@ -10,7 +10,6 @@ import {
   Home,
   MessageCircle,
   PieChart,
-  Receipt,
   Shield,
   ShoppingBag,
   Sparkles,
@@ -25,7 +24,6 @@ export type AppNavItem = {
   href: string;
   icon: LucideIcon;
   adminOnly?: boolean;
-  anniFinanceOnly?: boolean;
 };
 
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
@@ -45,12 +43,6 @@ export const appNav: AppNavItem[] = [
     : []),
   { label: "Mitglieder", href: "/mitglieder", icon: HeartHandshake },
   { label: "Anni-Stars", href: "/punkte", icon: Sparkles },
-  {
-    label: "Anni-Abrechnung",
-    href: "/anni-abrechnung",
-    icon: Receipt,
-    anniFinanceOnly: true,
-  },
   { label: "Admin", href: "/admin", icon: Shield, adminOnly: true },
 ];
 
@@ -97,20 +89,14 @@ function NavLink({
 export function NavList({
   items,
   isAdmin = true,
-  showAnniFinance = false,
   collapsed = false,
 }: {
   items: AppNavItem[];
   isAdmin?: boolean;
-  showAnniFinance?: boolean;
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
-  const visible = items.filter((i) => {
-    if (i.adminOnly) return isAdmin;
-    if (i.anniFinanceOnly) return showAnniFinance;
-    return true;
-  });
+  const visible = items.filter((i) => (i.adminOnly ? isAdmin : true));
 
   return (
     <nav className="group/nav flex flex-col gap-1">

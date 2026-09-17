@@ -24,7 +24,7 @@ function isChatRoute(pathname: string | null) {
   return pathname === "/chat" || Boolean(pathname?.startsWith("/chat/"));
 }
 
-export function TopbarChrome({ showAnniFinance = false }: { showAnniFinance?: boolean }) {
+export function TopbarChrome() {
   const { meta } = useTopbarMeta();
   const { title, subtitle, className } = meta;
   const pathname = usePathname();
@@ -166,7 +166,7 @@ export function TopbarChrome({ showAnniFinance = false }: { showAnniFinance?: bo
         }}
       >
         <div className="flex h-full w-full min-w-0 items-center gap-1.5 px-3 sm:gap-2 sm:px-4 lg:px-6">
-        <MobileNavDrawer isAdmin={role === "admin"} showAnniFinance={showAnniFinance} />
+        <MobileNavDrawer isAdmin={role === "admin"} />
         <div className="min-w-0 flex-1 overflow-hidden" title={subtitle}>
           <div className="truncate text-sm font-semibold leading-tight text-fc-navy sm:text-base">
             {title}

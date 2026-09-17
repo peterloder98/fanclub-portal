@@ -15,10 +15,8 @@ import {
   resolveAppRegistrationStatus,
   type AppRegistrationStatus,
 } from "@/lib/membership/app-registration";
-import {
-  adminVisibleEmail,
-} from "@/lib/members/no-app-access";
-import { isBrowseOnlyProfileId, isHiddenProfileId } from "@/lib/members/hidden";
+import { adminVisibleEmail } from "@/lib/members/no-app-access";
+import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
 import { requireAdmin } from "@/lib/admin/require-admin";
 
 export const dynamic = "force-dynamic";
@@ -54,7 +52,7 @@ export default async function AdminMembersPage({
           admin
             .from("profiles")
             .select(
-              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status,last_app_active_at,app_registered_at,no_app_access,billing_email,is_hidden,is_management",
+              "id,membership_number,first_name,last_name,birthdate,email,warning_count,app_registration_status,last_app_active_at,app_registered_at,no_app_access,billing_email",
             )
             .order("membership_number", { ascending: true, nullsFirst: false }),
         ]);
@@ -73,12 +71,10 @@ export default async function AdminMembersPage({
         app_registered_at?: string | null;
         no_app_access?: boolean | null;
         billing_email?: string | null;
-        is_hidden?: boolean | null;
-        is_management?: boolean | null;
       };
       let profileRows: ProfileListRow[] = (profiles ?? []) as ProfileListRow[];
       if (pErr) {
-        if (/no_app_access|billing_email|is_hidden|is_management|does not exist|schema cache/i.test(pErr.message) && !/app_registration_status|app_registered_at/i.test(pErr.message)) {
+        if (/no_app_access|billing_email|does not exist/i.test(pErr.message) && !/app_registration_status|app_registered_at/i.test(pErr.message)) {
           const { data: withoutNoApp, error: noAppErr } = await admin
             .from("profiles")
             .select(
@@ -148,13 +144,7 @@ export default async function AdminMembersPage({
         }
       });
 
-      const visibleProfileRows = profileRows.filter(
-        (p) =>
-          !isBrowseOnlyProfileId(p.id) &&
-          !isHiddenProfileId(p.id) &&
-          !p.is_hidden &&
-          !p.is_management,
-      );
+      const visibleProfileRows = profileRows.filter((p) => !isBrowseOnlyProfileId(p.id));
 
       const baseMembers = visibleProfileRows.map((p) => {
         const app_registration_status: AppRegistrationStatus = resolveAppRegistrationStatus({

@@ -27,7 +27,6 @@ function SetupAccountInner() {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [birthdate, setBirthdate] = useState("");
-  const [skipBirthdate, setSkipBirthdate] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +61,6 @@ function SetupAccountInner() {
       if (claimed.ok) {
         if (await goToPasswordResetIfRegistered(claimed.userId)) return "reset";
         setEmail(claimed.email);
-        setSkipBirthdate(claimed.skipBirthdate);
         return "setup";
       }
       return false;
@@ -92,7 +90,6 @@ function SetupAccountInner() {
               return;
             }
             setEmail(redeemed.email);
-            setSkipBirthdate(redeemed.skipBirthdate);
             router.replace("/setup-account", { scroll: false });
             setSessionReady(true);
             return;
@@ -228,18 +225,12 @@ function SetupAccountInner() {
               </p>
             </div>
 
-            {!skipBirthdate ? (
-              <BirthdateSegmentInput
-                label="Geburtsdatum zur Identitätsprüfung"
-                value={birthdate}
-                onChange={setBirthdate}
-                required
-              />
-            ) : (
-              <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                Bitte ein Passwort vergeben — danach kannst du dich anmelden.
-              </p>
-            )}
+            <BirthdateSegmentInput
+              label="Geburtsdatum zur Identitätsprüfung"
+              value={birthdate}
+              onChange={setBirthdate}
+              required
+            />
 
             <label className="grid gap-1">
               <span className="text-sm font-medium text-slate-700">
@@ -283,7 +274,7 @@ function SetupAccountInner() {
 
             <button
               type="submit"
-              disabled={pending || (!skipBirthdate && !birthdate)}
+              disabled={pending || !birthdate}
               className="h-11 rounded-xl bg-fc-navy text-sm font-semibold text-white shadow-sm shadow-slate-900/10 transition hover:bg-fc-blue disabled:opacity-60"
             >
               {pending ? "Speichere…" : "Zugang speichern & zum Login"}
