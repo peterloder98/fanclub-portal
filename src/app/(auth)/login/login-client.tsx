@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { postLoginPathForAnniManagement } from "@/lib/anni-management/access";
 
 export function LoginClient() {
   const router = useRouter();
@@ -26,12 +27,29 @@ export function LoginClient() {
     setBusy(true);
     try {
       const supabase = createSupabaseBrowserClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (signInError) throw signInError;
-      router.push(next);
+      const user = data.user;
+      let dest = next;
+      if (user) {
+        const full = await supabase
+          .from("profiles")
+          .select("role,is_management")
+          .eq("id", user.id)
+          .maybeSingle();
+        const role = full.data?.role ?? null;
+        const isManagement = Boolean(
+          !full.error && (full.data as { is_management?: boolean } | null)?.is_management,
+        );
+        dest = postLoginPathForAnniManagement(
+          { userId: user.id, role, isManagement },
+          next,
+        );
+      }
+      router.push(dest);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login fehlgeschlagen");

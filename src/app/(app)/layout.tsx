@@ -7,6 +7,7 @@ import { getRequestMeProfile } from "@/lib/auth/request-auth";
 import { rankFromPoints } from "@/lib/points/rank";
 import { avatarPublicUrl } from "@/lib/avatars/public";
 import { isBrowseOnlyProfileId } from "@/lib/members/hidden";
+import { getAnniManagementAccess } from "@/lib/anni-management/require";
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -27,12 +28,18 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     rank: rankFromPoints(0),
   };
   let needsWelcomeOnboarding = false;
+  let showAnniFinance = false;
+  let hideGroupChat = false;
 
   if (user) {
     const name =
       safeProfile?.first_name && safeProfile?.last_name
         ? `${safeProfile.first_name} ${safeProfile.last_name}`
         : user.email ?? "Mitglied";
+
+    const financeGate = await getAnniManagementAccess();
+    showAnniFinance = Boolean(financeGate);
+    hideGroupChat = Boolean(financeGate?.managementOnly);
 
     sidebarUser = {
       name,
@@ -43,12 +50,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       avatarUrl: safeProfile?.avatar_path
         ? `${avatarPublicUrl(safeProfile.avatar_path)}?v=${encodeURIComponent(safeProfile.updated_at ?? "")}`
         : null,
+      showAnniFinance,
     };
 
     const rulesAccepted = safeProfile?.community_rules_accepted_at != null;
     const introPending = safeProfile?.intro_onboarding_dismissed_at == null;
     needsWelcomeOnboarding =
-      !isBrowseOnlyProfileId(user.id) && (!rulesAccepted || introPending);
+      !isBrowseOnlyProfileId(user.id) &&
+      !financeGate?.managementOnly &&
+      (!rulesAccepted || introPending);
   }
 
   return (
@@ -59,6 +69,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         needsIntroOnboarding={needsWelcomeOnboarding}
         role={sidebarUser.role}
         userId={user?.id ?? null}
+        showAnniFinance={showAnniFinance}
+        hideGroupChat={hideGroupChat}
       >
         {children}
       </AppShellClient>

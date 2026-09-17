@@ -7,7 +7,13 @@ import { appNav, NavList } from "@/components/app-shell/nav";
 import { BrandLogo } from "@/components/app-shell/brand-logo";
 import { ReferMembershipNavCta } from "@/components/app-shell/refer-membership-nav-cta";
 
-export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
+export function MobileNavDrawer({
+  isAdmin,
+  showAnniFinance = false,
+}: {
+  isAdmin: boolean;
+  showAnniFinance?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -68,7 +74,7 @@ export function MobileNavDrawer({ isAdmin }: { isAdmin: boolean }) {
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
             <div className="rounded-2xl border bg-white p-2 shadow-sm" onClick={() => setOpen(false)}>
-              <NavList items={appNav} isAdmin={isAdmin} />
+              <NavList items={appNav} isAdmin={isAdmin} showAnniFinance={showAnniFinance} />
             </div>
             <div className="mt-3" onClick={() => setOpen(false)}>
               <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-amber-800/70">

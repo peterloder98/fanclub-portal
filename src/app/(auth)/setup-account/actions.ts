@@ -21,10 +21,21 @@ import {
 } from "@/lib/auth/account-access-flow";
 
 const schema = z.object({
-  birthdate: z.string().min(1, "Geburtsdatum ist Pflicht."),
+  birthdate: z.string().optional(),
   password: z.string().min(8, "Passwort mindestens 8 Zeichen."),
   passwordConfirm: z.string().min(1),
 });
+
+async function setupSkipsBirthdate(userId: string): Promise<boolean> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin
+    .from("profiles")
+    .select("is_management")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) return false;
+  return Boolean(data?.is_management);
+}
 
 async function readSetupClaim() {
   const cookieStore = await cookies();
@@ -55,7 +66,7 @@ async function clearSetupClaim() {
  * Setzt Claim-Cookie — funktioniert auf jedem Gerät/Browser erneut.
  */
 export async function redeemAccountSetupToken(plainToken: string): Promise<
-  { ok: true; email: string } | { ok: false; error: string }
+  { ok: true; email: string; skipBirthdate: boolean } | { ok: false; error: string }
 > {
   const result = await lookupValidAccountSetupToken(plainToken);
   if (!result.ok) {
@@ -88,7 +99,11 @@ export async function redeemAccountSetupToken(plainToken: string): Promise<
   }
 
   await writeSetupClaim(result.row.user_id, result.email);
-  return { ok: true, email: result.email };
+  return {
+    ok: true,
+    email: result.email,
+    skipBirthdate: await setupSkipsBirthdate(result.row.user_id),
+  };
 }
 
 /**
@@ -128,11 +143,16 @@ export async function claimAccountSetupSession(accessToken?: string): Promise<
 
 /** Für die Setup-Seite: Claim-Cookie auslesen, wenn Auth-Session fehlt. */
 export async function getClaimedSetupSession(): Promise<
-  { ok: true; email: string; userId: string } | { ok: false }
+  { ok: true; email: string; userId: string; skipBirthdate: boolean } | { ok: false }
 > {
   const claim = await readSetupClaim();
   if (!claim) return { ok: false };
-  return { ok: true, email: claim.email, userId: claim.userId };
+  return {
+    ok: true,
+    email: claim.email,
+    userId: claim.userId,
+    skipBirthdate: await setupSkipsBirthdate(claim.userId),
+  };
 }
 
 /** Client-fähig: bereits registriert → Passwort-Reset statt Ersteinrichtung. */
@@ -179,36 +199,40 @@ export async function completeAccountSetup(input: {
     );
   }
 
-  const entered = normalizeBirthdateIso(parsed.data.birthdate);
-  if (!entered) {
-    return {
-      ok: false,
-      error: "Bitte Geburtsdatum im Format TT.MM.JJJJ eingeben.",
-    };
-  }
-
+  const entered = normalizeBirthdateIso(parsed.data.birthdate ?? "");
   const admin = createSupabaseAdminClient();
-  const { data: profile, error: profileErr } = await admin
-    .from("profiles")
-    .select("id,birthdate,email,first_name")
-    .eq("id", userId)
-    .maybeSingle();
-  if (profileErr) return { ok: false, error: profileErr.message };
-  if (!profile) return { ok: false, error: "Profil nicht gefunden." };
+  const skipBirthdate = await setupSkipsBirthdate(userId);
 
-  const stored = normalizeBirthdateIso(profile.birthdate);
-  if (!stored) {
-    return {
-      ok: false,
-      error: "Für dein Profil ist kein Geburtsdatum hinterlegt. Bitte den Vorstand kontaktieren.",
-    };
-  }
-  if (stored !== entered) {
-    return {
-      ok: false,
-      error:
-        "Geburtsdatum stimmt nicht mit dem Konto oben überein. Bitte TT.MM.JJJJ prüfen — und bei geteiltem Gerät den eigenen Einrichtungs-Link aus der E-Mail nutzen.",
-    };
+  if (!skipBirthdate) {
+    if (!entered) {
+      return {
+        ok: false,
+        error: "Bitte Geburtsdatum im Format TT.MM.JJJJ eingeben.",
+      };
+    }
+
+    const { data: profile, error: profileErr } = await admin
+      .from("profiles")
+      .select("id,birthdate,email,first_name")
+      .eq("id", userId)
+      .maybeSingle();
+    if (profileErr) return { ok: false, error: profileErr.message };
+    if (!profile) return { ok: false, error: "Profil nicht gefunden." };
+
+    const stored = normalizeBirthdateIso(profile.birthdate);
+    if (!stored) {
+      return {
+        ok: false,
+        error: "Für dein Profil ist kein Geburtsdatum hinterlegt. Bitte den Vorstand kontaktieren.",
+      };
+    }
+    if (stored !== entered) {
+      return {
+        ok: false,
+        error:
+          "Geburtsdatum stimmt nicht mit dem Konto oben überein. Bitte TT.MM.JJJJ prüfen — und bei geteiltem Gerät den eigenen Einrichtungs-Link aus der E-Mail nutzen.",
+      };
+    }
   }
 
   const { error: pwErr } = await admin.auth.admin.updateUserById(userId, {
