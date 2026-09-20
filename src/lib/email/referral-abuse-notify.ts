@@ -1,9 +1,9 @@
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
 import { sendEmailWithLog } from "@/lib/email/send-log";
-import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
+import { listAdminNotifyRecipients } from "@/lib/email/admin-notify-recipients";
 
-/** Admin: E-Mail nur an die offizielle Fanclub-Adresse (In-App separat via notifyAllAdmins). */
+/** Admin: E-Mail an alle Vorstände (und Club-SMTP-Postfach). In-App separat via notifyAllAdmins. */
 export async function notifyAdminsReferralAbuse(input: {
   referrerName: string;
   referrerEmail: string;
@@ -11,30 +11,35 @@ export async function notifyAdminsReferralAbuse(input: {
   sendsList: string;
   reviewUrl: string;
 }) {
-  const to = await resolveOfficialFanclubEmail();
-  if (!to) {
-    return { sent: false, reason: "no_official_email" as const };
+  const recipients = await listAdminNotifyRecipients();
+  if (!recipients.length) {
+    return { sent: false, reason: "no_admin_emails" as const };
   }
 
   const reasonsText = input.reasons.join("; ");
-  const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.referralAbuseAdminNotify, {
-    admin_first_name: "Vorstand",
-    referrer_name: input.referrerName,
-    referrer_email: input.referrerEmail,
-    reasons_text: reasonsText,
-    sends_list: input.sendsList,
-    review_url: input.reviewUrl,
-  });
+  let sentCount = 0;
 
-  const result = await sendEmailWithLog({
-    to,
-    subject: rendered.subject,
-    text: rendered.text,
-    html: rendered.html,
-    templateKey: EMAIL_TEMPLATE_KEYS.referralAbuseAdminNotify,
-    attachments: rendered.signatureAttachment ? [rendered.signatureAttachment] : undefined,
-    bypassTestAllowlist: true,
-  });
+  for (const r of recipients) {
+    const rendered = await renderEmailFromTemplate(EMAIL_TEMPLATE_KEYS.referralAbuseAdminNotify, {
+      admin_first_name: r.firstName,
+      referrer_name: input.referrerName,
+      referrer_email: input.referrerEmail,
+      reasons_text: reasonsText,
+      sends_list: input.sendsList,
+      review_url: input.reviewUrl,
+    });
 
-  return { sent: result.ok, sentCount: result.ok ? 1 : 0 };
+    const result = await sendEmailWithLog({
+      to: r.email,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+      templateKey: EMAIL_TEMPLATE_KEYS.referralAbuseAdminNotify,
+      attachments: rendered.signatureAttachment ? [rendered.signatureAttachment] : undefined,
+      bypassTestAllowlist: true,
+    });
+    if (result.ok) sentCount += 1;
+  }
+
+  return { sent: sentCount > 0, sentCount };
 }

@@ -1,6 +1,6 @@
 import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import { sendEmailWithLog } from "@/lib/email/send-log";
-import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
+import { listAdminNotifyRecipients } from "@/lib/email/admin-notify-recipients";
 import {
   createUserNotification,
   notifyAllAdmins,
@@ -15,7 +15,7 @@ function appBaseUrl() {
   );
 }
 
-/** Admin: In-App an alle Vorstände + E-Mail nur an die offizielle Fanclub-Adresse. */
+/** Admin: In-App + E-Mail an alle Vorstände (und Club-SMTP-Postfach). */
 export async function notifyAdminsProfileChangeRequest(input: {
   requestId: string;
   membershipNumber: string | null;
@@ -45,9 +45,9 @@ export async function notifyAdminsProfileChangeRequest(input: {
     },
   }).catch(console.error);
 
-  const to = await resolveOfficialFanclubEmail();
-  if (!to) {
-    console.warn("[email] Keine offizielle Fanclub-E-Mail für Stammdaten-Benachrichtigung.");
+  const recipients = await listAdminNotifyRecipients();
+  if (!recipients.length) {
+    console.warn("[email] Keine Admin-Empfänger für Stammdaten-Benachrichtigung.");
     return { sent: 0 };
   }
 
@@ -61,17 +61,21 @@ ${reviewUrl}
 
 Anni Perka Fanclub`;
 
-  const result = await sendEmailWithLog({
-    to,
-    subject,
-    text,
-    html: buildEmailFromPlainText(text),
-    templateKey: "profile_change_pending_admin",
-    context: { request_id: input.requestId },
-    bypassTestAllowlist: true,
-  });
+  let sent = 0;
+  for (const r of recipients) {
+    const result = await sendEmailWithLog({
+      to: r.email,
+      subject,
+      text,
+      html: buildEmailFromPlainText(text),
+      templateKey: "profile_change_pending_admin",
+      context: { request_id: input.requestId },
+      bypassTestAllowlist: true,
+    });
+    if (result.ok) sent += 1;
+  }
 
-  return { sent: result.ok ? 1 : 0 };
+  return { sent };
 }
 
 export async function notifyMemberProfileChangeResult(input: {

@@ -1,6 +1,6 @@
 import { buildEmailFromPlainText } from "@/lib/email/email-layout";
 import { sendEmailWithLog } from "@/lib/email/send-log";
-import { resolveOfficialFanclubEmail } from "@/lib/email/official-fanclub-email";
+import { listAdminNotifyRecipients } from "@/lib/email/admin-notify-recipients";
 import {
   createUserNotification,
   notifyAllAdmins,
@@ -19,7 +19,7 @@ function snippet(body: string, max = 140) {
   return t.length > max ? `${t.slice(0, max)}…` : t;
 }
 
-/** Admin: In-App an alle Vorstände + E-Mail nur an die offizielle Fanclub-Adresse. */
+/** Admin: In-App + E-Mail an alle Vorstände (und Club-SMTP-Postfach). */
 export async function notifyAdminsPendingPost(input: {
   postId: string;
   authorId: string;
@@ -38,9 +38,9 @@ export async function notifyAdminsPendingPost(input: {
     metadata: { post_id: input.postId, author_id: input.authorId },
   }).catch(console.error);
 
-  const to = await resolveOfficialFanclubEmail();
-  if (!to) {
-    console.warn("[email] Keine offizielle Fanclub-E-Mail für Admin-Benachrichtigung.");
+  const recipients = await listAdminNotifyRecipients();
+  if (!recipients.length) {
+    console.warn("[email] Keine Admin-Empfänger für Post-Freigabe.");
     return { sent: 0 };
   }
 
@@ -56,17 +56,21 @@ ${reviewUrl}
 
 Anni Perka Fanclub`;
 
-  const result = await sendEmailWithLog({
-    to,
-    subject,
-    text,
-    html: buildEmailFromPlainText(text),
-    templateKey: "post_pending_admin",
-    context: { post_id: input.postId },
-    bypassTestAllowlist: true,
-  });
+  let sent = 0;
+  for (const r of recipients) {
+    const result = await sendEmailWithLog({
+      to: r.email,
+      subject,
+      text,
+      html: buildEmailFromPlainText(text),
+      templateKey: "post_pending_admin",
+      context: { post_id: input.postId },
+      bypassTestAllowlist: true,
+    });
+    if (result.ok) sent += 1;
+  }
 
-  return { sent: result.ok ? 1 : 0 };
+  return { sent };
 }
 
 /** Mitglied: nur In-App bei Freigabe oder Ablehnung. */

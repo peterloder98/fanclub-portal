@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-09-17";
+export const ADMIN_HANDBOOK_UPDATED = "2026-09-20";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -104,7 +104,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Sobald jemand den digitalen Antrag absendet, werdet ihr als Vorstand sofort informiert: per E-Mail an die offizielle Fanclub-Adresse und per Benachrichtigung in der App an alle Vorstände. In der Benachrichtigung könnt ihr direkt auf den Antrag tippen und ihn öffnen.",
+            text: "Sobald jemand den digitalen Antrag absendet, werdet ihr als Vorstand sofort informiert: per E-Mail an alle Vorstände (und das Fanclub-SMTP-Postfach) und per Benachrichtigung in der App. In der Benachrichtigung könnt ihr direkt auf den Antrag tippen und ihn öffnen.",
           },
           {
             type: "ol",
@@ -204,7 +204,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "ol",
             items: [
               "Mitglieder können im Profil Änderungen beantragen (z. B. Adresse).",
-              "Admin → „Stammdaten freigeben“ öffnen (Hinweis kommt per In-App an alle Vorstände und per E-Mail an die offizielle Fanclub-Adresse).",
+              "Admin → „Stammdaten freigeben“ öffnen (Hinweis kommt per In-App und per E-Mail an alle Vorstände).",
               "Änderung prüfen und annehmen oder ablehnen.",
             ],
           },
@@ -604,7 +604,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
         blocks: [
           {
             type: "p",
-            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App an alle Vorstände (antippen öffnet die Freigabe) und zusätzlich per E-Mail an die offizielle Fanclub-Adresse. Nur abgeschickte Beiträge erscheinen hier — wer nur ein Foto auswählt und nicht auf „Zur Freigabe senden“ tippt, erzeugt keinen Eintrag in der Warteschlange.",
+            text: "Reicht ein Mitglied einen Beitrag ein, werdet ihr als Vorstand benachrichtigt: per Benachrichtigung in der App und per E-Mail an alle Vorstände (sowie an das Fanclub-SMTP-Postfach). Antippen öffnet die Freigabe. Nur abgeschickte Beiträge erscheinen hier — wer nur ein Foto auswählt und nicht auf „Zur Freigabe senden“ tippt, erzeugt keinen Eintrag in der Warteschlange.",
           },
           {
             type: "ol",
@@ -880,7 +880,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Admin-Mails (neuer Antrag, Beitragsfreigabe, Stammdaten-Änderung, Gewinnspiel beendet, Auffällige Einladungen u. Ä.) gehen nur an die offizielle Fanclub-Adresse — nicht an private Vorstands-Mails. In-App-Benachrichtigungen erreichen weiterhin alle Vorstände.",
+            text: "Admin-Mails (neuer Antrag, Beitragsfreigabe, Stammdaten-Änderung, Gewinnspiel beendet, Auffällige Einladungen u. Ä.) gehen an alle Vorstände per E-Mail und zusätzlich an das Fanclub-SMTP-Postfach. In-App-Benachrichtigungen erreichen ebenfalls alle Vorstände.",
           },
           {
             type: "note",

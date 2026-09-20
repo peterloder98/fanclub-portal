@@ -30,7 +30,7 @@ export function formatMembershipEmailWarning(parts: {
   if (parts.admin && !parts.admin.sent) {
     if (parts.admin.reason === "no_admin_emails" || parts.admin.reason === "no_official_email") {
       messages.push(
-        "Admin-Benachrichtigung: Keine offizielle Fanclub-E-Mail konfiguriert (SMTP/Env).",
+        "Admin-Benachrichtigung: Keine Vorstands-E-Mail-Adressen gefunden.",
       );
     } else if (parts.admin.reason === "no_smtp_account") {
       messages.push("Admin-Benachrichtigung: Kein SMTP-Konto konfiguriert.");
