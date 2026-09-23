@@ -9,8 +9,17 @@ import type { LiveSessionRow } from "@/lib/live/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminLivePage() {
+export default async function AdminLivePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireAdmin();
+  const sp = searchParams ? await searchParams : {};
+  const initialError =
+    typeof sp.error === "string" && sp.error.trim() ? sp.error.trim() : null;
+  const initialCreated = sp.created === "1";
+
   const admin = createSupabaseAdminClient();
   const { data } = await admin
     .from("live_sessions")
@@ -67,6 +76,8 @@ export default async function AdminLivePage() {
         <AdminLiveSessionsPanel
           sessions={sessions}
           openQuestionCountBySessionId={openQuestionCountBySessionId}
+          initialError={initialError}
+          initialCreated={initialCreated}
         />
       </main>
     </div>

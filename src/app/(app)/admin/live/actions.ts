@@ -129,6 +129,31 @@ export async function createLiveSessionAction(input: {
   }
 }
 
+/** Form-Action (auch ohne JS): verhindert POST-404 auf /admin/live. */
+export async function createLiveSessionFormAction(formData: FormData): Promise<void> {
+  const { redirect } = await import("next/navigation");
+  const title = String(formData.get("title") ?? "");
+  const startsAt = String(formData.get("startsAt") ?? "");
+  const joinOpensAt = String(formData.get("joinOpensAt") ?? "");
+  const durationRaw = String(formData.get("durationMinutes") ?? "");
+  const durationMinutes = Number(durationRaw);
+  const sendInvites = formData.get("sendInvites") === "on" || formData.get("sendInvites") === "true";
+
+  const result = await createLiveSessionAction({
+    title,
+    startsAt,
+    joinOpensAt,
+    durationMinutes: Number.isFinite(durationMinutes) ? durationMinutes : 0,
+    sendInvites,
+  });
+
+  if (!result.ok) {
+    redirect(`/admin/live?error=${encodeURIComponent(result.error)}`);
+  }
+  // Host-Link nur in der E-Mail an Anni / Client-Pfad (nicht in der URL).
+  redirect("/admin/live?created=1");
+}
+
 export async function resendLiveSessionInvitesAction(
   sessionId: string,
 ): Promise<

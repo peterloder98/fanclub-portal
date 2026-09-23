@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   createLiveSessionAction,
+  createLiveSessionFormAction,
   regenerateLiveHostTokenAction,
   resendLiveSessionInvitesAction,
   setLiveSessionStatusAction,
@@ -51,21 +53,36 @@ const STATUS_LABEL: Record<LiveSessionStatus, string> = {
 export function AdminLiveSessionsPanel({
   sessions,
   openQuestionCountBySessionId,
+  initialError = null,
+  initialCreated = false,
 }: {
   sessions: LiveSessionRow[];
   openQuestionCountBySessionId: Record<string, number>;
+  initialError?: string | null;
+  initialCreated?: boolean;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [title, setTitle] = useState("Live mit Anni");
   const [startsAt, setStartsAt] = useState(defaultStarts);
   const [joinOpensAt, setJoinOpensAt] = useState(() => defaultJoin(defaultStarts()));
   const [durationMinutes, setDurationMinutes] = useState(60);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
   const [freshHostUrl, setFreshHostUrl] = useState<string | null>(null);
   const [hostById, setHostById] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const [sendInvites, setSendInvites] = useState(true);
-  const [inviteInfo, setInviteInfo] = useState<string | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<string | null>(
+    initialCreated
+      ? "Live-Chat angelegt. Host-Link an Anni wurde per E-Mail versendet (und ggf. Mitglieder-Einladungen). Seite neu laden, falls die Session-Liste noch leer wirkt."
+      : null,
+  );
+
+  useEffect(() => {
+    if (!initialError && !initialCreated) return;
+    // Query-Params aus der Adresse entfernen (nach Redirect ohne JS).
+    router.replace("/admin/live", { scroll: false });
+  }, [initialError, initialCreated, router]);
 
   function onStartsChange(v: string) {
     setStartsAt(v);
@@ -81,33 +98,43 @@ export function AdminLiveSessionsPanel({
     setDurationMinutes(Math.min(LIVE_SESSION_MAX_DURATION_MINUTES, Number(digits)));
   }
 
-  function onCreate(e: React.FormEvent) {
+  function onCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    e.stopPropagation();
     setError(null);
     setFreshHostUrl(null);
     setInviteInfo(null);
     startTransition(async () => {
-      const result = await createLiveSessionAction({
-        title,
-        // Wanduhr Europe/Berlin — Server rechnet nach UTC um (nicht Browser-TZ).
-        startsAt,
-        durationMinutes,
-        joinOpensAt,
-        sendInvites,
-      });
-      if (!result.ok) {
-        setError(result.error);
-        return;
-      }
-      setFreshHostUrl(result.hostUrl);
-      setHostById((prev) => ({ ...prev, [result.id]: result.hostUrl }));
-      if (result.invitesQueued) {
-        setInviteInfo(
-          "Host-Link an Anni und Mitglieder-Einladungen werden in die E-Mail-Warteschlange gelegt (gedrosselter Versand, ca. alle 3 Minuten). Den Host-Link kannst du zusätzlich kopieren.",
-        );
-      } else {
-        setInviteInfo(
-          "Host-Link an Anni wird im Hintergrund versendet. Mitglieder-Einladungen wurden nicht angefordert.",
+      try {
+        const result = await createLiveSessionAction({
+          title,
+          // Wanduhr Europe/Berlin — Server rechnet nach UTC um (nicht Browser-TZ).
+          startsAt,
+          durationMinutes,
+          joinOpensAt,
+          sendInvites,
+        });
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        setFreshHostUrl(result.hostUrl);
+        setHostById((prev) => ({ ...prev, [result.id]: result.hostUrl }));
+        if (result.invitesQueued) {
+          setInviteInfo(
+            "Host-Link an Anni und Mitglieder-Einladungen werden in die E-Mail-Warteschlange gelegt (gedrosselter Versand, ca. alle 3 Minuten). Den Host-Link kannst du zusätzlich kopieren.",
+          );
+        } else {
+          setInviteInfo(
+            "Host-Link an Anni wird im Hintergrund versendet. Mitglieder-Einladungen wurden nicht angefordert.",
+          );
+        }
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Anlegen fehlgeschlagen. Bitte Seite neu laden und erneut versuchen.",
         );
       }
     });
@@ -164,6 +191,7 @@ export function AdminLiveSessionsPanel({
   return (
     <div className="mx-auto grid max-w-4xl gap-8">
       <form
+        action={createLiveSessionFormAction}
         onSubmit={onCreate}
         className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
       >
@@ -173,6 +201,7 @@ export function AdminLiveSessionsPanel({
         <label className="grid gap-1.5">
           <span className="text-sm font-medium text-slate-700">Titel</span>
           <input
+            name="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="h-11 rounded-xl border bg-white px-3 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
@@ -183,16 +212,24 @@ export function AdminLiveSessionsPanel({
         <div className="grid gap-4 sm:grid-cols-2">
           <AppDateTimeInput
             label="Beitritt ab"
+            name="joinOpensAt"
             value={joinOpensAt}
             onChange={setJoinOpensAt}
             required
           />
-          <AppDateTimeInput label="Start" value={startsAt} onChange={onStartsChange} required />
+          <AppDateTimeInput
+            label="Start"
+            name="startsAt"
+            value={startsAt}
+            onChange={onStartsChange}
+            required
+          />
         </div>
         <label className="grid max-w-xs gap-1.5">
           <span className="text-sm font-medium text-slate-700">Dauer</span>
           <div className="relative">
             <input
+              name="durationMinutes"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -215,6 +252,7 @@ export function AdminLiveSessionsPanel({
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
           <input
             type="checkbox"
+            name="sendInvites"
             checked={sendInvites}
             onChange={(e) => setSendInvites(e.target.checked)}
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-fc-navy focus:ring-fc-blue"

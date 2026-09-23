@@ -236,6 +236,7 @@ export function AppDateTimeInput({
   onChange,
   required,
   className,
+  name,
 }: {
   label: string;
   /** `YYYY-MM-DDTHH:mm` (datetime-local). */
@@ -243,6 +244,8 @@ export function AppDateTimeInput({
   onChange: (localValue: string) => void;
   required?: boolean;
   className?: string;
+  /** Für FormData / Server Actions ohne JS. */
+  name?: string;
 }) {
   const dateId = useId();
   const timeId = useId();
@@ -262,6 +265,7 @@ export function AppDateTimeInput({
         {label}
         {required ? " *" : ""}
       </span>
+      {name ? <input type="hidden" name={name} value={value} readOnly /> : null}
       <div className="grid grid-cols-[1fr_auto] gap-2">
         <label className="relative min-w-0" htmlFor={dateId}>
           <span className="sr-only">{label} Datum</span>
