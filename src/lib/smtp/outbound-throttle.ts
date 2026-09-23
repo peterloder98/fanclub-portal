@@ -15,10 +15,13 @@ export function outboundBurstPauseMs(): number {
   return Number.isFinite(raw) && raw >= 5000 ? raw : 60_000;
 }
 
-/** Pro Cron-Lauf / Drain maximal so viele Mails. */
+/**
+ * Pro Drain-Chunk maximal so viele Mails.
+ * Default 8: unter ~35s (ohne Burst-Pause), passt unter Proxy-/Gateway-Limits.
+ */
 export function outboundDrainLimit(): number {
-  const raw = Number(process.env.EMAIL_OUTBOUND_DRAIN_LIMIT ?? "10");
-  return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 10;
+  const raw = Number(process.env.EMAIL_OUTBOUND_DRAIN_LIMIT ?? "8");
+  return Number.isFinite(raw) && raw >= 1 ? Math.floor(raw) : 8;
 }
 
 export function isSmtpAuthFailure(message: string): boolean {

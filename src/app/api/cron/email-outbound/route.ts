@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { kickOutboundEmailDrain } from "@/lib/email/kick-outbound-drain";
+import { acceptOutboundDrainInBackground } from "@/lib/email/kick-outbound-drain";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * Manuell / Kick nach Live-Enqueue / optional externer Cron:
- * ein Drain-Chunk (Throttling), bei Rest-Pending Selbst-Kette.
- * Tages-Crons rufen zusätzlich den Sidecar mit auf.
+ * Manuell / Kick nach Live-Enqueue / optional externer Cron.
+ * Antwortet sofort (kein Gateway-504); Drain läuft gedrosselt im after()-Hintergrund
+ * und kettet bei Rest-Pending selbst weiter.
  */
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
@@ -17,6 +17,6 @@ export async function GET(request: Request) {
   }
 
   const admin = createSupabaseAdminClient();
-  const result = await kickOutboundEmailDrain(admin);
-  return NextResponse.json({ ok: true, ...result });
+  acceptOutboundDrainInBackground(admin);
+  return NextResponse.json({ ok: true, accepted: true });
 }
