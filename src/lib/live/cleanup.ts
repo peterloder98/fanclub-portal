@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { deleteLiveKitRoom } from "@/lib/live/livekit";
+import { cancelPendingLiveOutboundEmails } from "@/lib/live/invites";
 import {
   graceEndsAtIso,
   isInLiveGracePeriod,
@@ -142,12 +143,18 @@ export async function deleteGraceExpiredLiveSessions(
   const rooms = [
     ...(withGrace.data ?? []),
     ...(withoutGrace.data ?? []),
-  ]
-    .map((r) => r.livekit_room_name)
-    .filter((n): n is string => Boolean(n));
-  await Promise.all(rooms.map((name) => deleteLiveKitRoom(name)));
+  ];
+  for (const row of rooms) {
+    await cancelPendingLiveOutboundEmails(admin, row.id);
+  }
+  await Promise.all(
+    rooms
+      .map((r) => r.livekit_room_name)
+      .filter((n): n is string => Boolean(n))
+      .map((name) => deleteLiveKitRoom(name)),
+  );
 
-  return (withGrace.data?.length ?? 0) + (withoutGrace.data?.length ?? 0);
+  return rooms.length;
 }
 
 /**
@@ -180,6 +187,7 @@ export async function syncLiveSessionLifecycle(
       .select("livekit_room_name")
       .eq("id", session.id)
       .maybeSingle();
+    await cancelPendingLiveOutboundEmails(admin, session.id);
     await admin.from("live_sessions").delete().eq("id", session.id);
     if (row?.livekit_room_name) void deleteLiveKitRoom(row.livekit_room_name);
     return "gone";
@@ -192,6 +200,7 @@ export async function syncLiveSessionLifecycle(
       .select("livekit_room_name")
       .eq("id", session.id)
       .maybeSingle();
+    await cancelPendingLiveOutboundEmails(admin, session.id);
     await admin.from("live_sessions").delete().eq("id", session.id);
     if (row?.livekit_room_name) void deleteLiveKitRoom(row.livekit_room_name);
     return "gone";

@@ -1,18 +1,22 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { drainOutboundEmailQueue } from "@/lib/email/outbound-queue";
+import { kickOutboundEmailDrain } from "@/lib/email/kick-outbound-drain";
 import { authorizeCronRequest } from "@/lib/security/cron-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-/** Manuell oder extern (z. B. cron-job.org): bis zu N Mails aus der Warteschlange. Tages-Crons rufen den Sidecar mit auf. */
+/**
+ * Manuell / Kick nach Live-Enqueue / optional externer Cron:
+ * ein Drain-Chunk (Throttling), bei Rest-Pending Selbst-Kette.
+ * Tages-Crons rufen zusätzlich den Sidecar mit auf.
+ */
 export async function GET(request: Request) {
   if (!authorizeCronRequest(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
   const admin = createSupabaseAdminClient();
-  const result = await drainOutboundEmailQueue(admin);
+  const result = await kickOutboundEmailDrain(admin);
   return NextResponse.json({ ok: true, ...result });
 }

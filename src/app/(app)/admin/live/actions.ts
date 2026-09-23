@@ -13,6 +13,7 @@ import {
   type LiveSessionStatus,
 } from "@/lib/live/types";
 import {
+  cancelPendingLiveOutboundEmails,
   sendAnniHostLinkEmail,
   sendLiveSessionInviteEmails,
 } from "@/lib/live/invites";
@@ -246,6 +247,7 @@ export async function setLiveSessionStatusAction(
         .select("livekit_room_name")
         .eq("id", sessionId)
         .maybeSingle();
+      await cancelPendingLiveOutboundEmails(admin, sessionId);
       const { error } = await admin.from("live_sessions").delete().eq("id", sessionId);
       if (error) return { ok: false, error: error.message };
       if (row?.livekit_room_name) {

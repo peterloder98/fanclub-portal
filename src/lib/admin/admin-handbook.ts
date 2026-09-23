@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-09-20";
+export const ADMIN_HANDBOOK_UPDATED = "2026-09-23";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -666,7 +666,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             items: [
               "Admin → Community → „Live mit Anni“ öffnen.",
               "Titel, Beitritt ab und Start jeweils mit Datum und Uhrzeit eintragen (z. B. Start Montag 21:00, Beitritt ca. 10 Minuten früher), dazu die Dauer in Minuten (höchstens 60). Die Uhrzeiten gelten immer als deutsche Zeit (Europe/Berlin) — so erscheinen sie auch in Einladung, Kalender und Live-Menü. Nach der Dauer endet Annis Video automatisch.",
-              "Haken „Einladen“ lassen — Mitglieder-Einladungen landen in einer E-Mail-Warteschlange und gehen gedrosselt raus (ca. alle 3 Minuten, Pause zwischen Mails). So sperrt web.de/GMX das Konto nicht. In-App-Benachrichtigung an Mitglieder sofort. Host-Link an Anni direkt per E-Mail.",
+              "Haken „Einladen“ lassen — Mitglieder-Einladungen landen in einer E-Mail-Warteschlange; der Versand startet sofort nach dem Anlegen und läuft gedrosselt weiter (Pause zwischen Mails, kurze Wartepausen), damit web.de/GMX das Konto nicht sperrt. In-App-Benachrichtigung an Mitglieder sofort. Host-Link an Anni direkt per E-Mail. Wird die Session gelöscht, werden noch ausstehende Einladungs-Mails abgebrochen.",
               "„Live-Chat erstellen“ tippen. Sofort erscheint der Host-Link zum Kopieren. Anni erhält denselben Link zusätzlich per E-Mail (nicht den Mitglieder-Link). Der Link bleibt gültig, bis ihr ihn bewusst erneuert — bei Verbindungsabbruch denselben Link erneut öffnen oder „Erneut verbinden“ tippen.",
               "Mitglieder öffnen nach Login Menü „Live“: Bei einem Termin erscheint dort direkt die Einladung (Wann, Ablauf, Zusage/Absage, optional eine Vorab-Frage) — ohne Zwischenschritt über eine Liste. Gibt es mehrere Termine, steht der nächste groß, weitere darunter. Der Link aus der E-Mail (/live/…) bleibt gültig. Video und Chat erscheinen erst, wenn das Beitrittsfenster offen ist.",
               "Zur Startzeit: Anni öffnet den Host-Link und gibt Kamera/Mikro frei. Bis sie online ist, sehen Mitglieder den Hinweis, dass der Fan-Chat gleich beginnt. Vorzeitig beenden: Button „Live beenden“ — Mitglieder wechseln automatisch in den Chat-Nachlauf (kein Neuladen nötig).",
@@ -866,7 +866,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "„E-Mail-Vorlagen“: Betreff und Text anpassen. Anrede und Unterschrift werden automatisch eingesetzt. Dort findet ihr auch den Reiter „Geburtstags-Beiträge“ (siehe 7.4) sowie die Vorlagen für Mitglieder-Einladungen und Erinnerungen.",
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden. Live-Einladungen und andere Massen-Mails aus der Warteschlange erscheinen hier ebenfalls.",
-              "Massenversand (Live-Einladung, optional Event/Gewinnspiel/Umfrage, App-Erinnerungen): Die App wartet zwischen Mails und pausiert regelmäßig — damit das Club-SMTP-Konto (web.de) nicht wegen Menge sperrt. Bei Login-Fehler 535 bricht der Versand ab; SMTP-Passwort in den Einstellungen prüfen, dann „Einladungen erneut senden“.",
+              "Massenversand (Live-Einladung u. Ä.): Die App startet den Versand sofort und wartet zwischen Mails / pausiert regelmäßig — damit das Club-SMTP-Konto (web.de) nicht wegen Menge sperrt. Bei Login-Fehler 535 bricht der Versand ab; SMTP-Passwort in den Einstellungen prüfen, dann „Einladungen erneut senden“.",
               "„Mitglieder-Benachrichtigungen“ (System): optionale Massen-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar.",
               "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
               "Mitglieder können unter „Mein Profil → E-Mail-Benachrichtigungen“ einzelne optionale Mails abschalten (Events, Gewinnspiele, Umfragen, Treffen-Erinnerungen, Live mit Anni, App-Erinnerungen). Wer abgeschaltet hat, bekommt diese Mails nicht — auch wenn die Club-Einstellung an ist.",

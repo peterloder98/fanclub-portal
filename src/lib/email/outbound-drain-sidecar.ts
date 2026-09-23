@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { drainOutboundEmailQueue } from "@/lib/email/outbound-queue";
 
-/** Mitlaufender Mail-Drain für Tages-Crons (Vercel Hobby: kein 3-Minuten-Intervall). */
+/** Mitlaufender Mail-Drain für Tages-Crons (Backup; Live-Enqueue kickt Drain sofort). */
 export async function runOutboundEmailDrainSidecar(admin: SupabaseClient) {
   try {
     return await drainOutboundEmailQueue(admin);

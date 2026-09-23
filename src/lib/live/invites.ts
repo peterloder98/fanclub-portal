@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Attachment } from "nodemailer/lib/mailer";
+import { after } from "next/server";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import { emailPersonVars } from "@/lib/email/salutation-block";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { enqueueOutboundEmails } from "@/lib/email/outbound-queue";
+import { scheduleOutboundDrainContinuation } from "@/lib/email/kick-outbound-drain";
 import { paceBulkOutboundEmail } from "@/lib/smtp/outbound-throttle";
 import { listActiveMemberRecipients } from "@/lib/members/list-active-member-recipients";
 import { isRealMemberEmail } from "@/lib/email/is-real-member-email";
@@ -21,12 +23,22 @@ import { appBaseUrl, generateLiveHostToken, liveHostUrl, liveMemberUrl, type Liv
 import { formatBerlinDateTimeLong, formatBerlinTime } from "@/lib/datetime/berlin";
 
 
-async function cancelPendingLiveInviteEmails(admin: SupabaseClient, sessionId: string) {
-  await admin
-    .from("email_outbound_queue")
-    .update({ status: "cancelled" })
-    .eq("status", "pending")
-    .like("dedupe_key", `live_invite:${sessionId}:%`);
+/** Offene Queue-Mails zu einer Session verwerfen (Resend, Löschen, Abbruch). */
+export async function cancelPendingLiveOutboundEmails(
+  admin: SupabaseClient,
+  sessionId: string,
+) {
+  const patterns = [
+    `live_invite:${sessionId}:%`,
+    `live_reminder_no_rsvp:${sessionId}:%`,
+  ];
+  for (const pattern of patterns) {
+    await admin
+      .from("email_outbound_queue")
+      .update({ status: "cancelled" })
+      .eq("status", "pending")
+      .like("dedupe_key", pattern);
+  }
 }
 
 /** Einladungs-/Erinnerungsdatum — immer Europe/Berlin (nicht Server-UTC). */
@@ -119,7 +131,7 @@ export async function sendLiveSessionInviteEmails(
   );
 
   if (options?.resend) {
-    await cancelPendingLiveInviteEmails(admin, session.id);
+    await cancelPendingLiveOutboundEmails(admin, session.id);
   }
 
   const queueItems = recipients
@@ -148,6 +160,12 @@ export async function sendLiveSessionInviteEmails(
     });
 
   const { queued, errors } = await enqueueOutboundEmails(admin, queueItems);
+  if (queued > 0) {
+    // Sofort Drain starten (eigene Request + Selbst-Kette); Throttling bleibt im Cron.
+    after(() => {
+      scheduleOutboundDrainContinuation();
+    });
+  }
   // Anni bekommt separat den Host-Link (sendAnniHostLinkEmail) — nicht den Mitglieder-Link.
 
   const { data: sessionRow } = await admin
@@ -485,6 +503,11 @@ async function runRemindersForSessions(
       emails += queued;
       if (errors) {
         console.error("[live-reminder] no-rsvp queue errors:", errors);
+      }
+      if (queued > 0) {
+        after(() => {
+          scheduleOutboundDrainContinuation();
+        });
       }
     }
 
