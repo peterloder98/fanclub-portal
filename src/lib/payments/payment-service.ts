@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { syncMemberContributionDate } from "@/lib/club/contribution-sync";
 import { activatePendingMembershipAfterFeePaid } from "@/lib/membership/activate-application";
-import { createOpenAccountingEntry, confirmAccountingEntry, cancelAccountingEntry } from "@/lib/payments/accounting-service";
+import { confirmAccountingEntry, cancelAccountingEntry } from "@/lib/payments/accounting-service";
 import { parseIsoDateOnly } from "@/lib/club/accounting-settings";
 import { prepareBankTransferCheckout } from "@/lib/payments/bank-transfer-service";
 import { prepareWalletCheckout } from "@/lib/payments/wallet-service";
@@ -89,15 +89,8 @@ export async function createPaymentWithAccounting(input: {
 
   const paymentId = payment.id as string;
 
-  await createOpenAccountingEntry({
-    admin,
-    paymentId,
-    userId: input.userId,
-    paymentType: input.paymentType,
-    amountCents: input.amountCents,
-    description: input.description,
-    internalReference,
-  });
+  // Keine Vor-Buchung in der Kasse: offene Posten nur unter Admin → Zahlungen.
+  // Ledger-Eintrag entsteht erst bei Bestätigung (confirmAccountingEntry).
 
   let providerExtras: Partial<PaymentCheckoutResult> = {};
   if (input.paymentMethod === "bank_transfer") {

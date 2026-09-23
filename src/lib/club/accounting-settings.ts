@@ -74,7 +74,8 @@ export function isAccountingRelevantRow(
   >,
   settings: AccountingSettings,
 ): boolean {
-  if (row.bookkeeping_status === "cancelled") return false;
+  // Offene Vor-Buchungen gehören nicht in die Zahlungsliste — nur Admin → Zahlungen.
+  if (row.bookkeeping_status === "open" || row.bookkeeping_status === "cancelled") return false;
   if (settings.startDate && row.entry_date < settings.startDate) return false;
   // Altes Flag: Beiträge waren ausgeblendet — ab Startdatum zählen sie trotzdem.
   if (row.include_in_accounting === false && row.category !== "membership") return false;

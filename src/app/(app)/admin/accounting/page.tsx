@@ -6,6 +6,8 @@ import { listClubLedger } from "@/lib/club/ledger";
 import { listOpenContributions } from "@/lib/club/membership-contribution";
 import { listOpenMeetingCharges } from "@/lib/club/meeting-charges";
 import { getAccountingSettings } from "@/lib/club/accounting-settings";
+import { purgeOpenLedgerEntriesForUnpaidPayments } from "@/lib/payments/accounting-service";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/admin/require-admin";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,14 @@ export default async function AdminAccountingPage() {
   let accountingSettings = { startDate: null as string | null, openingBalanceCents: 0 };
 
   try {
+    // Einmalige Bereinigung: offene Antrag-/Beitrags-Vor-Buchungen aus der Kasse entfernen
+    // (Zahlungen unter Admin → Zahlungen bleiben).
+    try {
+      await purgeOpenLedgerEntriesForUnpaidPayments(createSupabaseAdminClient());
+    } catch (purgeErr) {
+      console.error("[accounting] purge open ledger entries:", purgeErr);
+    }
+
     [entries, openContributions, openMeetingCharges, accountingSettings] = await Promise.all([
       listClubLedger({ limit: 5000 }),
       listOpenContributions(),

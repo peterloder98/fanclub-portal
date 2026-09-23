@@ -14,7 +14,7 @@ export async function memberHasAutomaticMembershipPaymentBooking(
     .eq("entry_type", "income")
     .eq("category", "membership")
     .not("payment_id", "is", null)
-    .neq("bookkeeping_status", "cancelled")
+    .eq("bookkeeping_status", "paid")
     .limit(1)
     .maybeSingle();
   if (ledgerErr) {
