@@ -17,12 +17,9 @@ import {
   sendLiveSessionInviteEmails,
 } from "@/lib/live/invites";
 import { parseAdminWallClockToUtcIso } from "@/lib/datetime/berlin";
-import {
-  loadOpenLiveSessionQuestions,
-  type AdminLiveQuestionRow,
-} from "@/lib/live/admin-questions";
-
-export type { AdminLiveQuestionRow };
+import { loadOpenLiveSessionQuestions } from "@/lib/live/admin-questions";
+import type { AdminLiveQuestionRow } from "@/lib/live/admin-questions";
+import { userFacingActionError } from "@/lib/admin/user-facing-action-error";
 
 function parseAdminDateTime(label: string, raw: string): string {
   return parseAdminWallClockToUtcIso(raw, label);
@@ -125,11 +122,12 @@ export async function createLiveSessionAction(input: {
       invitesQueued: queueInvites,
     };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Live-Chat konnte nicht angelegt werden. Bitte erneut versuchen."),
+    };
   }
 }
-
-/** Form-Action (auch ohne JS): verhindert POST-404 auf /admin/live. */
 export async function createLiveSessionFormAction(formData: FormData): Promise<void> {
   const { redirect } = await import("next/navigation");
   const title = String(formData.get("title") ?? "");
@@ -148,7 +146,11 @@ export async function createLiveSessionFormAction(formData: FormData): Promise<v
   });
 
   if (!result.ok) {
-    redirect(`/admin/live?error=${encodeURIComponent(result.error)}`);
+    const error = userFacingActionError(
+      result.error,
+      "Live-Chat konnte nicht angelegt werden. Bitte erneut versuchen.",
+    );
+    redirect(`/admin/live?error=${encodeURIComponent(error)}`);
   }
   // Host-Link nur in der E-Mail an Anni / Client-Pfad (nicht in der URL).
   redirect("/admin/live?created=1");
@@ -176,7 +178,10 @@ export async function resendLiveSessionInvitesAction(
     revalidatePath("/admin/live");
     return { ok: true, emails: inv.emails, errors: inv.errors };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Einladungen konnten nicht gesendet werden."),
+    };
   }
 }
 
@@ -218,7 +223,10 @@ export async function regenerateLiveHostTokenAction(
     revalidatePath("/admin/live");
     return { ok: true, hostUrl };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Host-Link konnte nicht erneuert werden."),
+    };
   }
 }
 
@@ -256,7 +264,10 @@ export async function setLiveSessionStatusAction(
     revalidatePath("/live");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Status konnte nicht geändert werden."),
+    };
   }
 }
 
@@ -300,11 +311,12 @@ export async function updateLiveSessionAction(input: {
     revalidatePath("/admin/live");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Session konnte nicht aktualisiert werden."),
+    };
   }
 }
-
-/** Offene Fragen einer Session (Vorab + Live) für den Vorstand. */
 export async function listLiveSessionQuestionsAction(
   sessionId: string,
 ): Promise<
@@ -316,7 +328,10 @@ export async function listLiveSessionQuestionsAction(
     const questions = await loadOpenLiveSessionQuestions(admin, sessionId);
     return { ok: true, questions };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Fragen konnten nicht geladen werden."),
+    };
   }
 }
 
@@ -333,11 +348,12 @@ export async function removeLiveSessionQuestionAdminAction(
     revalidatePath("/live");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Frage konnte nicht gelöscht werden."),
+    };
   }
 }
-
-/** Frage abhaken wie bei Anni (bleibt in DB, nicht mehr sichtbar). */
 export async function dismissLiveSessionQuestionAdminAction(
   sessionId: string,
   questionId: string,
@@ -359,6 +375,9 @@ export async function dismissLiveSessionQuestionAdminAction(
     revalidatePath("/live");
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : "Fehler." };
+    return {
+      ok: false,
+      error: userFacingActionError(e, "Frage konnte nicht abgehakt werden."),
+    };
   }
 }

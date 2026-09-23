@@ -6,8 +6,8 @@ import {
   dismissLiveSessionQuestionAdminAction,
   listLiveSessionQuestionsAction,
   removeLiveSessionQuestionAdminAction,
-  type AdminLiveQuestionRow,
 } from "@/app/(app)/admin/live/actions";
+import type { AdminLiveQuestionRow } from "@/lib/live/admin-questions";
 import { issueCommentWarning } from "@/app/(app)/admin/moderation/actions";
 import { MemberProfileAnchor } from "@/components/members/member-profile-anchor";
 import { formatChatTime } from "@/lib/chat/types";

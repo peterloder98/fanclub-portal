@@ -16,8 +16,12 @@ export default async function AdminLivePage({
 }) {
   await requireAdmin();
   const sp = searchParams ? await searchParams : {};
-  const initialError =
+  const rawError =
     typeof sp.error === "string" && sp.error.trim() ? sp.error.trim() : null;
+  const initialError =
+    rawError && /Server Components render|digest property/i.test(rawError)
+      ? "Live-Chat konnte nicht angelegt werden. Bitte erneut versuchen."
+      : rawError;
   const initialCreated = sp.created === "1";
 
   const admin = createSupabaseAdminClient();

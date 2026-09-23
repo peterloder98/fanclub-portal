@@ -115,7 +115,11 @@ export function AdminLiveSessionsPanel({
           sendInvites,
         });
         if (!result.ok) {
-          setError(result.error);
+          setError(
+            /Server Components render|digest property/i.test(result.error)
+              ? "Live-Chat konnte nicht angelegt werden. Bitte Seite neu laden und erneut versuchen."
+              : result.error,
+          );
           return;
         }
         setFreshHostUrl(result.hostUrl);
@@ -131,10 +135,11 @@ export function AdminLiveSessionsPanel({
         }
         router.refresh();
       } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
         setError(
-          err instanceof Error
-            ? err.message
-            : "Anlegen fehlgeschlagen. Bitte Seite neu laden und erneut versuchen.",
+          !msg || /Server Components render|digest property/i.test(msg)
+            ? "Live-Chat konnte nicht angelegt werden. Bitte Seite neu laden und erneut versuchen."
+            : msg,
         );
       }
     });
