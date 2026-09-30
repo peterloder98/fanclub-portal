@@ -15,8 +15,6 @@ import { Mic, MicOff, MonitorUp, Pin, PinOff, Video, VideoOff } from "lucide-rea
 import { cn } from "@/lib/cn";
 import type { BoardVideoSeatRosterItem } from "@/lib/board-video/types";
 
-const ANNI_PLACEHOLDER = "__anni_seat__";
-
 type ParticipantTile = {
   id: string;
   name: string;
@@ -31,7 +29,7 @@ type SeatSlot = {
   identity: string;
   name: string;
   isAnni: boolean;
-  tile: ParticipantTile | null;
+  tile: ParticipantTile;
 };
 
 function gridClass(count: number): string {
@@ -56,18 +54,19 @@ function participantIsAnni(
   }
 }
 
+/** Stable order among LiveKit-present participants only — Anni first when present. */
 function ensureSeatOrder(
   order: string[],
-  items: Array<{ identity: string; isAnni: boolean }>,
+  present: Array<{ identity: string; isAnni: boolean }>,
 ): string[] {
-  // Roster + live tiles share the same identities — never seed seats from duplicates.
   const byIdentity = new Map<string, { identity: string; isAnni: boolean }>();
-  for (const item of items) {
+  for (const item of present) {
     const prev = byIdentity.get(item.identity);
     if (!prev) byIdentity.set(item.identity, item);
     else if (item.isAnni) byIdentity.set(item.identity, { ...prev, isAnni: true });
   }
   const unique = [...byIdentity.values()];
+  const presentIds = new Set(unique.map((i) => i.identity));
   const anni = unique.find((i) => i.isAnni);
   const others = unique
     .filter((i) => !i.isAnni)
@@ -75,18 +74,13 @@ function ensureSeatOrder(
     .sort((a, b) => a.identity.localeCompare(b.identity));
 
   if (order.length === 0) {
-    return [anni?.identity ?? ANNI_PLACEHOLDER, ...others.map((o) => o.identity)];
+    return [...(anni ? [anni.identity] : []), ...others.map((o) => o.identity)];
   }
 
   const seen = new Set<string>();
   const next: string[] = [];
   for (const id of order) {
-    if (id === ANNI_PLACEHOLDER) {
-      if (anni || seen.has(ANNI_PLACEHOLDER)) continue;
-      seen.add(ANNI_PLACEHOLDER);
-      next.push(ANNI_PLACEHOLDER);
-      continue;
-    }
+    if (!presentIds.has(id)) continue; // left the room — drop seat
     if (anni && id === anni.identity) continue; // re-insert at front below
     if (seen.has(id)) continue;
     seen.add(id);
@@ -96,8 +90,6 @@ function ensureSeatOrder(
   if (anni) {
     next.unshift(anni.identity);
     seen.add(anni.identity);
-  } else if (!seen.has(ANNI_PLACEHOLDER)) {
-    next.unshift(ANNI_PLACEHOLDER);
   }
 
   for (const o of others) {
@@ -161,29 +153,26 @@ export function BoardMeetingVideoGrid({
       participantToTile(room.localParticipant, true, rosterNow),
     ];
     room.remoteParticipants.forEach((p) => tiles.push(participantToTile(p, false, rosterNow)));
-    const known = [
-      ...rosterNow,
-      ...tiles.map((t) => ({ identity: t.id, isAnni: t.isAnni, name: t.name })),
-    ];
-    seatOrderRef.current = ensureSeatOrder(seatOrderRef.current, known);
+    // Only LiveKit-present participants — no roster-only / Anni placeholder seats.
+    const present = tiles.map((t) => ({ identity: t.id, isAnni: t.isAnni }));
+    seatOrderRef.current = ensureSeatOrder(seatOrderRef.current, present);
     const byId = new Map(tiles.map((t) => [t.id, t]));
     const nextSeats: SeatSlot[] = [];
     const emitted = new Set<string>();
     for (const identity of seatOrderRef.current) {
       if (emitted.has(identity)) continue;
+      const tile = byId.get(identity);
+      if (!tile) continue;
       emitted.add(identity);
-      const tile = byId.get(identity) ?? null;
-      const fromRoster = rosterNow.find((r) => r.identity === identity);
-      const isAnni =
-        identity === ANNI_PLACEHOLDER || Boolean(fromRoster?.isAnni) || Boolean(tile?.isAnni);
       nextSeats.push({
         identity,
-        name: tile?.name || fromRoster?.name || (isAnni ? "Anni" : "Teilnehmer"),
-        isAnni,
+        name: tile.name,
+        isAnni: tile.isAnni,
         tile,
       });
     }
     setSeats(nextSeats);
+    setPinnedId((prev) => (prev && byId.has(prev) ? prev : null));
   }, []);
 
   useEffect(() => {
@@ -240,7 +229,7 @@ export function BoardMeetingVideoGrid({
     return () => window.clearInterval(id);
   }, [endsAt, onLimitReached]);
 
-  const screenTile = seats.find((s) => s.tile?.screenTrack)?.tile ?? null;
+  const screenTile = seats.find((s) => s.tile.screenTrack)?.tile ?? null;
   const warn = remainingMs > 0 && remainingMs <= 10 * 60_000;
   const urgent = remainingMs > 0 && remainingMs <= 60_000;
 
@@ -278,10 +267,10 @@ export function BoardMeetingVideoGrid({
           <ParticipantCard
             key={seat.identity}
             seat={seat}
-            speaking={Boolean(seat.tile && activeSpeakers.includes(seat.tile.id))}
+            speaking={activeSpeakers.includes(seat.tile.id)}
             pinned={pinnedId === seat.identity}
             onPin={
-              seat.tile && !seat.tile.isLocal
+              !seat.tile.isLocal
                 ? () => setPinnedId((prev) => (prev === seat.identity ? null : seat.identity))
                 : undefined
             }
@@ -405,19 +394,19 @@ function ParticipantCard({
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   useEffect(() => {
-    if (tile?.videoTrack && videoRef.current) tile.videoTrack.attach(videoRef.current);
+    if (tile.videoTrack && videoRef.current) tile.videoTrack.attach(videoRef.current);
     return () => {
-      tile?.videoTrack?.detach();
+      tile.videoTrack?.detach();
     };
-  }, [tile?.videoTrack]);
+  }, [tile.videoTrack]);
   useEffect(() => {
-    if (tile?.audioTrack && audioRef.current && !tile.isLocal) {
+    if (tile.audioTrack && audioRef.current && !tile.isLocal) {
       tile.audioTrack.attach(audioRef.current);
       return () => {
         tile.audioTrack?.detach();
       };
     }
-  }, [tile?.audioTrack, tile?.isLocal]);
+  }, [tile.audioTrack, tile.isLocal]);
   return (
     <div
       className={cn(
@@ -426,11 +415,11 @@ function ParticipantCard({
         speaking && !pinned && "ring-2 ring-emerald-400/80",
       )}
     >
-      {tile?.videoTrack ? (
+      {tile.videoTrack ? (
         <video ref={videoRef} className="h-full w-full object-cover" playsInline autoPlay muted={tile.isLocal} />
       ) : (
         <div className="absolute inset-0 grid place-items-center bg-slate-800 px-3 text-center text-sm text-white/70">
-          {tile ? "Kamera aus" : seat.isAnni ? "Anni noch nicht verbunden" : `${seat.name} noch nicht verbunden`}
+          Kamera aus
         </div>
       )}
       <audio ref={audioRef} autoPlay playsInline className="hidden" />
