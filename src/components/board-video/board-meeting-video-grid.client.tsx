@@ -60,27 +60,51 @@ function ensureSeatOrder(
   order: string[],
   items: Array<{ identity: string; isAnni: boolean }>,
 ): string[] {
-  const next = [...order];
-  if (next.length === 0) {
-    const anni = items.find((i) => i.isAnni);
-    const others = items
-      .filter((i) => !i.isAnni)
-      .slice()
-      .sort((a, b) => a.identity.localeCompare(b.identity));
-    next.push(anni?.identity ?? ANNI_PLACEHOLDER);
-    for (const o of others) next.push(o.identity);
-    return next;
-  }
+  // Roster + live tiles share the same identities — never seed seats from duplicates.
+  const byIdentity = new Map<string, { identity: string; isAnni: boolean }>();
   for (const item of items) {
-    if (item.isAnni) {
-      const idx = next.indexOf(item.identity);
-      if (idx > 0) next.splice(idx, 1);
-      if (next[0] === ANNI_PLACEHOLDER || next[0] !== item.identity) {
-        next[0] = item.identity;
-      }
+    const prev = byIdentity.get(item.identity);
+    if (!prev) byIdentity.set(item.identity, item);
+    else if (item.isAnni) byIdentity.set(item.identity, { ...prev, isAnni: true });
+  }
+  const unique = [...byIdentity.values()];
+  const anni = unique.find((i) => i.isAnni);
+  const others = unique
+    .filter((i) => !i.isAnni)
+    .slice()
+    .sort((a, b) => a.identity.localeCompare(b.identity));
+
+  if (order.length === 0) {
+    return [anni?.identity ?? ANNI_PLACEHOLDER, ...others.map((o) => o.identity)];
+  }
+
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const id of order) {
+    if (id === ANNI_PLACEHOLDER) {
+      if (anni || seen.has(ANNI_PLACEHOLDER)) continue;
+      seen.add(ANNI_PLACEHOLDER);
+      next.push(ANNI_PLACEHOLDER);
       continue;
     }
-    if (!next.includes(item.identity)) next.push(item.identity);
+    if (anni && id === anni.identity) continue; // re-insert at front below
+    if (seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+
+  if (anni) {
+    next.unshift(anni.identity);
+    seen.add(anni.identity);
+  } else if (!seen.has(ANNI_PLACEHOLDER)) {
+    next.unshift(ANNI_PLACEHOLDER);
+  }
+
+  for (const o of others) {
+    if (!seen.has(o.identity)) {
+      seen.add(o.identity);
+      next.push(o.identity);
+    }
   }
   return next;
 }
@@ -143,17 +167,22 @@ export function BoardMeetingVideoGrid({
     ];
     seatOrderRef.current = ensureSeatOrder(seatOrderRef.current, known);
     const byId = new Map(tiles.map((t) => [t.id, t]));
-    const nextSeats: SeatSlot[] = seatOrderRef.current.map((identity) => {
+    const nextSeats: SeatSlot[] = [];
+    const emitted = new Set<string>();
+    for (const identity of seatOrderRef.current) {
+      if (emitted.has(identity)) continue;
+      emitted.add(identity);
       const tile = byId.get(identity) ?? null;
       const fromRoster = rosterNow.find((r) => r.identity === identity);
-      const isAnni = identity === ANNI_PLACEHOLDER || Boolean(fromRoster?.isAnni) || Boolean(tile?.isAnni);
-      return {
+      const isAnni =
+        identity === ANNI_PLACEHOLDER || Boolean(fromRoster?.isAnni) || Boolean(tile?.isAnni);
+      nextSeats.push({
         identity,
         name: tile?.name || fromRoster?.name || (isAnni ? "Anni" : "Teilnehmer"),
         isAnni,
         tile,
-      };
-    });
+      });
+    }
     setSeats(nextSeats);
   }, []);
 
