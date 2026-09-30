@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-09-23";
+export const ADMIN_HANDBOOK_UPDATED = "2026-09-30";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -724,7 +724,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Weitere Gäste (ohne App-Zugang): Name und E-Mail eintragen — beliebig viele, z. B. Annis Management. Diese Personen bekommen nur einen persönlichen Call-Link, keinen Zugang zur Fanclub-App, nicht ins Mitgliederverzeichnis, nicht in Chat oder Auswertungen.",
               "„Anlegen & einladen“: Vorstände bekommen den Raum-Link (Login nötig), Anni und Extra-Gäste je einen eigenen Gast-Link ohne Login. Bei einem bestehenden Termin unter „Gäste“ weitere Personen nachladen oder den Link neu senden (der alte Link gilt dann nicht mehr).",
               "Wenn ein Gast-Link nicht funktioniert: den Vorstand um einen neuen Link bitten. Der Link bleibt bis zum Ende der Besprechung gültig — auch mehrfach und auf anderen Geräten.",
-              "Video startet 5 Minuten vor Beginn, max. 1 Stunde. Über den Videos steht nur noch die Restdauer. Anni sitzt immer vorne; die anderen Plätze bleiben fest, auch wenn jemand später kommt oder kurz weg ist.",
+              "Video startet 5 Minuten vor Beginn, max. 1 Stunde. Vor dem Beitritt: Anzeigename prüfen, Kamera und Mikrofon an/aus stellen, dann „Jetzt beitreten“ (gleiches für Vorstände in der App und Gäste per Link). Über den Videos steht nur noch die Restdauer. Anni sitzt immer vorne; die anderen Plätze bleiben fest, auch wenn jemand später kommt oder kurz weg ist.",
               "Während des Calls: Agenda-Punkte abhaken, Kamera/Mikro an/aus, Name unten am Video änderbar, ein Bildschirm teilen gleichzeitig.",
               "Erinnerung: 1 Tag vorher E-Mail an die eingeladenen Vorstände.",
             ],

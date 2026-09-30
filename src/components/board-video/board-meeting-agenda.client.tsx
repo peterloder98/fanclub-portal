@@ -81,10 +81,10 @@ export function BoardMeetingAgenda({
   }
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
-      <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
+    <section className="min-w-0 w-full overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
+      <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2.5 text-white sm:px-4">
         <p className="text-sm font-semibold">Agenda</p>
-        <p className="text-[11px] text-white/80">
+        <p className="text-[11px] leading-snug text-white/80 break-words">
           {canEdit
             ? "Punkte eintragen und bearbeiten. Abhaken geht während des Calls."
             : "Ab 5 Minuten vor Start könnt ihr Punkte ergänzen. Abhaken geht während des Calls."}
@@ -165,7 +165,7 @@ export function BoardMeetingAgenda({
                     <div className="min-w-0 flex-1">
                       <p
                         className={cn(
-                          "text-sm leading-snug text-slate-800",
+                          "break-words text-sm leading-snug text-slate-800",
                           item.checked_at && "text-slate-500 line-through",
                         )}
                       >

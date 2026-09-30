@@ -92,6 +92,8 @@ export function BoardMeetingVideoGrid({
   endsAt,
   canEndMeeting,
   roster,
+  initialCamOn = true,
+  initialMicOn = true,
   onEnded,
   onLimitReached,
   nameDraft,
@@ -104,6 +106,8 @@ export function BoardMeetingVideoGrid({
   endsAt: string;
   canEndMeeting: boolean;
   roster: BoardVideoSeatRosterItem[];
+  initialCamOn?: boolean;
+  initialMicOn?: boolean;
   onEnded: () => void;
   onLimitReached: () => void;
   nameDraft: string;
@@ -114,8 +118,8 @@ export function BoardMeetingVideoGrid({
   const seatOrderRef = useRef<string[]>([]);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [camOn, setCamOn] = useState(true);
-  const [micOn, setMicOn] = useState(true);
+  const [camOn, setCamOn] = useState(initialCamOn);
+  const [micOn, setMicOn] = useState(initialMicOn);
   const [screenOn, setScreenOn] = useState(false);
   const [seats, setSeats] = useState<SeatSlot[]>([]);
   const [activeSpeakers, setActiveSpeakers] = useState<string[]>([]);
@@ -174,8 +178,8 @@ export function BoardMeetingVideoGrid({
       try {
         await room.connect(serverUrl, token);
         if (cancelled) return;
-        await room.localParticipant.setCameraEnabled(true);
-        await room.localParticipant.setMicrophoneEnabled(true);
+        await room.localParticipant.setCameraEnabled(initialCamOn);
+        await room.localParticipant.setMicrophoneEnabled(initialMicOn);
         setConnected(true);
         rebuildSeats(room);
       } catch (e) {
@@ -186,6 +190,8 @@ export function BoardMeetingVideoGrid({
       cancelled = true;
       void room.disconnect();
     };
+    // initialCamOn/initialMicOn are join-time prefs; reconnect uses new token mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- join prefs fixed for this session
   }, [token, serverUrl, displayName, rebuildSeats]);
 
   useEffect(() => {
