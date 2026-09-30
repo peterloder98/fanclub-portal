@@ -81,16 +81,16 @@ export function BoardMeetingAgenda({
   }
 
   return (
-    <section className="min-w-0 w-full overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
-      <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2.5 text-white sm:px-4">
+    <section className="flex min-w-0 w-full flex-col rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
+      <header className="shrink-0 rounded-t-2xl border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-3 text-white">
         <p className="text-sm font-semibold">Agenda</p>
-        <p className="text-[11px] leading-snug text-white/80 break-words">
+        <p className="mt-0.5 text-[11px] leading-snug text-white/85">
           {canEdit
             ? "Punkte eintragen und bearbeiten. Abhaken geht während des Calls."
             : "Ab 5 Minuten vor Start könnt ihr Punkte ergänzen. Abhaken geht während des Calls."}
         </p>
       </header>
-      <div className="grid gap-3 p-3">
+      <div className="grid gap-3 p-4">
         {canEdit ? (
           <form
             onSubmit={(e) => {
@@ -98,30 +98,33 @@ export function BoardMeetingAgenda({
               if (!draft.trim()) return;
               postAgenda({ action: "upsert", text: draft.trim() });
             }}
-            className="flex gap-2"
+            className="flex flex-col gap-2 sm:flex-row sm:items-stretch"
           >
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value.slice(0, 500))}
               placeholder="Neuer Gesprächspunkt…"
-              className="min-w-0 flex-1 rounded-xl border border-fc-navy/15 px-2 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
+              className="min-h-10 min-w-0 w-full flex-1 rounded-xl border border-fc-navy/15 px-3 py-2 text-sm outline-none focus:ring-4 focus:ring-[color:var(--ring)]"
             />
             <button
               type="submit"
               disabled={pending || !draft.trim()}
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-fc-navy text-white hover:bg-fc-blue disabled:opacity-60"
+              className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-fc-navy px-3 text-sm font-semibold text-white hover:bg-fc-blue disabled:opacity-60 sm:w-10 sm:px-0"
               aria-label="Hinzufügen"
             >
               <Plus className="h-4 w-4" />
+              <span className="sm:hidden">Hinzufügen</span>
             </button>
           </form>
         ) : (
           <p className="text-xs text-slate-500">Nur Lesen — Vorstände können Punkte schon vorher eintragen.</p>
         )}
         {error ? <p className="text-sm text-rose-700">{error}</p> : null}
-        <ul className="divide-y divide-fc-navy/5 rounded-xl border border-fc-navy/10">
+        <ul className="divide-y divide-fc-navy/5 overflow-hidden rounded-xl border border-fc-navy/10">
           {items.length === 0 ? (
-            <li className="px-3 py-4 text-sm text-slate-500">Noch keine Punkte — tragt gern etwas ein.</li>
+            <li className="px-4 py-5 text-sm leading-relaxed text-slate-500">
+              Noch keine Punkte — tragt gern etwas ein.
+            </li>
           ) : (
             items.map((item) => (
               <li key={item.id} className="px-3 py-3">

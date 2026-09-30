@@ -155,11 +155,11 @@ export function BoardMeetingRoom({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl min-w-0 gap-3 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,16rem)] lg:items-start lg:gap-4 lg:px-4 xl:px-6">
-      <div className="min-w-0">
+    <div className="mx-auto grid w-full max-w-[90rem] min-w-0 gap-4 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-stretch lg:gap-5 lg:px-5 xl:px-6">
+      <div className="min-w-0 flex flex-col">
         {videoOpen ? (
           videoCreds ? (
-            <div className="rounded-2xl border border-fc-navy/10 bg-white p-3 shadow-sm">
+            <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-fc-navy/10 bg-white p-3 shadow-sm sm:p-4">
               <BoardMeetingVideoGrid
                 token={videoCreds.token}
                 serverUrl={videoCreds.url}
@@ -193,7 +193,7 @@ export function BoardMeetingRoom({
         )}
       </div>
 
-      <div className="min-w-0 w-full lg:max-w-[16rem]">
+      <aside className="min-w-0 w-full lg:sticky lg:top-3 lg:self-start">
         <BoardMeetingAgenda
           meetingId={meeting.id}
           inviteToken={inviteToken}
@@ -201,7 +201,7 @@ export function BoardMeetingRoom({
           agendaOpen={agendaOpen}
           canEdit={canEditAgenda}
         />
-      </div>
+      </aside>
     </div>
   );
 }
