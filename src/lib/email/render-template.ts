@@ -463,7 +463,7 @@ du bist zur Videobesprechung mit dem Vorstand und Anni eingeladen:
 {{meeting_title}}
 {{meeting_date}}
 
-Raum ab {{join_opens_time}} Uhr · Video ab {{meeting_time}} Uhr (max. 1 Stunde)
+Raum ab {{join_opens_time}} Uhr · Video ab {{meeting_time}} Uhr (geplant ca. 1 Stunde, endet nicht automatisch)
 
 Dein persönlicher Link (kein App-Zugang nötig):
 {{meeting_url}}
@@ -474,7 +474,7 @@ Bitte den neuesten Link aus der E-Mail nutzen. Wenn der Link nicht funktioniert,
   body_html: `<p style="${EMAIL_PARAGRAPH_STYLE}">{{salutation}},</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}">du bist zur Videobesprechung mit dem Vorstand und Anni eingeladen:</p>
 <p style="${EMAIL_PARAGRAPH_STYLE}"><strong>{{meeting_title}}</strong><br>{{meeting_date}}</p>
-<p style="${EMAIL_PARAGRAPH_STYLE}">Raum ab {{join_opens_time}} Uhr · Video ab {{meeting_time}} Uhr (max. 1 Stunde)</p>
+<p style="${EMAIL_PARAGRAPH_STYLE}">Raum ab {{join_opens_time}} Uhr · Video ab {{meeting_time}} Uhr (geplant ca. 1 Stunde, endet nicht automatisch)</p>
 <p style="${EMAIL_PARAGRAPH_STYLE};text-align:center">
   <a href="{{meeting_url}}" style="${EMAIL_BUTTON_STYLE}">Zur Videobesprechung</a>
 </p>

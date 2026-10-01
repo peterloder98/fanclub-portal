@@ -103,7 +103,7 @@ export function AdminBoardVideoMeetingsPanel({
       }
       setCreatedLinks({ roomUrl: result.roomUrl, anniGuestUrl: result.anniGuestUrl });
       setInfo(
-        "Einladungen werden versendet. Anni und Extra-Gäste erhalten ihren persönlichen Link (kein App-Zugang). Vorstände den Raum-Link (Login nötig). Max. 1 Stunde Video ab Start.",
+        "Einladungen werden versendet. Anni und Extra-Gäste erhalten ihren persönlichen Link (kein App-Zugang). Vorstände den Raum-Link (Login nötig). Geplante Dauer ca. 1 Stunde — der Call endet nicht automatisch.",
       );
       setAgendaDrafts([newAgenda()]);
       setGuestDrafts([newGuest()]);
@@ -116,7 +116,7 @@ export function AdminBoardVideoMeetingsPanel({
         <h2 className="text-lg font-semibold text-fc-navy">Neue Videobesprechung</h2>
         <p className="mt-1 text-sm text-slate-600">
           Anni ist immer dabei (E-Mail ohne Login). Agenda-Punkte und Extra-Gäste könnt ihr schon beim Anlegen
-          eintragen. Video max. 1 Stunde, Raum 5 Min. vorher.
+          eintragen. Raum 5 Min. vor Start; geplante Dauer ca. 1 Stunde (Orientierung, kein Auto-Ende).
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="grid gap-1 text-sm sm:col-span-2">

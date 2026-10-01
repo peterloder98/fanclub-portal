@@ -166,7 +166,6 @@ export function BoardMeetingVideoGrid({
   initialCamOn = true,
   initialMicOn = true,
   onEnded,
-  onLimitReached,
   nameDraft,
   onNameDraftChange,
   onNameCommit,
@@ -180,7 +179,6 @@ export function BoardMeetingVideoGrid({
   initialCamOn?: boolean;
   initialMicOn?: boolean;
   onEnded: () => void;
-  onLimitReached: () => void;
   nameDraft: string;
   onNameDraftChange: (value: string) => void;
   onNameCommit: () => void;
@@ -198,7 +196,6 @@ export function BoardMeetingVideoGrid({
   const [remainingMs, setRemainingMs] = useState(() =>
     Math.max(0, new Date(endsAt).getTime() - Date.now()),
   );
-  const endedRef = useRef(false);
   const rosterRef = useRef(roster);
   rosterRef.current = roster;
 
@@ -258,17 +255,13 @@ export function BoardMeetingVideoGrid({
 
   useEffect(() => {
     const id = window.setInterval(() => {
-      const ms = Math.max(0, new Date(endsAt).getTime() - Date.now());
-      setRemainingMs(ms);
-      if (ms <= 0 && !endedRef.current) {
-        endedRef.current = true;
-        onLimitReached();
-      }
+      setRemainingMs(Math.max(0, new Date(endsAt).getTime() - Date.now()));
     }, 1000);
     return () => window.clearInterval(id);
-  }, [endsAt, onLimitReached]);
+  }, [endsAt]);
 
   const screenTile = seats.find((s) => s.tile.screenTrack)?.tile ?? null;
+  const plannedOver = remainingMs <= 0;
   const warn = remainingMs > 0 && remainingMs <= 10 * 60_000;
   const urgent = remainingMs > 0 && remainingMs <= 60_000;
 
@@ -276,17 +269,29 @@ export function BoardMeetingVideoGrid({
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-xl border px-3 py-2 text-sm font-semibold tabular-nums",
-          remainingMs <= 0 && "border-slate-300 bg-slate-100 text-slate-700",
+          "flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-3 py-2 text-center text-sm font-semibold tabular-nums",
+          plannedOver && "border-amber-300 bg-amber-50 text-amber-950",
           urgent && remainingMs > 0 && "animate-pulse border-rose-400 bg-rose-50 text-rose-800",
           warn && !urgent && remainingMs > 0 && "border-amber-300 bg-amber-50 text-amber-950",
-          !warn && remainingMs > 0 && "border-fc-navy/15 bg-white text-fc-navy",
+          !warn && !plannedOver && "border-fc-navy/15 bg-white text-fc-navy",
         )}
         role="timer"
       >
-        {remainingMs <= 0
-          ? "Zeitlimit erreicht — Besprechung endet"
-          : `Noch ${formatRemain(remainingMs)} (max. 1 Stunde)`}
+        {plannedOver ? (
+          <>
+            <span>Geplante Stunde vorbei</span>
+            <span className="text-xs font-medium normal-nums tracking-normal">
+              Call läuft weiter — endet erst, wenn jemand „Besprechung beenden“ tippt
+            </span>
+          </>
+        ) : (
+          <>
+            <span>Noch {formatRemain(remainingMs)} geplant</span>
+            <span className="text-xs font-medium normal-nums tracking-normal text-slate-600">
+              Orientierung · endet nicht automatisch
+            </span>
+          </>
+        )}
       </div>
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">

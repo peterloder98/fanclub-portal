@@ -80,12 +80,17 @@ export type BoardVideoAgendaItemRow = {
   updated_at: string;
 };
 
-/** Festes Limit: 1 Stunde ab Start. */
+/**
+ * Geplante Dauer (Orientierung): 60 Min. ab Start.
+ * Kein harter Abbruch — der Call läuft bis manuell beendet wird.
+ */
 export const BOARD_VIDEO_MEETING_DURATION_MINUTES = 60;
 /** Video-Raum öffnet 5 Minuten vor Start. Agenda für Vorstände schon ab dem Anlegen. */
 export const BOARD_VIDEO_MEETING_JOIN_OPEN_MINUTES = 5;
-/** Roter Countdown ab 10 Minuten vor Ende. */
+/** Soft-Warnung ab 10 Minuten vor geplanter Dauer. */
 export const BOARD_VIDEO_MEETING_COUNTDOWN_WARN_MINUTES = 10;
+/** LiveKit-Token-TTL für Board-Video (unabhängig von geplanter Dauer). */
+export const BOARD_VIDEO_MEETING_TOKEN_TTL_SECONDS = 4 * 3600;
 
 export function hashBoardInviteToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -152,26 +157,24 @@ export function boardMeetingJoinOpensAt(startsAtIso: string): string {
 
 export function boardMeetingVideoOpen(
   joinOpensAtIso: string,
-  endsAtIso: string,
+  _endsAtIso: string,
   status: BoardVideoMeetingStatus,
   nowMs = Date.now(),
 ): boolean {
   if (status === "ended" || status === "cancelled") return false;
   const join = new Date(joinOpensAtIso).getTime();
-  const end = new Date(endsAtIso).getTime();
-  if (Number.isNaN(join) || Number.isNaN(end)) return false;
-  return nowMs >= join && nowMs < end;
+  if (Number.isNaN(join)) return false;
+  // Geplante ends_at ist nur Orientierung — kein automatisches Video-Ende.
+  return nowMs >= join;
 }
 
 export function boardMeetingStillActive(
-  endsAtIso: string,
+  _endsAtIso: string,
   status: BoardVideoMeetingStatus,
-  nowMs = Date.now(),
+  _nowMs = Date.now(),
 ): boolean {
-  if (status === "ended" || status === "cancelled") return false;
-  const end = new Date(endsAtIso).getTime();
-  if (Number.isNaN(end)) return false;
-  return nowMs < end;
+  // Aktiv bis manuell beendet/abgebrochen — geplante Dauer beendet nicht.
+  return status !== "ended" && status !== "cancelled";
 }
 
 /** Agenda sichtbar, sobald der Termin existiert — nicht erst 5 Minuten vorher. */

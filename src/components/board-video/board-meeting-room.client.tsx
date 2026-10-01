@@ -146,7 +146,7 @@ export function BoardMeetingRoom({
     router.refresh();
   }
 
-  if (ended || new Date(meeting.ends_at).getTime() <= Date.now()) {
+  if (ended) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-700">
         Die Videobesprechung ist beendet.
@@ -170,7 +170,6 @@ export function BoardMeetingRoom({
                 initialCamOn={initialCamOn}
                 initialMicOn={initialMicOn}
                 onEnded={() => void handleEnd()}
-                onLimitReached={() => void handleEnd()}
                 nameDraft={displayName}
                 onNameDraftChange={setDisplayName}
                 onNameCommit={() => setNameSaved(displayName.trim() || defaultDisplayName)}

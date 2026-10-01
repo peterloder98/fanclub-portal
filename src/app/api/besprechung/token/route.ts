@@ -7,10 +7,10 @@ import { mintBoardMeetingLiveKitToken } from "@/lib/live/livekit";
 import { hashBoardInviteToken } from "@/lib/board-video/types";
 import {
   BOARD_VIDEO_MEETING_SELECT,
-  boardMeetingRemainingMs,
   syncBoardVideoMeetingLifecycle,
 } from "@/lib/board-video/lifecycle";
 import {
+  BOARD_VIDEO_MEETING_TOKEN_TTL_SECONDS,
   boardMeetingAgendaOpen,
   boardMeetingLiveKitIdentity,
   boardMeetingVideoOpen,
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     );
     if (!videoOpen) {
       return NextResponse.json(
-        { error: "Video ist noch nicht geöffnet oder bereits beendet." },
+        { error: "Video ist noch nicht geöffnet oder die Besprechung ist beendet." },
         { status: 403 },
       );
     }
@@ -124,12 +124,12 @@ export async function POST(req: Request) {
         .eq("id", meeting.id);
     }
 
-    const ttlSeconds = Math.ceil(boardMeetingRemainingMs(meeting.ends_at) / 1000);
+    // Token-TTL unabhängig von geplanter Dauer — Call endet nicht automatisch.
     const { token, url } = await mintBoardMeetingLiveKitToken({
       roomName: meeting.livekit_room_name,
       identity: identity!,
       name: displayName,
-      ttlSeconds,
+      ttlSeconds: BOARD_VIDEO_MEETING_TOKEN_TTL_SECONDS,
       isAnni,
     });
 
