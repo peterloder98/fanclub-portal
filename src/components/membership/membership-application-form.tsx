@@ -30,7 +30,14 @@ import {
 import { FEATURE_BADGE_HOVER } from "@/components/membership/membership-landing";
 import { buildEmailSalutation } from "@/lib/email/salutation-block";
 import { membershipApplicationPdfFilename } from "@/lib/membership/pdf-filename";
-import { MEMBERSHIP_FEE_EUR } from "@/lib/membership/constants";
+import {
+  MEMBERSHIP_FEE_ABROAD_EUR,
+  MEMBERSHIP_FEE_EUR,
+} from "@/lib/membership/constants";
+import {
+  applicationFeeCentsForCountry,
+  formatApplicationFeeEurLabel,
+} from "@/lib/membership/application-fee";
 import { formatEur } from "@/lib/club/ledger";
 import { formatBerlinDate } from "@/lib/datetime/berlin";
 
@@ -81,6 +88,7 @@ export function MembershipApplicationForm() {
     signed_at_date: todayIso(),
     privacy_accepted: false,
     statute_accepted: false,
+    fee_tiers_accepted: false,
     media_consent: false,
     whatsapp_opt_in: false,
     instagram: "",
@@ -105,6 +113,9 @@ export function MembershipApplicationForm() {
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [feeCents, setFeeCents] = useState(MEMBERSHIP_FEE_EUR * 100);
   const [paymentResult, setPaymentResult] = useState<PaymentCheckoutResult | null>(null);
+
+  const previewFeeCents = applicationFeeCentsForCountry(countryCode);
+  const previewFeeLabel = formatApplicationFeeEurLabel(previewFeeCents);
 
   useEffect(() => {
     if (!form.whatsapp_opt_in || whatsappTouched) return;
@@ -170,9 +181,14 @@ export function MembershipApplicationForm() {
         offiziellen Anni-Perka-Fanclub e.&nbsp;V.
       </p>
         <p>
-          Der Jahresbeitrag beträgt <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;EUR</strong> und wird gemäß
-          Satzung erhoben. Die <strong>Mitgliedsnummer</strong> wird nach Freigabe durch den Vorstand
-          vergeben.
+          Der Jahresbeitrag beträgt{" "}
+          <strong>
+            {(previewFeeCents / 100).toFixed(2).replace(".", ",")}
+            &nbsp;EUR
+          </strong>{" "}
+          und wird gemäß Satzung erhoben
+          {countryCode !== "DE" ? " (Wohnsitz außerhalb Deutschlands)" : ""}. Die{" "}
+          <strong>Mitgliedsnummer</strong> wird nach Freigabe durch den Vorstand vergeben.
         </p>
         <p>
           Ich bestätige, die{" "}
@@ -203,6 +219,12 @@ export function MembershipApplicationForm() {
     }
     if (!mobileNumber || mobileNumber.length < 5) {
       setError("Bitte eine gültige Handynummer eingeben (nur Ziffern, ohne führende 0).");
+      return;
+    }
+    if (!form.fee_tiers_accepted) {
+      setError(
+        "Bitte die unterschiedlichen Jahresbeiträge zur Kenntnis nehmen und akzeptieren.",
+      );
       return;
     }
     if (!form.privacy_accepted || !form.statute_accepted) {
@@ -253,6 +275,7 @@ export function MembershipApplicationForm() {
           facebook: form.facebook.trim() || undefined,
           privacy_accepted: true,
           statute_accepted: true,
+          fee_tiers_accepted: true,
           signature_applicant: signature,
           signed_at_date: todayIso(),
           referrer_user_id: referrerUserId,
@@ -372,6 +395,45 @@ export function MembershipApplicationForm() {
 
   return (
     <div className="grid gap-4 sm:gap-5">
+      <Card>
+        <CardHeader>
+          <CardTitle>Hinweis zum Jahresbeitrag</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm leading-relaxed text-slate-700">
+          <p>
+            Der reguläre Jahresbeitrag für die Fanclub-Mitgliedschaft beträgt{" "}
+            <strong>{MEMBERSHIP_FEE_EUR},00&nbsp;€</strong>.
+          </p>
+          <p>
+            Für Mitglieder mit Wohnsitz außerhalb Deutschlands beträgt der Jahresbeitrag aufgrund
+            der höheren Versand- und Portokosten{" "}
+            <strong>{MEMBERSHIP_FEE_ABROAD_EUR},00&nbsp;€</strong>.
+          </p>
+          {countryCode ? (
+            <p className="rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-2 text-fc-navy">
+              Dein Jahresbeitrag: <strong>{previewFeeLabel}</strong>
+              {countryCode === "DE"
+                ? " (Wohnsitz Deutschland)"
+                : " (Wohnsitz außerhalb Deutschlands)"}
+            </p>
+          ) : null}
+          <label className="flex items-start gap-3 rounded-xl border bg-white px-4 py-3 text-sm text-slate-800">
+            <input
+              type="checkbox"
+              checked={form.fee_tiers_accepted}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, fee_tiers_accepted: e.target.checked }))
+              }
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border"
+            />
+            <span>
+              Ich habe die unterschiedlichen Jahresbeiträge zur Kenntnis genommen und akzeptiere
+              diese. *
+            </span>
+          </label>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Persönliche Daten</CardTitle>
@@ -536,9 +598,9 @@ export function MembershipApplicationForm() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           <p className="sm:col-span-2 rounded-xl border bg-slate-50 px-3 py-2 text-sm text-slate-800">
-            Jahresbeitrag: <strong>{MEMBERSHIP_FEE_EUR},00 EUR</strong> — Zahlung per
-            Banküberweisung. Der Beitrag gilt immer für das laufende Kalenderjahr; dein Beitritt
-            beginnt mit dem Datum deines Antrags.
+            Dein Jahresbeitrag: <strong>{previewFeeLabel}</strong> — Zahlung per Banküberweisung.
+            Der Beitrag gilt immer für das laufende Kalenderjahr; dein Beitritt beginnt mit dem
+            Datum deines Antrags.
           </p>
           <div className="sm:col-span-2 rounded-xl border border-fc-sky/30 bg-fc-ice/50 px-3 py-3 text-sm text-fc-navy">
             <p className="font-semibold">Überweisung Mitgliedsbeitrag</p>

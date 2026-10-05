@@ -25,6 +25,7 @@ import {
   generateNoAppAuthEmail,
   isNoAppPlaceholderEmail,
 } from "@/lib/members/no-app-access";
+import { applicationFeeCentsForCountry } from "@/lib/membership/application-fee";
 
 const schema = z.object({
   membership_number: z.string().optional().default(""),
@@ -261,7 +262,12 @@ export async function createMember(
 
     const start = startInput || new Date().toISOString().slice(0, 10);
     const end = addYear(start);
-    const fee_cents = Math.round((input.fee_eur ?? 0) * 100);
+    const countryCode = input.country ? normalizeMemberCountryCode(input.country) : "DE";
+    // Neuanträge (applied): Beitrag aus Wohnsitz-Land. Bestand/Aktiv: Formularwert (nicht umpreisen).
+    const fee_cents =
+      status === "applied"
+        ? applicationFeeCentsForCountry(countryCode)
+        : Math.round((input.fee_eur ?? 0) * 100);
 
     const { data: membershipRow, error: membershipErr } = await admin
       .from("memberships")

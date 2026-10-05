@@ -27,25 +27,37 @@ async function assertApplicationFeePaid(
   admin: AdminClient,
   applicationId: string,
   userId: string,
+  requiredFeeCents: number,
 ) {
+  const required = requiredFeeCents > 0 ? requiredFeeCents : 1500;
+
   const { data: paidByApp } = await admin
     .from("payments")
-    .select("id")
+    .select("id,amount_cents")
     .eq("application_id", applicationId)
     .eq("payment_status", "paid")
+    .order("amount_cents", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (paidByApp) return;
+  if (paidByApp && (paidByApp.amount_cents ?? 0) >= required) return;
 
   const { data: paidByUser } = await admin
     .from("payments")
-    .select("id")
+    .select("id,amount_cents")
     .eq("user_id", userId)
     .eq("payment_type", "membership_fee")
     .eq("payment_status", "paid")
+    .order("amount_cents", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (paidByUser) return;
+  if (paidByUser && (paidByUser.amount_cents ?? 0) >= required) return;
+
+  if (paidByApp || paidByUser) {
+    const eur = (required / 100).toFixed(2).replace(".", ",");
+    throw new Error(
+      `Unterzahlung: Für die Freigabe sind mindestens ${eur} € erforderlich. Die Zahlung bleibt offen, bis der volle Beitrag eingegangen ist.`,
+    );
+  }
 
   throw new Error(
     "Freigabe erst nach bestätigter Beitragszahlung möglich. Bitte unter Admin → Zahlungen den Eingang bestätigen.",
@@ -114,7 +126,12 @@ export async function activateApplication(
     throw new Error("Abgelehnte Anträge können nicht freigeschaltet werden.");
   }
 
-  await assertApplicationFeePaid(admin, applicationId, app.user_id);
+  await assertApplicationFeePaid(
+    admin,
+    applicationId,
+    app.user_id,
+    app.fee_cents ?? 1500,
+  );
 
   const assignedNumber = await assignMembershipNumber(admin, app.user_id, membershipNumber);
 

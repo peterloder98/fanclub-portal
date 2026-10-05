@@ -16,7 +16,7 @@ Falls noch nicht: Hier kannst du dich ganz einfach digital anmelden:
 
 **{{application_link}}**
 
-Der Jahresbeitrag beträgt **15 €**. Die Anmeldung geht komplett online — ohne Ausdrucken oder Einscannen.
+Der Jahresbeitrag beträgt **15 €** (Deutschland) bzw. **20 €** bei Wohnsitz außerhalb Deutschlands. Die Anmeldung geht komplett online — ohne Ausdrucken oder Einscannen.
 
 Ich würde mich freuen, dich bald im Fanclub begrüßen zu dürfen!
 

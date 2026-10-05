@@ -1,10 +1,14 @@
-import { MEMBERSHIP_FEE_EUR } from "@/lib/membership/constants";
+import {
+  MEMBERSHIP_FEE_CENTS,
+} from "@/lib/membership/constants";
+import { KNOWN_ANNUAL_FEE_CENTS } from "@/lib/membership/application-fee";
 
-export const STANDARD_ANNUAL_FEE_CENTS = MEMBERSHIP_FEE_EUR * 100;
+export const STANDARD_ANNUAL_FEE_CENTS = MEMBERSHIP_FEE_CENTS;
 
 /**
  * Jahresbeitrag für Mehrjahres-Logik: gespeicherter fee_cents, außer er ist
- * fälschlich auf den Gesamt-Überweisungsbetrag gesetzt (z. B. 30 € statt 15 €).
+ * fälschlich auf den Gesamt-Überweisungsbetrag gesetzt (z. B. 30 € statt 15 €
+ * oder 40 € statt 20 €).
  */
 export function resolveAnnualFeeCents(
   membershipFeeCents: number | null | undefined,
@@ -14,13 +18,15 @@ export function resolveAnnualFeeCents(
     membershipFeeCents && membershipFeeCents > 0
       ? membershipFeeCents
       : STANDARD_ANNUAL_FEE_CENTS;
-  if (
-    fee === paidCents &&
-    paidCents > STANDARD_ANNUAL_FEE_CENTS &&
-    paidCents % STANDARD_ANNUAL_FEE_CENTS === 0
-  ) {
-    return STANDARD_ANNUAL_FEE_CENTS;
+
+  if (fee === paidCents && paidCents > 0) {
+    for (const annual of KNOWN_ANNUAL_FEE_CENTS) {
+      if (paidCents > annual && paidCents % annual === 0) {
+        return annual;
+      }
+    }
   }
+
   return fee;
 }
 

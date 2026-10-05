@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeMemberCountryCode } from "@/lib/members/country";
+import { applicationFeeCentsForCountry } from "@/lib/membership/application-fee";
 import { slugifyMemberUsername } from "@/lib/members/username";
 
 function endOfCalendarYear(dateStr: string) {
@@ -111,7 +112,8 @@ async function syncApplicantProfile(
     input.membership_start_date?.trim() ||
     new Date().toISOString().slice(0, 10);
   const end = endOfCalendarYear(start);
-  const fee_cents = 1500;
+  const countryCode = normalizeMemberCountryCode(input.country_code ?? input.country);
+  const fee_cents = applicationFeeCentsForCountry(countryCode);
 
   const { error: profileErr } = await admin.from("profiles").upsert(
     {
@@ -126,7 +128,7 @@ async function syncApplicantProfile(
       street: input.street.trim(),
       postal_code: input.postal_code.trim(),
       city: input.city.trim(),
-      country: normalizeMemberCountryCode(input.country_code ?? input.country),
+      country: countryCode,
       phone: input.phone.trim(),
     },
     { onConflict: "id" },

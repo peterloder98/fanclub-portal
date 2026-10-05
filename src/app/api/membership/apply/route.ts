@@ -26,6 +26,7 @@ import { notifyReferrerApplicationSubmitted } from "@/lib/email/referrer-applica
 import { cropSignaturePng } from "@/lib/images/crop-signature-png";
 import { createApplicationMembershipPayment } from "@/lib/payments/application-payment";
 import type { PaymentCheckoutResult } from "@/lib/payments/types";
+import { applicationFeeCentsForCountry } from "@/lib/membership/application-fee";
 
 const digitsOnly = z.string().regex(/^\d+$/, "Nur Ziffern erlaubt");
 
@@ -52,6 +53,9 @@ const schema = z
     membership_start_date: z.string().optional(), // ignored — set server-side to application date
     privacy_accepted: z.literal(true),
     statute_accepted: z.literal(true),
+    fee_tiers_accepted: z.literal(true, {
+      message: "Bitte die unterschiedlichen Jahresbeiträge zur Kenntnis nehmen und akzeptieren.",
+    }),
     media_consent: z.boolean().optional(),
     whatsapp_opt_in: z.boolean(),
     whatsapp_dial_code: z.string().optional(),
@@ -190,8 +194,10 @@ export async function POST(request: Request) {
       emailNorm,
       input.referrer_user_id,
     );
+    const feeCents = applicationFeeCentsForCountry(countryCode);
+    const feeTiersAcceptedAt = new Date().toISOString();
 
-    const { error: insErr } = await admin.from("membership_applications").insert({
+    const applicationRow = {
       id: appId,
       user_id: userId,
       status: "submitted",
@@ -218,14 +224,26 @@ export async function POST(request: Request) {
       whatsapp_number: input.whatsapp_opt_in ? input.whatsapp_number?.trim() ?? null : null,
       instagram: input.instagram?.trim() || null,
       facebook: input.facebook?.trim() || null,
-      fee_cents: 1500,
+      fee_cents: feeCents,
+      fee_tiers_accepted_at: feeTiersAcceptedAt,
       signature_applicant_path: applicantPath,
       signature_guardian_path: null,
       signed_at_place: input.signed_at_place.trim(),
       signed_at_date: signedAtDate,
-    });
+    };
+
+    const { error: insErr } = await admin.from("membership_applications").insert(applicationRow);
 
     if (insErr) {
+      if (/fee_tiers_accepted_at/i.test(insErr.message)) {
+        return NextResponse.json(
+          {
+            error:
+              "Datenbank-Spalte fehlt. Bitte supabase/164_membership_application_fee_tiers.sql im SQL-Editor ausführen.",
+          },
+          { status: 500 },
+        );
+      }
       return NextResponse.json({ error: insErr.message }, { status: 500 });
     }
 
@@ -290,7 +308,7 @@ export async function POST(request: Request) {
       console.error("[membership] Automatische Überweisung-Zahlung fehlgeschlagen:", e);
     }
 
-    const feeCents = payment?.amountCents ?? 1500;
+    const mailFeeCents = payment?.amountCents ?? feeCents;
 
     try {
       applicantMailResult = await sendApplicantConfirmationEmail({
@@ -299,7 +317,7 @@ export async function POST(request: Request) {
         firstName: input.first_name.trim(),
         lastName: input.last_name.trim(),
         gender: input.gender,
-        feeCents,
+        feeCents: mailFeeCents,
       });
     } catch (e) {
       console.error("[membership] Bestätigungs-Mail fehlgeschlagen:", e);
@@ -358,7 +376,7 @@ export async function POST(request: Request) {
       applicantName,
       emailWarning,
       paymentToken: downloadToken,
-      feeCents,
+      feeCents: mailFeeCents,
       payment,
     });
   } catch (e) {

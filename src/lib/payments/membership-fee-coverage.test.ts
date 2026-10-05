@@ -19,4 +19,11 @@ describe("membership fee coverage", () => {
     expect(resolveAnnualFeeCents(3000, 3000)).toBe(1500);
     expect(resolveAnnualFeeCents(1500, 3000)).toBe(1500);
   });
+
+  it("keeps 20 € abroad annual fee and covers two years at 40 €", () => {
+    expect(resolveAnnualFeeCents(2000, 2000)).toBe(2000);
+    expect(resolveAnnualFeeCents(2000, 4000)).toBe(2000);
+    expect(yearsCoveredByFeePayment(4000, 2000)).toBe(2);
+    expect(resolveAnnualFeeCents(4000, 4000)).toBe(2000);
+  });
 });

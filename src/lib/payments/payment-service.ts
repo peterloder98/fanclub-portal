@@ -13,12 +13,46 @@ import {
   resolveAnnualFeeCents,
   yearsCoveredByFeePayment,
 } from "@/lib/payments/membership-fee-coverage";
+import { formatApplicationFeeEurLabel } from "@/lib/membership/application-fee";
 import type {
   PaymentCheckoutResult,
   PaymentMethod,
   PaymentStatus,
   PaymentType,
 } from "@/lib/payments/types";
+
+/** Erforderlicher Jahresbeitrag für Neuantrag / applied-Mitgliedschaft. */
+async function requiredMembershipFeeCents(
+  admin: SupabaseClient,
+  payment: {
+    user_id: string;
+    application_id?: string | null;
+    membership_id?: string | null;
+  },
+): Promise<number | null> {
+  if (payment.application_id) {
+    const { data: app } = await admin
+      .from("membership_applications")
+      .select("fee_cents")
+      .eq("id", payment.application_id)
+      .maybeSingle();
+    if (app?.fee_cents && app.fee_cents > 0) return app.fee_cents;
+  }
+
+  const { data: membership } = await admin
+    .from("memberships")
+    .select("fee_cents,status")
+    .eq("user_id", payment.user_id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (membership?.status === "applied" && membership.fee_cents && membership.fee_cents > 0) {
+    return membership.fee_cents;
+  }
+
+  return null;
+}
 
 async function logPaymentAudit(
   admin: SupabaseClient,
@@ -220,6 +254,19 @@ export async function confirmPaymentManually(input: {
       : (payment.amount_cents as number);
   if (!Number.isFinite(amountCents) || amountCents <= 0) {
     throw new Error("Betrag muss größer als 0 sein.");
+  }
+
+  if (payment.payment_type === "membership_fee") {
+    const requiredFeeCents = await requiredMembershipFeeCents(admin, {
+      user_id: payment.user_id,
+      application_id: (payment as { application_id?: string | null }).application_id ?? null,
+      membership_id: payment.membership_id ?? null,
+    });
+    if (requiredFeeCents != null && amountCents < requiredFeeCents) {
+      throw new Error(
+        `Unterzahlung: erwartet werden mindestens ${formatApplicationFeeEurLabel(requiredFeeCents)}. Die Zahlung bleibt offen, bis der volle Beitrag eingegangen ist — keine Aufnahme bei Teilzahlung.`,
+      );
+    }
   }
 
   const now = new Date().toISOString();

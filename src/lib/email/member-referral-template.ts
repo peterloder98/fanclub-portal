@@ -25,7 +25,7 @@ Als Mitglied erhältst du Zugang zu unserem neuen **digitalen Fanclub-Portal**, 
 
 Natürlich stehen vor allem die gemeinsame Freude an Annis Musik und der Austausch mit anderen Fans im Mittelpunkt.
 
-Der Jahresbeitrag beträgt **15 €**.
+Der Jahresbeitrag beträgt **15 €** (Deutschland) bzw. **20 €** bei Wohnsitz außerhalb Deutschlands.
 
 Ich würde mich wirklich freuen, dich bald im Fanclub begrüßen zu dürfen!
 

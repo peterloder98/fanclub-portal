@@ -378,8 +378,9 @@ export function PaymentsAdminPanel({
                   {...decimalInputProps()}
                 />
                 <span className="text-[11px] text-slate-500">
-                  Tatsächlich eingegangener Betrag laut Kontoauszug. Bei 30 € (zwei Jahresbeiträge)
-                  werden beide Jahre als bezahlt geführt.
+                  Tatsächlich eingegangener Betrag laut Kontoauszug. Neuanträge: voller Beitrag
+                  (15,00 € DE / 20,00 € Ausland) nötig — Unterzahlung bleibt offen. Bei zwei
+                  Jahresbeiträgen (z. B. 30 € bzw. 40 €) werden beide Jahre als bezahlt geführt.
                 </span>
               </label>
               <label className="grid gap-1">

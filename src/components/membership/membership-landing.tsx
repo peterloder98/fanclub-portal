@@ -13,7 +13,11 @@ import {
   Smartphone,
   Star,
 } from "lucide-react";
-import { MEMBERSHIP_FEE_EUR, MEMBERSHIP_FORM_ANCHOR_ID } from "@/lib/membership/constants";
+import {
+  MEMBERSHIP_FEE_ABROAD_EUR,
+  MEMBERSHIP_FEE_EUR,
+  MEMBERSHIP_FORM_ANCHOR_ID,
+} from "@/lib/membership/constants";
 
 type Benefit = {
   icon: ReactNode;
@@ -141,7 +145,7 @@ export function MembershipLanding({ memberCountLabel }: { memberCountLabel: stri
               {[
                 "Offizieller Fanclub von Anni Perka",
                 `${memberCountLabel} aktive Mitglieder aus ganz Deutschland`,
-                `Nur ${MEMBERSHIP_FEE_EUR} € Jahresbeitrag`,
+                `Jahresbeitrag ${MEMBERSHIP_FEE_EUR} € / Ausland ${MEMBERSHIP_FEE_ABROAD_EUR} €`,
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5 text-[13px] text-slate-700 sm:text-sm">
                   <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-100 text-emerald-700">

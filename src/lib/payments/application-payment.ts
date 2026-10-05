@@ -54,7 +54,10 @@ export async function createApplicationMembershipPayment(input: {
     throw new Error("Mitgliedschaft ist bereits aktiv — keine Zahlung nötig.");
   }
 
-  const amountCents = app.fee_cents ?? membership.fee_cents ?? 1500;
+  const amountCents =
+    (app.fee_cents && app.fee_cents > 0 ? app.fee_cents : null) ??
+    (membership.fee_cents && membership.fee_cents > 0 ? membership.fee_cents : null) ??
+    1500;
   const firstName = app.first_name ?? "";
   const lastName = app.last_name ?? "";
   const name = `${firstName} ${lastName}`.trim();
