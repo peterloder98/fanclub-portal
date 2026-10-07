@@ -91,6 +91,8 @@ export async function listClubLedger(opts?: {
     .select(
       "id,entry_number,entry_type,amount_cents,description,category,member_id,entry_date,created_at,created_by,receipt_storage_path,activity_log_id,payment_id,bookkeeping_status,include_in_accounting",
     )
+    // Soft-gelöscht (cancelled) ausblenden — wiederherstellbar über Audit/Restore.
+    .or("bookkeeping_status.is.null,bookkeeping_status.neq.cancelled")
     .order("entry_date", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(opts?.limit ?? 100);
@@ -162,7 +164,8 @@ export async function sumClubLedger(): Promise<{
   const admin = createSupabaseAdminClient();
   const { data, error } = await admin
     .from("club_ledger_entries")
-    .select("entry_type,amount_cents");
+    .select("entry_type,amount_cents,bookkeeping_status")
+    .or("bookkeeping_status.is.null,bookkeeping_status.neq.cancelled");
   if (error) {
     if (/club_ledger_entries|does not exist/i.test(error.message)) {
       return { incomeCents: 0, expenseCents: 0 };

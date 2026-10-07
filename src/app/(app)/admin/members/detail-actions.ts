@@ -1112,18 +1112,45 @@ export async function deleteClubLedgerEntry(entryId: string) {
   const admin = createSupabaseAdminClient();
   const { data: row } = await admin
     .from("club_ledger_entries")
-    .select("id,member_id,description,amount_cents,entry_type,category")
+    .select(
+      "id,entry_number,member_id,description,amount_cents,entry_type,category,entry_date,created_by,receipt_storage_path,payment_id,bookkeeping_status,include_in_accounting",
+    )
     .eq("id", entryId)
     .maybeSingle();
 
-  const { error } = await admin.from("club_ledger_entries").delete().eq("id", entryId);
+  if (!row) throw new Error("Buchungseintrag nicht gefunden.");
+  if (row.bookkeeping_status === "cancelled") {
+    throw new Error("Dieser Buchungseintrag ist bereits gelöscht.");
+  }
+
+  const previousStatus = row.bookkeeping_status ?? "paid";
+  const { error } = await admin
+    .from("club_ledger_entries")
+    .update({
+      bookkeeping_status: "cancelled",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", entryId);
   if (error) throw new Error(error.message);
 
-  if (row?.member_id && row.category === "membership" && row.entry_type === "income") {
+  await logAdminAction(admin, {
+    actorId: user.id,
+    action: "ledger.delete",
+    entityType: "club_ledger_entry",
+    entityId: entryId,
+    summary: `Buchungseintrag gelöscht: ${row.entry_number ?? entryId} · ${formatEur(row.amount_cents)} · ${row.description}`,
+    metadata: {
+      soft_delete: true,
+      previous_bookkeeping_status: previousStatus,
+      snapshot: row,
+    },
+  });
+
+  if (row.member_id && row.category === "membership" && row.entry_type === "income") {
     await syncMemberContributionDate(admin, row.member_id).catch(console.error);
   }
 
-  if (row?.member_id) {
+  if (row.member_id) {
     await logMemberActivity({
       userId: row.member_id,
       eventType: MEMBER_ACTIVITY_TYPES.note,
@@ -1133,6 +1160,48 @@ export async function deleteClubLedgerEntry(entryId: string) {
     }).catch(() => {});
     revalidatePath(`/admin/members/${row.member_id}`);
   }
+  revalidatePath("/admin/accounting");
+  return { ok: true };
+}
+
+/** Stellt einen soft-gelöschten Buchungseintrag wieder her (bookkeeping_status ≠ cancelled). */
+export async function restoreClubLedgerEntry(entryId: string) {
+  const { user } = await requireAdminAction();
+  const admin = createSupabaseAdminClient();
+  const { data: row } = await admin
+    .from("club_ledger_entries")
+    .select(
+      "id,entry_number,member_id,description,amount_cents,entry_type,category,bookkeeping_status",
+    )
+    .eq("id", entryId)
+    .maybeSingle();
+
+  if (!row) throw new Error("Buchungseintrag nicht gefunden.");
+  if (row.bookkeeping_status !== "cancelled") {
+    throw new Error("Dieser Buchungseintrag ist nicht gelöscht.");
+  }
+
+  const { error } = await admin
+    .from("club_ledger_entries")
+    .update({
+      bookkeeping_status: "paid",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", entryId);
+  if (error) throw new Error(error.message);
+
+  await logAdminAction(admin, {
+    actorId: user.id,
+    action: "ledger.restore",
+    entityType: "club_ledger_entry",
+    entityId: entryId,
+    summary: `Buchungseintrag wiederhergestellt: ${row.entry_number ?? entryId} · ${formatEur(row.amount_cents)} · ${row.description}`,
+  });
+
+  if (row.member_id && row.category === "membership" && row.entry_type === "income") {
+    await syncMemberContributionDate(admin, row.member_id).catch(console.error);
+  }
+  if (row.member_id) revalidatePath(`/admin/members/${row.member_id}`);
   revalidatePath("/admin/accounting");
   return { ok: true };
 }

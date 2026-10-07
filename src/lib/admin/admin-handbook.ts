@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-10-05";
+export const ADMIN_HANDBOOK_UPDATED = "2026-10-07";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -176,6 +176,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Die Zahlungsliste und der Kontostand zeigen nur bestätigte Einnahmen und Ausgaben. Offene Antrags-/Beitragszahlungen gehören unter Admin → Zahlungen — nicht in die Kasse, bis ihr den Eingang bestätigt.",
               "Weitere Einnahmen und Ausgaben (Events, Merch-Einkauf, Allgemeines) ab Startdatum normal erfassen. Mitgliedsbeiträge nie doppelt hier oder in der Historie nachbuchen.",
               "Zu einer Buchung könnt ihr einen Beleg anhängen: Foto (JPEG/PNG) oder PDF. Fotos werden klein gespeichert, PDFs bleiben als Datei und öffnen sich in einem neuen Tab.",
+              "Einen Buchungseintrag löschen: Papierkorb tippen — die App fragt zur Sicherheit nach („Diesen Buchungseintrag wirklich löschen?“). Erst nach Bestätigung verschwindet der Eintrag aus der Zahlungsliste. Versehentlich Gelöschtes bitte dem Technik-Kontakt melden; die Buchung bleibt intern nachvollziehbar.",
             ],
           },
           {

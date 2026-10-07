@@ -583,11 +583,19 @@ export function MemberDetailPanel({
     });
   }
 
-  function handleDeleteLedger(entryId: string) {
-    if (!window.confirm("Buchhaltungseintrag löschen?")) return;
+  function handleDeleteLedger(entry: ClubLedgerRow) {
+    const amount =
+      (entry.entry_type === "income" ? "+" : "−") + formatEur(entry.amount_cents);
+    if (
+      !window.confirm(
+        `Diesen Buchungseintrag wirklich löschen?\n\n${entry.description} · ${amount}`,
+      )
+    ) {
+      return;
+    }
     startTransition(async () => {
       try {
-        await deleteClubLedgerEntry(entryId);
+        await deleteClubLedgerEntry(entry.id);
         router.refresh();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
@@ -1237,7 +1245,7 @@ export function MemberDetailPanel({
                             variant="delete"
                             size="sm"
                             disabled={pending}
-                            onClick={() => handleDeleteLedger(e.id)}
+                            onClick={() => handleDeleteLedger(e)}
                           />
                         </div>
                       </li>

@@ -323,11 +323,19 @@ export function ClubAccountingPanel({
     });
   }
 
-  function handleDelete(id: string) {
-    if (!window.confirm("Eintrag löschen?")) return;
+  function handleDelete(entry: ClubLedgerRow) {
+    const amount =
+      (entry.entry_type === "income" ? "+" : "−") + formatEur(entry.amount_cents);
+    if (
+      !window.confirm(
+        `Diesen Buchungseintrag wirklich löschen?\n\n${formatLedgerEntryNumber(entry.entry_number)} · ${entry.description} · ${amount}`,
+      )
+    ) {
+      return;
+    }
     startTransition(async () => {
       try {
-        await deleteClubLedgerEntry(id);
+        await deleteClubLedgerEntry(entry.id);
         router.refresh();
       } catch (e) {
         setError(e instanceof Error ? e.message : "Löschen fehlgeschlagen");
@@ -867,7 +875,7 @@ export function ClubAccountingPanel({
                         icon={Trash2}
                         variant="delete"
                         disabled={pending}
-                        onClick={() => handleDelete(e.id)}
+                        onClick={() => handleDelete(e)}
                       />
                     </div>
                   </div>
@@ -1072,7 +1080,7 @@ export function ClubAccountingPanel({
                               icon={Trash2}
                               variant="delete"
                               disabled={pending}
-                              onClick={() => handleDelete(e.id)}
+                              onClick={() => handleDelete(e)}
                             />
                           </div>
                         </td>
