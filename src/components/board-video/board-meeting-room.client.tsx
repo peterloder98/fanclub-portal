@@ -155,11 +155,11 @@ export function BoardMeetingRoom({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-[90rem] min-w-0 gap-4 px-3 py-3 sm:px-4 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:items-stretch lg:gap-5 lg:px-5 xl:px-6">
-      <div className="min-w-0 flex flex-col">
+    <div className="mx-auto flex min-h-0 w-full max-w-[90rem] min-w-0 flex-1 flex-col gap-3 overflow-hidden px-3 py-2 sm:px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,22rem)] lg:grid-rows-1 lg:gap-5 lg:px-5 xl:px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {videoOpen ? (
           videoCreds ? (
-            <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-fc-navy/10 bg-white p-3 shadow-sm sm:p-4">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-fc-navy/10 bg-white p-3 shadow-sm sm:p-4">
               <BoardMeetingVideoGrid
                 token={videoCreds.token}
                 serverUrl={videoCreds.url}
@@ -192,7 +192,7 @@ export function BoardMeetingRoom({
         )}
       </div>
 
-      <aside className="min-w-0 w-full lg:sticky lg:top-3 lg:self-start">
+      <aside className="min-h-0 w-full min-w-0 shrink-0 overflow-y-auto overscroll-contain max-h-[30vh] lg:h-full lg:max-h-none">
         <BoardMeetingAgenda
           meetingId={meeting.id}
           inviteToken={inviteToken}

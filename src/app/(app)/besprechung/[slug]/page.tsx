@@ -40,9 +40,9 @@ export default async function BesprechungSlugPage({
     });
 
   return (
-    <>
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <Topbar title="Videobesprechung" />
-      <main className="px-3 pt-2 sm:px-4">
+      <main className="shrink-0 px-3 pt-2 sm:px-4">
         <AdminBackLink href="/admin/besprechung" />
       </main>
       <BoardMeetingRoom
@@ -51,6 +51,6 @@ export default async function BesprechungSlugPage({
         defaultDisplayName={defaultDisplayName}
         canEndMeeting={profile?.role === "admin"}
       />
-    </>
+    </div>
   );
 }

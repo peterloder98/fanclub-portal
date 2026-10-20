@@ -50,7 +50,7 @@ export default async function BesprechungGuestPage({
     (access.participant.is_anni ? "Anni" : "Gast");
 
   return (
-    <div className="min-h-dvh bg-fc-ice">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-fc-ice">
       <BoardMeetingRoom
         meeting={access.meeting}
         participantId={access.participant.id}

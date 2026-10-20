@@ -32,12 +32,31 @@ type SeatSlot = {
   tile: ParticipantTile;
 };
 
-function gridClass(count: number): string {
-  if (count <= 1) return "grid-cols-1";
-  if (count === 2) return "grid-cols-1 sm:grid-cols-2";
-  if (count <= 4) return "grid-cols-2";
-  if (count <= 6) return "grid-cols-2 lg:grid-cols-3";
-  return "grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
+/** Columns and rows that keep every present person inside the stage. */
+function gridStyle(count: number): { gridTemplateColumns: string; gridTemplateRows: string } {
+  const n = Math.max(1, count);
+  let cols = 1;
+  let rows = 1;
+  if (n === 2) {
+    cols = 2;
+    rows = 1;
+  } else if (n <= 4) {
+    cols = 2;
+    rows = 2;
+  } else if (n <= 6) {
+    cols = 3;
+    rows = 2;
+  } else if (n <= 9) {
+    cols = 3;
+    rows = 3;
+  } else {
+    cols = 4;
+    rows = Math.ceil(n / 4);
+  }
+  return {
+    gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+    gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+  };
 }
 
 function participantIsAnni(
@@ -266,7 +285,7 @@ export function BoardMeetingVideoGrid({
   const urgent = remainingMs > 0 && remainingMs <= 60_000;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-3">
       <div
         className={cn(
           "flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border px-3 py-2 text-center text-sm font-semibold tabular-nums",
@@ -299,14 +318,22 @@ export function BoardMeetingVideoGrid({
         </div>
       ) : null}
       {screenTile?.screenTrack ? (
-        <div className="relative min-h-[12rem] overflow-hidden rounded-xl bg-black sm:min-h-[16rem]">
-          <ScreenVideo track={screenTile.screenTrack} />
-          <p className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+        <div className="relative min-h-0 flex-[1.15] overflow-hidden rounded-xl bg-black [container-type:size]">
+          <div
+            className="absolute top-1/2 left-1/2 aspect-video -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl"
+            style={{ width: "min(100cqw, calc(100cqh * 16 / 9))" }}
+          >
+            <ScreenVideo track={screenTile.screenTrack} />
+          </div>
+          <p className="absolute bottom-2 left-2 z-10 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
             Bildschirm · {screenTile.name}
           </p>
         </div>
       ) : null}
-      <div className={cn("grid min-h-0 flex-1 auto-rows-fr gap-2", gridClass(Math.max(1, seats.length)))}>
+      <div
+        className="grid h-full min-h-0 w-full flex-1 gap-2"
+        style={gridStyle(seats.length)}
+      >
         {seats.map((seat) => (
           <ParticipantCard
             key={seat.identity}
@@ -458,15 +485,23 @@ function ParticipantCard({
     }
   }, [tile.audioTrack, tile.isLocal]);
   return (
-    <div
-      className={cn(
-        "relative min-h-[8rem] overflow-hidden rounded-xl bg-slate-900 sm:min-h-[10rem]",
-        pinned && "ring-2 ring-fc-blue ring-offset-2",
-        speaking && !pinned && "ring-2 ring-emerald-400/80",
-      )}
-    >
+    <div className="relative h-full min-h-0 min-w-0 [container-type:size]">
+      <div
+        className={cn(
+          "absolute top-1/2 left-1/2 aspect-video -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl bg-slate-900",
+          pinned && "ring-2 ring-fc-blue ring-offset-2",
+          speaking && !pinned && "ring-2 ring-emerald-400/80",
+        )}
+        style={{ width: "min(100cqw, calc(100cqh * 16 / 9))" }}
+      >
       {tile.videoTrack ? (
-        <video ref={videoRef} className="h-full w-full object-cover" playsInline autoPlay muted={tile.isLocal} />
+        <video
+          ref={videoRef}
+          className="absolute inset-0 h-full w-full object-contain"
+          playsInline
+          autoPlay
+          muted={tile.isLocal}
+        />
       ) : (
         <div className="absolute inset-0 grid place-items-center bg-slate-800 px-3 text-center text-sm text-white/70">
           Kamera aus
@@ -480,6 +515,7 @@ function ParticipantCard({
             {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
           </button>
         ) : null}
+      </div>
       </div>
     </div>
   );
@@ -496,7 +532,7 @@ function ScreenVideo({ track }: { track: RemoteTrack }) {
       };
     }
   }, [track]);
-  return <video ref={ref} className="h-full w-full object-contain" playsInline autoPlay />;
+  return <video ref={ref} className="absolute inset-0 h-full w-full object-contain" playsInline autoPlay />;
 }
 
 function participantToTile(
