@@ -32,13 +32,37 @@ type SeatSlot = {
   tile: ParticipantTile;
 };
 
-/** Columns and rows that keep every present person inside the stage. */
-function gridStyle(count: number): { gridTemplateColumns: string; gridTemplateRows: string } {
+const GRID_GAP_PX = 8;
+
+/**
+ * Largest 16:9 tiles that all fit in the measured stage.
+ * Fewer people → fewer cells → each window grows. Never adds a scroll row.
+ */
+function gridTemplate(
+  count: number,
+  width: number,
+  height: number,
+): { gridTemplateColumns: string; gridTemplateRows: string } {
   const n = Math.max(1, count);
   let cols = 1;
-  let rows = 1;
-  if (n === 2) {
-    cols = 2;
+  let rows = n;
+  if (width > 0 && height > 0) {
+    let bestArea = -1;
+    for (let c = 1; c <= n; c++) {
+      const r = Math.ceil(n / c);
+      const cellW = (width - GRID_GAP_PX * (c - 1)) / c;
+      const cellH = (height - GRID_GAP_PX * (r - 1)) / r;
+      if (cellW <= 1 || cellH <= 1) continue;
+      const tileW = Math.min(cellW, (cellH * 16) / 9);
+      const area = tileW * ((tileW * 9) / 16);
+      if (area > bestArea) {
+        bestArea = area;
+        cols = c;
+        rows = r;
+      }
+    }
+  } else if (n <= 2) {
+    cols = n;
     rows = 1;
   } else if (n <= 4) {
     cols = 2;
@@ -203,7 +227,9 @@ export function BoardMeetingVideoGrid({
   onNameCommit: () => void;
 }) {
   const roomRef = useRef<Room | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const seatOrderRef = useRef<string[]>([]);
+  const [gridBox, setGridBox] = useState({ width: 0, height: 0 });
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [camOn, setCamOn] = useState(initialCamOn);
@@ -273,6 +299,21 @@ export function BoardMeetingVideoGrid({
   }, [roster, connected, rebuildSeats]);
 
   useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      const width = Math.round(rect.width);
+      const height = Math.round(rect.height);
+      setGridBox((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const id = window.setInterval(() => {
       setRemainingMs(Math.max(0, new Date(endsAt).getTime() - Date.now()));
     }, 1000);
@@ -331,8 +372,9 @@ export function BoardMeetingVideoGrid({
         </div>
       ) : null}
       <div
-        className="grid min-h-0 w-full flex-1 gap-2"
-        style={gridStyle(seats.length)}
+        ref={gridRef}
+        className="grid min-h-0 w-full flex-1 basis-0 gap-2 overflow-hidden"
+        style={gridTemplate(seats.length, gridBox.width, gridBox.height)}
       >
         {seats.map((seat) => (
           <ParticipantCard
