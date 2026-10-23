@@ -70,6 +70,18 @@ export async function enqueueOutboundEmail(
   return "error";
 }
 
+function outboundRow(input: Parameters<typeof enqueueOutboundEmail>[1]) {
+  return {
+    to_address: input.to.trim(),
+    template_key: input.templateKey,
+    template_vars: input.templateVars,
+    context: input.context ?? {},
+    dedupe_key: input.dedupeKey ?? null,
+    send_after: (input.sendAfter ?? new Date()).toISOString(),
+    status: "pending" as const,
+  };
+}
+
 export async function enqueueOutboundEmails(
   admin: SupabaseClient,
   items: Array<Parameters<typeof enqueueOutboundEmail>[1]>,
@@ -77,11 +89,25 @@ export async function enqueueOutboundEmails(
   let queued = 0;
   let duplicate = 0;
   let errors = 0;
-  for (const item of items) {
-    const r = await enqueueOutboundEmail(admin, item);
-    if (r === "queued") queued += 1;
-    else if (r === "duplicate") duplicate += 1;
-    else errors += 1;
+  const chunkSize = 100;
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+    const { error } = await admin.from("email_outbound_queue").insert(chunk.map(outboundRow));
+    if (!error) {
+      queued += chunk.length;
+      continue;
+    }
+    if (/duplicate key|unique/i.test(error.message)) {
+      for (const item of chunk) {
+        const r = await enqueueOutboundEmail(admin, item);
+        if (r === "queued") queued += 1;
+        else if (r === "duplicate") duplicate += 1;
+        else errors += 1;
+      }
+      continue;
+    }
+    console.error("[outbound-queue] enqueue failed:", error.message);
+    errors += chunk.length;
   }
   return { queued, duplicate, errors };
 }

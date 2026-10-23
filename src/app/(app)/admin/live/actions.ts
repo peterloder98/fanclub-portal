@@ -129,6 +129,7 @@ export async function createLiveSessionAction(input: {
     };
   }
 }
+/** Nur allein benutzen — nicht zusammen mit einem Client-onSubmit, sonst bricht der Request ab. */
 export async function createLiveSessionFormAction(formData: FormData): Promise<void> {
   const { redirect } = await import("next/navigation");
   const title = String(formData.get("title") ?? "");

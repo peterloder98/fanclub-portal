@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   createLiveSessionAction,
-  createLiveSessionFormAction,
   regenerateLiveHostTokenAction,
   resendLiveSessionInvitesAction,
   setLiveSessionStatusAction,
@@ -136,11 +135,13 @@ export function AdminLiveSessionsPanel({
         router.refresh();
       } catch (err) {
         const msg = err instanceof Error ? err.message : "";
+        const network = /failed to fetch|load failed|networkerror|aborted/i.test(msg);
         setError(
-          !msg || /Server Components render|digest property/i.test(msg)
-            ? "Live-Chat konnte nicht angelegt werden. Bitte Seite neu laden und erneut versuchen."
+          network || !msg || /Server Components render|digest property/i.test(msg)
+            ? "Die Verbindung ist abgebrochen. Bitte die Seite neu laden. Steht der Live-Chat schon in der Liste, ist er angelegt — sonst noch einmal erstellen."
             : msg,
         );
+        if (network) router.refresh();
       }
     });
   }
@@ -196,7 +197,6 @@ export function AdminLiveSessionsPanel({
   return (
     <div className="mx-auto grid max-w-4xl gap-8">
       <form
-        action={createLiveSessionFormAction}
         onSubmit={onCreate}
         className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
       >
