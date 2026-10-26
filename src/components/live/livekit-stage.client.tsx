@@ -231,7 +231,7 @@ export function LiveKitStage({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl bg-slate-900",
-        fillContainer && "flex h-full min-h-0 flex-col",
+        fillContainer && "h-full w-full min-h-0",
         className,
       )}
     >
@@ -239,7 +239,7 @@ export function LiveKitStage({
         ref={videoRef}
         className={cn(
           "w-full bg-black object-cover",
-          fillContainer ? "h-full min-h-0 flex-1" : "aspect-video",
+          fillContainer ? "absolute inset-0 h-full w-full" : "aspect-video",
           mode === "host" && "scale-x-[-1]",
         )}
         playsInline

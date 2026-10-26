@@ -350,13 +350,13 @@ export function LiveMemberRoom({
         serverUrl={url}
         mode="viewer"
         fillContainer={fillContainer}
-        className={fillContainer ? "min-h-0 flex-1 rounded-xl" : undefined}
+        className={fillContainer ? "h-full w-full rounded-xl" : undefined}
       />
     ) : (
       <div
         className={cn(
           "grid place-items-center rounded-2xl bg-slate-900 text-sm text-white/80",
-          fillContainer ? "min-h-0 flex-1" : "aspect-video",
+          fillContainer ? "h-full w-full" : "aspect-video",
         )}
       >
         {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
@@ -364,7 +364,7 @@ export function LiveMemberRoom({
     );
 
     return (
-      <div className={cn("relative min-w-0", fillContainer && "flex min-h-0 flex-1 flex-col")}>
+      <div className={cn("relative min-w-0", fillContainer && "h-full w-full")}>
         {content}
         {!isFullscreen ? (
           <button
@@ -425,18 +425,18 @@ export function LiveMemberRoom({
         <div
           ref={stageRef}
           className={cn(
-            "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden",
+            "grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-2 overflow-hidden",
             isFullscreen && "h-full bg-slate-950 p-2",
-            "md:grid md:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] md:grid-rows-1",
+            "md:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] md:grid-rows-[minmax(0,1fr)_17rem]",
           )}
         >
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-            <div className="min-h-0 flex-1">{renderVideoStage({ fillContainer: true })}</div>
-            <div className="hidden max-h-[min(32vh,15rem)] shrink-0 overflow-y-auto overscroll-contain md:block">
-              <LiveMemberQuestions sessionId={sessionId} enabled />
-            </div>
+          <div className="relative min-h-0 overflow-hidden md:col-start-1 md:row-start-1">
+            <div className="absolute inset-0">{renderVideoStage({ fillContainer: true })}</div>
           </div>
-          <div className="hidden min-h-0 md:flex md:flex-col">
+          <div className="min-h-0 overflow-y-auto overscroll-contain max-md:hidden md:col-start-1 md:row-start-2">
+            <LiveMemberQuestions sessionId={sessionId} enabled compact />
+          </div>
+          <div className="min-h-0 max-md:hidden md:col-start-2 md:row-span-2 md:row-start-1 md:flex md:flex-col">
             <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full min-h-0" />
           </div>
           <div className="flex max-h-[min(38vh,17rem)] min-h-[9rem] shrink-0 flex-col gap-2 overflow-hidden md:hidden">
@@ -466,7 +466,7 @@ export function LiveMemberRoom({
               {tab === "chat" ? (
                 <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full min-h-0" />
               ) : (
-                <LiveMemberQuestions sessionId={sessionId} enabled />
+                <LiveMemberQuestions sessionId={sessionId} enabled compact />
               )}
             </div>
           </div>
