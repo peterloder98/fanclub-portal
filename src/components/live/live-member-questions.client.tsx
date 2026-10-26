@@ -81,14 +81,11 @@ export function LiveMemberQuestions({
   sessionId,
   enabled,
   mode = "live",
-  compact = false,
 }: {
   sessionId: string;
   enabled: boolean;
   /** advance = vor dem Live nur eine Frage; live = während der Session (weiterhin max. 1 offen). */
   mode?: "advance" | "live";
-  /** Im Live-Raum: Formular passt in die feste Zeile unter dem Bild. */
-  compact?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [mine, setMine] = useState<QItem[]>([]);
@@ -250,12 +247,7 @@ export function LiveMemberQuestions({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
-      <header
-        className={cn(
-          "border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue text-white",
-          compact ? "px-3 py-2" : "px-4 py-2.5",
-        )}
-      >
+      <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
         <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight">
           <HelpCircle className="h-4 w-4" aria-hidden />
           {mode === "advance" ? "Vorab-Frage an Anni" : "Frage an Anni"}
@@ -263,11 +255,11 @@ export function LiveMemberQuestions({
         <p className="text-[11px] text-white/80">
           {mode === "advance"
             ? "Optional — eine Frage vor dem Live. Weitere Fragen später im Chat."
-            : "Eine offene Frage. Sobald Anni sie abgehakt hat, kannst du die nächste stellen."}
+            : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
         </p>
       </header>
 
-      <div className={cn("grid", compact ? "gap-2 p-3" : "gap-4 p-4")}>
+      <div className="grid gap-4 p-4">
         {canSubmit ? (
           <form onSubmit={onSubmit} className="grid gap-2">
             <textarea
@@ -301,10 +293,7 @@ export function LiveMemberQuestions({
                 <strong>Weitere Fragen könnt ihr während des Live-Chats stellen.</strong>
               </p>
             ) : (
-              <p>
-                Du hast schon eine offene Frage. Sobald Anni sie abgehakt hat, kannst du die nächste
-                stellen.
-              </p>
+              <p>Du hast bereits eine offene Frage. Mehr als eine ist nicht möglich.</p>
             )}
           </div>
         )}

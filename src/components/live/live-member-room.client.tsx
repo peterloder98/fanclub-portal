@@ -74,7 +74,7 @@ export function LiveMemberRoom({
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("fragen");
+  const [tab, setTab] = useState<Tab>("chat");
   const [videoReady, setVideoReady] = useState(false);
   const [tokenNonce, setTokenNonce] = useState(0);
   const [audienceRefreshNonce, setAudienceRefreshNonce] = useState(0);
@@ -325,7 +325,6 @@ export function LiveMemberRoom({
   }
 
   const theaterLayout = isXl || isFullscreen;
-  const stageLocked = videoOpen && !inGrace && !roomClosed;
 
   function renderVideoStage({ fillContainer = false }: { fillContainer?: boolean } = {}) {
     const content = error ? (
@@ -350,13 +349,13 @@ export function LiveMemberRoom({
         serverUrl={url}
         mode="viewer"
         fillContainer={fillContainer}
-        className={fillContainer ? "h-full w-full rounded-xl" : undefined}
+        className={fillContainer ? "min-h-0 flex-1 rounded-xl" : undefined}
       />
     ) : (
       <div
         className={cn(
           "grid place-items-center rounded-2xl bg-slate-900 text-sm text-white/80",
-          fillContainer ? "h-full w-full" : "aspect-video",
+          fillContainer ? "min-h-0 flex-1" : "aspect-video",
         )}
       >
         {videoReady ? "Verbinde Video…" : "Bereite Live vor…"}
@@ -364,7 +363,7 @@ export function LiveMemberRoom({
     );
 
     return (
-      <div className={cn("relative min-w-0", fillContainer && "h-full w-full")}>
+      <div className={cn("relative min-w-0", fillContainer && "flex min-h-0 flex-1 flex-col")}>
         {content}
         {!isFullscreen ? (
           <button
@@ -403,80 +402,8 @@ export function LiveMemberRoom({
     );
   }
 
-  if (stageLocked) {
-    return (
-      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden px-2 py-2 sm:px-3">
-        <header className="mb-2 flex shrink-0 items-center justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-fc-navy">{title}</p>
-            <p className="truncate text-xs text-slate-500">
-              {status === "live" ? "Live" : "Live-Session"} · {formatBerlinDateTime(startsAt)}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {renderCountdown()}
-            <LiveSessionAudience
-              sessionId={sessionId}
-              enabled={chatOpen}
-              refreshNonce={audienceRefreshNonce}
-            />
-          </div>
-        </header>
-        <div
-          ref={stageRef}
-          className={cn(
-            "grid min-h-0 flex-1 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-2 overflow-hidden",
-            isFullscreen && "h-full bg-slate-950 p-2",
-            "md:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] md:grid-rows-[minmax(0,1fr)_17rem]",
-          )}
-        >
-          <div className="relative min-h-0 overflow-hidden md:col-start-1 md:row-start-1">
-            <div className="absolute inset-0">{renderVideoStage({ fillContainer: true })}</div>
-          </div>
-          <div className="min-h-0 overflow-y-auto overscroll-contain max-md:hidden md:col-start-1 md:row-start-2">
-            <LiveMemberQuestions sessionId={sessionId} enabled compact />
-          </div>
-          <div className="min-h-0 max-md:hidden md:col-start-2 md:row-span-2 md:row-start-1 md:flex md:flex-col">
-            <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full min-h-0" />
-          </div>
-          <div className="flex max-h-[min(38vh,17rem)] min-h-[9rem] shrink-0 flex-col gap-2 overflow-hidden md:hidden">
-            <div className="flex shrink-0 gap-2">
-              {(
-                [
-                  ["fragen", "Fragen"],
-                  ["chat", "Chat"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTab(id)}
-                  className={cn(
-                    "h-9 flex-1 rounded-xl text-sm font-semibold",
-                    tab === id
-                      ? "bg-fc-navy text-white"
-                      : "border border-fc-navy/15 bg-white text-slate-700",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              {tab === "chat" ? (
-                <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full min-h-0" />
-              ) : (
-                <LiveMemberQuestions sessionId={sessionId} enabled compact />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-auto h-full min-h-0 w-full max-w-6xl overflow-y-auto px-3 py-4 sm:px-4 lg:px-6">
+    <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 lg:px-6">
       {!compactHeader ? (
         <header className="mb-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">

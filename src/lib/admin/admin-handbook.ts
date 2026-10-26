@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-10-26";
+export const ADMIN_HANDBOOK_UPDATED = "2026-10-07";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -685,14 +685,14 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Prüfen: Host-Link ist kopierbar und Anni hat die Host-Mail erhalten (oder Link manuell nachreichen).",
               "Einladungen: In der Admin-Liste ggf. „Erneut einladen“, falls jemand die Mail vermisst. Zusagen unter Live / Teilnehmerliste im Blick behalten.",
               "Kurz vor 21:00: Beitrittsfenster ist offen — Mitglieder können schon im Raum warten. Anni öffnet den Host-Link, Kamera/Mikro freigeben.",
-              "Währenddessen: Anni sieht sich groß im Bild, oben die Zuschauerzahl und die Namen. Rechts daneben liest sie die Fragen und hakt sie ab (Chat nur mitlesen, Reiter „Chat“). Mitglieder sehen Anni groß, ohne zu scrollen; die Frage steht darunter. Pro Person eine offene Frage — ist sie abgehakt, kann die nächste gestellt werden. Unter Admin → Live → Session aufklappen „Offene Fragen“: alle Vorab- und Live-Fragen lesen, abhaken, löschen oder mit Verwarnung entfernen.",
+              "Währenddessen: Fragen in der Host-Ansicht abhaken; Chat nur mitlesen. Unter Admin → Live → Session aufklappen „Offene Fragen“: alle Vorab- und Live-Fragen lesen, abhaken, löschen oder mit Verwarnung entfernen.",
               "Ende: Entweder nach 30 Minuten automatisch oder früher mit „Live beenden“. 10 Minuten Chat-Nachlauf, dann ist der Termin weg.",
               "Host-Link erneuern nur bei Bedarf (Link verloren / Sicherheit): Alter Link stirbt, Anni bekommt den neuen per Mail.",
             ],
           },
           {
             type: "note",
-            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine Vorab-Frage. Während des Live weiterhin max. eine offene Frage — sobald Anni sie abgehakt hat, darf dieselbe Person die nächste stellen. Zugang nur nach Login als aktives Mitglied. Einen Tag vorher erinnert die App per E-Mail und Glocke: Zusagen bekommen den Termin-Hinweis, wer noch nicht reagiert hat eine freundliche Aufforderung zum Zusagen oder Absagen (Absagen erhalten keine Erinnerung). Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
+            text: "Wer den Live-Raum öffnet und länger als eine Minute dabei ist, erhält einmalig +2 Anni-Stars. Pro Mitglied nur eine Vorab-Frage (danach: weitere Fragen im Live-Chat). Während des Live weiterhin max. eine offene Frage. Zugang nur nach Login als aktives Mitglied. Einen Tag vorher erinnert die App per E-Mail und Glocke: Zusagen bekommen den Termin-Hinweis, wer noch nicht reagiert hat eine freundliche Aufforderung zum Zusagen oder Absagen (Absagen erhalten keine Erinnerung). Bis zum Go-Live: Annis Live-Mails an die Testadresse — siehe 7.5.",
           },
           {
             type: "link",

@@ -14,15 +14,12 @@ import { cn } from "@/lib/cn";
 
 type Mode = "viewer" | "host";
 
-export type LiveStageViewer = { id: string; name: string };
-
 export function LiveKitStage({
   token,
   serverUrl,
   mode,
   className,
   onViewerCountChange,
-  onViewersChange,
   fillContainer = false,
 }: {
   token: string;
@@ -31,9 +28,7 @@ export function LiveKitStage({
   className?: string;
   /** Host: Anzahl verbundener Zuschauer (LiveKit-Raum). */
   onViewerCountChange?: (count: number) => void;
-  /** Host: Namen der verbundenen Zuschauer. */
-  onViewersChange?: (viewers: LiveStageViewer[]) => void;
-  /** Video füllt die Fläche und wird auf den Bildschirm zugeschnitten. */
+  /** Vollbild/Theater: Video füllt die Höhe statt 16:9. */
   fillContainer?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -48,7 +43,6 @@ export function LiveKitStage({
   const [needsReconnect, setNeedsReconnect] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [viewerCount, setViewerCount] = useState(0);
-  const [viewers, setViewers] = useState<LiveStageViewer[]>([]);
 
   useEffect(() => {
     if (mode !== "host") return;
@@ -56,19 +50,10 @@ export function LiveKitStage({
   }, [mode, viewerCount, onViewerCountChange]);
 
   useEffect(() => {
-    if (mode !== "host") return;
-    onViewersChange?.(viewers);
-  }, [mode, viewers, onViewersChange]);
-
-  useEffect(() => {
     let cancelled = false;
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
-      videoCaptureDefaults:
-        mode === "host"
-          ? { resolution: { width: 1280, height: 720, frameRate: 30 } }
-          : undefined,
     });
     roomRef.current = room;
     setConnecting(true);
@@ -77,17 +62,10 @@ export function LiveKitStage({
     setHasRemoteVideo(false);
     setError(null);
     setViewerCount(0);
-    setViewers([]);
 
     function syncViewerCount() {
       if (mode !== "host") return;
-      const list = [...room.remoteParticipants.values()].map((p) => ({
-        id: p.identity,
-        name: (p.name || "").trim() || "Zuschauer",
-      }));
-      list.sort((a, b) => a.name.localeCompare(b.name, "de"));
-      setViewerCount(list.length);
-      setViewers(list);
+      setViewerCount(room.remoteParticipants.size);
     }
 
     room.on(RoomEvent.MediaDevicesError, (e: Error) => {
@@ -141,7 +119,6 @@ export function LiveKitStage({
       setConnected(false);
       setHasRemoteVideo(false);
       setViewerCount(0);
-      setViewers([]);
       setConnecting(false);
       setNeedsReconnect(true);
     });
@@ -231,7 +208,7 @@ export function LiveKitStage({
     <div
       className={cn(
         "relative overflow-hidden rounded-2xl bg-slate-900",
-        fillContainer && "h-full w-full min-h-0",
+        fillContainer && "flex h-full min-h-0 flex-col",
         className,
       )}
     >
@@ -239,8 +216,7 @@ export function LiveKitStage({
         ref={videoRef}
         className={cn(
           "w-full bg-black object-cover",
-          fillContainer ? "absolute inset-0 h-full w-full" : "aspect-video",
-          mode === "host" && "scale-x-[-1]",
+          fillContainer ? "min-h-0 flex-1" : "aspect-video",
         )}
         playsInline
         autoPlay
