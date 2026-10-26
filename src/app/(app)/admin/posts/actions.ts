@@ -13,6 +13,7 @@ import {
 } from "@/lib/email/post-moderation-notify";
 import { assertMemberCanWrite } from "@/lib/portal-launch";
 import { isUnsubmittedComposerDraft } from "@/lib/posts/composer-draft";
+import { collapseExtraPinnedPosts } from "@/lib/posts/single-pin";
 
 const createSchema = z.object({
   author_role: z.enum(["admin", "anni"]).default("admin"),
@@ -358,23 +359,33 @@ export async function setPostPinned(postId: string, pinned: boolean) {
     // User-Session nötig: Trigger posts_guard_pin_fields prüft is_admin() via auth.uid().
     // Service-Role hat kein uid → Pin würde fehlschlagen.
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase
-      .from("posts")
-      .update(
-        pinned
-          ? {
-              is_pinned: true,
-              pinned_at: new Date().toISOString(),
-              pinned_by: user.id,
-            }
-          : {
-              is_pinned: false,
-              pinned_at: null,
-              pinned_by: null,
-            },
-      )
-      .eq("id", id);
-    if (error) return { ok: false as const, error: error.message };
+    const clearPins = {
+      is_pinned: false,
+      pinned_at: null,
+      pinned_by: null,
+    };
+
+    if (!pinned) {
+      const { error } = await supabase.from("posts").update(clearPins).eq("is_pinned", true);
+      if (error) return { ok: false as const, error: error.message };
+    } else {
+      const cleared = await supabase
+        .from("posts")
+        .update(clearPins)
+        .eq("is_pinned", true)
+        .neq("id", id);
+      if (cleared.error) return { ok: false as const, error: cleared.error.message };
+      const { error } = await supabase
+        .from("posts")
+        .update({
+          is_pinned: true,
+          pinned_at: new Date().toISOString(),
+          pinned_by: user.id,
+        })
+        .eq("id", id);
+      if (error) return { ok: false as const, error: error.message };
+      await collapseExtraPinnedPosts(supabase);
+    }
 
     await auditLog({
       actorId: user.id,

@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-10-07";
+export const ADMIN_HANDBOOK_UPDATED = "2026-10-26";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -643,7 +643,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           },
           {
             type: "note",
-            text: "Mitglieder können nur Fotos anhängen und müssen auf Freigabe warten. Die Video-Option sehen sie nicht — ein Video-Upload von Nicht-Vorständen wird serverseitig abgelehnt.",
+            text: "Mitglieder können nur Fotos anhängen und müssen auf Freigabe warten. Die Video-Option sehen sie nicht — ein Video-Upload von Nicht-Vorständen wird serverseitig abgelehnt. Oben im Feed kann nur ein Beitrag fixiert sein: die Nadel am Beitrag heftet ihn nach oben. Wird ein anderer Beitrag fixiert, verliert der bisherige die Nadel. Lösen heißt: keiner bleibt oben.",
           },
           {
             type: "link",

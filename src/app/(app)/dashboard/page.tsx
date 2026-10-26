@@ -10,7 +10,8 @@ import { DashboardGiveawaysInline } from "@/components/giveaways/dashboard-givea
 import { DashboardMeetingHighlight } from "@/components/meetings/dashboard-meeting-highlight";
 import { DashboardLiveHighlight } from "@/components/dashboard/dashboard-live-highlight";
 import { loadPublishedMeetings, pickNextMeeting } from "@/lib/meetings/load";
-import { getRequestAuth } from "@/lib/auth/request-auth";
+import { getRequestAuth, getRequestMeProfile } from "@/lib/auth/request-auth";
+import { collapseExtraPinnedPostsOnDashboard } from "@/lib/posts/single-pin";
 import { loadGiveawayListItems } from "@/lib/giveaways/load-list";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
@@ -22,6 +23,12 @@ export default async function DashboardPage() {
 
   const { supabase, user } = await getRequestAuth();
   if (!user) redirect("/login");
+
+  const { profile } = await getRequestMeProfile();
+  await collapseExtraPinnedPostsOnDashboard({
+    supabase,
+    isAdmin: profile?.role === "admin",
+  });
 
   let { data: events } = await supabase
     .from("external_events")

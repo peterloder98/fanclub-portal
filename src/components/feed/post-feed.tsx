@@ -447,7 +447,18 @@ function PostFeedInner({
       return Number.isFinite(t) ? t : 0;
     };
 
-    const isAdminPinned = (p: FeedPost) => Boolean(p.isPinned);
+    let solePinnedId: string | null = null;
+    let solePinnedScore = -Infinity;
+    for (const item of items) {
+      if (item.kind !== "post" || !item.post.isPinned) continue;
+      const t = new Date(item.post.pinnedAt ?? 0).getTime();
+      const score = Number.isFinite(t) ? t : 0;
+      if (score >= solePinnedScore) {
+        solePinnedScore = score;
+        solePinnedId = item.post.id;
+      }
+    }
+    const isAdminPinned = (p: FeedPost) => Boolean(p.isPinned) && p.id === solePinnedId;
     const isPinnedBirthday = (p: FeedPost) =>
       Boolean(p.isBirthday) && Boolean(p.birthdayDate) && p.birthdayDate === todayBerlin;
 
@@ -1395,42 +1406,44 @@ function PostFeedInner({
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   }
 
+  const solePinnedId = useMemo(() => {
+    let id: string | null = null;
+    let best = -Infinity;
+    for (const post of posts) {
+      if (!post.isPinned) continue;
+      const t = new Date(post.pinnedAt ?? 0).getTime();
+      const score = Number.isFinite(t) ? t : 0;
+      if (score >= best) {
+        best = score;
+        id = post.id;
+      }
+    }
+    return id;
+  }, [posts]);
+
   async function togglePostPinned(post: FeedPost) {
     if (!me || me.role !== "admin") return;
-    const next = !post.isPinned;
+    const next = post.id !== solePinnedId;
     setPinBusyId(post.id);
     setLoadError(null);
+    const snapshot = posts;
     setPosts((prev) =>
-      prev.map((p) =>
-        p.id === post.id
-          ? {
-              ...p,
-              isPinned: next,
-              pinnedAt: next ? new Date().toISOString() : null,
-            }
-          : p,
-      ),
+      prev.map((p) => {
+        if (!next) return { ...p, isPinned: false, pinnedAt: null };
+        if (p.id === post.id) {
+          return { ...p, isPinned: true, pinnedAt: new Date().toISOString() };
+        }
+        return p.isPinned ? { ...p, isPinned: false, pinnedAt: null } : p;
+      }),
     );
     try {
       const result = await setPostPinned(post.id, next);
       if (!result.ok) {
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === post.id
-              ? { ...p, isPinned: post.isPinned, pinnedAt: post.pinnedAt ?? null }
-              : p,
-          ),
-        );
+        setPosts(snapshot);
         setLoadError(result.error);
       }
     } catch (e) {
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === post.id
-            ? { ...p, isPinned: post.isPinned, pinnedAt: post.pinnedAt ?? null }
-            : p,
-        ),
-      );
+      setPosts(snapshot);
       setLoadError(e instanceof Error ? e.message : "Fixieren fehlgeschlagen.");
     } finally {
       setPinBusyId(null);
@@ -2276,7 +2289,7 @@ function PostFeedInner({
                 <span className="truncate text-xs text-slate-600">
                   <span className="font-semibold text-slate-800">{post.authorName}</span>
                   <span className="text-slate-400"> · {post.createdAtLabel}</span>
-                  {post.isPinned ? (
+                  {post.id === solePinnedId ? (
                     <Badge variant="brand" className="ml-1.5 px-1.5 py-0 text-[10px]">
                       Fixiert
                     </Badge>
@@ -2302,14 +2315,22 @@ function PostFeedInner({
                       onClick={() => void togglePostPinned(post)}
                       className={cn(
                         "grid h-7 w-7 place-items-center rounded-lg border hover:bg-slate-50",
-                        post.isPinned
+                        post.id === solePinnedId
                           ? "border-fc-sky/50 text-fc-blue bg-fc-ice/60"
                           : "text-slate-600",
                       )}
-                      title={post.isPinned ? "Fixierung lösen" : "Oben fixieren"}
-                      aria-label={post.isPinned ? "Fixierung lösen" : "Oben fixieren"}
+                      title={
+                        post.id === solePinnedId
+                          ? "Fixierung lösen"
+                          : "Oben fixieren — nur dieser Beitrag bleibt oben"
+                      }
+                      aria-label={
+                        post.id === solePinnedId
+                          ? "Fixierung lösen"
+                          : "Oben fixieren, nur dieser Beitrag bleibt oben"
+                      }
                     >
-                      {post.isPinned ? (
+                      {post.id === solePinnedId ? (
                         <PinOff className="h-3.5 w-3.5" />
                       ) : (
                         <Pin className="h-3.5 w-3.5" />
