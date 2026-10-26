@@ -3,7 +3,7 @@ import { LiveMemberSessionView } from "@/components/live/live-member-session-vie
 import { LiveSessionListCard } from "@/components/live/live-session-list-card";
 import { getRequestAuth } from "@/lib/auth/request-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { isSessionDiscoverable, type LiveSessionRow } from "@/lib/live/types";
+import { canMembersJoinSession, isSessionDiscoverable, type LiveSessionRow } from "@/lib/live/types";
 import {
   deleteGraceExpiredLiveSessions,
   endExpiredLiveSessions,
@@ -101,18 +101,18 @@ export default async function LiveIndexPage() {
     user && featured ? await loadLiveMemberRsvp(supabase, featured, user.id) : null;
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <Topbar
         title={featured!.title}
         subtitle={others.length > 0 ? "Nächster Live-Termin" : "Live mit Anni"}
       />
-      <main className="pb-8">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <LiveMemberSessionView
           session={featured!}
           rsvpStatus={rsvpStatus}
           variant="embedded"
         />
-        {others.length > 0 ? (
+        {others.length > 0 && !canMembersJoinSession(featured!) ? (
           <section className="mx-auto mt-2 max-w-2xl px-3 sm:px-4">
             <h2 className="mb-3 text-sm font-semibold text-fc-navy">Weitere Termine</h2>
             <ul className="space-y-3">

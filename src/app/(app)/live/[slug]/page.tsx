@@ -88,9 +88,9 @@ export default async function LiveMemberSlugPage({
   const rsvpStatus = await loadLiveMemberRsvp(supabase, row, user.id);
 
   return (
-    <div className="min-h-screen">
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <Topbar title={row.title} subtitle="Live mit Anni" />
-      <main className="pb-8">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <LiveMemberSessionView session={row} rsvpStatus={rsvpStatus} variant="embedded" />
       </main>
     </div>

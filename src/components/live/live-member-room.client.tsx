@@ -74,7 +74,7 @@ export function LiveMemberRoom({
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("chat");
+  const [tab, setTab] = useState<Tab>("fragen");
   const [videoReady, setVideoReady] = useState(false);
   const [tokenNonce, setTokenNonce] = useState(0);
   const [audienceRefreshNonce, setAudienceRefreshNonce] = useState(0);
@@ -325,6 +325,7 @@ export function LiveMemberRoom({
   }
 
   const theaterLayout = isXl || isFullscreen;
+  const stageLocked = videoOpen && !inGrace && !roomClosed;
 
   function renderVideoStage({ fillContainer = false }: { fillContainer?: boolean } = {}) {
     const content = error ? (
@@ -402,8 +403,80 @@ export function LiveMemberRoom({
     );
   }
 
+  if (stageLocked) {
+    return (
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden px-2 py-2 sm:px-3">
+        <header className="mb-2 flex shrink-0 items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-fc-navy">{title}</p>
+            <p className="truncate text-xs text-slate-500">
+              {status === "live" ? "Live" : "Live-Session"} · {formatBerlinDateTime(startsAt)}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {renderCountdown()}
+            <LiveSessionAudience
+              sessionId={sessionId}
+              enabled={chatOpen}
+              refreshNonce={audienceRefreshNonce}
+            />
+          </div>
+        </header>
+        <div
+          ref={stageRef}
+          className={cn(
+            "flex min-h-0 flex-1 flex-col gap-2 overflow-hidden",
+            isFullscreen && "h-full bg-slate-950 p-2",
+            "md:grid md:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] md:grid-rows-1",
+          )}
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+            <div className="min-h-0 flex-1">{renderVideoStage({ fillContainer: true })}</div>
+            <div className="hidden max-h-[min(32vh,15rem)] shrink-0 overflow-y-auto overscroll-contain md:block">
+              <LiveMemberQuestions sessionId={sessionId} enabled />
+            </div>
+          </div>
+          <div className="hidden min-h-0 md:flex md:flex-col">
+            <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full min-h-0" />
+          </div>
+          <div className="flex max-h-[min(38vh,17rem)] min-h-[9rem] shrink-0 flex-col gap-2 overflow-hidden md:hidden">
+            <div className="flex shrink-0 gap-2">
+              {(
+                [
+                  ["fragen", "Fragen"],
+                  ["chat", "Chat"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  className={cn(
+                    "h-9 flex-1 rounded-xl text-sm font-semibold",
+                    tab === id
+                      ? "bg-fc-navy text-white"
+                      : "border border-fc-navy/15 bg-white text-slate-700",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+              {tab === "chat" ? (
+                <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-full min-h-0" />
+              ) : (
+                <LiveMemberQuestions sessionId={sessionId} enabled />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-4 lg:px-6">
+    <div className="mx-auto h-full min-h-0 w-full max-w-6xl overflow-y-auto px-3 py-4 sm:px-4 lg:px-6">
       {!compactHeader ? (
         <header className="mb-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">

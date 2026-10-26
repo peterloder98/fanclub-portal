@@ -255,7 +255,7 @@ export function LiveMemberQuestions({
         <p className="text-[11px] text-white/80">
           {mode === "advance"
             ? "Optional — eine Frage vor dem Live. Weitere Fragen später im Chat."
-            : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
+            : "Eine offene Frage. Sobald Anni sie abgehakt hat, kannst du die nächste stellen."}
         </p>
       </header>
 
@@ -293,7 +293,10 @@ export function LiveMemberQuestions({
                 <strong>Weitere Fragen könnt ihr während des Live-Chats stellen.</strong>
               </p>
             ) : (
-              <p>Du hast bereits eine offene Frage. Mehr als eine ist nicht möglich.</p>
+              <p>
+                Du hast schon eine offene Frage. Sobald Anni sie abgehakt hat, kannst du die nächste
+                stellen.
+              </p>
             )}
           </div>
         )}

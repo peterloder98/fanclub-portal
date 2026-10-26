@@ -36,7 +36,7 @@ export function LiveSessionLobby({
   rsvpStatus: "accepted" | "declined" | null;
 }) {
   return (
-    <div className="mx-auto grid w-full max-w-2xl gap-5 px-3 py-5 sm:px-4">
+    <div className="mx-auto grid h-full min-h-0 w-full max-w-2xl gap-5 overflow-y-auto px-3 py-5 sm:px-4">
       <section className="rounded-2xl border border-fc-navy/15 bg-white p-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-wide text-rose-600">
           Einladung · Live mit Anni

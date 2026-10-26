@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, MessageCircle, Users } from "lucide-react";
 import { LiveSessionCountdown } from "@/components/live/live-session-countdown.client";
+import type { LiveStageViewer } from "@/components/live/livekit-stage.client";
 import { formatChatTime } from "@/lib/chat/types";
 import { cn } from "@/lib/cn";
 
@@ -47,6 +48,8 @@ export function LiveHostRoom({ token }: { token: string }) {
   const [streamEnded, setStreamEnded] = useState(false);
   const [ending, setEnding] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
+  const [viewers, setViewers] = useState<LiveStageViewer[]>([]);
+  const [sideTab, setSideTab] = useState<"fragen" | "chat">("fragen");
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -209,8 +212,8 @@ export function LiveHostRoom({ token }: { token: string }) {
   }
 
   return (
-    <div className="min-h-dvh bg-[color:var(--background)]">
-      <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-3 text-white">
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[color:var(--background)]">
+      <header className="shrink-0 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-3 text-white">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Host</p>
@@ -218,7 +221,7 @@ export function LiveHostRoom({ token }: { token: string }) {
             <p className="text-sm text-white/85">
               {streamEnded
                 ? "Du bist offline. Der Mitglieder-Chat läuft noch kurz weiter."
-                : "Kamera und Mikrofon freigeben — Mitglieder sehen dich im Raum. Bei Abbruch: „Erneut verbinden“ oder denselben Host-Link erneut öffnen."}
+                : "Kamera und Mikrofon freigeben. Bei Abbruch denselben Host-Link erneut öffnen."}
             </p>
             {streamEnded && graceEndsAt ? (
               <LiveSessionCountdown
@@ -253,89 +256,123 @@ export function LiveHostRoom({ token }: { token: string }) {
             ) : null}
           </div>
         </div>
+        {!streamEnded && lkToken ? (
+          <div className="mt-2 max-h-16 overflow-y-auto">
+            {viewers.length === 0 ? (
+              <p className="text-sm text-white/80">Noch niemand im Raum.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-1.5">
+                {viewers.map((v) => (
+                  <li
+                    key={v.id}
+                    className="rounded-full bg-white/15 px-2.5 py-0.5 text-sm font-medium text-white"
+                  >
+                    {v.name}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
       </header>
 
-      <main className="w-full max-w-full px-3 py-4 sm:px-4 lg:px-6">
+      <main className="flex min-h-0 w-full flex-1 flex-col px-2 py-2 sm:px-3">
         {error && !streamEnded ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-6 text-sm text-rose-800">
             {error}
           </div>
         ) : (
-          <div className="grid gap-4">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.9fr)] xl:items-start">
-              <div className="min-w-0 space-y-4">
-                {streamEnded ? (
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-700">
-                    Video ist beendet. Mitglieder können noch kurz im Chat schreiben — danach schließt
-                    sich die Session automatisch.
-                  </div>
-                ) : lkToken && url ? (
-                  <LiveKitStage
-                    token={lkToken}
-                    serverUrl={url}
-                    mode="host"
-                    onViewerCountChange={setViewerCount}
-                  />
-                ) : (
-                  <div className="grid aspect-video place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
-                    Verbinde…
-                  </div>
-                )}
+          <div className="flex min-h-0 flex-1 flex-col gap-2 md:grid md:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)] md:grid-rows-1">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              {streamEnded ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-700">
+                  Video ist beendet. Mitglieder können noch kurz im Chat schreiben — danach schließt
+                  sich die Session automatisch.
+                </div>
+              ) : lkToken && url ? (
+                <LiveKitStage
+                  token={lkToken}
+                  serverUrl={url}
+                  mode="host"
+                  fillContainer
+                  className="min-h-0 flex-1"
+                  onViewerCountChange={setViewerCount}
+                  onViewersChange={setViewers}
+                />
+              ) : (
+                <div className="grid min-h-0 flex-1 place-items-center rounded-2xl bg-slate-900 text-sm text-white/80">
+                  Verbinde…
+                </div>
+              )}
+            </div>
 
-                {!streamEnded ? (
-                  <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
-                    <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
-                      <p className="text-sm font-semibold tracking-tight">Fragen der Mitglieder</p>
-                    </header>
-                    <ul className="max-h-[16.5rem] overflow-y-auto overscroll-contain divide-y divide-fc-navy/5">
-                      {questions.length === 0 ? (
-                        <li className="px-4 py-6 text-sm text-slate-500">Noch keine offenen Fragen.</li>
-                      ) : (
-                        questions.map((q, i) => (
-                          <li
-                            key={q.id}
-                            className={cn(
-                              "flex items-start gap-3 px-3 py-2.5",
-                              i % 2 === 0 ? "bg-white" : "bg-fc-ice/70",
-                            )}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="truncate text-xs font-semibold text-fc-navy">
-                                  {q.authorName}
-                                </span>
-                                <time
-                                  className="shrink-0 text-[10px] tabular-nums text-slate-400"
-                                  dateTime={q.createdAt}
-                                >
-                                  {formatChatTime(q.createdAt)}
-                                </time>
-                              </div>
-                              <p className="mt-0.5 text-[13px] leading-snug text-slate-700">{q.body}</p>
-                            </div>
-                            <button
-                              type="button"
-                              disabled={dismissing === q.id}
-                              onClick={() => void dismiss(q.id)}
-                              className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
-                              title="Abhaken"
-                              aria-label="Frage abhaken"
-                            >
-                              <Check className="h-4 w-4" />
-                            </button>
-                          </li>
-                        ))
+            <aside className="flex h-[min(42vh,22rem)] shrink-0 flex-col overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm md:h-auto md:min-h-0">
+                <header className="shrink-0 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2 text-white">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSideTab("fragen")}
+                      className={cn(
+                        "h-8 flex-1 rounded-lg text-sm font-semibold",
+                        sideTab === "fragen" ? "bg-white text-fc-navy" : "bg-white/15 text-white",
                       )}
-                    </ul>
-                  </section>
-                ) : null}
-              </div>
-
-              <aside className="flex h-[min(28rem,55vh)] min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
-                <header className="shrink-0 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-3 py-2.5 text-white">
-                  <p className="text-sm font-semibold tracking-tight">Mitglieder-Chat</p>
-                  <p className="text-[11px] text-white/80">Nur mitlesen</p>
+                    >
+                      Fragen{questions.length ? ` · ${questions.length}` : ""}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSideTab("chat")}
+                      className={cn(
+                        "h-8 flex-1 rounded-lg text-sm font-semibold",
+                        sideTab === "chat" ? "bg-white text-fc-navy" : "bg-white/15 text-white",
+                      )}
+                    >
+                      Chat
+                    </button>
+                  </div>
                 </header>
+                {sideTab === "fragen" && !streamEnded ? (
+                  <ul className="min-h-0 flex-1 divide-y divide-fc-navy/5 overflow-y-auto overscroll-contain">
+                    {questions.length === 0 ? (
+                      <li className="px-4 py-6 text-sm text-slate-500">Noch keine offenen Fragen.</li>
+                    ) : (
+                      questions.map((q, i) => (
+                        <li
+                          key={q.id}
+                          className={cn(
+                            "flex items-start gap-3 px-3 py-3",
+                            i % 2 === 0 ? "bg-white" : "bg-fc-ice/70",
+                          )}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate text-sm font-semibold text-fc-navy">
+                                {q.authorName}
+                              </span>
+                              <time
+                                className="shrink-0 text-xs tabular-nums text-slate-400"
+                                dateTime={q.createdAt}
+                              >
+                                {formatChatTime(q.createdAt)}
+                              </time>
+                            </div>
+                            <p className="mt-1 text-base leading-snug text-slate-800">{q.body}</p>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={dismissing === q.id}
+                            onClick={() => void dismiss(q.id)}
+                            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                            title="Abhaken"
+                            aria-label="Frage abhaken"
+                          >
+                            <Check className="h-5 w-5" />
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                ) : (
                 <div ref={chatRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                   {messages.length === 0 ? (
                     <div className="grid h-full min-h-[10rem] place-items-center px-4 text-center">
@@ -370,8 +407,8 @@ export function LiveHostRoom({ token }: { token: string }) {
                     </ul>
                   )}
                 </div>
-              </aside>
-            </div>
+                )}
+            </aside>
           </div>
         )}
       </main>
