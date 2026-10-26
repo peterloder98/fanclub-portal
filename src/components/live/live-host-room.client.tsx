@@ -47,6 +47,9 @@ export function LiveHostRoom({ token }: { token: string }) {
   const [streamEnded, setStreamEnded] = useState(false);
   const [ending, setEnding] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
+  const [questionsClosed, setQuestionsClosed] = useState(false);
+  const [questionsLockBusy, setQuestionsLockBusy] = useState(false);
+  const [questionsLockError, setQuestionsLockError] = useState<string | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,9 +114,13 @@ export function LiveHostRoom({ token }: { token: string }) {
         messages?: ChatMsg[];
         status?: string;
         graceEndsAt?: string | null;
+        questionsClosed?: boolean;
       };
       setQuestions(data.questions ?? []);
       setMessages(data.messages ?? []);
+      if (typeof data.questionsClosed === "boolean") {
+        setQuestionsClosed(data.questionsClosed);
+      }
       if (data.status === "ended") {
         setStreamEnded(true);
         if (data.graceEndsAt) setGraceEndsAt(data.graceEndsAt);
@@ -157,6 +164,34 @@ export function LiveHostRoom({ token }: { token: string }) {
       setQuestions((prev) => prev.filter((q) => q.id !== questionId));
     } finally {
       setDismissing(null);
+    }
+  }
+
+  async function toggleQuestionsLock() {
+    if (!questionsClosed) {
+      const ok = window.confirm(
+        "Weitere Fragen schließen?\n\nOffene Fragen bleiben und können abgehakt werden. Neue Fragen sind gesperrt.",
+      );
+      if (!ok) return;
+    }
+    setQuestionsLockBusy(true);
+    try {
+      const res = await fetch("/api/live/host-questions-lock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, closed: !questionsClosed }),
+      });
+      const data = (await res.json()) as { questionsClosed?: boolean; error?: string };
+      if (!res.ok) {
+        setQuestionsLockError(data.error ?? "Fragen konnten nicht umgestellt werden.");
+        return;
+      }
+      setQuestionsClosed(Boolean(data.questionsClosed));
+      setQuestionsLockError(null);
+    } catch {
+      setQuestionsLockError("Netzwerkfehler.");
+    } finally {
+      setQuestionsLockBusy(false);
     }
   }
 
@@ -284,9 +319,33 @@ export function LiveHostRoom({ token }: { token: string }) {
 
                 {!streamEnded ? (
                   <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
-                    <header className="border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
-                      <p className="text-sm font-semibold tracking-tight">Fragen der Mitglieder</p>
+                    <header className="flex items-center justify-between gap-3 border-b border-fc-navy/10 bg-gradient-to-r from-fc-navy to-fc-blue px-4 py-2.5 text-white">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold tracking-tight">Fragen der Mitglieder</p>
+                        <p className="text-[11px] text-white/80">
+                          {questionsClosed
+                            ? "Neue Fragen sind geschlossen. Offene bleiben."
+                            : "Neue Fragen sind erlaubt."}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={questionsLockBusy}
+                        onClick={() => void toggleQuestionsLock()}
+                        className="shrink-0 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/25 disabled:opacity-60"
+                      >
+                        {questionsLockBusy
+                          ? "Speichere…"
+                          : questionsClosed
+                            ? "Weitere Fragen wieder erlauben"
+                            : "Weitere Fragen schließen"}
+                      </button>
                     </header>
+                    {questionsLockError ? (
+                      <p className="border-b border-rose-100 bg-rose-50 px-4 py-2 text-sm text-rose-800">
+                        {questionsLockError}
+                      </p>
+                    ) : null}
                     <ul className="max-h-[16.5rem] overflow-y-auto overscroll-contain divide-y divide-fc-navy/5">
                       {questions.length === 0 ? (
                         <li className="px-4 py-6 text-sm text-slate-500">Noch keine offenen Fragen.</li>

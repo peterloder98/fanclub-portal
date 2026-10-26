@@ -159,6 +159,23 @@ export async function submitLiveSessionQuestion(
     };
   }
 
+  if (canMembersJoinSession(gate.session)) {
+    const closed = await gate.supabase
+      .from("live_sessions")
+      .select("questions_closed_at")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (closed.error && !/questions_closed_at/i.test(closed.error.message)) {
+      return { ok: false, error: closed.error.message };
+    }
+    if (!closed.error && closed.data?.questions_closed_at) {
+      return {
+        ok: false,
+        error: "Anni nimmt gerade keine neuen Fragen an.",
+      };
+    }
+  }
+
   const { error } = await gate.supabase.from("live_session_questions").insert({
     session_id: sessionId,
     author_id: gate.user.id,

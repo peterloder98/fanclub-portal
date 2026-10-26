@@ -685,7 +685,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Prüfen: Host-Link ist kopierbar und Anni hat die Host-Mail erhalten (oder Link manuell nachreichen).",
               "Einladungen: In der Admin-Liste ggf. „Erneut einladen“, falls jemand die Mail vermisst. Zusagen unter Live / Teilnehmerliste im Blick behalten.",
               "Kurz vor 21:00: Beitrittsfenster ist offen — Mitglieder können schon im Raum warten. Anni öffnet den Host-Link, Kamera/Mikro freigeben.",
-              "Währenddessen: Fragen in der Host-Ansicht abhaken; Chat nur mitlesen. Unter Admin → Live → Session aufklappen „Offene Fragen“: alle Vorab- und Live-Fragen lesen, abhaken, löschen oder mit Verwarnung entfernen.",
+              "Währenddessen: Fragen in der Host-Ansicht abhaken; Chat nur mitlesen. Wenn es zu viele werden oder das Live ausklingt, tippt Anni „Weitere Fragen schließen“ — offene Fragen bleiben und können weiter abgehakt werden, neue sind gesperrt. Ein zweiter Tipp „Weitere Fragen wieder erlauben“ öffnet sie wieder. Unter Admin → Live → Session aufklappen „Offene Fragen“: alle Vorab- und Live-Fragen lesen, abhaken, löschen oder mit Verwarnung entfernen.",
               "Ende: Entweder nach 30 Minuten automatisch oder früher mit „Live beenden“. 10 Minuten Chat-Nachlauf, dann ist der Termin weg.",
               "Host-Link erneuern nur bei Bedarf (Link verloren / Sicherheit): Alter Link stirbt, Anni bekommt den neuen per Mail.",
             ],

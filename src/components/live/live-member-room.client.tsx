@@ -90,6 +90,7 @@ export function LiveMemberRoom({
     return null;
   });
   const [roomClosed, setRoomClosed] = useState(false);
+  const [questionsClosed, setQuestionsClosed] = useState(false);
 
   const inGrace = streamEnded && Boolean(graceDeadline) && !roomClosed;
   const videoOpen = joinOpen && !streamEnded && !roomClosed;
@@ -127,17 +128,29 @@ export function LiveMemberRoom({
     let cancelled = false;
 
     async function syncStatus() {
-      const { data, error: qErr } = await supabase
+      let { data, error: qErr } = await supabase
         .from("live_sessions")
-        .select("status,grace_ends_at")
+        .select("status,grace_ends_at,questions_closed_at")
         .eq("id", sessionId)
         .maybeSingle();
+      if (qErr && /questions_closed_at/i.test(qErr.message)) {
+        const fallback = await supabase
+          .from("live_sessions")
+          .select("status,grace_ends_at")
+          .eq("id", sessionId)
+          .maybeSingle();
+        data = fallback.data
+          ? { ...fallback.data, questions_closed_at: null }
+          : null;
+        qErr = fallback.error;
+      }
       if (cancelled) return;
       if (qErr) return;
       if (!data) {
         onGraceEnded();
         return;
       }
+      setQuestionsClosed(Boolean(data.questions_closed_at));
       if (data.status === "cancelled") {
         onGraceEnded();
         return;
@@ -168,7 +181,14 @@ export function LiveMemberRoom({
           filter: `id=eq.${sessionId}`,
         },
         (payload) => {
-          const row = payload.new as { status?: string; grace_ends_at?: string | null };
+          const row = payload.new as {
+            status?: string;
+            grace_ends_at?: string | null;
+            questions_closed_at?: string | null;
+          };
+          if ("questions_closed_at" in row) {
+            setQuestionsClosed(Boolean(row.questions_closed_at));
+          }
           if (row.status === "cancelled") {
             onGraceEnded();
             return;
@@ -538,7 +558,11 @@ export function LiveMemberRoom({
                         isFullscreen && "max-h-[min(14rem,28vh)] min-h-0 overflow-y-auto",
                       )}
                     >
-                      <LiveMemberQuestions sessionId={sessionId} enabled />
+                      <LiveMemberQuestions
+                        sessionId={sessionId}
+                        enabled
+                        questionsClosed={questionsClosed}
+                      />
                     </div>
                   ) : null}
                 </div>
@@ -582,7 +606,11 @@ export function LiveMemberRoom({
                 {tab === "chat" || inGrace ? (
                   <LiveSessionChatPanel sessionId={sessionId} enabled={chatOpen} className="h-[22rem]" />
                 ) : (
-                  <LiveMemberQuestions sessionId={sessionId} enabled />
+                  <LiveMemberQuestions
+                    sessionId={sessionId}
+                    enabled
+                    questionsClosed={questionsClosed}
+                  />
                 )}
               </>
             )}

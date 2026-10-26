@@ -81,11 +81,14 @@ export function LiveMemberQuestions({
   sessionId,
   enabled,
   mode = "live",
+  questionsClosed = false,
 }: {
   sessionId: string;
   enabled: boolean;
   /** advance = vor dem Live nur eine Frage; live = während der Session (weiterhin max. 1 offen). */
   mode?: "advance" | "live";
+  /** Laufendes Live: Anni hat neue Fragen geschlossen. Vorab-Fragen ignorieren das. */
+  questionsClosed?: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [mine, setMine] = useState<QItem[]>([]);
@@ -243,7 +246,8 @@ export function LiveMemberQuestions({
   if (!enabled) return null;
 
   const hasOpenQuestion = mine.length > 0;
-  const canSubmit = !hasOpenQuestion && softLaunch.canWrite;
+  const liveQuestionsClosed = mode === "live" && questionsClosed;
+  const canSubmit = !hasOpenQuestion && softLaunch.canWrite && !liveQuestionsClosed;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-fc-navy/15 bg-white shadow-sm">
@@ -255,7 +259,9 @@ export function LiveMemberQuestions({
         <p className="text-[11px] text-white/80">
           {mode === "advance"
             ? "Optional — eine Frage vor dem Live. Weitere Fragen später im Chat."
-            : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
+            : liveQuestionsClosed
+              ? "Anni nimmt gerade keine neuen Fragen an."
+              : "Pro Person eine offene Frage. Anni sieht sie chronologisch."}
         </p>
       </header>
 
@@ -283,6 +289,10 @@ export function LiveMemberQuestions({
               </button>
             </div>
           </form>
+        ) : liveQuestionsClosed && !hasOpenQuestion ? (
+          <p className="text-sm text-slate-700">
+            Anni nimmt gerade keine neuen Fragen an.
+          </p>
         ) : !softLaunch.canWrite ? (
           <p className="text-sm text-slate-500">{softLaunch.writeBlockedMessage}</p>
         ) : (

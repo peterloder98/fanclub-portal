@@ -6,23 +6,38 @@ import { profileDisplayName } from "@/lib/profiles/display";
 async function sessionFromHostToken(token: string): Promise<LiveSessionRow | null> {
   const hash = hashLiveHostToken(token);
   const admin = createSupabaseAdminClient();
+  const withLock =
+    "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at,questions_closed_at";
+  const withGrace =
+    "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at";
+  const base =
+    "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at";
+
   let { data, error } = await admin
     .from("live_sessions")
-    .select(
-      "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at,grace_ends_at",
-    )
+    .select(withLock)
     .eq("host_token_hash", hash)
     .maybeSingle();
-  if (error && /grace_ends_at/i.test(error.message)) {
+
+  if (error && /questions_closed_at/i.test(error.message)) {
     const fallback = await admin
       .from("live_sessions")
-      .select(
-        "id,slug,title,starts_at,ends_at,join_opens_at,status,host_token_hash,livekit_room_name,created_by,created_at,updated_at",
-      )
+      .select(withGrace)
       .eq("host_token_hash", hash)
       .maybeSingle();
     data = fallback.data
-      ? ({ ...fallback.data, grace_ends_at: null } as typeof data)
+      ? ({ ...fallback.data, questions_closed_at: null } as typeof data)
+      : null;
+    error = fallback.error;
+  }
+  if (error && /grace_ends_at/i.test(error.message)) {
+    const fallback = await admin
+      .from("live_sessions")
+      .select(base)
+      .eq("host_token_hash", hash)
+      .maybeSingle();
+    data = fallback.data
+      ? ({ ...fallback.data, grace_ends_at: null, questions_closed_at: null } as typeof data)
       : null;
   }
   return (data as LiveSessionRow | null) ?? null;
@@ -94,6 +109,7 @@ export async function POST(request: Request) {
       title: session.title,
       status: session.status,
       graceEndsAt: session.grace_ends_at ?? null,
+      questionsClosed: Boolean(session.questions_closed_at),
       questions: (questions ?? []).map((q) => ({
         id: q.id,
         body: q.body,

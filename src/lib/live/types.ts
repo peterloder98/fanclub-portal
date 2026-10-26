@@ -19,6 +19,8 @@ export type LiveSessionRow = {
   anni_reminder_sent_at?: string | null;
   /** Nach Ende: Chat noch bis hier offen, danach Session löschen. */
   grace_ends_at?: string | null;
+  /** Gesetzt: im laufenden Live keine neuen Fragen. Null: erlaubt. */
+  questions_closed_at?: string | null;
 };
 
 export const LIVE_SESSION_CHAT_MAX_LEN = 1000;
