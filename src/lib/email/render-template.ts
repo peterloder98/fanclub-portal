@@ -529,6 +529,9 @@ export async function renderEmailFromTemplate(
   vars: Record<string, string>,
   opts?: { signatureId?: string },
 ) {
+  if (key === EMAIL_TEMPLATE_KEYS.boardRundmail) {
+    throw new Error("Rundmail wird direkt aus dem Versand aufgebaut.");
+  }
   // DB-Fehler dürfen Hardcoded-Fallbacks nicht blockieren (sonst undurchsichtige RSC-Digests).
   let row: EmailTemplateRow | null = null;
   try {

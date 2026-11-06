@@ -1,3 +1,4 @@
+import { BOARD_RUNDMAIL_TEMPLATE_KEY } from "@/lib/email/board-rundmail-content";
 import { EMAIL_SALUTATION_PLACEHOLDER } from "@/lib/email/salutation-block";
 
 export const EMAIL_TEMPLATE_KEYS = {
@@ -26,6 +27,7 @@ export const EMAIL_TEMPLATE_KEYS = {
   boardVideoMeetingAnniInvite: "board_video_meeting_anni_invite",
   boardVideoMeetingGuestInvite: "board_video_meeting_guest_invite",
   memberLoginEmailChanged: "member_login_email_changed",
+  boardRundmail: BOARD_RUNDMAIL_TEMPLATE_KEY,
 } as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[keyof typeof EMAIL_TEMPLATE_KEYS];
@@ -240,5 +242,9 @@ export const TEMPLATE_PLACEHOLDERS: Record<
     { key: "first_name", label: "Vorname" },
     { key: "new_email", label: "Neue Login-E-Mail" },
     { key: "old_email", label: "Bisherige E-Mail" },
+  ],
+  [EMAIL_TEMPLATE_KEYS.boardRundmail]: [
+    { key: "Vorname", label: "Vorname" },
+    { key: "Anrede", label: "Anrede (Lieber/Liebe + Vorname)" },
   ],
 };

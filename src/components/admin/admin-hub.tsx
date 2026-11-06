@@ -8,6 +8,7 @@ import {
   UserPlus,
   Mail,
   Mails,
+  Send,
   RefreshCw,
   PenLine,
   Radio,
@@ -106,6 +107,12 @@ const SECTIONS: AdminHubSection[] = [
     title: "E-Mail & Kommunikation",
     subtitle: "Versand, Vorlagen und Benachrichtigungen",
     items: [
+      {
+        href: "/admin/rundmail",
+        title: "Rundmail",
+        description: "Mail an alle oder einzelne Mitglieder",
+        icon: Send,
+      },
       {
         href: "/admin/settings/email",
         title: "E-Mail-Konten",

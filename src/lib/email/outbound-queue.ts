@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { EmailTemplateKey } from "@/lib/email/template-keys";
+import type { Attachment } from "nodemailer/lib/mailer";
+import { renderQueuedBoardRundmail, type BoardRundmailRenderCache } from "@/lib/email/board-rundmail-render";
+import { releaseBoardRundmailStorageIfDone } from "@/lib/email/board-rundmail-storage";
+import { EMAIL_TEMPLATE_KEYS, type EmailTemplateKey } from "@/lib/email/template-keys";
 import { renderEmailFromTemplate } from "@/lib/email/render-template";
 import { sendEmailWithLog } from "@/lib/email/send-log";
 import { liveSessionIcsAttachment } from "@/lib/live/calendar-ics";
@@ -140,25 +143,65 @@ export async function drainOutboundEmailQueue(
   let sent = 0;
   let failed = 0;
   let abortedAuth = false;
+  const rundmailCache: BoardRundmailRenderCache = new Map();
+
+  async function finishRundmail(row: OutboundQueueRow) {
+    if (row.template_key !== EMAIL_TEMPLATE_KEYS.boardRundmail) return;
+    await releaseBoardRundmailStorageIfDone(admin, row.context);
+  }
 
   for (let i = 0; i < (rows ?? []).length; i++) {
     const row = rows![i] as OutboundQueueRow;
     if (i > 0) await paceBulkOutboundEmail(sent);
 
     const templateKey = row.template_key as EmailTemplateKey;
-    const rendered = await renderEmailFromTemplate(templateKey, row.template_vars);
-    const session = sessionFromContext(row.context);
-    const attachments = session
-      ? [liveSessionIcsAttachment(session)]
-      : rendered.signatureAttachment
-        ? [rendered.signatureAttachment]
-        : undefined;
+    let subject: string;
+    let text: string;
+    let html: string;
+    let attachments: Attachment[] | undefined;
+
+    if (templateKey === EMAIL_TEMPLATE_KEYS.boardRundmail) {
+      try {
+        const prepared = await renderQueuedBoardRundmail(admin, row, rundmailCache);
+        subject = prepared.subject;
+        text = prepared.text;
+        html = prepared.html;
+        attachments = prepared.attachments.length ? prepared.attachments : undefined;
+      } catch (error) {
+        failed += 1;
+        console.error(
+          "[rundmail] Aufbau fehlgeschlagen:",
+          error instanceof Error ? error.message : "unknown",
+        );
+        await admin
+          .from("email_outbound_queue")
+          .update({
+            status: "failed",
+            attempts: row.attempts + 1,
+            error_message: "Rundmail konnte nicht aufgebaut werden.",
+          })
+          .eq("id", row.id);
+        await finishRundmail(row);
+        continue;
+      }
+    } else {
+      const rendered = await renderEmailFromTemplate(templateKey, row.template_vars);
+      const session = sessionFromContext(row.context);
+      subject = rendered.subject;
+      text = rendered.text;
+      html = rendered.html;
+      attachments = session
+        ? [liveSessionIcsAttachment(session)]
+        : rendered.signatureAttachment
+          ? [rendered.signatureAttachment]
+          : undefined;
+    }
 
     const result = await sendEmailWithLog({
       to: row.to_address,
-      subject: rendered.subject,
-      text: rendered.text,
-      html: rendered.html,
+      subject,
+      text,
+      html,
       attachments,
       templateKey,
       context: { ...(row.context ?? {}), queue_id: row.id },
@@ -174,6 +217,7 @@ export async function drainOutboundEmailQueue(
           error_message: null,
         })
         .eq("id", row.id);
+      await finishRundmail(row);
       continue;
     }
 
@@ -194,6 +238,7 @@ export async function drainOutboundEmailQueue(
         })
         .eq("id", row.id);
       console.error("[outbound-queue] SMTP-Login abgelehnt — Drain gestoppt:", errMsg);
+      await finishRundmail(row);
       break;
     }
 
@@ -208,6 +253,7 @@ export async function drainOutboundEmailQueue(
       patch.send_after = new Date(Date.now() + attempts * 15 * 60_000).toISOString();
     }
     await admin.from("email_outbound_queue").update(patch).eq("id", row.id);
+    if (!retryLater) await finishRundmail(row);
 
     if (retryLater) {
       console.warn("[outbound-queue] temporär blockiert, später erneut:", row.to_address);

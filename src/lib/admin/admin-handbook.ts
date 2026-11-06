@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-10-26";
+export const ADMIN_HANDBOOK_UPDATED = "2026-11-06";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -868,6 +868,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "„Signaturen“: gemeinsame Fanclub-Unterschrift pflegen.",
               "„E-Mail-Historie“: nachschauen, ob eine Mail rausgegangen ist — und bei Bedarf erneut senden. Live-Einladungen und andere Massen-Mails aus der Warteschlange erscheinen hier ebenfalls.",
               "Massenversand (Live-Einladung u. Ä.): Die App startet den Versand sofort und wartet zwischen Mails / pausiert regelmäßig — damit das Club-SMTP-Konto (web.de) nicht wegen Menge sperrt. Bei Login-Fehler 535 bricht der Versand ab; SMTP-Passwort in den Einstellungen prüfen, dann „Einladungen erneut senden“.",
+              "„Rundmail“: selbst eine Mail an alle aktiven Mitglieder oder an eine Auswahl schreiben (siehe Abschnitt 5.3).",
               "„Mitglieder-Benachrichtigungen“ (System): optionale Massen-Mails an alle aktiven Mitglieder bei neuem Gewinnspiel, neuem Auftritt/Event oder neuer Umfrage — jeweils einzeln einschaltbar.",
               "Aktuell ist in der Regel nur „Neuer Auftritt / Event“ eingeschaltet; Gewinnspiel und Umfrage bleiben aus, bis ihr sie bewusst aktiviert.",
               "Mitglieder können unter „Mein Profil → E-Mail-Benachrichtigungen“ einzelne optionale Mails abschalten (Events, Gewinnspiele, Umfragen, Treffen-Erinnerungen, Live mit Anni, App-Erinnerungen). Wer abgeschaltet hat, bekommt diese Mails nicht — auch wenn die Club-Einstellung an ist.",
@@ -886,6 +887,11 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
           {
             type: "note",
             text: "Solange der E-Mail-Versand im Testmodus läuft, gehen Massen-Mails und die meisten Mitglieder-Mails nur an die Allowlist (Vorstand/SMTP). Nach dem Go-Live (16.08.2026 10:00) ist der Standard live, sofern EMAIL_OUTBOUND_MODE nicht explizit auf test steht. Vorstands-Mails wie Zahlungsinfo/Zahlungserinnerung und Mitglieder-Werbeeinladungen gehen auch im Testmodus raus. Live erzwingen: EMAIL_OUTBOUND_MODE=live in Vercel.",
+          },
+          {
+            type: "link",
+            href: "/admin/rundmail",
+            label: "Rundmail",
           },
           {
             type: "link",
@@ -947,6 +953,38 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
             type: "link",
             href: "/forgot-password",
             label: "Passwort vergessen (Mitglieder-Ansicht)",
+          },
+        ],
+      },
+      {
+        id: "rundmail",
+        number: "5.3",
+        title: "Rundmail an Mitglieder",
+        summary: "Eine Mail an alle oder an eine Auswahl",
+        blocks: [
+          {
+            type: "p",
+            text: "Als Vorstand könnt ihr eine Mail an alle aktiven Mitglieder oder nur an ausgewählte Personen schicken. Das geht nur im Admin-Bereich, über das normale Club-Postfach — dasselbe wie bei den anderen Club-Mails.",
+          },
+          {
+            type: "ol",
+            items: [
+              "Admin → E-Mail & Kommunikation → „Rundmail“ öffnen.",
+              "„Alle“ ist vorausgewählt: jedes aktive Mitglied mit eigener E-Mail. Ein Häkchen wegnehmen, wenn jemand die Mail nicht bekommen soll. Ein Häkchen setzen, um jemanden wieder aufzunehmen. Über die Suche findet ihr einen Namen oder eine E-Mail in einer langen Liste. Die Suche blendet nur aus — die Auswahl bleibt.",
+              "Betreff eintragen.",
+              "Text schreiben. Darüber: Fett, Kursiv und Link (Adresse einfügen oder ändern). „Vorname“ und „Anrede“ setzt ihr in den Text, damit jede Mail persönlich ankommt — zum Beispiel Max oder Lieber Max.",
+              "Optional Dateien anhängen: PDF, Bilder oder übliche Office-Dateien wie Word, Excel und PowerPoint. Höchstens 5 Dateien und zusammen höchstens 3 MB. Ist es mehr oder der Typ passt nicht, kommt ein kurzer Hinweis und die Mail geht nicht raus.",
+              "Unten seht ihr, wie viele Personen ausgewählt sind. „Mail senden“ fragt noch einmal nach. Danach steht die Mail in der Warteschlange. Jede Person bekommt eine eigene Mail an ihre Adresse. Bei vielen Empfängern dauert der Versand über das Club-Postfach einige Minuten — er ist nicht im selben Moment bei allen im Posteingang. In der E-Mail-Historie könnt ihr später nachsehen, was rausgegangen ist.",
+            ],
+          },
+          {
+            type: "note",
+            text: "„Alle“ meint aktive Mitglieder mit eigener E-Mail. Nicht in der Liste: versteckte Konten, Mitglieder ohne E-Mail, Mitgliedschaften ohne eigenen App-Zugang sowie Anträge, vorübergehend deaktivierte und nicht mehr aktive Mitgliedschaften. Die Fanclub-Unterschrift wird automatisch unter den Text gesetzt. Links im Text bleiben in der Mail anklickbar.",
+          },
+          {
+            type: "link",
+            href: "/admin/rundmail",
+            label: "Rundmail öffnen",
           },
         ],
       },
