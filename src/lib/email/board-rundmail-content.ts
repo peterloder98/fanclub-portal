@@ -78,8 +78,28 @@ export type BoardRundmailSendResult =
       queued: number;
       notQueued: number;
       skippedIneligible: number;
+      /** true: SMTP ist in dieser Anfrage gelaufen. false: nur eingereiht. */
+      delivered: boolean;
     }
   | { ok: false; message: string };
+
+/** Fehlermeldung für den Vorstand — ohne Adressen oder technische Rohtexte. */
+export function boardRundmailDeliveryError(raw: string | null | undefined): string {
+  const text = raw ?? "";
+  if (/535|authentication credentials|authentication failed|invalid login/i.test(text)) {
+    return "Das Club-Postfach hat den Versand abgelehnt. Bitte unter E-Mail-Konten das Passwort prüfen.";
+  }
+  if (/no_smtp_account/i.test(text)) {
+    return "Das Club-Postfach ist noch nicht eingerichtet. Bitte zuerst unter E-Mail-Konten ein Konto anlegen.";
+  }
+  if (/outbound_test_mode/i.test(text)) {
+    return "Diese Adresse ist für den Versand gerade nicht freigegeben.";
+  }
+  if (/Rundmail konnte nicht aufgebaut|Rundmail-Text|Anhang/i.test(text)) {
+    return "Die Mail konnte nicht aufgebaut werden. Bitte erneut versuchen.";
+  }
+  return "Die Mail konnte nicht verschickt werden. Bitte später erneut versuchen oder in der E-Mail-Historie nachsehen.";
+}
 
 function extensionOf(filename: string): string {
   const base = filename.split(/[/\\]/).pop() ?? "";

@@ -3,6 +3,7 @@ import {
   BOARD_RUNDMAIL_MAX_FILES,
   BOARD_RUNDMAIL_MAX_TOTAL_BYTES,
   boardEmailHtmlToText,
+  boardRundmailDeliveryError,
   boardRundmailFilesError,
   composeBoardRundmailMessage,
   inspectBoardRundmailFile,
@@ -12,6 +13,15 @@ import {
 } from "./board-rundmail-content";
 
 describe("board rundmail content", () => {
+  it("hides raw delivery errors from the board", () => {
+    const message = boardRundmailDeliveryError(
+      "outbound_test_mode_blocked:janine@example.com",
+    );
+    expect(message).not.toContain("@");
+    expect(message).toMatch(/nicht freigegeben/);
+    expect(boardRundmailDeliveryError("535 authentication failed")).toMatch(/Club-Postfach/);
+  });
+
   it("keeps bold, italic and real links and strips scripts", () => {
     const html = sanitizeBoardEmailHtml(
       `<p onclick="alert(1)">Hallo <strong>du</strong> und <em>dich</em></p><a href="javascript:alert(1)">Klick</a><script>alert(1)</script><img src="x" onerror="alert(1)"><a href="https://fanclub.anniperka.de/termine">Termine</a>`,

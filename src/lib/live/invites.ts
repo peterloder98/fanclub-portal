@@ -162,9 +162,7 @@ export async function sendLiveSessionInviteEmails(
   const { queued, errors } = await enqueueOutboundEmails(admin, queueItems);
   if (queued > 0) {
     // Sofort Drain starten (eigene Request + Selbst-Kette); Throttling bleibt im Cron.
-    after(() => {
-      scheduleOutboundDrainContinuation();
-    });
+    after(() => scheduleOutboundDrainContinuation());
   }
   // Anni bekommt separat den Host-Link (sendAnniHostLinkEmail) — nicht den Mitglieder-Link.
 
@@ -505,9 +503,7 @@ async function runRemindersForSessions(
         console.error("[live-reminder] no-rsvp queue errors:", errors);
       }
       if (queued > 0) {
-        after(() => {
-          scheduleOutboundDrainContinuation();
-        });
+        after(() => scheduleOutboundDrainContinuation());
       }
     }
 

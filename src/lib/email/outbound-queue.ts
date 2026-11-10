@@ -117,25 +117,29 @@ export async function enqueueOutboundEmails(
 
 export async function drainOutboundEmailQueue(
   admin: SupabaseClient,
+  options?: { dedupePrefix?: string },
 ): Promise<{
   processed: number;
   sent: number;
   failed: number;
   abortedAuth: boolean;
   pending: number;
+  lastError: string | null;
 }> {
   const limit = outboundDrainLimit();
-  const { data: rows, error } = await admin
+  let query = admin
     .from("email_outbound_queue")
     .select("id,to_address,template_key,template_vars,context,dedupe_key,attempts")
     .eq("status", "pending")
     .lte("send_after", new Date().toISOString())
     .order("created_at", { ascending: true })
     .limit(limit);
+  if (options?.dedupePrefix) query = query.like("dedupe_key", options.dedupePrefix);
+  const { data: rows, error } = await query;
 
   if (error) {
     if (/email_outbound_queue|does not exist/i.test(error.message)) {
-      return { processed: 0, sent: 0, failed: 0, abortedAuth: false, pending: 0 };
+      return { processed: 0, sent: 0, failed: 0, abortedAuth: false, pending: 0, lastError: null };
     }
     throw new Error(error.message);
   }
@@ -143,6 +147,7 @@ export async function drainOutboundEmailQueue(
   let sent = 0;
   let failed = 0;
   let abortedAuth = false;
+  let lastError: string | null = null;
   const rundmailCache: BoardRundmailRenderCache = new Map();
 
   async function finishRundmail(row: OutboundQueueRow) {
@@ -169,10 +174,8 @@ export async function drainOutboundEmailQueue(
         attachments = prepared.attachments.length ? prepared.attachments : undefined;
       } catch (error) {
         failed += 1;
-        console.error(
-          "[rundmail] Aufbau fehlgeschlagen:",
-          error instanceof Error ? error.message : "unknown",
-        );
+        lastError = error instanceof Error ? error.message : "Rundmail konnte nicht aufgebaut werden.";
+        console.error("[rundmail] Aufbau fehlgeschlagen:", lastError);
         await admin
           .from("email_outbound_queue")
           .update({
@@ -225,6 +228,7 @@ export async function drainOutboundEmailQueue(
       ("error" in result && result.error) ||
       ("reason" in result && result.reason) ||
       "Versand fehlgeschlagen";
+    lastError = String(errMsg);
     failed += 1;
 
     if (isSmtpAuthFailure(String(errMsg))) {
@@ -271,6 +275,7 @@ export async function drainOutboundEmailQueue(
     failed,
     abortedAuth,
     pending: pending ?? 0,
+    lastError,
   };
 }
 

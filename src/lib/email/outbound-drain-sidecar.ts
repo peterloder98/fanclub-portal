@@ -10,7 +10,7 @@ export async function runOutboundEmailDrainSidecar(admin: SupabaseClient) {
   try {
     const result = await drainOutboundEmailQueue(admin);
     if (result.pending > 0 && !result.abortedAuth && result.processed > 0) {
-      scheduleOutboundDrainContinuation();
+      await scheduleOutboundDrainContinuation();
     }
     return result;
   } catch (error) {

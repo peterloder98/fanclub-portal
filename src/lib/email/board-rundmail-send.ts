@@ -6,6 +6,7 @@ import {
   BOARD_RUNDMAIL_MAX_SUBJECT,
   type BoardRundmailSendResult,
   boardEmailHtmlToText,
+  boardRundmailDeliveryError,
   boardRundmailFilesError,
   emailAttachmentFilename,
   inspectBoardRundmailFile,
@@ -19,8 +20,10 @@ import {
   type StoredBoardRundmailFile,
 } from "@/lib/email/board-rundmail-storage";
 import { EMAIL_TEMPLATE_KEYS } from "@/lib/email/template-keys";
-import { enqueueOutboundEmails } from "@/lib/email/outbound-queue";
+import { drainOutboundEmailQueue, enqueueOutboundEmails } from "@/lib/email/outbound-queue";
+import { kickOutboundEmailDrain } from "@/lib/email/kick-outbound-drain";
 import { emailPersonVars } from "@/lib/email/salutation-block";
+import { after } from "next/server";
 import { isSmtpReady } from "@/lib/smtp/send-via-account";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -164,6 +167,47 @@ export async function queueBoardRundmail(formData: FormData): Promise<BoardRundm
       await deleteBoardRundmailFiles(admin, campaignId).catch(() => {});
       return validationFailure("Die Mail konnte nicht eingereiht werden. Bitte später erneut versuchen.");
     }
+    // Wenige Empfänger direkt zustellen, damit ein Test nicht nur „eingereiht“ bleibt.
+    if (queued <= 3) {
+      try {
+        const drained = await drainOutboundEmailQueue(admin, {
+          dedupePrefix: `rundmail:${campaignId}:%`,
+        });
+        if (drained.sent <= 0) {
+          return validationFailure(boardRundmailDeliveryError(drained.lastError));
+        }
+        await auditLog({
+          actorId: user.id,
+          action: "board_rundmail.queue",
+          summary: `Rundmail verschickt: „${subject.slice(0, 120)}“ an ${drained.sent} Mitglieder`,
+          entityType: "board_rundmail",
+          entityId: campaignId,
+          metadata: {
+            recipient_count: drained.sent,
+            not_queued: notQueued + drained.failed,
+            skipped_ineligible: skippedIneligible,
+            attachment_count: files.length,
+            delivered: true,
+          },
+        });
+        return {
+          ok: true,
+          queued: drained.sent,
+          notQueued: notQueued + drained.failed,
+          skippedIneligible,
+          delivered: true,
+        };
+      } catch (error) {
+        console.error(
+          "[rundmail] Direktversand fehlgeschlagen:",
+          error instanceof Error ? error.message : "unknown",
+        );
+        return validationFailure(boardRundmailDeliveryError(null));
+      }
+    }
+    after(async () => {
+      await kickOutboundEmailDrain(admin);
+    });
     await auditLog({
       actorId: user.id,
       action: "board_rundmail.queue",
@@ -175,9 +219,10 @@ export async function queueBoardRundmail(formData: FormData): Promise<BoardRundm
         not_queued: notQueued,
         skipped_ineligible: skippedIneligible,
         attachment_count: files.length,
+        delivered: false,
       },
     });
-    return { ok: true, queued, notQueued, skippedIneligible };
+    return { ok: true, queued, notQueued, skippedIneligible, delivered: false };
   } catch (error) {
     console.error("[rundmail] Einreihen fehlgeschlagen:", error instanceof Error ? error.message : "unknown");
     await deleteBoardRundmailFiles(admin, campaignId).catch(() => {});

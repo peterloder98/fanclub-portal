@@ -29,15 +29,23 @@ function formatBytes(size: number) {
 
 function successText(result: Extract<BoardRundmailSendResult, { ok: true }>) {
   const parts = [
-    result.queued === 1
-      ? "Die Mail steht in der Warteschlange für 1 Mitglied."
-      : `Die Mail steht in der Warteschlange für ${result.queued} Mitglieder.`,
+    result.delivered
+      ? result.queued === 1
+        ? "Die Mail ist an 1 Mitglied raus."
+        : `Die Mail ist an ${result.queued} Mitglieder raus.`
+      : result.queued === 1
+        ? "Die Mail steht in der Warteschlange für 1 Mitglied."
+        : `Die Mail steht in der Warteschlange für ${result.queued} Mitglieder.`,
   ];
   if (result.notQueued > 0) {
     parts.push(
-      result.notQueued === 1
-        ? "1 Mail konnte nicht eingereiht werden."
-        : `${result.notQueued} Mails konnten nicht eingereiht werden.`,
+      result.delivered
+        ? result.notQueued === 1
+          ? "1 Mail konnte nicht verschickt werden."
+          : `${result.notQueued} Mails konnten nicht verschickt werden.`
+        : result.notQueued === 1
+          ? "1 Mail konnte nicht eingereiht werden."
+          : `${result.notQueued} Mails konnten nicht eingereiht werden.`,
     );
   }
   if (result.skippedIneligible > 0) {
@@ -47,7 +55,9 @@ function successText(result: Extract<BoardRundmailSendResult, { ok: true }>) {
         : `${result.skippedIneligible} Personen aus der Auswahl sind nicht aktiv oder ohne E-Mail und wurden ausgelassen.`,
     );
   }
-  parts.push("Der Versand über das Club-Postfach läuft und kann einige Minuten dauern.");
+  if (!result.delivered) {
+    parts.push("Der Versand über das Club-Postfach läuft und kann einige Minuten dauern.");
+  }
   return parts.join(" ");
 }
 

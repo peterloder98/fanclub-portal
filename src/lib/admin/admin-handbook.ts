@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-11-06";
+export const ADMIN_HANDBOOK_UPDATED = "2026-11-10";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -974,7 +974,7 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Betreff eintragen.",
               "Text schreiben. Darüber: Fett, Kursiv und Link (Adresse einfügen oder ändern). „Vorname“ und „Anrede“ setzt ihr in den Text, damit jede Mail persönlich ankommt — zum Beispiel Max oder Lieber Max.",
               "Optional Dateien anhängen: PDF, Bilder oder übliche Office-Dateien wie Word, Excel und PowerPoint. Höchstens 5 Dateien und zusammen höchstens 3 MB. Ist es mehr oder der Typ passt nicht, kommt ein kurzer Hinweis und die Mail geht nicht raus.",
-              "Unten seht ihr, wie viele Personen ausgewählt sind. „Mail senden“ fragt noch einmal nach. Danach steht die Mail in der Warteschlange. Jede Person bekommt eine eigene Mail an ihre Adresse. Bei vielen Empfängern dauert der Versand über das Club-Postfach einige Minuten — er ist nicht im selben Moment bei allen im Posteingang. In der E-Mail-Historie könnt ihr später nachsehen, was rausgegangen ist.",
+              "Unten seht ihr, wie viele Personen ausgewählt sind. „Mail senden“ fragt noch einmal nach. Ein Test an eine oder wenige Personen geht sofort über das Club-Postfach raus — ihr seht „Die Mail ist raus“. Kommt stattdessen eine Fehlermeldung, ist nichts rausgegangen. Bei vielen Empfängern wird eingereiht: jede Person bekommt eine eigene Mail, das kann einige Minuten dauern. In der E-Mail-Historie seht ihr, was rausgegangen ist.",
             ],
           },
           {

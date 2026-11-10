@@ -18,22 +18,33 @@ function cronBaseUrl(): string {
  * Die Cron-Route antwortet sofort und drain't im after()-Hintergrund —
  * so kein Gateway-504 (FUNCTION_INVOCATION_TIMEOUT).
  */
-export function scheduleOutboundDrainContinuation(): void {
+/** Startet den nächsten Drain und wartet, bis die Anfrage wirklich raus ist. */
+export function scheduleOutboundDrainContinuation(): Promise<void> {
   const base = cronBaseUrl();
   const secret = process.env.CRON_SECRET?.trim();
   if (!base || !secret) {
     console.warn(
       "[outbound-queue] chain skip: APP_BASE_URL/NEXT_PUBLIC_APP_URL oder CRON_SECRET fehlt",
     );
-    return;
+    return Promise.resolve();
   }
-  void fetch(`${base}/api/cron/email-outbound`, {
+  return fetch(`${base}/api/cron/email-outbound`, {
     method: "GET",
     headers: { Authorization: `Bearer ${secret}` },
     cache: "no-store",
-  }).catch((error) => {
-    console.error("[outbound-queue] chain kick failed:", error);
-  });
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        console.error("[outbound-queue] chain kick status:", response.status);
+      }
+      await response.arrayBuffer().catch(() => undefined);
+    })
+    .catch((error) => {
+      console.error(
+        "[outbound-queue] chain kick failed:",
+        error instanceof Error ? error.message : "unknown",
+      );
+    });
 }
 
 export type OutboundDrainTotals = {
@@ -79,7 +90,7 @@ export async function runOutboundDrainUntilBudget(
   }
 
   if (totals.pending > 0 && !totals.abortedAuth) {
-    scheduleOutboundDrainContinuation();
+    await scheduleOutboundDrainContinuation();
   }
   return totals;
 }

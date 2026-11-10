@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/admin/require-admin";
 import { listRundmailRecipients } from "@/lib/email/board-rundmail-recipients";
 import { RundmailComposer } from "./rundmail-composer.client";
 
+export const maxDuration = 60;
+
 export default async function AdminRundmailPage() {
   await requireAdmin();
 
