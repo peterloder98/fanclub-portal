@@ -8,6 +8,7 @@ import {
   releaseReferralReviewPointsAction,
 } from "@/app/(app)/admin/referrals/actions";
 import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
+import { referralReviewStatusLabel } from "@/lib/membership/referral-review-status";
 
 type SendRow = {
   id: string;
@@ -146,7 +147,9 @@ export function ReferralsAdminPanel({
               Stille Admin-Fälle: Versand-Sterne wurden vorläufig gehalten und weitere Einladungen
               sind für das Mitglied pausiert, bis ihr entscheidet. Das Mitglied sieht keinen
               Verdachtshinweis — nur ggf. „Einladungen vorübergehend pausiert“. Bitte freigeben oder
-              zurücknehmen.
+              zurücknehmen. Dieselben alten Einladungen nach einer Entscheidung öffnen keinen neuen
+              Fall und schicken keine neue E-Mail — nur wenn neue Einladungen selbst wieder auffällig
+              werden.
             </p>
             {openReviews.length ? (
               <ul className="mt-4 space-y-4">
@@ -245,7 +248,7 @@ export function ReferralsAdminPanel({
                     <span className="font-medium text-fc-navy">{nameOf(r.referrer)}</span>
                     <span className="text-slate-500">
                       {" "}
-                      · {r.status === "released" ? "freigegeben" : "zurückgenommen"} ·{" "}
+                      · {referralReviewStatusLabel(r.status, r.admin_note)} ·{" "}
                       {formatWhen(r.triggered_at)}
                     </span>
                     {r.admin_note ? (

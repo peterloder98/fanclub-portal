@@ -27,7 +27,7 @@ export type AdminHandbookChapter = {
   sections: AdminHandbookSection[];
 };
 
-export const ADMIN_HANDBOOK_UPDATED = "2026-11-10";
+export const ADMIN_HANDBOOK_UPDATED = "2026-11-11";
 
 export const ADMIN_HANDBOOK_INTRO =
   "Diese Hilfe erklärt Schritt für Schritt, was ihr als Vorstand in der Fanclub-App erledigen könnt. Oben findet ihr das Inhaltsverzeichnis nach Themen — tippt einen Punkt an, um dorthin zu springen.";
@@ -315,6 +315,10 @@ export const ADMIN_HANDBOOK_CHAPTERS: AdminHandbookChapter[] = [
               "Auffällige Einladungs-Muster landen still zur Prüfung unter Empfehlungen: Sterne werden gehalten, weitere Einladungen des Mitglieds sind bis zur Entscheidung pausiert — freigeben oder zurücknehmen",
               "Übersicht für Vorstände: Admin → „Empfehlungen“",
             ],
+          },
+          {
+            type: "note",
+            text: "Habt ihr einen Fall freigegeben oder die Sterne zurückgenommen, bleibt diese Prüfung erledigt. Dieselben alten Einladungen öffnen keinen neuen Fall und lösen keine neue E-Mail aus. Ein neuer Fall kommt nur, wenn danach neue Einladungen dazukommen, die selbst wieder auffällig sind.",
           },
           {
             type: "link",

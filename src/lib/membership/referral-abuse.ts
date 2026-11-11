@@ -4,6 +4,7 @@ import { NOTIFICATION_KINDS } from "@/lib/notifications/kinds";
 import { notifyAdminsReferralAbuse } from "@/lib/email/referral-abuse-notify";
 import { profileDisplayName } from "@/lib/profiles/display";
 import { formatBerlinDateTimeMedium } from "@/lib/datetime/berlin";
+import { REFERRAL_REVIEW_AUTO_CLOSE_NOTE } from "@/lib/membership/referral-review-status";
 
 const GRACE_DAYS = 14;
 const STALE_FAIL_MIN = 5;
@@ -170,21 +171,139 @@ async function holdReferralPoints(
   return ids;
 }
 
-/** Prüft einen Absender; bei Verdacht Hold + stiller Admin-Alarm. */
+type ReviewSnapshot = {
+  id: string;
+  status: string;
+  referral_send_ids: string[] | null;
+  points_transaction_ids: string[] | null;
+};
+
+function idList(value: readonly string[] | null | undefined): string[] {
+  if (!value) return [];
+  return value.filter((id) => typeof id === "string" && id.length > 0);
+}
+
+function normalizeSendId(id: string) {
+  return id.trim().toLowerCase();
+}
+
+/** Einladungs-IDs aus bereits entschiedenen oder automatisch geschlossenen Prüfungen. */
+export function collectReviewedReferralSendIds(
+  reviews: readonly { status: string; referral_send_ids?: readonly string[] | null }[],
+): Set<string> {
+  const ids = new Set<string>();
+  for (const review of reviews) {
+    if (review.status === "open") continue;
+    for (const id of review.referral_send_ids ?? []) {
+      if (id) ids.add(normalizeSendId(id));
+    }
+  }
+  return ids;
+}
+
+/** Einladungen, die noch in keiner entschiedenen Prüfung standen. */
+export function referralSendsAwaitingReview<T extends { id: string }>(
+  sends: readonly T[],
+  reviewedSendIds: ReadonlySet<string>,
+): T[] {
+  return sends.filter((send) => !reviewedSendIds.has(normalizeSendId(send.id)));
+}
+
+/**
+ * Offener Fall listet nur Einladungen, die der Vorstand schon entschieden hat.
+ * Leere ID-Liste zählt ebenfalls als Doppel, sobald es eine frühere Entscheidung gibt.
+ */
+export function referralOpenCaseIsDuplicate(
+  openSendIds: readonly string[],
+  reviewedSendIds: ReadonlySet<string>,
+): boolean {
+  if (reviewedSendIds.size === 0) return false;
+  return openSendIds.every((id) => reviewedSendIds.has(normalizeSendId(id)));
+}
+
+function isStatusCheckError(error: { code?: string; message?: string }) {
+  return (
+    error.code === "23514" ||
+    /violates check constraint/i.test(error.message ?? "")
+  );
+}
+
+/**
+ * Doppel-Fall schließen, ohne Punkte zu löschen.
+ * Status „dismissed“ braucht supabase/167_referral_review_dismissed.sql.
+ * Vorher: „released“ plus feste Notiz — die Oberfläche zeigt das nicht als Freigabe.
+ * Punkte, die nur dieser Doppel-Fall gehalten hat, werden wieder freigegeben (kein neuer Einzug).
+ */
+async function dismissDuplicateOpenReview(
+  admin: SupabaseClient,
+  review: ReviewSnapshot,
+): Promise<boolean> {
+  const patch = {
+    reviewed_at: new Date().toISOString(),
+    admin_note: REFERRAL_REVIEW_AUTO_CLOSE_NOTE,
+  };
+
+  const dismissed = await admin
+    .from("membership_referral_reviews")
+    .update({ ...patch, status: "dismissed" })
+    .eq("id", review.id)
+    .eq("status", "open")
+    .select("id")
+    .maybeSingle();
+
+  let closed = !dismissed.error && Boolean(dismissed.data?.id);
+
+  if (dismissed.error) {
+    if (!isStatusCheckError(dismissed.error)) throw new Error(dismissed.error.message);
+    const fallback = await admin
+      .from("membership_referral_reviews")
+      .update({ ...patch, status: "released" })
+      .eq("id", review.id)
+      .eq("status", "open")
+      .select("id")
+      .maybeSingle();
+    if (fallback.error) throw new Error(fallback.error.message);
+    closed = Boolean(fallback.data?.id);
+  }
+
+  if (!closed) return false;
+
+  const txIds = idList(review.points_transaction_ids);
+  if (txIds.length) {
+    const { error: unholdErr } = await admin
+      .from("points_transactions")
+      .update({ held_at: null })
+      .in("id", txIds);
+    if (unholdErr && !/held_at|does not exist/i.test(unholdErr.message)) {
+      console.error("[referral-abuse] Hold des Doppel-Falls konnte nicht gelöst werden:", unholdErr.message);
+    }
+  }
+
+  console.info("[referral-abuse] doppelten Fall geschlossen", review.id);
+  return true;
+}
+
+/** Prüft einen Absender; bei neuem Verdacht Hold + stiller Admin-Alarm. */
 export async function evaluateAndMaybeFlagReferrer(
   admin: SupabaseClient,
   referrerUserId: string,
-): Promise<{ flagged: boolean; reviewId: string | null }> {
-  const { data: openExisting } = await admin
+): Promise<{ flagged: boolean; reviewId: string | null; closedDuplicate: boolean }> {
+  const { data: reviewRows, error: reviewErr } = await admin
     .from("membership_referral_reviews")
-    .select("id")
-    .eq("referrer_user_id", referrerUserId)
-    .eq("status", "open")
-    .maybeSingle();
+    .select("id,status,referral_send_ids,points_transaction_ids")
+    .eq("referrer_user_id", referrerUserId);
 
-  if (openExisting?.id) {
-    return { flagged: false, reviewId: openExisting.id };
+  if (reviewErr) {
+    if (/membership_referral_reviews|does not exist/i.test(reviewErr.message)) {
+      console.warn("[referral-abuse] Tabelle fehlt — Migration 123 ausführen");
+      return { flagged: false, reviewId: null, closedDuplicate: false };
+    }
+    throw new Error(reviewErr.message);
   }
+
+  const reviews = (reviewRows ?? []) as ReviewSnapshot[];
+  const covered = collectReviewedReferralSendIds(reviews);
+  const openReviews = reviews.filter((review) => review.status === "open");
 
   const { data: sends, error } = await admin
     .from("membership_referral_sends")
@@ -198,12 +317,30 @@ export async function evaluateAndMaybeFlagReferrer(
   if (error) throw new Error(error.message);
 
   const rows = (sends ?? []) as SendRow[];
-  const verdict = evaluateReferralSuspicion(rows);
-  if (!verdict.suspicious) {
-    return { flagged: false, reviewId: null };
+  // Nur Einladungen außerhalb schon entschiedener Prüfungen. Dieselben alten
+  // Einladungen würden die Regel sonst bei jedem Lauf erneut erfüllen.
+  const freshRows = referralSendsAwaitingReview(rows, covered);
+  const verdict = evaluateReferralSuspicion(freshRows);
+
+  let closedDuplicate = false;
+  const blockingOpen: ReviewSnapshot[] = [];
+  for (const open of openReviews) {
+    if (referralOpenCaseIsDuplicate(idList(open.referral_send_ids), covered)) {
+      if (await dismissDuplicateOpenReview(admin, open)) closedDuplicate = true;
+    } else {
+      blockingOpen.push(open);
+    }
   }
 
-  const holdSendIds = rows.filter((s) => !isConverted(s)).map((s) => s.id);
+  if (blockingOpen[0]) {
+    return { flagged: false, reviewId: blockingOpen[0].id, closedDuplicate };
+  }
+
+  if (!verdict.suspicious) {
+    return { flagged: false, reviewId: null, closedDuplicate };
+  }
+
+  const holdSendIds = freshRows.filter((s) => !isConverted(s)).map((s) => s.id);
   const heldTxIds = await holdReferralPoints(admin, referrerUserId, holdSendIds);
 
   const { data: review, error: revErr } = await admin
@@ -221,10 +358,10 @@ export async function evaluateAndMaybeFlagReferrer(
   if (revErr) {
     if (/membership_referral_reviews|does not exist/i.test(revErr.message)) {
       console.warn("[referral-abuse] Tabelle fehlt — Migration 123 ausführen");
-      return { flagged: false, reviewId: null };
+      return { flagged: false, reviewId: null, closedDuplicate };
     }
     if (revErr.code === "23505") {
-      return { flagged: false, reviewId: null };
+      return { flagged: false, reviewId: null, closedDuplicate };
     }
     throw new Error(revErr.message);
   }
@@ -240,7 +377,7 @@ export async function evaluateAndMaybeFlagReferrer(
   const referrerName = profile ? profileDisplayName(profile) : "Mitglied";
   const referrerEmail = profile?.email?.trim() || "—";
 
-  const sendLines = rows.slice(0, 25).map((s) => {
+  const sendLines = freshRows.slice(0, 25).map((s) => {
     const name = [s.recipient_first_name, s.recipient_last_name].filter(Boolean).join(" ") || "—";
     const when = formatBerlinDateTimeMedium(s.created_at);
     let status = "offen";
@@ -281,7 +418,7 @@ export async function evaluateAndMaybeFlagReferrer(
       .eq("id", reviewId);
   }
 
-  return { flagged: true, reviewId };
+  return { flagged: true, reviewId, closedDuplicate };
 }
 
 /** Täglicher Scan aller Absender mit Aktivität in den letzten 90 Tagen. */
@@ -294,16 +431,18 @@ export async function runReferralAbuseScan(admin: SupabaseClient) {
 
   if (error) {
     if (/does not exist/i.test(error.message)) {
-      return { scanned: 0, flagged: 0, error: error.message };
+      return { scanned: 0, flagged: 0, closedDuplicates: 0, error: error.message };
     }
     throw new Error(error.message);
   }
 
   const senderIds = [...new Set((recent ?? []).map((r) => r.sender_id).filter(Boolean))] as string[];
   let flagged = 0;
+  let closedDuplicates = 0;
   for (const id of senderIds) {
     const result = await evaluateAndMaybeFlagReferrer(admin, id);
     if (result.flagged) flagged += 1;
+    if (result.closedDuplicate) closedDuplicates += 1;
   }
-  return { scanned: senderIds.length, flagged };
+  return { scanned: senderIds.length, flagged, closedDuplicates };
 }
